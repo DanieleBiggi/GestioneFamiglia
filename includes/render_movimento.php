@@ -18,11 +18,11 @@ function render_movimento(array $mov) {
 
     // Quote per utente se presenti
     $stmtU = $conn->prepare(
-        "SELECT e2o.id_e2o, e2o.importo AS importo_e2o, u.id_utente, u.nome, u.cognome,
+        "SELECT e2o.id_e2o, e2o.importo AS importo_e2o, u.id as id_utente, u.nome, u.cognome,
                 u2o.importo_utente, u2o.utente_pagante, u2o.saldata
            FROM bilancio_etichette2operazioni e2o
            JOIN bilancio_utenti2operazioni_etichettate u2o ON u2o.id_e2o = e2o.id_e2o
-           JOIN utenti u ON u.id_utente = u2o.id_utente
+           JOIN utenti u ON u.id = u2o.id_utente
           WHERE e2o.id_tabella = ? AND e2o.tabella_operazione = ?"
     );
     $stmtU->bind_param('is', $mov['id'], $mov['tabella']);
