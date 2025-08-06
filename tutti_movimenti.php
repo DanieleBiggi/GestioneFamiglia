@@ -1,56 +1,23 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
-include 'includes/db.php';
+require_once 'includes/db.php';
 include 'includes/header.php';
+setlocale(LC_TIME, 'it_IT.UTF-8');
 
-$mese = $_GET['mese'] ?? date('Y-m');
-$start = "$mese-01";
-$end = date("Y-m-t", strtotime($start));
-
-$sql = "SELECT * FROM v_movimenti_revolut WHERE completed_date BETWEEN ? AND ? ORDER BY completed_date DESC";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("ss", $start, $end);
-$stmt->execute();
-$result = $stmt->get_result();
-
-$movimenti = [];
+$mesi = [];
+$sql = "SELECT DATE_FORMAT(started_date, '%Y-%m') AS ym, DATE_FORMAT(started_date, '%M %Y') AS mese_label FROM v_movimenti_revolut GROUP BY ym ORDER BY ym DESC";
+$result = $conn->query($sql);
 while ($row = $result->fetch_assoc()) {
-  $giorno = date("Y-m-d", strtotime($row['completed_date']));
-  $movimenti[$giorno][] = $row;
+    $mesi[] = $row;
 }
 ?>
-
-<div class="container">
-  <form method="get" class="mb-4">
-    <label for="mese" class="form-label">Seleziona mese:</label>
-    <input type="month" id="mese" name="mese" value="<?= $mese ?>" class="form-control" onchange="this.form.submit()">
-  </form>
-
-  <?php if (!empty($movimenti)): ?>
-    <?php foreach ($movimenti as $giorno => $items): ?>
-      <h5 class="mt-4 mb-2"><?= date("d F Y", strtotime($giorno)) ?></h5>
-      <div class="list-group">
-        <?php foreach ($items as $row): ?>
-          <a href="dettaglio.php?id=<?= $row['id_movimento_revolut'] ?>" class="list-group-item shadow-sm text-white text-decoration-none">
-            <div class="d-flex justify-content-between">
-              <div>
-                <strong><?= htmlspecialchars($row['descrizione_extra'] ?: $row['description']) ?></strong><br>
-                <small><?= date('d/m/Y H:i', strtotime($row['started_date'])) ?></small><br>
-                <?php if (!empty($row['etichette'])): ?>
-                  <span class="badge-etichetta"><?= htmlspecialchars($row['etichette']) ?></span>
-                <?php endif; ?>
-              </div>
-              <div class="fs-5 text-end">
-                <?= number_format($row['amount'], 2, ',', '.') ?> €
-              </div>
-            </div>
-          </a>
-        <?php endforeach; ?>
-      </div>
+<div class="months-scroll d-flex mb-3">
+    <?php foreach ($mesi as $idx => $m): ?>
+        <button class="btn btn-outline-light me-2 <?= $idx === 0 ? 'active' : '' ?>" data-mese="<?= htmlspecialchars($m['ym']) ?>">
+            <?= ucfirst($m['mese_label']) ?>
+        </button>
     <?php endforeach; ?>
-  <?php else: ?>
-    <p class="text-center text-muted">Nessun movimento per il mese selezionato.</p>
-  <?php endif; ?>
 </div>
-
+<div id="movimenti" class="pb-5"></div>
+<script src="js/tutti_movimenti.js"></script>
 <?php include 'includes/footer.php'; ?>
