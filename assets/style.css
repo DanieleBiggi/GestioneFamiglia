@@ -48,12 +48,18 @@ body {
 .day-header {
   font-size: .85rem;
   text-transform: capitalize;
+  color: #fff;
 }
 .movement {
-  border-bottom: 1px solid rgba(255,255,255,.1);
+  background-color: #1f1f1f;
+  border: none;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  padding: 16px;
 }
 .amount {
   min-width: 80px;
   text-align: right;
   font-weight: 500;
+  color: #fff;
 }
