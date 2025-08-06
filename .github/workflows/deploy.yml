@@ -16,7 +16,7 @@ jobs:
       - name: Crea archivio ZIP
         run: |
           mkdir output
-          zip -r output/site.zip . -x ".git/*" ".github/*" "README.md"
+          zip -r output/Gestionale25.zip . -x ".git/*" ".github/*" "README.md"
 
       - name: Salva ZIP come artefatto
         uses: actions/upload-artifact@v4
