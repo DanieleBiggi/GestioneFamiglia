@@ -1,6 +1,8 @@
 <?php
 session_start();
-require 'vendor/autoload.php';
+require_once __DIR__ . '/libs/PHPMailer/PHPMailer.php';
+require_once __DIR__ . '/libs/PHPMailer/Exception.php';
+require_once __DIR__ . '/libs/PHPMailer/SMTP.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 include 'includes/db.php';
@@ -55,17 +57,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             try {
                 $mail = new PHPMailer(true);
                 $mail->isSMTP();
-                $mail->Host = getenv('SMTP_HOST');
+                $mail->Host = 'smtp.aruba.it';
                 $mail->SMTPAuth = true;
-                $mail->Username = getenv('SMTP_USER');
-                $mail->Password = getenv('SMTP_PASS');
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                $mail->Port = getenv('SMTP_PORT') ?: 587;
+                $mail->Username = 'postmaster@gestionefamiglia.it';
+                $mail->Password = '***INSERIRE QUI LA PASSWORD***';
+                $mail->SMTPSecure = 'ssl';
+                $mail->Port = 465;
 
-                $mail->setFrom(getenv('SMTP_FROM') ?: 'no-reply@example.com', 'Gestione Famiglia');
+                $mail->setFrom('assistenza@gestionefamiglia.it', 'Gestione Famiglia');
                 $mail->addAddress($user['email'], $user['nome']);
+                $mail->isHTML(true);
                 $mail->Subject = 'Codice di verifica';
-                $mail->Body = "Il tuo codice di verifica è: $code";
+                $mail->Body = '<p>Il tuo codice di verifica è: <strong>' . $code . '</strong></p>';
                 $mail->send();
 
                 $_SESSION['2fa_user_id'] = $user['id'];
