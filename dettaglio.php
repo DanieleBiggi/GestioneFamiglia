@@ -34,6 +34,7 @@ $movimento['categoria_descrizione'] = sanitize_string($movimento['categoria_desc
 $etichette = [];
 $res = $conn->query("SELECT id_etichetta, descrizione, attivo FROM bilancio_etichette ORDER BY attivo DESC, descrizione ASC");
 while ($row = $res->fetch_assoc()) {
+  $row['attivo'] = (int)$row['attivo'];
   $etichette[] = $row;
 }
 
@@ -82,6 +83,9 @@ if (isset($filtroCategoria) && $filtroCategoria !== '' && $filtroCategoria !== '
   $res2 = $conn->query($sqlGruppi);
 }
 while ($row = $res2->fetch_assoc()) {
+
+  $row['attivo'] = (int)$row['attivo'];
+
   $row['descrizione'] = sanitize_string($row['descrizione']);
   $row['categoria'] = sanitize_string($row['categoria']);
   $row['tipo_label'] = tipo_label($row['tipo_gruppo']);
@@ -240,7 +244,7 @@ function populateGroups(showInactive) {
   const container = document.getElementById('groupSelectContainer');
   const grouped = {};
   for (let g of gruppi) {
-    if (!showInactive && !g.attivo) continue;
+    if (!showInactive && g.attivo != 1) continue;
     if (!grouped[g.categoria]) grouped[g.categoria] = [];
     grouped[g.categoria].push(g);
   }
@@ -263,7 +267,7 @@ function renderEtichetteList() {
   const selected = new Set(Array.from(list.querySelectorAll('input:checked')).map(e => e.value));
   list.innerHTML = '';
   for (let e of etichette) {
-    if (!mostraVecchie && !e.attivo) continue;
+    if (!mostraVecchie && e.attivo != 1) continue;
     if (filtroEtichette && !e.descrizione.toLowerCase().includes(filtroEtichette)) continue;
     const div = document.createElement('div');
     div.className = 'form-check';
