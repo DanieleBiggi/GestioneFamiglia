@@ -3,6 +3,9 @@
 include 'includes/db.php';
 require_once 'includes/render_movimento.php';
 include 'includes/header.php';
+
+require_once 'includes/render_movimento.php';
+
 ?>
 
 <input type="text" id="search" class="form-control bg-dark text-white border-secondary mb-3" placeholder="Cerca nei movimenti">
@@ -16,6 +19,7 @@ $sql = "SELECT * FROM (
             FROM v_movimenti_revolut
             UNION ALL
             SELECT be.id_entrata AS id, be.descrizione_operazione AS descrizione, be.descrizione_extra,
+
                    be.data_operazione, be.importo AS amount,
                    (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
                       FROM bilancio_etichette2operazioni eo
@@ -42,6 +46,7 @@ if ($result && $result->num_rows > 0): ?>
     <?php while($row = $result->fetch_assoc()): ?>
       <?php render_movimento($row); ?>
     <?php endwhile; ?>
+
   </div>
 
   <div class="text-center mt-3">
