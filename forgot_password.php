@@ -28,12 +28,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $mail = new PHPMailer(true);
             $mail->isSMTP();
-            $mail->Host = 'smtp.aruba.it';
-            $mail->SMTPAuth = true;
-            $mail->Username = 'postmaster@gestionefamiglia.it';
-            $mail->Password = '***INSERIRE QUI LA PASSWORD***';
+            $mail->Host       = 'smtps.aruba.it'; // con la "s"
+            $mail->SMTPAuth   = true;
+            $mail->Username   = $config['mail_user'];
+            $mail->Password   = $config['mail_pwd'];
             $mail->SMTPSecure = 'ssl';
-            $mail->Port = 465;
+            $mail->Port       = 465;
+        
+            // Aggiungi questa sezione per evitare errori SSL
+            $mail->SMTPOptions = [
+                'ssl' => [
+                    'verify_peer'       => false,
+                    'verify_peer_name'  => false,
+                    'allow_self_signed' => true,
+                ]
+            ];
 
             $mail->setFrom('assistenza@gestionefamiglia.it', 'Gestione Famiglia');
             $mail->addAddress($email, $user['nome']);
