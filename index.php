@@ -2,33 +2,25 @@
 <?php
 include 'includes/db.php';
 include 'includes/header.php';
+
+require_once 'includes/render_movimento.php';
+
 ?>
 
 <input type="text" id="search" class="form-control bg-dark text-white border-secondary mb-3" placeholder="Cerca nei movimenti">
 <div id="searchResults"></div>
 
 <?php
-$sql = "SELECT * FROM v_movimenti_revolut ORDER BY started_date DESC LIMIT 5";
+
+$sql = "SELECT id_movimento_revolut, started_date, amount, COALESCE(NULLIF(descrizione_extra, ''), description) AS descrizione, etichette FROM v_movimenti_revolut ORDER BY started_date DESC LIMIT 5";
 $result = $conn->query($sql);
 
 if ($result->num_rows > 0): ?>
-  <div id="recentMovimenti" class="list-group">
-    <?php while($row = $result->fetch_assoc()): ?>
-      <a href="dettaglio.php?id=<?= $row['id_movimento_revolut'] ?>" class="list-group-item shadow-sm text-white text-decoration-none">
-        <div class="d-flex justify-content-between">
-          <div>
-            <strong><?= htmlspecialchars($row['descrizione_extra'] ?: $row['description']) ?></strong><br>
-            <small><?= date('d/m/Y H:i', strtotime($row['started_date'])) ?></small><br>
-            <?php if (!empty($row['etichette'])): ?>
-              <span class="badge-etichetta"><?= htmlspecialchars($row['etichette']) ?></span>
-            <?php endif; ?>
-          </div>
-          <div class="fs-5 text-end">
-            <?= number_format($row['amount'], 2, ',', '.') ?> €
-          </div>
-        </div>
-      </a>
-    <?php endwhile; ?>
+  <div id="recentMovimenti" class="text-white">
+    <?php while ($row = $result->fetch_assoc()):
+        render_movimento($row);
+    endwhile; ?>
+
   </div>
 
   <div class="text-center mt-3">

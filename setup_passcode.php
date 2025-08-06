@@ -43,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="col-md-6">
     <div class="card bg-dark text-white p-4">
       <h4 class="mb-3">Imposta passcode</h4>
+        <h5 class="mb-3">Potrai utilizzare il passcode da questo dispositivo per accedere pi&ugrave; velocemente.<br>Se non vuoi impostare un passcode, <a href='index.php'>clicca qui</a> per andare alla pagina iniziale</h5>
       <?php if ($error): ?>
         <div class="alert alert-danger"><?= $error ?></div>
       <?php endif; ?>

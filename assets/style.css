@@ -57,6 +57,10 @@ body {
   margin-bottom: 10px;
   padding: 16px;
 }
+.movement:hover {
+  background-color: #2b2b2b;
+  cursor: pointer;
+}
 .amount {
   min-width: 80px;
   text-align: right;

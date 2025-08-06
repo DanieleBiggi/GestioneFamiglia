@@ -83,7 +83,9 @@ if (isset($filtroCategoria) && $filtroCategoria !== '' && $filtroCategoria !== '
   $res2 = $conn->query($sqlGruppi);
 }
 while ($row = $res2->fetch_assoc()) {
+
   $row['attivo'] = (int)$row['attivo'];
+
   $row['descrizione'] = sanitize_string($row['descrizione']);
   $row['categoria'] = sanitize_string($row['categoria']);
   $row['tipo_label'] = tipo_label($row['tipo_gruppo']);
