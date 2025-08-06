@@ -1,6 +1,8 @@
 <?php
 session_start();
-require 'vendor/autoload.php';
+require_once __DIR__ . '/libs/PHPMailer/PHPMailer.php';
+require_once __DIR__ . '/libs/PHPMailer/Exception.php';
+require_once __DIR__ . '/libs/PHPMailer/SMTP.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 include 'includes/db.php';
@@ -26,18 +28,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $mail = new PHPMailer(true);
             $mail->isSMTP();
-            $mail->Host = getenv('SMTP_HOST');
+            $mail->Host = 'smtp.aruba.it';
             $mail->SMTPAuth = true;
-            $mail->Username = getenv('SMTP_USER');
-            $mail->Password = getenv('SMTP_PASS');
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port = getenv('SMTP_PORT') ?: 587;
+            $mail->Username = 'postmaster@gestionefamiglia.it';
+            $mail->Password = '***INSERIRE QUI LA PASSWORD***';
+            $mail->SMTPSecure = 'ssl';
+            $mail->Port = 465;
 
-            $mail->setFrom(getenv('SMTP_FROM') ?: 'no-reply@example.com', 'Gestione Famiglia');
+            $mail->setFrom('assistenza@gestionefamiglia.it', 'Gestione Famiglia');
             $mail->addAddress($email, $user['nome']);
+            $mail->isHTML(true);
             $link = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/reset_password.php?token=' . urlencode($token);
             $mail->Subject = 'Reset password';
-            $mail->Body = "Per reimpostare la password, visita: $link";
+            $mail->Body = '<p>Per reimpostare la password, clicca <a href="' . $link . '">qui</a></p>';
             $mail->send();
             $success = 'Controlla la tua email per le istruzioni.';
         } catch (Exception $e) {
