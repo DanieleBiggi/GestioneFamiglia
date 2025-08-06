@@ -1,0 +1,23 @@
+name: FTP Deploy to Aruba
+
+on:
+  push:
+    branches:
+      - main  # Cambia se usi un altro branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout codice sorgente
+        uses: actions/checkout@v3
+
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: /www.gestionefamiglia.it/Gestionale25/  # o la tua cartella corretta
+          local-dir: ./              # cartella locale da caricare
