@@ -9,9 +9,13 @@ if (!$id) {
 
 // Dati del movimento
 $stmt = $conn->prepare("
-  SELECT m.*, g.descrizione AS gruppo_descrizione, GROUP_CONCAT(e.descrizione SEPARATOR ', ') AS etichette
+  SELECT m.*, g.descrizione AS gruppo_descrizione,
+         COALESCE(c.descrizione_categoria, 'Nessuna categoria') AS categoria_descrizione,
+         g.tipo_gruppo,
+         GROUP_CONCAT(e.descrizione SEPARATOR ', ') AS etichette
   FROM movimenti_revolut m
   LEFT JOIN bilancio_gruppi_transazione g ON m.id_gruppo_transazione = g.id_gruppo_transazione
+  LEFT JOIN bilancio_gruppi_categorie c ON g.id_categoria = c.id_categoria
   LEFT JOIN bilancio_etichette2operazioni eo ON eo.id_tabella = m.id_movimento_revolut AND eo.tabella_operazione = 'movimenti_revolut'
   LEFT JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
   WHERE m.id_movimento_revolut = ?
@@ -24,11 +28,13 @@ $movimento = $result->fetch_assoc();
 if (!$movimento) {
   die("Movimento non trovato");
 }
+$movimento['categoria_descrizione'] = sanitize_string($movimento['categoria_descrizione'] ?? 'Nessuna categoria');
 
 // Etichette disponibili
 $etichette = [];
 $res = $conn->query("SELECT id_etichetta, descrizione, attivo FROM bilancio_etichette ORDER BY attivo DESC, descrizione ASC");
 while ($row = $res->fetch_assoc()) {
+  $row['attivo'] = (int)$row['attivo'];
   $etichette[] = $row;
 }
 
@@ -43,18 +49,48 @@ foreach ($etichette as &$et) {
 }
 unset($et); 
 
+function tipo_label($tipo) {
+  return [
+    'spese_base'   => 'Spese Base',
+    'divertimento' => 'Divertimento',
+    'risparmio'    => 'Risparmio',
+    ''             => 'Altro'
+  ][$tipo] ?? $tipo;
+}
+
 // Gruppi transazione
 $gruppi = [];
-$res2 = $conn->query("SELECT id_gruppo_transazione, descrizione, categoria, attivo FROM bilancio_gruppi_transazione ORDER BY categoria, descrizione");
+$filtroCategoria = $_GET['categoria'] ?? $_POST['categoria'] ?? null;
+$sqlGruppi = "SELECT g.id_gruppo_transazione, g.descrizione, g.tipo_gruppo, g.attivo,
+              COALESCE(c.descrizione_categoria, 'Nessuna categoria') AS categoria
+              FROM bilancio_gruppi_transazione g
+              LEFT JOIN bilancio_gruppi_categorie c ON g.id_categoria = c.id_categoria";
+if ($filtroCategoria !== null && $filtroCategoria !== '') {
+  if ($filtroCategoria === '0') {
+    $sqlGruppi .= " WHERE g.id_categoria IS NULL";
+  } else {
+    $sqlGruppi .= " WHERE g.id_categoria = ?";
+  }
+}
+$sqlGruppi .= " ORDER BY categoria, g.descrizione";
+if (isset($filtroCategoria) && $filtroCategoria !== '' && $filtroCategoria !== '0') {
+  $stmtGrp = $conn->prepare($sqlGruppi);
+  $stmtGrp->bind_param('i', $filtroCategoria);
+  $stmtGrp->execute();
+  $res2 = $stmtGrp->get_result();
+  $stmtGrp->close();
+} else {
+  $res2 = $conn->query($sqlGruppi);
+}
 while ($row = $res2->fetch_assoc()) {
+  $row['attivo'] = (int)$row['attivo'];
+  $row['descrizione'] = sanitize_string($row['descrizione']);
+  $row['categoria'] = sanitize_string($row['categoria']);
+  $row['tipo_label'] = tipo_label($row['tipo_gruppo']);
   $gruppi[] = $row;
 }
 
-foreach ($gruppi as &$et) {
-  $et['descrizione'] = sanitize_string($et['descrizione']);
-  $et['categoria'] = sanitize_string($et['categoria']);
-}
-unset($et);
+$movimento['tipo_gruppo_label'] = tipo_label($movimento['tipo_gruppo'] ?? '');
 
 include 'includes/header.php';
 ?>
@@ -100,6 +136,7 @@ include 'includes/header.php';
       <span>Gruppo</span>
       <span>
         <?= htmlspecialchars($movimento['gruppo_descrizione']) ?>
+        <small>(<?= htmlspecialchars($movimento['categoria_descrizione']) ?> - <?= htmlspecialchars($movimento['tipo_gruppo_label']) ?>)</small>
         <i class="bi bi-pencil ms-2" onclick="openSelectModal('id_gruppo_transazione', <?= $movimento['id_gruppo_transazione'] ?>)"></i>
       </span>
     </li>
@@ -205,7 +242,7 @@ function populateGroups(showInactive) {
   const container = document.getElementById('groupSelectContainer');
   const grouped = {};
   for (let g of gruppi) {
-    if (!showInactive && !g.attivo) continue;
+    if (!showInactive && g.attivo != 1) continue;
     if (!grouped[g.categoria]) grouped[g.categoria] = [];
     grouped[g.categoria].push(g);
   }
@@ -213,7 +250,7 @@ function populateGroups(showInactive) {
   for (let cat in grouped) {
     html += `<optgroup label="${cat}">`;
     for (let g of grouped[cat]) {
-      html += `<option value="${g.id_gruppo_transazione}" ${g.id_gruppo_transazione == currentGroupId ? 'selected' : ''}>${g.descrizione}</option>`;
+      html += `<option value="${g.id_gruppo_transazione}" ${g.id_gruppo_transazione == currentGroupId ? 'selected' : ''}>${g.descrizione} (${g.tipo_label})</option>`;
     }
     html += '</optgroup>';
   }
@@ -228,7 +265,7 @@ function renderEtichetteList() {
   const selected = new Set(Array.from(list.querySelectorAll('input:checked')).map(e => e.value));
   list.innerHTML = '';
   for (let e of etichette) {
-    if (!mostraVecchie && !e.attivo) continue;
+    if (!mostraVecchie && e.attivo != 1) continue;
     if (filtroEtichette && !e.descrizione.toLowerCase().includes(filtroEtichette)) continue;
     const div = document.createElement('div');
     div.className = 'form-check';
