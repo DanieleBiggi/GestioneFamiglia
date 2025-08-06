@@ -33,7 +33,7 @@ while ($row = $res->fetch_assoc()) {
 }
 
 function sanitize_string($str) {
-  $str = mb_convert_encoding($str, 'UTF-8', 'UTF-8'); // fornisce una conversione robusta
+  $str = mb_convert_encoding($str, 'UTF-8', 'UTF-8'); // normalizza la stringa in UTF-8
   $str = preg_replace('/[\x00-\x1F\x7F]/u', '', $str); // rimuove caratteri di controllo
   return $str;
 }
