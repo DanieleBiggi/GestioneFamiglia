@@ -2,12 +2,17 @@
 <?php
 include 'includes/db.php';
 include 'includes/header.php';
+?>
 
+<input type="text" id="search" class="form-control bg-dark text-white border-secondary mb-3" placeholder="Cerca nei movimenti">
+<div id="searchResults"></div>
+
+<?php
 $sql = "SELECT * FROM v_movimenti_revolut ORDER BY started_date DESC LIMIT 5";
 $result = $conn->query($sql);
 
 if ($result->num_rows > 0): ?>
-  <div class="list-group">
+  <div id="recentMovimenti" class="list-group">
     <?php while($row = $result->fetch_assoc()): ?>
       <a href="dettaglio.php?id=<?= $row['id_movimento_revolut'] ?>" class="list-group-item shadow-sm text-white text-decoration-none">
         <div class="d-flex justify-content-between">
@@ -31,7 +36,7 @@ if ($result->num_rows > 0): ?>
   </div>
 <?php else: ?>
   <p class="text-center text-muted">Nessun movimento presente.</p>
-<?php endif;
+<?php endif; ?>
 
-include 'includes/footer.php';
-?>
+<script src="js/index.js"></script>
+<?php include 'includes/footer.php'; ?>
