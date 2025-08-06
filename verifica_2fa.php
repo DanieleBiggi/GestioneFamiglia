@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['utente_id'] = $_SESSION['2fa_user_id'];
         $_SESSION['utente_nome'] = $_SESSION['2fa_user_nome'];
         unset($_SESSION['2fa_user_id'], $_SESSION['2fa_user_nome'], $_SESSION['2fa_attempts']);
-        header('Location: index.php');
+        header('Location: setup_passcode.php');
         exit;
     } else {
         if ($_SESSION['2fa_attempts'] >= 5) {
