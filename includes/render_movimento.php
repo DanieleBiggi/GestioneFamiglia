@@ -93,10 +93,14 @@ function render_movimento(array $mov) {
         echo '    <div class="mt-1">';
         foreach (explode(',', $mov['etichette']) as $tag) {
             $tag = trim($tag);
+
             echo '      <a href="etichetta.php?etichetta=' . urlencode($tag) . '" class="badge-etichetta me-1" onclick="event.stopPropagation();">' . htmlspecialchars($tag) . '</a>';
+
         }
         echo '    </div>';
     }
     echo '  </div>';
+
     echo '</div>';
+
 }
