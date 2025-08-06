@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout codice sorgente
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Crea archivio ZIP
         run: |
@@ -19,7 +19,7 @@ jobs:
           zip -r output/site.zip . -x ".git/*" ".github/*" "README.md"
 
       - name: Salva ZIP come artefatto
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sito-pronto-per-deploy
           path: output/Gestionale25.zip
