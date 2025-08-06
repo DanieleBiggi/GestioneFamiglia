@@ -13,11 +13,9 @@ jobs:
       - name: Checkout codice sorgente
         uses: actions/checkout@v3
 
-      - name: Crea archivio ZIP
-        run: zip -r Gestionale25.zip . -x ".git/*" ".github/*" "README.md"
-
-      - name: Salva ZIP come artefatto
+      - name: Salva artefatto come ZIP
         uses: actions/upload-artifact@v4
         with:
           name: Gestionale25
-          path: Gestionale25.zip
+          path: ./
+          if-no-files-found: error
