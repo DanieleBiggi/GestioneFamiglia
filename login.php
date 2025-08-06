@@ -16,7 +16,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if ($res->num_rows == 1) {
         $user = $res->fetch_assoc();
-        if ($user["password"] === md5($password)) {
+        $stored = $user["password"];
+
+        $valid = password_verify($password, $stored) || $stored === md5($password);
+
+        if ($valid) {
+            if ($stored === md5($password) || password_needs_rehash($stored, PASSWORD_DEFAULT)) {
+                $newHash = password_hash($password, PASSWORD_DEFAULT);
+                $upd = $conn->prepare("UPDATE utenti SET password = ? WHERE id = ?");
+                $upd->bind_param("si", $newHash, $user["id"]);
+                $upd->execute();
+            }
+
             $_SESSION["utente_id"] = $user["id"];
             $_SESSION["utente_nome"] = $user["nome"];
             header("Location: index.php");
