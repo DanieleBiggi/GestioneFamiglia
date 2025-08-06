@@ -7,6 +7,21 @@ include 'includes/db.php';
 
 $error = "";
 
+if (isset($_COOKIE['device_token'])) {
+    $token = $_COOKIE['device_token'];
+    $stmt = $conn->prepare("SELECT user_agent, ip FROM dispositivi_riconosciuti WHERE token_dispositivo = ? AND scadenza >= NOW() LIMIT 1");
+    $stmt->bind_param("s", $token);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    if ($res->num_rows === 1) {
+        $row = $res->fetch_assoc();
+        if (($row['user_agent'] ?? '') === ($_SERVER['HTTP_USER_AGENT'] ?? '') && ($row['ip'] ?? '') === ($_SERVER['REMOTE_ADDR'] ?? '')) {
+            header('Location: login_passcode.php');
+            exit;
+        }
+    }
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = trim($_POST["username"]);
     $password = trim($_POST["password"]);
