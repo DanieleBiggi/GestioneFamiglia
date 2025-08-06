@@ -161,7 +161,10 @@ include 'includes/header.php';
 const etichette = <?= json_encode($etichette, JSON_UNESCAPED_UNICODE) ?>;
 const gruppi = <?= json_encode($gruppi, JSON_UNESCAPED_UNICODE) ?>;
 const idMovimento = <?= (int)$id ?>;
+
 let currentGroupId;
+let mostraVecchie = false;
+let filtroEtichette = '';
 
 function openModal(field, value) {
   document.getElementById('fieldName').value = field;
@@ -197,6 +200,7 @@ function openSelectModal(field, selectedId) {
   new bootstrap.Modal(document.getElementById('editModal')).show();
 }
 
+
 function populateGroups(showInactive) {
   const container = document.getElementById('groupSelectContainer');
   const grouped = {};
@@ -218,20 +222,41 @@ function populateGroups(showInactive) {
   container.querySelector('select').addEventListener('change', e => currentGroupId = e.target.value);
 }
 
-function openEtichetteModal() {
+function renderEtichetteList() {
+
   const list = document.getElementById('etichetteList');
+  const selected = new Set(Array.from(list.querySelectorAll('input:checked')).map(e => e.value));
   list.innerHTML = '';
   for (let e of etichette) {
-    if (!e.attivo) continue;
+    if (!mostraVecchie && !e.attivo) continue;
+    if (filtroEtichette && !e.descrizione.toLowerCase().includes(filtroEtichette)) continue;
     const div = document.createElement('div');
     div.className = 'form-check';
     div.innerHTML = `
-      <input class="form-check-input" type="checkbox" id="et_${e.id_etichetta}" value="${e.id_etichetta}">
+      <input class="form-check-input" type="checkbox" id="et_${e.id_etichetta}" value="${e.id_etichetta}" ${selected.has(String(e.id_etichetta)) ? 'checked' : ''}>
       <label class="form-check-label" for="et_${e.id_etichetta}">${e.descrizione}</label>
     `;
     list.appendChild(div);
   }
+}
+
+function openEtichetteModal() {
+  mostraVecchie = false;
+  filtroEtichette = '';
+  document.getElementById('toggleInactive').checked = false;
+  document.querySelector('#etichetteModal input[type="text"]').value = '';
+  renderEtichetteList();
   new bootstrap.Modal(document.getElementById('etichetteModal')).show();
+}
+
+function filterEtichette(value) {
+  filtroEtichette = value.toLowerCase();
+  renderEtichetteList();
+}
+
+function toggleInactiveEtichette() {
+  mostraVecchie = document.getElementById('toggleInactive').checked;
+  renderEtichetteList();
 }
 
 function saveEtichette() {
