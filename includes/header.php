@@ -32,6 +32,11 @@
         </a>
       </li>
       <li class="mb-3">
+        <a href="/Gestionale25/etichette_lista.php" class="btn btn-outline-light w-100 text-start">
+          🏷️ Etichette
+        </a>
+      </li>
+      <li class="mb-3">
         <a href="/Gestionale25/change_password.php" class="btn btn-outline-light w-100 text-start">
           🔑 Cambia Password
         </a>
