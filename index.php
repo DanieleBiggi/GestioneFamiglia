@@ -1,6 +1,7 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
 include 'includes/db.php';
+require_once 'includes/render_movimento.php';
 include 'includes/header.php';
 ?>
 
@@ -8,26 +9,38 @@ include 'includes/header.php';
 <div id="searchResults"></div>
 
 <?php
-$sql = "SELECT * FROM v_movimenti_revolut ORDER BY started_date DESC LIMIT 5";
+$sql = "SELECT * FROM (
+            SELECT id_movimento_revolut AS id, COALESCE(NULLIF(descrizione_extra,''), description) AS descrizione,
+                   descrizione_extra, started_date AS data_operazione, amount,
+                   etichette, id_gruppo_transazione, 'revolut' AS source, 'movimenti_revolut' AS tabella
+            FROM v_movimenti_revolut
+            UNION ALL
+            SELECT be.id_entrata AS id, be.descrizione_operazione AS descrizione, be.descrizione_extra,
+                   be.data_operazione, be.importo AS amount,
+                   (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
+                      FROM bilancio_etichette2operazioni eo
+                      JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
+                     WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette,
+                   be.id_gruppo_transazione, 'ca' AS source, 'bilancio_entrate' AS tabella
+            FROM bilancio_entrate be
+            UNION ALL
+            SELECT bu.id_uscita AS id, bu.descrizione_operazione AS descrizione, bu.descrizione_extra,
+                   bu.data_operazione, -bu.importo AS amount,
+                   (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
+                      FROM bilancio_etichette2operazioni eo
+                      JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
+                     WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette,
+                   bu.id_gruppo_transazione, 'ca' AS source, 'bilancio_uscite' AS tabella
+            FROM bilancio_uscite bu
+        ) t
+        ORDER BY data_operazione DESC LIMIT 5";
+
 $result = $conn->query($sql);
 
-if ($result->num_rows > 0): ?>
+if ($result && $result->num_rows > 0): ?>
   <div id="recentMovimenti" class="list-group">
     <?php while($row = $result->fetch_assoc()): ?>
-      <a href="dettaglio.php?id=<?= $row['id_movimento_revolut'] ?>" class="list-group-item shadow-sm text-white text-decoration-none">
-        <div class="d-flex justify-content-between">
-          <div>
-            <strong><?= htmlspecialchars($row['descrizione_extra'] ?: $row['description']) ?></strong><br>
-            <small><?= date('d/m/Y H:i', strtotime($row['started_date'])) ?></small><br>
-            <?php if (!empty($row['etichette'])): ?>
-              <span class="badge-etichetta"><?= htmlspecialchars($row['etichette']) ?></span>
-            <?php endif; ?>
-          </div>
-          <div class="fs-5 text-end">
-            <?= number_format($row['amount'], 2, ',', '.') ?> €
-          </div>
-        </div>
-      </a>
+      <?php render_movimento($row); ?>
     <?php endwhile; ?>
   </div>
 
