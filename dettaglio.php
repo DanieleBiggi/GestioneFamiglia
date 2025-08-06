@@ -45,16 +45,16 @@ unset($et);
 
 // Gruppi transazione
 $gruppi = [];
-$res2 = $conn->query("SELECT id_gruppo_transazione, descrizione FROM bilancio_gruppi_transazione ORDER BY descrizione");
+$res2 = $conn->query("SELECT id_gruppo_transazione, descrizione, categoria, attivo FROM bilancio_gruppi_transazione ORDER BY categoria, descrizione");
 while ($row = $res2->fetch_assoc()) {
   $gruppi[] = $row;
 }
 
-
 foreach ($gruppi as &$et) {
   $et['descrizione'] = sanitize_string($et['descrizione']);
+  $et['categoria'] = sanitize_string($et['categoria']);
 }
-unset($et); 
+unset($et);
 
 include 'includes/header.php';
 ?>
@@ -159,7 +159,9 @@ include 'includes/header.php';
 
 <script>
 const etichette = <?= json_encode($etichette, JSON_UNESCAPED_UNICODE) ?>;
+const gruppi = <?= json_encode($gruppi, JSON_UNESCAPED_UNICODE) ?>;
 const idMovimento = <?= (int)$id ?>;
+let currentGroupId;
 
 function openModal(field, value) {
   document.getElementById('fieldName').value = field;
@@ -180,15 +182,40 @@ function saveField(event) {
 }
 
 function openSelectModal(field, selectedId) {
-  const options = <?= json_encode($gruppi, JSON_UNESCAPED_UNICODE) ?>;
-  let html = '<select id="selectGroup" class="form-select">';
-  for (let o of options) {
-    html += `<option value="${o.id_gruppo_transazione}" ${o.id_gruppo_transazione == selectedId ? 'selected' : ''}>${o.descrizione}</option>`;
+  currentGroupId = selectedId;
+  const body = document.querySelector('#editModal .modal-body');
+  body.innerHTML = `
+    <div id="groupSelectContainer"></div>
+    <div class="form-check mt-2">
+      <input type="checkbox" class="form-check-input" id="toggleInactiveGroups" onchange="populateGroups(this.checked)">
+      <label class="form-check-label" for="toggleInactiveGroups">Mostra gruppi non attivi</label>
+    </div>
+    <input type="hidden" id="fieldName" value="${field}">
+  `;
+  document.querySelector('#editModal form').onsubmit = saveField;
+  populateGroups(false);
+  new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+
+function populateGroups(showInactive) {
+  const container = document.getElementById('groupSelectContainer');
+  const grouped = {};
+  for (let g of gruppi) {
+    if (!showInactive && !g.attivo) continue;
+    if (!grouped[g.categoria]) grouped[g.categoria] = [];
+    grouped[g.categoria].push(g);
+  }
+  let html = '<select id="fieldValue" class="form-select">';
+  for (let cat in grouped) {
+    html += `<optgroup label="${cat}">`;
+    for (let g of grouped[cat]) {
+      html += `<option value="${g.id_gruppo_transazione}" ${g.id_gruppo_transazione == currentGroupId ? 'selected' : ''}>${g.descrizione}</option>`;
+    }
+    html += '</optgroup>';
   }
   html += '</select>';
-  document.querySelector('#editModal .modal-body').innerHTML = html + `<input type="hidden" id="fieldName" value="${field}">`;
-  document.querySelector('#editModal form').onsubmit = saveField;
-  new bootstrap.Modal(document.getElementById('editModal')).show();
+  container.innerHTML = html;
+  container.querySelector('select').addEventListener('change', e => currentGroupId = e.target.value);
 }
 
 function openEtichetteModal() {
