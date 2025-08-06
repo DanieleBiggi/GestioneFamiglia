@@ -1,6 +1,8 @@
 <?php
 session_start();
-require 'vendor/autoload.php';
+require_once __DIR__ . '/libs/PHPMailer/PHPMailer.php';
+require_once __DIR__ . '/libs/PHPMailer/Exception.php';
+require_once __DIR__ . '/libs/PHPMailer/SMTP.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 include 'includes/db.php';
@@ -55,17 +57,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             try {
                 $mail = new PHPMailer(true);
                 $mail->isSMTP();
-                $mail->Host = getenv('SMTP_HOST');
-                $mail->SMTPAuth = true;
-                $mail->Username = getenv('SMTP_USER');
-                $mail->Password = getenv('SMTP_PASS');
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                $mail->Port = getenv('SMTP_PORT') ?: 587;
+                $mail->Host       = 'smtps.aruba.it'; // con la "s"
+                $mail->SMTPAuth   = true;
+                $mail->Username   = $config['mail_user'];
+                $mail->Password   = $config['mail_pwd'];
+                $mail->SMTPSecure = 'ssl';
+                $mail->Port       = 465;
+            
+                // Aggiungi questa sezione per evitare errori SSL
+                $mail->SMTPOptions = [
+                    'ssl' => [
+                        'verify_peer'       => false,
+                        'verify_peer_name'  => false,
+                        'allow_self_signed' => true,
+                    ]
+                ];
 
-                $mail->setFrom(getenv('SMTP_FROM') ?: 'no-reply@example.com', 'Gestione Famiglia');
+                $mail->setFrom('assistenza@gestionefamiglia.it', 'Gestione Famiglia');
                 $mail->addAddress($user['email'], $user['nome']);
+                $mail->isHTML(true);
                 $mail->Subject = 'Codice di verifica';
-                $mail->Body = "Il tuo codice di verifica è: $code";
+                $mail->Body = '<p>Il tuo codice di verifica &egrave;: <strong>' . $code . '</strong></p>';
                 $mail->send();
 
                 $_SESSION['2fa_user_id'] = $user['id'];
@@ -104,6 +116,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
           <input type="password" name="password" class="form-control" required>
         </div>
         <button type="submit" class="btn btn-primary">Accedi</button>
+        <a href="forgot_password.php" class="btn btn-link text-light">Password dimenticata?</a>
       </form>
     </div>
   </div>

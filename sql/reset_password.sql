@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS reset_password (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  id_utente INT NOT NULL,
+  token VARCHAR(255) NOT NULL,
+  scadenza DATETIME NOT NULL,
+  FOREIGN KEY (id_utente) REFERENCES utenti(id)
+);
