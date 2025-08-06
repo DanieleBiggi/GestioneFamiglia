@@ -37,6 +37,11 @@
         </a>
       </li>
       <li class="mb-3">
+        <a href="/Gestionale25/setup_passcode.php" class="btn btn-outline-light w-100 text-start">
+          🔒 Imposta Passcode
+        </a>
+      </li>
+      <li class="mb-3">
         <a href="/Gestionale" class="btn btn-outline-light w-100 text-start">
           Torna al vecchio
         </a>
