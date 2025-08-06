@@ -1,8 +1,26 @@
 <?php
 session_start();
+require 'vendor/autoload.php';
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 include 'includes/db.php';
 
 $error = "";
+
+if (isset($_COOKIE['device_token'])) {
+    $token = $_COOKIE['device_token'];
+    $stmt = $conn->prepare("SELECT user_agent, ip FROM dispositivi_riconosciuti WHERE token_dispositivo = ? AND scadenza >= NOW() LIMIT 1");
+    $stmt->bind_param("s", $token);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    if ($res->num_rows === 1) {
+        $row = $res->fetch_assoc();
+        if (($row['user_agent'] ?? '') === ($_SERVER['HTTP_USER_AGENT'] ?? '') && ($row['ip'] ?? '') === ($_SERVER['REMOTE_ADDR'] ?? '')) {
+            header('Location: login_passcode.php');
+            exit;
+        }
+    }
+}
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = trim($_POST["username"]);
@@ -28,10 +46,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $upd->execute();
             }
 
-            $_SESSION["utente_id"] = $user["id"];
-            $_SESSION["utente_nome"] = $user["nome"];
-            header("Location: index.php");
-            exit;
+            $code = str_pad((string)rand(0, 999999), 6, '0', STR_PAD_LEFT);
+            $expires = date('Y-m-d H:i:s', time() + 300);
+            $ins = $conn->prepare("INSERT INTO codici_2fa (id_utente, codice, scadenza) VALUES (?, ?, ?)");
+            $ins->bind_param("iss", $user["id"], $code, $expires);
+            $ins->execute();
+
+            try {
+                $mail = new PHPMailer(true);
+                $mail->isSMTP();
+                $mail->Host = getenv('SMTP_HOST');
+                $mail->SMTPAuth = true;
+                $mail->Username = getenv('SMTP_USER');
+                $mail->Password = getenv('SMTP_PASS');
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port = getenv('SMTP_PORT') ?: 587;
+
+                $mail->setFrom(getenv('SMTP_FROM') ?: 'no-reply@example.com', 'Gestione Famiglia');
+                $mail->addAddress($user['email'], $user['nome']);
+                $mail->Subject = 'Codice di verifica';
+                $mail->Body = "Il tuo codice di verifica è: $code";
+                $mail->send();
+
+                $_SESSION['2fa_user_id'] = $user['id'];
+                $_SESSION['2fa_user_nome'] = $user['nome'];
+                $_SESSION['2fa_attempts'] = 0;
+                header("Location: verifica_2fa.php");
+                exit;
+            } catch (Exception $e) {
+                $error = "Errore nell'invio del codice.";
+            }
         } else {
             $error = "Password errata.";
         }
