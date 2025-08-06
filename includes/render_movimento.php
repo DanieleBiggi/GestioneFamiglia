@@ -3,7 +3,6 @@ function render_movimento(array $mov) {
     global $conn;
 
     $importo = number_format($mov['amount'], 2, ',', '.');
-
     $dataOra  = date('d/m/Y H:i', strtotime($mov['data_operazione']));
 
     // Determine icon based on source
@@ -18,31 +17,71 @@ function render_movimento(array $mov) {
     echo '    <div class="small">' . $dataOra . '</div>';
 
     // Quote per utente se presenti
-    $stmtU = $conn->prepare("SELECT u.nome, u.cognome, ue.importo_utente, ue.utente_pagante, ue.saldata
-                              FROM bilancio_utenti2operazioni_etichettate ue
-                              JOIN utenti u ON u.id_utente = ue.id_utente
-                             WHERE ue.id_tabella = ? AND ue.tabella_operazione = ?");
+    $stmtU = $conn->prepare(
+        "SELECT e2o.id_e2o, e2o.importo AS importo_e2o, u.id_utente, u.nome, u.cognome,
+                u2o.importo_utente, u2o.utente_pagante, u2o.saldata
+           FROM bilancio_etichette2operazioni e2o
+           JOIN bilancio_utenti2operazioni_etichettate u2o ON u2o.id_e2o = e2o.id_e2o
+           JOIN utenti u ON u.id_utente = u2o.id_utente
+          WHERE e2o.id_tabella = ? AND e2o.tabella_operazione = ?"
+    );
     $stmtU->bind_param('is', $mov['id'], $mov['tabella']);
     if ($stmtU->execute()) {
         $resU = $stmtU->get_result();
-        $users = $resU->fetch_all(MYSQLI_ASSOC);
-        if ($users) {
-            $count = count($users);
-            $total = abs($mov['amount']);
-            foreach ($users as &$u) {
-                if ($u['importo_utente'] === null) {
-                    $u['importo_utente'] = $total / $count;
+        $groups = [];
+        while ($row = $resU->fetch_assoc()) {
+            $idE2o = $row['id_e2o'];
+            if (!isset($groups[$idE2o])) {
+                $groups[$idE2o] = [
+                    'total' => $row['importo_e2o'] !== null ? (float)$row['importo_e2o'] : abs($mov['amount']),
+                    'rows'  => []
+                ];
+            }
+            $groups[$idE2o]['rows'][] = $row;
+        }
+
+        if ($groups) {
+            $perUser = [];
+            foreach ($groups as $g) {
+                $rows  = $g['rows'];
+                $total = $g['total'];
+                $count = count($rows);
+                foreach ($rows as $r) {
+                    $imp = $r['importo_utente'];
+                    if ($imp === null) {
+                        $imp = $total / $count;
+                    }
+                    $uid = $r['id_utente'];
+                    if (!isset($perUser[$uid])) {
+                        $perUser[$uid] = [
+                            'nome'    => $r['nome'],
+                            'cognome' => $r['cognome'],
+                            'importo' => 0,
+                            'pagante' => false,
+                            'saldata' => true
+                        ];
+                    }
+                    $perUser[$uid]['importo'] += $imp;
+                    if ($r['utente_pagante']) {
+                        $perUser[$uid]['pagante'] = true;
+                    }
+                    if (!$r['saldata']) {
+                        $perUser[$uid]['saldata'] = false;
+                    }
                 }
             }
-            echo '    <div class="mt-1">';
-            foreach ($users as $u) {
-                $name = htmlspecialchars(trim(($u['nome'] ?? '') . ' ' . ($u['cognome'] ?? '')));
-                $amt  = number_format($u['importo_utente'], 2, ',', '.');
-                $class = $u['utente_pagante'] ? 'badge bg-success' : 'badge bg-secondary';
-                $status = $u['saldata'] ? '✔' : '✖';
-                echo "<span class='" . $class . " me-1'>$name $amt € $status</span>";
+
+            if ($perUser) {
+                echo '    <div class="mt-1">';
+                foreach ($perUser as $u) {
+                    $name = htmlspecialchars(trim(($u['nome'] ?? '') . ' ' . ($u['cognome'] ?? '')));
+                    $amt  = number_format($u['importo'], 2, ',', '.');
+                    $class = $u['pagante'] ? 'badge bg-success' : 'badge bg-secondary';
+                    $status = $u['saldata'] ? '✔' : '✖';
+                    echo "<span class='" . $class . " me-1'>$name $amt € $status</span>";
+                }
+                echo '    </div>';
             }
-            echo '    </div>';
         }
     }
     $stmtU->close();
