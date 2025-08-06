@@ -14,12 +14,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Crea archivio ZIP
-        run: |
-          mkdir output
-          zip -r output/Gestionale25.zip . -x ".git/*" ".github/*" "README.md"
+        run: zip -r Gestionale25.zip . -x ".git/*" ".github/*" "README.md"
 
       - name: Salva ZIP come artefatto
         uses: actions/upload-artifact@v4
         with:
-          name: sito-pronto-per-deploy
-          path: output/Gestionale25.zip
+          name: Gestionale25
+          path: Gestionale25.zip
