@@ -7,19 +7,27 @@ $error = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $id = $_SESSION["utente_id"];
-    $old = md5($_POST["old_password"]);
-    $new = md5($_POST["new_password"]);
-    $check = $conn->prepare("SELECT * FROM utenti WHERE id = ? AND password = ?");
-    $check->bind_param("is", $id, $old);
+    $old = $_POST["old_password"];
+    $new = $_POST["new_password"];
+
+    $check = $conn->prepare("SELECT password FROM utenti WHERE id = ?");
+    $check->bind_param("i", $id);
     $check->execute();
     $res = $check->get_result();
+
     if ($res->num_rows === 1) {
-        $update = $conn->prepare("UPDATE utenti SET password = ? WHERE id = ?");
-        $update->bind_param("si", $new, $id);
-        $update->execute();
-        $success = "Password cambiata correttamente.";
-    } else {
-        $error = "La vecchia password non è corretta.";
+        $row = $res->fetch_assoc();
+        $current = $row["password"];
+
+        if (password_verify($old, $current) || $current === md5($old)) {
+            $newHash = password_hash($new, PASSWORD_DEFAULT);
+            $update = $conn->prepare("UPDATE utenti SET password = ? WHERE id = ?");
+            $update->bind_param("si", $newHash, $id);
+            $update->execute();
+            $success = "Password cambiata correttamente.";
+        } else {
+            $error = "La vecchia password non è corretta.";
+        }
     }
 }
 ?>
