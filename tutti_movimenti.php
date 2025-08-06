@@ -5,7 +5,16 @@ include 'includes/header.php';
 setlocale(LC_TIME, 'it_IT.UTF-8');
 
 $mesi = [];
-$sql = "SELECT DATE_FORMAT(started_date, '%Y-%m') AS ym, DATE_FORMAT(started_date, '%M %Y') AS mese_label FROM v_movimenti_revolut GROUP BY ym ORDER BY ym ASC";
+$sql = "SELECT DATE_FORMAT(data_operazione, '%Y-%m') AS ym,
+                DATE_FORMAT(data_operazione, '%M %Y') AS mese_label
+         FROM (
+            SELECT started_date AS data_operazione FROM v_movimenti_revolut
+            UNION ALL
+            SELECT data_operazione FROM bilancio_entrate
+            UNION ALL
+            SELECT data_operazione FROM bilancio_uscite
+         ) t
+         GROUP BY ym ORDER BY ym ASC";
 $result = $conn->query($sql);
 while ($row = $result->fetch_assoc()) {
     $mesi[] = $row;
