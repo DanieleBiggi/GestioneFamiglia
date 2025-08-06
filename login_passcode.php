@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $upd = $conn->prepare('UPDATE dispositivi_riconosciuti SET scadenza = ? WHERE token_dispositivo = ?');
             $upd->bind_param('ss', $newExp, $token);
             $upd->execute();
-            header('Location: index.php');
+            header('Location: setup_passcode.php');
             exit;
         }
     }
