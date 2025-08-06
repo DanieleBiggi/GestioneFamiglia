@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Mostra IP GitHub Actions
+        run: curl ifconfig.me
       - name: Checkout codice sorgente
         uses: actions/checkout@v3
 
