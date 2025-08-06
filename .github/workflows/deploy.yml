@@ -18,8 +18,8 @@ jobs:
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
+          server: ftp.danielebiggi.it
+          username: 8682107@aruba.it
+          password: Lelele0521
           server-dir: /www.gestionefamiglia.it/Gestionale25/  # o la tua cartella corretta
           local-dir: ./              # cartella locale da caricare
