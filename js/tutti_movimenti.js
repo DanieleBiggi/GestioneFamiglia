@@ -1,23 +1,54 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const buttons = document.querySelectorAll('.months-scroll button');
+    const buttons = Array.from(document.querySelectorAll('.months-scroll button'));
     if (!buttons.length) return;
 
-    const loadMovimenti = (mese, clickedBtn) => {
-        buttons.forEach(btn => btn.classList.remove('active'));
-        clickedBtn.classList.add('active');
+    const monthsContainer = document.getElementById('monthsContainer');
+    monthsContainer.scrollLeft = monthsContainer.scrollWidth;
 
-        fetch(`ajax/load_movimenti_mese.php?mese=${encodeURIComponent(mese)}`)
-            .then(resp => resp.text())
+    const mesi = buttons.map(btn => btn.dataset.mese);
+    const movimenti = document.getElementById('movimenti');
+    let minIdx = mesi.length - 1;
+    let maxIdx = mesi.length - 1;
+
+    const loadMovimenti = (idx, mode = 'replace', setActive = true) => {
+        fetch(`ajax/load_movimenti_mese.php?mese=${encodeURIComponent(mesi[idx])}`)
+            .then(r => r.text())
             .then(html => {
-                document.getElementById('movimenti').innerHTML = html;
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                if (mode === 'append') {
+                    movimenti.insertAdjacentHTML('beforeend', html);
+                } else if (mode === 'prepend') {
+                    movimenti.insertAdjacentHTML('afterbegin', html);
+                } else {
+                    movimenti.innerHTML = html;
+                    window.scrollTo({ top: 0 });
+                }
+                if (setActive) {
+                    buttons.forEach((btn, i) => btn.classList.toggle('active', i === idx));
+                }
             });
     };
 
-    buttons.forEach(btn => {
-        btn.addEventListener('click', () => loadMovimenti(btn.dataset.mese, btn));
+    buttons.forEach((btn, idx) => {
+        btn.addEventListener('click', () => {
+            minIdx = maxIdx = idx;
+            loadMovimenti(idx);
+            btn.scrollIntoView({ inline: 'center', behavior: 'smooth' });
+        });
     });
 
-    // Carica il primo mese all'apertura
-    loadMovimenti(buttons[0].dataset.mese, buttons[0]);
+    loadMovimenti(maxIdx);
+
+    window.addEventListener('scroll', () => {
+        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 50) {
+            if (minIdx > 0) {
+                minIdx--;
+                loadMovimenti(minIdx, 'append', false);
+            }
+        } else if (window.scrollY === 0) {
+            if (maxIdx < mesi.length - 1) {
+                maxIdx++;
+                loadMovimenti(maxIdx, 'prepend', false);
+            }
+        }
+    });
 });
