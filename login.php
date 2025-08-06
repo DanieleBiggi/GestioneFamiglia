@@ -60,7 +60,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $mail->Host = 'smtp.aruba.it';
                 $mail->SMTPAuth = true;
                 $mail->Username = 'postmaster@gestionefamiglia.it';
-                $mail->Password = '***INSERIRE QUI LA PASSWORD***';
+                $mail->Password = 'Lelele0521';
                 $mail->SMTPSecure = 'ssl';
                 $mail->Port = 465;
 
