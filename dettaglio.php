@@ -334,15 +334,25 @@ function openGruppiModal(selectedId) {
 function renderGruppiList() {
   const list = document.getElementById('gruppiList');
   list.innerHTML = '';
+  let currentCat = '';
   for (let g of gruppi) {
     if (!mostraGruppiInattivi && g.attivo != 1) continue;
-    const testo = `${g.descrizione} (${g.categoria} - ${g.tipo_label})`.toLowerCase();
+    const testo = `${g.descrizione} ${g.categoria} ${g.tipo_label}`.toLowerCase();
     if (filtroGruppi && !testo.includes(filtroGruppi)) continue;
+
+    if (g.categoria !== currentCat) {
+      currentCat = g.categoria;
+      const header = document.createElement('div');
+      header.className = 'col-12 fw-bold mt-2';
+      header.textContent = currentCat;
+      list.appendChild(header);
+    }
+
     const div = document.createElement('div');
     div.className = 'col form-check';
     div.innerHTML = `
       <input class="form-check-input" type="radio" name="gruppo" id="gr_${g.id_gruppo_transazione}" value="${g.id_gruppo_transazione}" ${g.id_gruppo_transazione == currentGroupId ? 'checked' : ''}>
-      <label class="form-check-label" for="gr_${g.id_gruppo_transazione}">${g.descrizione} (${g.categoria} - ${g.tipo_label})</label>
+      <label class="form-check-label" for="gr_${g.id_gruppo_transazione}">${g.descrizione}</label>
     `;
     list.appendChild(div);
   }
