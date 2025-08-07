@@ -16,8 +16,8 @@ switch($_POST['azione'] ?? '') {
                 if(isset($_POST['ar_filtri']) && isset($_POST['ar_filtri']['codazi']) && $_POST['ar_filtri']['codazi']>0) {
                     $filtri = 'CODAZI = '.$_POST['ar_filtri']['codazi'];
                 }
-                $SQLinv = <<<SQL
-SELECT TOP 10
+                $SQLinv = 
+"SELECT TOP 10
     CODAZI, CODDIP, COGNOME, NOME, SESSO, convert(varchar, DATANAS, 103) as DATANAS, COMNAS, PRONAS, COMRES, PRORES,
     VIARES, NUMRES,
     CAPRES, COMDOM, PRODOM, VIADOM, NUMDOM, CAPDOM, CITTAD, CODTITSTU, CODFIS, TELEFONO, CODCCNL,
@@ -33,8 +33,7 @@ FROM
 WHERE
     $filtri
 ORDER BY
-    COGNOME ASC
-SQL;
+    COGNOME ASC";
                 $per_aziende = $utility->getDati($SQLinv);
                 $aziende = array();
                 foreach($per_aziende as $azienda) {
