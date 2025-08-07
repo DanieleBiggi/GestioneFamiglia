@@ -244,6 +244,7 @@ $stmtGrp->close();
 ?>
 
 <div class="text-white">
+    <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>    
   <h4 class="mb-3">Movimenti per etichetta: <?= htmlspecialchars($etichetta) ?></h4>
 
   <form method="get" class="mb-3">
