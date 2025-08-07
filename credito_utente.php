@@ -52,31 +52,29 @@ if ($canChangeUser) {
     $stmtList->close();
 }
 
-$sqlMov = "SELECT m.descrizione, m.data_operazione, e.descrizione AS etichetta_descrizione,
-                  CASE WHEN u2o.importo_utente IS NULL THEN (COALESCE(e2o.importo, ABS(m.amount)) / cnt.cnt) ELSE u2o.importo_utente END AS quota,
-                  CASE WHEN u2o.utente_pagante = 1
-                       THEN COALESCE(e2o.importo, ABS(m.amount)) - CASE WHEN u2o.importo_utente IS NULL THEN (COALESCE(e2o.importo, ABS(m.amount)) / cnt.cnt) ELSE u2o.importo_utente END
-                       ELSE -CASE WHEN u2o.importo_utente IS NULL THEN (COALESCE(e2o.importo, ABS(m.amount)) / cnt.cnt) ELSE u2o.importo_utente END
-                  END AS saldo_utente
-           FROM (
-                SELECT id_movimento_revolut AS id, COALESCE(NULLIF(descrizione_extra,''), description) AS descrizione,
-                       started_date AS data_operazione, amount, 'movimenti_revolut' AS tabella
-                FROM v_movimenti_revolut
-                UNION ALL
-                SELECT be.id_entrata AS id, COALESCE(NULLIF(be.descrizione_extra,''), be.descrizione_operazione) AS descrizione,
-                       be.data_operazione, be.importo AS amount, 'bilancio_entrate' AS tabella
-                FROM bilancio_entrate be
-                UNION ALL
-                SELECT bu.id_uscita AS id, COALESCE(NULLIF(bu.descrizione_extra,''), bu.descrizione_operazione) AS descrizione,
-                       bu.data_operazione, -bu.importo AS amount, 'bilancio_uscite' AS tabella
-                FROM bilancio_uscite bu
-           ) m
-           JOIN bilancio_etichette2operazioni e2o ON e2o.id_tabella = m.id AND e2o.tabella_operazione = m.tabella
-           JOIN bilancio_utenti2operazioni_etichettate u2o ON u2o.id_e2o = e2o.id_e2o
-           JOIN bilancio_etichette e ON e.id_etichetta = e2o.id_etichetta
-           JOIN (SELECT id_e2o, COUNT(*) AS cnt FROM bilancio_utenti2operazioni_etichettate GROUP BY id_e2o) cnt ON cnt.id_e2o = e2o.id_e2o
-           WHERE u2o.id_utente = ? AND u2o.saldata = 0 AND e.attivo=1
-           ORDER BY m.data_operazione DESC";
+$sqlMov = "SELECT
+                CONCAT(v.descrizione_operazione, ' (', v.importo_totale_operazione, ')') AS descrizione,
+                v.data_operazione,
+                v.descrizione AS etichetta_descrizione,
+                (CASE
+                    WHEN v.id_utente_operazione = u2o.id_utente THEN -(
+                        CASE
+                            WHEN IFNULL(u2o.importo_utente, 0) <> 0 THEN u2o.importo_utente
+                            WHEN v.importo_etichetta <> 0 THEN (v.importo * u2o.quote)
+                            ELSE (v.importo_totale_operazione - (v.importo * u2o.quote))
+                        END
+                    )
+                    ELSE (
+                        CASE
+                            WHEN IFNULL(u2o.importo_utente, 0) <> 0 THEN u2o.importo_utente
+                            ELSE (v.importo * u2o.quote)
+                        END
+                    )
+                END) AS saldo_utente
+           FROM bilancio_utenti2operazioni_etichettate u2o
+           JOIN v_bilancio_etichette2operazioni_a_testa v ON u2o.id_e2o = v.id_e2o
+           WHERE u2o.id_utente = ? AND u2o.saldata = 0
+           ORDER BY v.data_operazione DESC";
 
 $stmtMov = $conn->prepare($sqlMov);
 $stmtMov->bind_param('i', $idUtente);
@@ -85,7 +83,6 @@ $resMov = $stmtMov->get_result();
 $movimenti = [];
 $saldoTot = 0.0;
 while ($row = $resMov->fetch_assoc()) {
-    $row['quota'] = (float)$row['quota'];
     $row['saldo_utente'] = (float)$row['saldo_utente'];
     $saldoTot += $row['saldo_utente'];
     $movimenti[] = $row;
