@@ -199,7 +199,7 @@ include 'includes/header.php';
       <span>
         <?= htmlspecialchars($movimento['gruppo_descrizione']) ?>
         <small>(<?= htmlspecialchars($movimento['categoria_descrizione']) ?> - <?= htmlspecialchars($movimento['tipo_gruppo_label']) ?>)</small>
-        <i class="bi bi-pencil ms-2" onclick="openSelectModal('id_gruppo_transazione', <?= $movimento['id_gruppo_transazione'] ?>)"></i>
+        <i class="bi bi-pencil ms-2" onclick="openGruppiModal(<?= $movimento['id_gruppo_transazione'] ?>)"></i>
       </span>
     </li>
 
@@ -225,6 +225,32 @@ include 'includes/header.php';
       <div class="modal-body">
         <input type="hidden" id="fieldName">
         <textarea id="fieldValue" class="form-control bg-secondary text-white"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary w-100">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Gruppi modal -->
+<div class="modal fade" id="gruppiModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <form class="modal-content bg-dark text-white" onsubmit="saveField(event)">
+      <div class="modal-header">
+        <h5 class="modal-title">Seleziona gruppo</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex mb-2">
+          <input type="text" class="form-control me-2" placeholder="Cerca..." oninput="filterGruppi(this.value)">
+          <div class="form-check ms-2">
+            <input type="checkbox" class="form-check-input" id="toggleInactiveGruppi" onchange="toggleInactiveGruppi()">
+            <label class="form-check-label" for="toggleInactiveGruppi">Vedi anche disattivi</label>
+          </div>
+        </div>
+        <div id="gruppiList" class="d-flex flex-column gap-2"></div>
+        <input type="hidden" id="groupFieldName" value="id_gruppo_transazione">
       </div>
       <div class="modal-footer">
         <button type="submit" class="btn btn-primary w-100">Salva</button>
@@ -263,6 +289,8 @@ const idMovimento = <?= (int)$id ?>;
 const srcMovimento = <?= json_encode($src) ?>;
 
 let currentGroupId;
+let mostraGruppiInattivi = false;
+let filtroGruppi = '';
 let mostraVecchie = false;
 let filtroEtichette = '';
 
@@ -274,8 +302,15 @@ function openModal(field, value) {
 
 function saveField(event) {
   event.preventDefault();
-  const field = document.getElementById('fieldName').value;
-  const value = document.getElementById('fieldValue').value;
+  const fieldEl = document.getElementById('fieldName') || document.getElementById('groupFieldName');
+  const field = fieldEl ? fieldEl.value : '';
+  let value;
+  if (field === 'id_gruppo_transazione') {
+    const checked = document.querySelector('#gruppiList input[name="gruppo"]:checked');
+    value = checked ? checked.value : null;
+  } else {
+    value = document.getElementById('fieldValue').value;
+  }
 
   fetch('ajax/update_field.php', {
     method: 'POST',
@@ -284,42 +319,41 @@ function saveField(event) {
   }).then(() => location.reload());
 }
 
-function openSelectModal(field, selectedId) {
+function openGruppiModal(selectedId) {
   currentGroupId = selectedId;
-  const body = document.querySelector('#editModal .modal-body');
-  body.innerHTML = `
-    <div id="groupSelectContainer"></div>
-    <div class="form-check mt-2">
-      <input type="checkbox" class="form-check-input" id="toggleInactiveGroups" onchange="populateGroups(this.checked)">
-      <label class="form-check-label" for="toggleInactiveGroups">Mostra gruppi non attivi</label>
-    </div>
-    <input type="hidden" id="fieldName" value="${field}">
-  `;
-  document.querySelector('#editModal form').onsubmit = saveField;
-  populateGroups(false);
-  new bootstrap.Modal(document.getElementById('editModal')).show();
+  mostraGruppiInattivi = false;
+  filtroGruppi = '';
+  document.getElementById('toggleInactiveGruppi').checked = false;
+  document.querySelector('#gruppiModal input[type="text"]').value = '';
+  renderGruppiList();
+  new bootstrap.Modal(document.getElementById('gruppiModal')).show();
 }
 
-
-function populateGroups(showInactive) {
-  const container = document.getElementById('groupSelectContainer');
-  const grouped = {};
+function renderGruppiList() {
+  const list = document.getElementById('gruppiList');
+  list.innerHTML = '';
   for (let g of gruppi) {
-    if (!showInactive && g.attivo != 1) continue;
-    if (!grouped[g.categoria]) grouped[g.categoria] = [];
-    grouped[g.categoria].push(g);
+    if (!mostraGruppiInattivi && g.attivo != 1) continue;
+    const testo = `${g.descrizione} (${g.categoria} - ${g.tipo_label})`.toLowerCase();
+    if (filtroGruppi && !testo.includes(filtroGruppi)) continue;
+    const div = document.createElement('div');
+    div.className = 'form-check';
+    div.innerHTML = `
+      <input class="form-check-input" type="radio" name="gruppo" id="gr_${g.id_gruppo_transazione}" value="${g.id_gruppo_transazione}" ${g.id_gruppo_transazione == currentGroupId ? 'checked' : ''}>
+      <label class="form-check-label" for="gr_${g.id_gruppo_transazione}">${g.descrizione} (${g.categoria} - ${g.tipo_label})</label>
+    `;
+    list.appendChild(div);
   }
-  let html = '<select id="fieldValue" class="form-select">';
-  for (let cat in grouped) {
-    html += `<optgroup label="${cat}">`;
-    for (let g of grouped[cat]) {
-      html += `<option value="${g.id_gruppo_transazione}" ${g.id_gruppo_transazione == currentGroupId ? 'selected' : ''}>${g.descrizione} (${g.tipo_label})</option>`;
-    }
-    html += '</optgroup>';
-  }
-  html += '</select>';
-  container.innerHTML = html;
-  container.querySelector('select').addEventListener('change', e => currentGroupId = e.target.value);
+}
+
+function filterGruppi(value) {
+  filtroGruppi = value.toLowerCase();
+  renderGruppiList();
+}
+
+function toggleInactiveGruppi() {
+  mostraGruppiInattivi = document.getElementById('toggleInactiveGruppi').checked;
+  renderGruppiList();
 }
 
 function renderEtichetteList() {
