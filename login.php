@@ -49,7 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
 
             $_SESSION['2fa_id_famiglia_gestione'] = $user['id_famiglia_gestione'] ?? 0;
-            $code = str_pad((string)rand(0, 999999), 6, '0', STR_PAD_LEFT);
+            $code = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
             $expires = date('Y-m-d H:i:s', time() + 300);
             $ins = $conn->prepare("INSERT INTO codici_2fa (id_utente, codice, scadenza) VALUES (?, ?, ?)");
             $ins->bind_param("iss", $user["id"], $code, $expires);
