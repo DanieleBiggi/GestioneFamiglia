@@ -9,10 +9,10 @@ if ($q === '') {
 }
 
 $like = "%" . $q . "%";
-$sql = "SELECT * FROM (
+ $sql = "SELECT * FROM (
             SELECT id_movimento_revolut AS id, COALESCE(NULLIF(descrizione_extra,''), description) AS descrizione,
                    descrizione_extra, started_date AS data_operazione, amount,
-                   etichette, id_gruppo_transazione, 'revolut' AS source, 'movimenti_revolut' AS tabella
+                   etichette, id_gruppo_transazione, 'revolut' AS source, 'movimenti_revolut' AS tabella, NULL AS mezzo
             FROM v_movimenti_revolut
             UNION ALL
             SELECT be.id_entrata AS id, be.descrizione_operazione AS descrizione, be.descrizione_extra,
@@ -21,7 +21,7 @@ $sql = "SELECT * FROM (
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                      WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette,
-                   be.id_gruppo_transazione, 'ca' AS source, 'bilancio_entrate' AS tabella
+                   be.id_gruppo_transazione, 'ca' AS source, 'bilancio_entrate' AS tabella, be.mezzo
             FROM bilancio_entrate be
             UNION ALL
             SELECT bu.id_uscita AS id, bu.descrizione_operazione AS descrizione, bu.descrizione_extra,
@@ -30,7 +30,7 @@ $sql = "SELECT * FROM (
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                      WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette,
-                   bu.id_gruppo_transazione, 'ca' AS source, 'bilancio_uscite' AS tabella
+                   bu.id_gruppo_transazione, 'ca' AS source, 'bilancio_uscite' AS tabella, bu.mezzo
             FROM bilancio_uscite bu
         ) t
         WHERE descrizione LIKE ? OR descrizione_extra LIKE ? OR id_gruppo_transazione LIKE ? OR etichette LIKE ?

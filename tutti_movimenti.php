@@ -37,6 +37,27 @@ $ultimoIndice = count($mesi) - 1;
         </button>
     <?php endforeach; ?>
 </div>
-<div id="movimenti" class="pb-5 text-white"></div>
-<script src="js/tutti_movimenti.js"></script>
-<?php include 'includes/footer.php'; ?>
+ <div id="movimenti" class="pb-5 text-white"></div>
+
+ <!-- Modal conferma eliminazione -->
+ <div class="modal fade" id="deleteModal" tabindex="-1">
+   <div class="modal-dialog">
+     <div class="modal-content bg-dark text-white">
+       <div class="modal-header">
+         <h5 class="modal-title">Conferma eliminazione</h5>
+         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+       </div>
+       <div class="modal-body">
+         Sei sicuro di voler eliminare questo movimento?
+       </div>
+       <div class="modal-footer">
+         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+         <button type="button" class="btn btn-danger" id="confirmDelete">Elimina</button>
+       </div>
+     </div>
+   </div>
+ </div>
+
+ <script src="js/tutti_movimenti.js"></script>
+ <script src="js/delete_movimento.js"></script>
+ <?php include 'includes/footer.php'; ?>
