@@ -19,8 +19,8 @@ models.elemento_lista =
 '</div>';
 
 models.icona_altro =
-'<div class="d-flex align-items-center ms-sm-4 risultato" style="cursor:pointer" {{valori_chiave}}>'+
-    '&gt;'+
+'<div class="d-flex align-items-center ms-sm-4 risultato p-2" style="cursor:pointer" {{valori_chiave}}>'+
+    '<i class="bi bi-chevron-right fs-3"></i>'+
 '</div>';
 
 models.contenuto_singolo =
