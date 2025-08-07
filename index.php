@@ -6,7 +6,7 @@ include 'includes/header.php';
 
 require_once 'includes/render_movimento.php';
 
-?>
+if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1): ?>
 
 <input type="text" id="search" class="form-control bg-dark text-white border-secondary mb-3" placeholder="Cerca nei movimenti">
 <div id="searchResults"></div>
@@ -56,4 +56,8 @@ if ($result && $result->num_rows > 0): ?>
 <?php endif; ?>
 
 <script src="js/index.js"></script>
+<?php else: ?>
+<p class="text-center text-muted">Movimenti non disponibili per questa famiglia.</p>
+<?php endif; ?>
+
 <?php include 'includes/footer.php'; ?>

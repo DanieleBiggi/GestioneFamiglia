@@ -25,15 +25,36 @@
     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Chiudi"></button>
   </div>
   <div class="offcanvas-body">
+    <?php if (isset($_SESSION['utente_id'])): ?>
+    <form method="post" action="cambia_famiglia.php" class="mb-3">
+      <select name="id_famiglia_gestione" class="form-select bg-dark text-white border-secondary" onchange="this.form.submit()">
+        <?php
+        $stmt = $conn->prepare('SELECT f.id_famiglia, f.nome FROM famiglie f JOIN utenti2famiglie u2f ON f.id_famiglia = u2f.id_famiglia WHERE u2f.id_utente = ?');
+        $stmt->bind_param('i', $_SESSION['utente_id']);
+        $stmt->execute();
+        $resFam = $stmt->get_result();
+        while ($fam = $resFam->fetch_assoc()): ?>
+          <option value="<?= (int)$fam['id_famiglia'] ?>" <?= (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == $fam['id_famiglia']) ? 'selected' : '' ?>><?= htmlspecialchars($fam['nome']) ?></option>
+        <?php endwhile; $stmt->close(); ?>
+      </select>
+    </form>
+    <?php endif; ?>
     <ul class="list-unstyled">
       <li class="mb-3">
         <a href="/Gestionale25/index.php" class="btn btn-outline-light w-100 text-start">
           🏠 Home
         </a>
       </li>
+      <?php if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1): ?>
       <li class="mb-3">
         <a href="/Gestionale25/etichette_lista.php" class="btn btn-outline-light w-100 text-start">
           🏷️ Etichette
+        </a>
+      </li>
+      <?php endif; ?>
+      <li class="mb-3">
+        <a href="/Gestionale25/password.php" class="btn btn-outline-light w-100 text-start">
+          🔐 Password
         </a>
       </li>
       <li class="mb-3">

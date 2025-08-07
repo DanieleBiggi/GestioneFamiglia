@@ -27,7 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $_SESSION['utente_id'] = $_SESSION['2fa_user_id'];
         $_SESSION['utente_nome'] = $_SESSION['2fa_user_nome'];
-        unset($_SESSION['2fa_user_id'], $_SESSION['2fa_user_nome'], $_SESSION['2fa_attempts']);
+        $_SESSION['id_famiglia_gestione'] = $_SESSION['2fa_id_famiglia_gestione'] ?? 0;
+        unset($_SESSION['2fa_user_id'], $_SESSION['2fa_user_nome'], $_SESSION['2fa_attempts'], $_SESSION['2fa_id_famiglia_gestione']);
         header('Location: setup_passcode.php');
         exit;
     } else {
