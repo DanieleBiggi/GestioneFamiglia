@@ -290,7 +290,7 @@ $stmtGrp->close();
 
     <?php if ($movimenti->num_rows > 0): ?>
       <?php while ($mov = $movimenti->fetch_assoc()): ?>
-        <?php render_movimento_etichetta($mov); ?>
+        <?php render_movimento_etichetta($mov,$etichettaInfo['id_etichetta']); ?>
       <?php endwhile; ?>
     <?php else: ?>
       <p class="text-center text-muted">Nessun movimento per questa etichetta.</p>
