@@ -5,26 +5,31 @@ require_once 'includes/render_movimento_etichetta.php';
 include 'includes/header.php';
 setlocale(LC_TIME, 'it_IT.UTF-8');
 
-$etichetta = $_GET['etichetta'] ?? '';
+$etichettaParam = $_GET['etichetta'] ?? '';
 $mese = $_GET['mese'] ?? '';
 $categoria = $_GET['categoria'] ?? '';
+$etichettaInfo = null;
 
-if ($etichetta === '') {
+if ($etichettaParam === '') {
     echo '<p class="text-center text-muted">Nessuna etichetta selezionata.</p>';
     include 'includes/footer.php';
     return;
 }
 
-$stmtId = $conn->prepare("SELECT id_etichetta FROM bilancio_etichette WHERE descrizione = ?");
-$stmtId->bind_param('s', $etichetta);
-$stmtId->execute();
-$id_etichetta = $stmtId->get_result()->fetch_assoc()['id_etichetta'] ?? 0;
-$stmtId->close();
-if (!$id_etichetta) {
+
+$stmtEt = $conn->prepare("SELECT id_etichetta, descrizione, attivo, da_dividere, utenti_tra_cui_dividere FROM bilancio_etichette WHERE descrizione = ?");
+$stmtEt->bind_param('s', $etichettaParam);
+$stmtEt->execute();
+$etichettaInfo = $stmtEt->get_result()->fetch_assoc();
+$stmtEt->close();
+
+if (!$etichettaInfo) {
+
     echo '<p class="text-center text-muted">Etichetta non trovata.</p>';
     include 'includes/footer.php';
     return;
 }
+
 
 // Lista mesi disponibili per questa etichetta
 $mesi = [];
@@ -49,7 +54,7 @@ $sqlM = "SELECT DATE_FORMAT(data_operazione,'%Y-%m') AS ym, DATE_FORMAT(data_ope
           WHERE FIND_IN_SET(?, etichette)
           GROUP BY ym ORDER BY ym DESC";
 $stmtM = $conn->prepare($sqlM);
-$stmtM->bind_param('s', $etichetta);
+$stmtM->bind_param('s', $etichettaInfo);
 $stmtM->execute();
 $resM = $stmtM->get_result();
 while ($row = $resM->fetch_assoc()) {
@@ -256,7 +261,7 @@ $stmtGrp->close();
 
 <div class="text-white">
     <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>    
-  <h4 class="mb-3">Movimenti per etichetta: <?= htmlspecialchars($etichetta) ?></h4>
+  <h4 class="mb-3">Movimenti per etichetta: <span id="etichettaDesc"><?= htmlspecialchars($etichetta) ?></span><i class="bi bi-pencil ms-2" role="button" onclick="openEtichettaModal()"></i></h4>
 
   <form method="get" class="mb-3">
     <input type="hidden" name="etichetta" value="<?= htmlspecialchars($etichetta) ?>">
@@ -327,6 +332,7 @@ $stmtGrp->close();
   <?php endif; ?>
 </div>
 
+
 <!-- Modal modifica etichetta-movimento -->
 <div class="modal fade" id="editE2oModal" tabindex="-1">
   <div class="modal-dialog">
@@ -357,7 +363,43 @@ $stmtGrp->close();
   </div>
 </div>
 
+<!-- Modifica etichetta Modal -->
+<div class="modal fade" id="editEtichettaModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" onsubmit="saveEtichetta(event)">
+      <div class="modal-header">
+        <h5 class="modal-title">Modifica etichetta</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="id_etichetta" value="<?= (int)$etichettaInfo['id_etichetta'] ?>">
+        <div class="mb-3">
+          <label for="descrizione" class="form-label">Descrizione</label>
+          <input type="text" class="form-control bg-secondary text-white" id="descrizione" required>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" id="attivo">
+          <label class="form-check-label" for="attivo">Attivo</label>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" id="da_dividere">
+          <label class="form-check-label" for="da_dividere">Da dividere</label>
+        </div>
+        <div class="mb-3">
+          <label for="utenti_tra_cui_dividere" class="form-label">Utenti tra cui dividere</label>
+          <input type="text" class="form-control bg-secondary text-white" id="utenti_tra_cui_dividere">
+
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary w-100">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
+
 function attachEditHandlers() {
   document.querySelectorAll('.edit-e2o').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -369,7 +411,6 @@ function attachEditHandlers() {
   });
 }
 
-attachEditHandlers();
 
 document.getElementById('editE2oForm').addEventListener('submit', function(e){
   e.preventDefault();
@@ -390,6 +431,45 @@ document.getElementById('editE2oForm').addEventListener('submit', function(e){
       bootstrap.Modal.getInstance(document.getElementById('editE2oModal')).hide();
     });
 });
+
+  const etichettaData = {
+    id: <?= (int)$etichettaInfo['id_etichetta'] ?>,
+    descrizione: <?= json_encode($etichettaInfo['descrizione']) ?>,
+    attivo: <?= (int)($etichettaInfo['attivo'] ?? 0) ?>,
+    da_dividere: <?= (int)($etichettaInfo['da_dividere'] ?? 0) ?>,
+    utenti: <?= json_encode($etichettaInfo['utenti_tra_cui_dividere'] ?? '') ?>
+  };
+
+  function openEtichettaModal() {
+    document.getElementById('descrizione').value = etichettaData.descrizione;
+    document.getElementById('attivo').checked = etichettaData.attivo == 1;
+    document.getElementById('da_dividere').checked = etichettaData.da_dividere == 1;
+    document.getElementById('utenti_tra_cui_dividere').value = etichettaData.utenti || '';
+    new bootstrap.Modal(document.getElementById('editEtichettaModal')).show();
+  }
+
+  function saveEtichetta(event) {
+    event.preventDefault();
+    const payload = {
+      id_etichetta: etichettaData.id,
+      descrizione: document.getElementById('descrizione').value.trim(),
+      attivo: document.getElementById('attivo').checked ? 1 : 0,
+      da_dividere: document.getElementById('da_dividere').checked ? 1 : 0,
+      utenti_tra_cui_dividere: document.getElementById('utenti_tra_cui_dividere').value.trim()
+    };
+    fetch('ajax/update_etichetta.php', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    }).then(r => r.json()).then(resp => {
+      if (resp.success) {
+        window.location.href = 'etichetta.php?etichetta=' + encodeURIComponent(payload.descrizione);
+      } else {
+        alert(resp.error || 'Errore nel salvataggio');
+      }
+    });
+  }
+
 </script>
 
 <?php include 'includes/footer.php'; ?>
