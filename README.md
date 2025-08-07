@@ -21,6 +21,7 @@ return [
     'pass' => 'password',
     'name' => 'database',
 ];
+?>
 ```
 
 Il file `includes/db_config.php` è già incluso in `.gitignore` per evitare che le credenziali finiscano nel repository.
