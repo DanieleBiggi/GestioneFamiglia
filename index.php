@@ -18,7 +18,7 @@ $sql = "SELECT * FROM (
                    etichette, id_gruppo_transazione, 'revolut' AS source, 'movimenti_revolut' AS tabella
             FROM v_movimenti_revolut
             UNION ALL
-            SELECT be.id_entrata AS id, be.descrizione_operazione AS descrizione, be.descrizione_extra,
+            SELECT be.id_entrata AS id, COALESCE(NULLIF(be.descrizione_extra,''), be.descrizione_operazione) AS descrizione, be.descrizione_extra,
                    be.data_operazione, be.importo AS amount,
                    (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
                       FROM bilancio_etichette2operazioni eo
@@ -27,7 +27,7 @@ $sql = "SELECT * FROM (
                    be.id_gruppo_transazione, 'ca' AS source, 'bilancio_entrate' AS tabella
             FROM bilancio_entrate be
             UNION ALL
-            SELECT bu.id_uscita AS id, bu.descrizione_operazione AS descrizione, bu.descrizione_extra,
+            SELECT bu.id_uscita AS id, COALESCE(NULLIF(bu.descrizione_extra,''), bu.descrizione_operazione) AS descrizione, bu.descrizione_extra,
                    bu.data_operazione, -bu.importo AS amount,
                    (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
                       FROM bilancio_etichette2operazioni eo
