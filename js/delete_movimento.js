@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.addEventListener('click', e => {
         const icon = e.target.closest('.delete-movimento');
         if (!icon) return;
+        e.stopPropagation();
+        e.preventDefault();
         const movement = icon.closest('.movement');
         if (!movement) return;
         target = {
@@ -15,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
             element: movement
         };
         modal.show();
-    });
+    }, true);
 
     document.getElementById('confirmDelete').addEventListener('click', () => {
         if (!target) return;
