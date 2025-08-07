@@ -58,19 +58,17 @@
         </a>
       </li>
       <li class="mb-3">
-        <a href="/Gestionale25/change_password.php" class="btn btn-outline-light w-100 text-start">
-          🔑 Cambia Password
-        </a>
-      </li>
-      <li class="mb-3">
-        <a href="/Gestionale25/setup_passcode.php" class="btn btn-outline-light w-100 text-start">
-          🔒 Imposta Passcode
-        </a>
-      </li>
-      <li class="mb-3">
-        <a href="/Gestionale" class="btn btn-outline-light w-100 text-start">
-          Torna al vecchio
-        </a>
+        <div class="dropdown w-100">
+          <button class="btn btn-outline-light w-100 text-start dropdown-toggle"
+                  data-bs-toggle="dropdown" aria-expanded="false">
+            🔐 Sicurezza
+          </button>
+          <ul class="dropdown-menu dropdown-menu-dark w-100">
+            <li><a class="dropdown-item text-white" href="/Gestionale25/change_password.php">🔑 Cambia Password</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/setup_passcode.php">🔒 Imposta Passcode</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale">Torna al vecchio</a></li>
+          </ul>
+        </div>
       </li>
       <li>
         <a href="/Gestionale25/logout.php" class="btn btn-outline-danger w-100 text-start">
