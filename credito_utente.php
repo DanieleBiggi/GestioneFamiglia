@@ -1,5 +1,8 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once 'includes/db.php';
 include 'includes/header.php';
 setlocale(LC_TIME, 'it_IT.UTF-8');
@@ -9,11 +12,8 @@ $loggedUserId = $_SESSION['utente_id'] ?? 0;
 $famigliaId   = $_SESSION['id_famiglia_gestione'] ?? 0;
 
 // Verifica permessi dell'utente loggato per cambiare utente
-$stmtPerm = $conn->prepare('SELECT COALESCE(u2f.userlevelid, u.userlevelid) AS lvl, u.admin
-                            FROM utenti u
-                            LEFT JOIN utenti2famiglie u2f ON u2f.id_utente = u.id AND u2f.id_famiglia = ?
-                            WHERE u.id = ?');
-$stmtPerm->bind_param('ii', $famigliaId, $loggedUserId);
+$stmtPerm = $conn->prepare('SELECT u.userlevelid AS lvl, u.admin FROM utenti u WHERE u.id = ?');
+$stmtPerm->bind_param('i', $loggedUserId);
 $stmtPerm->execute();
 $perm = $stmtPerm->get_result()->fetch_assoc();
 $stmtPerm->close();
@@ -28,9 +28,9 @@ if ($idUtente !== $loggedUserId && !$canChangeUser) {
 // Dati utente selezionato (all'interno della famiglia)
 $stmtU = $conn->prepare('SELECT u.id, u.nome, u.cognome
                          FROM utenti u
-                         JOIN utenti2famiglie u2f ON u.id = u2f.id_utente
-                         WHERE u.id = ? AND u2f.id_famiglia = ?');
-$stmtU->bind_param('ii', $idUtente, $famigliaId);
+                         WHERE u.id = ?');
+                         $stmtU->bind_param('i', $idUtente);
+
 $stmtU->execute();
 $utente = $stmtU->get_result()->fetch_assoc();
 $stmtU->close();
@@ -46,10 +46,7 @@ $utentiFam = [];
 if ($canChangeUser) {
     $stmtList = $conn->prepare('SELECT u.id, u.nome, u.cognome
                                  FROM utenti u
-                                 JOIN utenti2famiglie u2f ON u.id = u2f.id_utente
-                                 WHERE u2f.id_famiglia = ?
                                  ORDER BY u.nome');
-    $stmtList->bind_param('i', $famigliaId);
     $stmtList->execute();
     $utentiFam = $stmtList->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmtList->close();
@@ -78,7 +75,7 @@ $sqlMov = "SELECT m.descrizione, m.data_operazione, e.descrizione AS etichetta_d
            JOIN bilancio_utenti2operazioni_etichettate u2o ON u2o.id_e2o = e2o.id_e2o
            JOIN bilancio_etichette e ON e.id_etichetta = e2o.id_etichetta
            JOIN (SELECT id_e2o, COUNT(*) AS cnt FROM bilancio_utenti2operazioni_etichettate GROUP BY id_e2o) cnt ON cnt.id_e2o = e2o.id_e2o
-           WHERE u2o.id_utente = ? AND u2o.saldata = 0
+           WHERE u2o.id_utente = ? AND u2o.saldata = 0 AND e.attivo=1
            ORDER BY m.data_operazione DESC";
 
 $stmtMov = $conn->prepare($sqlMov);
