@@ -4,15 +4,33 @@ require_once 'includes/db.php';
 include 'includes/header.php';
 setlocale(LC_TIME, 'it_IT.UTF-8');
 
-$idUtente = $_GET['id_utente'] ?? '';
-if ($idUtente === '') {
-    echo '<p class="text-center text-muted">Nessun utente selezionato.</p>';
-    include 'includes/footer.php';
-    return;
+// Utente loggato e famiglia corrente
+$loggedUserId = $_SESSION['utente_id'] ?? 0;
+$famigliaId   = $_SESSION['id_famiglia_gestione'] ?? 0;
+
+// Verifica permessi dell'utente loggato per cambiare utente
+$stmtPerm = $conn->prepare('SELECT COALESCE(u2f.userlevelid, u.userlevelid) AS lvl, u.admin
+                            FROM utenti u
+                            LEFT JOIN utenti2famiglie u2f ON u2f.id_utente = u.id AND u2f.id_famiglia = ?
+                            WHERE u.id = ?');
+$stmtPerm->bind_param('ii', $famigliaId, $loggedUserId);
+$stmtPerm->execute();
+$perm = $stmtPerm->get_result()->fetch_assoc();
+$stmtPerm->close();
+$canChangeUser = (($perm['admin'] ?? 0) == 1) || (($perm['lvl'] ?? 0) >= 2);
+
+// Utente da visualizzare
+$idUtente = isset($_GET['id_utente']) ? (int)$_GET['id_utente'] : $loggedUserId;
+if ($idUtente !== $loggedUserId && !$canChangeUser) {
+    $idUtente = $loggedUserId;
 }
 
-$stmtU = $conn->prepare("SELECT id, nome, cognome FROM utenti WHERE id = ?");
-$stmtU->bind_param('i', $idUtente);
+// Dati utente selezionato (all'interno della famiglia)
+$stmtU = $conn->prepare('SELECT u.id, u.nome, u.cognome
+                         FROM utenti u
+                         JOIN utenti2famiglie u2f ON u.id = u2f.id_utente
+                         WHERE u.id = ? AND u2f.id_famiglia = ?');
+$stmtU->bind_param('ii', $idUtente, $famigliaId);
 $stmtU->execute();
 $utente = $stmtU->get_result()->fetch_assoc();
 $stmtU->close();
@@ -21,6 +39,20 @@ if (!$utente) {
     echo '<p class="text-center text-white">Utente non trovato.</p>';
     include 'includes/footer.php';
     return;
+}
+
+// Recupera eventuale lista utenti per la select
+$utentiFam = [];
+if ($canChangeUser) {
+    $stmtList = $conn->prepare('SELECT u.id, u.nome, u.cognome
+                                 FROM utenti u
+                                 JOIN utenti2famiglie u2f ON u.id = u2f.id_utente
+                                 WHERE u2f.id_famiglia = ?
+                                 ORDER BY u.nome');
+    $stmtList->bind_param('i', $famigliaId);
+    $stmtList->execute();
+    $utentiFam = $stmtList->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmtList->close();
 }
 
 $sqlMov = "SELECT m.descrizione, m.data_operazione, e.descrizione AS etichetta_descrizione,
@@ -46,7 +78,7 @@ $sqlMov = "SELECT m.descrizione, m.data_operazione, e.descrizione AS etichetta_d
            JOIN bilancio_utenti2operazioni_etichettate u2o ON u2o.id_e2o = e2o.id_e2o
            JOIN bilancio_etichette e ON e.id_etichetta = e2o.id_etichetta
            JOIN (SELECT id_e2o, COUNT(*) AS cnt FROM bilancio_utenti2operazioni_etichettate GROUP BY id_e2o) cnt ON cnt.id_e2o = e2o.id_e2o
-           WHERE u2o.id_utente = ?
+           WHERE u2o.id_utente = ? AND u2o.saldata = 0
            ORDER BY m.data_operazione DESC";
 
 $stmtMov = $conn->prepare($sqlMov);
@@ -66,6 +98,17 @@ $stmtMov->close();
 
 <div class="text-white">
   <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
+
+  <?php if ($canChangeUser): ?>
+    <form method="get" class="mb-3">
+      <select name="id_utente" class="form-select w-auto d-inline" onchange="this.form.submit()">
+        <?php foreach ($utentiFam as $u): ?>
+          <option value="<?= (int)$u['id'] ?>" <?= $u['id']==$idUtente ? 'selected' : '' ?>><?= htmlspecialchars(trim(($u['nome'] ?? '').' '.($u['cognome'] ?? ''))) ?></option>
+        <?php endforeach; ?>
+      </select>
+    </form>
+  <?php endif; ?>
+
   <h4 class="mb-3">Credito/Debito per: <?= htmlspecialchars(trim(($utente['nome'] ?? '') . ' ' . ($utente['cognome'] ?? ''))) ?></h4>
   <div class="mb-4">Saldo totale: <span><?= ($saldoTot>=0?'+':'') . number_format($saldoTot, 2, ',', '.') ?> €</span></div>
 
