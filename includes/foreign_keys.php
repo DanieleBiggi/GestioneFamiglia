@@ -19,6 +19,21 @@ return [
         'table' => 'famiglie',
         'key'   => 'id_famiglia',
         'label' => 'nome_famiglia'
+    ],
+    'id_famiglia_attuale' => [
+        'table' => 'famiglie',
+        'key'   => 'id_famiglia',
+        'label' => 'nome_famiglia'
+    ],
+    'id_famiglia_gestione' => [
+        'table' => 'famiglie',
+        'key'   => 'id_famiglia',
+        'label' => 'nome_famiglia'
+    ],
+    'userlevelid' => [
+        'table' => 'userlevels',
+        'key'   => 'userlevelid',
+        'label' => 'userlevelname'
     ]
 ];
 ?>
