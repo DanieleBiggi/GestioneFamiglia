@@ -14,7 +14,7 @@ $stmtUpd = $conn->prepare("UPDATE bilancio_utenti2operazioni_etichettate SET imp
 $stmtIns = $conn->prepare("INSERT INTO bilancio_utenti2operazioni_etichettate (id_e2o, id_utente, importo_utente, saldata, data_saldo) VALUES (?, ?, ?, ?, ?)");
 foreach ($rows as $r) {
     $id = intval($r['id_u2o'] ?? 0);
-    $importo = isset($r['importo_utente']) && $r['importo_utente'] !== '' ? (float)$r['importo_utente'] : 0;
+    $importo = isset($r['importo_utente']) && $r['importo_utente'] !== '' ? (float)$r['importo_utente'] : null;
     $saldata = !empty($r['saldata']) ? 1 : 0;
     $data_saldo = $r['data_saldo'] ?? null;
     if ($data_saldo === '') $data_saldo = null;
