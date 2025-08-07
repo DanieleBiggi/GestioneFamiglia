@@ -3,7 +3,15 @@
 require_once 'includes/db.php';
 include 'includes/header.php';
 
-$sql = "SELECT id_etichetta, descrizione, attivo FROM bilancio_etichette ORDER BY descrizione ASC";
+$sql = "SELECT e.id_etichetta, e.descrizione, e.attivo, e.da_dividere,
+                EXISTS (
+                  SELECT 1
+                  FROM bilancio_etichette2operazioni eo
+                  LEFT JOIN bilancio_utenti2operazioni_etichettate uo ON eo.id_operazione = uo.id_operazione
+                  WHERE eo.id_etichetta = e.id_etichetta AND uo.id_operazione IS NULL
+                ) AS has_unassigned
+         FROM bilancio_etichette e
+         ORDER BY e.descrizione ASC";
 $etichette = $conn->query($sql);
 ?>
 
@@ -26,6 +34,9 @@ $etichette = $conn->query($sql);
           <i class="bi bi-check-circle-fill text-success"></i>
         <?php else: ?>
           <i class="bi bi-x-circle-fill text-danger"></i>
+        <?php endif; ?>
+        <?php if (($row['da_dividere'] ?? 0) == 1 && ($row['has_unassigned'] ?? 0) == 1): ?>
+          <i class="bi bi-exclamation-circle-fill text-warning ms-1"></i>
         <?php endif; ?>
       </a>
     <?php endwhile; ?>
