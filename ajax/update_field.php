@@ -12,8 +12,8 @@ $src = $data['src'] ?? 'movimenti_revolut';
 $allowedSources = ['movimenti_revolut', 'bilancio_entrate', 'bilancio_uscite'];
 $allowedFields = [
   'movimenti_revolut' => ['descrizione_extra', 'note', 'id_gruppo_transazione'],
-  'bilancio_entrate'  => ['descrizione_extra', 'id_gruppo_transazione'],
-  'bilancio_uscite'   => ['descrizione_extra', 'id_gruppo_transazione']
+  'bilancio_entrate'  => ['descrizione_extra', 'note', 'id_gruppo_transazione'],
+  'bilancio_uscite'   => ['descrizione_extra', 'note', 'id_gruppo_transazione']
 ];
 
 if (!$id || !in_array($src, $allowedSources, true) || !in_array($field, $allowedFields[$src])) {
