@@ -18,7 +18,7 @@ if ($src === 'bilancio_entrate') {
   $stmt = $conn->prepare("
     SELECT be.descrizione_operazione AS description,
            be.descrizione_extra,
-           '' AS note,
+           be.note AS note,
            be.importo AS amount,
            be.data_operazione AS started_date,
            be.id_gruppo_transazione,
@@ -43,7 +43,7 @@ if ($src === 'bilancio_entrate') {
   $stmt = $conn->prepare("
     SELECT bu.descrizione_operazione AS description,
            bu.descrizione_extra,
-           '' AS note,
+           bu.note AS note,
            -bu.importo AS amount,
            bu.data_operazione AS started_date,
            bu.id_gruppo_transazione,
