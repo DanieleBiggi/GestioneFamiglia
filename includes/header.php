@@ -53,6 +53,11 @@
       </li>
       <?php endif; ?>
       <li class="mb-3">
+        <a href="/Gestionale25/credito_utente.php" class="btn btn-outline-light w-100 text-start">
+          💰 Credito Utente
+        </a>
+      </li>
+      <li class="mb-3">
         <a href="/Gestionale25/password.php" class="btn btn-outline-light w-100 text-start">
           🔐 Siti e password
         </a>

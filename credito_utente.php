@@ -1,0 +1,90 @@
+<?php include 'includes/session_check.php'; ?>
+<?php
+require_once 'includes/db.php';
+include 'includes/header.php';
+setlocale(LC_TIME, 'it_IT.UTF-8');
+
+$idUtente = $_GET['id_utente'] ?? '';
+if ($idUtente === '') {
+    echo '<p class="text-center text-muted">Nessun utente selezionato.</p>';
+    include 'includes/footer.php';
+    return;
+}
+
+$stmtU = $conn->prepare("SELECT id, nome, cognome FROM utenti WHERE id = ?");
+$stmtU->bind_param('i', $idUtente);
+$stmtU->execute();
+$utente = $stmtU->get_result()->fetch_assoc();
+$stmtU->close();
+
+if (!$utente) {
+    echo '<p class="text-center text-muted">Utente non trovato.</p>';
+    include 'includes/footer.php';
+    return;
+}
+
+$sqlMov = "SELECT m.descrizione, m.data_operazione, e.descrizione AS etichetta_descrizione,
+                  CASE WHEN u2o.importo_utente IS NULL THEN (COALESCE(e2o.importo, ABS(m.amount)) / cnt.cnt) ELSE u2o.importo_utente END AS quota,
+                  CASE WHEN u2o.utente_pagante = 1
+                       THEN COALESCE(e2o.importo, ABS(m.amount)) - CASE WHEN u2o.importo_utente IS NULL THEN (COALESCE(e2o.importo, ABS(m.amount)) / cnt.cnt) ELSE u2o.importo_utente END
+                       ELSE -CASE WHEN u2o.importo_utente IS NULL THEN (COALESCE(e2o.importo, ABS(m.amount)) / cnt.cnt) ELSE u2o.importo_utente END
+                  END AS saldo_utente
+           FROM (
+                SELECT id_movimento_revolut AS id, COALESCE(NULLIF(descrizione_extra,''), description) AS descrizione,
+                       started_date AS data_operazione, amount, 'movimenti_revolut' AS tabella
+                FROM v_movimenti_revolut
+                UNION ALL
+                SELECT be.id_entrata AS id, COALESCE(NULLIF(be.descrizione_extra,''), be.descrizione_operazione) AS descrizione,
+                       be.data_operazione, be.importo AS amount, 'bilancio_entrate' AS tabella
+                FROM bilancio_entrate be
+                UNION ALL
+                SELECT bu.id_uscita AS id, COALESCE(NULLIF(bu.descrizione_extra,''), bu.descrizione_operazione) AS descrizione,
+                       bu.data_operazione, -bu.importo AS amount, 'bilancio_uscite' AS tabella
+                FROM bilancio_uscite bu
+           ) m
+           JOIN bilancio_etichette2operazioni e2o ON e2o.id_tabella = m.id AND e2o.tabella_operazione = m.tabella
+           JOIN bilancio_utenti2operazioni_etichettate u2o ON u2o.id_e2o = e2o.id_e2o
+           JOIN bilancio_etichette e ON e.id_etichetta = e2o.id_etichetta
+           JOIN (SELECT id_e2o, COUNT(*) AS cnt FROM bilancio_utenti2operazioni_etichettate GROUP BY id_e2o) cnt ON cnt.id_e2o = e2o.id_e2o
+           WHERE u2o.id_utente = ?
+           ORDER BY m.data_operazione DESC";
+
+$stmtMov = $conn->prepare($sqlMov);
+$stmtMov->bind_param('i', $idUtente);
+$stmtMov->execute();
+$resMov = $stmtMov->get_result();
+$movimenti = [];
+$saldoTot = 0.0;
+while ($row = $resMov->fetch_assoc()) {
+    $row['quota'] = (float)$row['quota'];
+    $row['saldo_utente'] = (float)$row['saldo_utente'];
+    $saldoTot += $row['saldo_utente'];
+    $movimenti[] = $row;
+}
+$stmtMov->close();
+?>
+
+<div class="text-white">
+  <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
+  <h4 class="mb-3">Credito/Debito per: <?= htmlspecialchars(trim(($utente['nome'] ?? '') . ' ' . ($utente['cognome'] ?? ''))) ?></h4>
+  <div class="mb-4">Saldo totale: <span><?= ($saldoTot>=0?'+':'') . number_format($saldoTot, 2, ',', '.') ?> €</span></div>
+
+  <?php if (!empty($movimenti)): ?>
+    <?php foreach ($movimenti as $mov): ?>
+      <div class="movement d-flex justify-content-between align-items-start text-white mb-2">
+        <div class="flex-grow-1 me-3">
+          <div class="descr fw-semibold"><?= htmlspecialchars($mov['descrizione']) ?></div>
+          <div class="small"><?= date('d/m/Y H:i', strtotime($mov['data_operazione'])) ?></div>
+          <div class="mt-1"><span class="badge bg-secondary"><?= htmlspecialchars($mov['etichetta_descrizione']) ?></span></div>
+        </div>
+        <div class="text-end">
+          <div class="amount"><?= ($mov['saldo_utente']>=0?'+':'') . number_format($mov['saldo_utente'], 2, ',', '.') ?> €</div>
+        </div>
+      </div>
+    <?php endforeach; ?>
+  <?php else: ?>
+    <p class="text-center text-muted">Nessun movimento trovato per questo utente.</p>
+  <?php endif; ?>
+</div>
+
+<?php include 'includes/footer.php'; ?>
