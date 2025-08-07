@@ -9,15 +9,19 @@ if ($q === '') {
 }
 
 $like = "%" . $q . "%";
- $sql = "SELECT * FROM (
-            SELECT id_movimento_revolut AS id, COALESCE(NULLIF(descrizione_extra,''), description) AS descrizione,
-                   descrizione_extra, started_date AS data_operazione, amount,
-                   etichette, id_gruppo_transazione, 'revolut' AS source, 'movimenti_revolut' AS tabella, NULL AS mezzo
-            FROM v_movimenti_revolut
+$sql = "SELECT * FROM (
+            SELECT bm.id_movimento_revolut AS id, COALESCE(NULLIF(bm.descrizione_extra,''), bm.description) AS descrizione,
+                   bm.descrizione_extra, bm.started_date AS data_operazione, bm.amount,
+                   (SELECT GROUP_CONCAT(CONCAT(e.id_etichetta, ':', e.descrizione) SEPARATOR ',')
+                      FROM bilancio_etichette2operazioni eo
+                      JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
+                     WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut') AS etichette,
+                   bm.id_gruppo_transazione, 'revolut' AS source, 'movimenti_revolut' AS tabella, NULL AS mezzo
+            FROM movimenti_revolut bm
             UNION ALL
             SELECT be.id_entrata AS id, be.descrizione_operazione AS descrizione, be.descrizione_extra,
                    be.data_operazione, be.importo AS amount,
-                   (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
+                   (SELECT GROUP_CONCAT(CONCAT(e.id_etichetta, ':', e.descrizione) SEPARATOR ',')
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                      WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette,
@@ -26,7 +30,7 @@ $like = "%" . $q . "%";
             UNION ALL
             SELECT bu.id_uscita AS id, bu.descrizione_operazione AS descrizione, bu.descrizione_extra,
                    bu.data_operazione, -bu.importo AS amount,
-                   (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
+                   (SELECT GROUP_CONCAT(CONCAT(e.id_etichetta, ':', e.descrizione) SEPARATOR ',')
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                      WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette,
