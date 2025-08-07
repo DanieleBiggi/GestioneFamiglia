@@ -1,13 +1,25 @@
 <?php
-function render_movimento_etichetta(array $mov) {
+function render_movimento_etichetta(array $mov, int $id_etichetta) {
     global $conn;
-    
-    if($mov['tabella']=="bilancio_uscite" && $mov['amount'] >= 0)
-    {
-        $mov['amount'] *= -1;
+
+    // Dati specifici dell'etichetta
+    $stmtInfo = $conn->prepare(
+        "SELECT id_e2o, descrizione_extra, importo, allegato
+           FROM bilancio_etichette2operazioni
+          WHERE id_tabella = ? AND tabella_operazione = ? AND id_etichetta = ?"
+    );
+    $stmtInfo->bind_param('isi', $mov['id'], $mov['tabella'], $id_etichetta);
+    $stmtInfo->execute();
+    $info = $stmtInfo->get_result()->fetch_assoc() ?: [];
+    $stmtInfo->close();
+
+    $descrizione = $info['descrizione_extra'] ?? $mov['descrizione'];
+    $amountValue = $info['importo'] !== null ? (float)$info['importo'] : $mov['amount'];
+    if ($mov['tabella'] === 'bilancio_uscite' && $amountValue >= 0) {
+        $amountValue *= -1;
     }
 
-    $importo = number_format($mov['amount'], 2, ',', '.');
+    $importo = number_format($amountValue, 2, ',', '.');
     $dataOra  = date('d/m/Y H:i', strtotime($mov['data_operazione']));
 
     // Determine icon based on source
@@ -15,10 +27,11 @@ function render_movimento_etichetta(array $mov) {
 
     $url = 'dettaglio.php?id=' . (int)$mov['id'] . '&src=' . urlencode($mov['tabella']);
 
-    echo '<div class="movement d-flex justify-content-between align-items-start text-white text-decoration-none" style="cursor:pointer" onclick="window.location.href=\'' . $url . '\'">';
+    $rowId = 'mov-' . $mov['tabella'] . '-' . $mov['id'];
+    echo '<div id="' . $rowId . '" class="movement d-flex justify-content-between align-items-start text-white text-decoration-none" style="cursor:pointer" onclick="window.location.href=\'' . $url . '\'">';
     echo '  <img src="' . htmlspecialchars($icon) . '" alt="src" class="me-2" style="width:24px;height:24px">';
     echo '  <div class="flex-grow-1 me-3">';
-    echo '    <div class="descr fw-semibold">' . htmlspecialchars($mov['descrizione']) . '</div>';
+    echo '    <div class="descr fw-semibold">' . htmlspecialchars($descrizione) . '</div>';
     echo '    <div class="small">' . $dataOra . '</div>';
 
     // Quote per utente se presenti
@@ -30,9 +43,9 @@ function render_movimento_etichetta(array $mov) {
            JOIN bilancio_etichette e ON e.id_etichetta = e2o.id_etichetta
            JOIN bilancio_utenti2operazioni_etichettate u2o ON u2o.id_e2o = e2o.id_e2o
            JOIN utenti u ON u.id = u2o.id_utente
-          WHERE e2o.id_tabella = ? AND e2o.tabella_operazione = ?"
+          WHERE e2o.id_tabella = ? AND e2o.tabella_operazione = ? AND e2o.id_etichetta = ?"
     );
-    $stmtU->bind_param('is', $mov['id'], $mov['tabella']);
+    $stmtU->bind_param('isi', $mov['id'], $mov['tabella'], $id_etichetta);
     if ($stmtU->execute()) {
         $resU = $stmtU->get_result();
         $groups = [];
@@ -45,7 +58,9 @@ function render_movimento_etichetta(array $mov) {
                     'descrizione' => $row['etichetta_descrizione']
                 ];
             }
-            $groups[$idE2o]['rows'][] = $row;
+            if ($row['id_utente']) {
+                $groups[$idE2o]['rows'][] = $row;
+            }
         }
 
         if ($groups) {
@@ -104,7 +119,13 @@ function render_movimento_etichetta(array $mov) {
 
     echo '  </div>';
     echo '  <div class="text-end">';
-    echo '    <div class="amount text-white">' . ($mov['amount'] >= 0 ? '+' : '') . $importo . ' €</div>';
+    echo '    <div class="amount text-white">' . ($amountValue >= 0 ? '+' : '') . $importo . ' €</div>';
+    $idE2oAttr = htmlspecialchars($info['id_e2o'] ?? '', ENT_QUOTES);
+    $descAttr = htmlspecialchars($info['descrizione_extra'] ?? '', ENT_QUOTES);
+    $impAttr = htmlspecialchars($info['importo'] ?? '', ENT_QUOTES);
+    $allAttr = htmlspecialchars($info['allegato'] ?? '', ENT_QUOTES);
+    $rowAttr = htmlspecialchars($rowId, ENT_QUOTES);
+    echo '    <button class="btn btn-sm btn-link text-white edit-e2o" data-id-e2o="' . $idE2oAttr . '" data-descrizione-extra="' . $descAttr . '" data-importo="' . $impAttr . '" data-allegato="' . $allAttr . '" data-row-id="' . $rowAttr . '" onclick="event.stopPropagation();"><i class="bi bi-pencil"></i></button>';
     echo '  </div>';
     echo '</div>';
 
