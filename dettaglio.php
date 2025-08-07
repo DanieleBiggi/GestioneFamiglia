@@ -249,7 +249,7 @@ include 'includes/header.php';
             <label class="form-check-label" for="toggleInactiveGruppi">Vedi anche disattivi</label>
           </div>
         </div>
-        <div id="gruppiList" class="row row-cols-1 row-cols-md-3 g-2"></div>
+        <div id="gruppiList" class="row g-3"></div>
         <input type="hidden" id="groupFieldName" value="id_gruppo_transazione">
       </div>
       <div class="modal-footer">
@@ -258,6 +258,24 @@ include 'includes/header.php';
     </form>
   </div>
 </div>
+
+<style>
+#gruppiModal .category-box {
+  background-color: #2c2f33;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: .5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+#gruppiModal .category-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: .75rem;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: .25rem;
+  color: #fff;
+}
+</style>
 
 <!-- Etichette modal -->
 <div class="modal fade" id="etichetteModal" tabindex="-1">
@@ -334,27 +352,40 @@ function openGruppiModal(selectedId) {
 function renderGruppiList() {
   const list = document.getElementById('gruppiList');
   list.innerHTML = '';
-  let currentCat = '';
+
+  const categories = new Map();
   for (let g of gruppi) {
     if (!mostraGruppiInattivi && g.attivo != 1) continue;
     const testo = `${g.descrizione} ${g.categoria} ${g.tipo_label}`.toLowerCase();
     if (filtroGruppi && !testo.includes(filtroGruppi)) continue;
+    if (!categories.has(g.categoria)) categories.set(g.categoria, []);
+    categories.get(g.categoria).push(g);
+  }
 
-    if (g.categoria !== currentCat) {
-      currentCat = g.categoria;
-      const header = document.createElement('div');
-      header.className = 'col-12 fw-bold mt-2';
-      header.textContent = currentCat;
-      list.appendChild(header);
-    }
+  for (const [cat, items] of categories) {
+    const col = document.createElement('div');
+    col.className = 'col-12 col-md-6 col-lg-4 category-container';
 
-    const div = document.createElement('div');
-    div.className = 'col form-check';
-    div.innerHTML = `
-      <input class="form-check-input" type="radio" name="gruppo" id="gr_${g.id_gruppo_transazione}" value="${g.id_gruppo_transazione}" ${g.id_gruppo_transazione == currentGroupId ? 'checked' : ''}>
-      <label class="form-check-label" for="gr_${g.id_gruppo_transazione}">${g.descrizione}</label>
-    `;
-    list.appendChild(div);
+    const box = document.createElement('div');
+    box.className = 'category-box';
+
+    const title = document.createElement('div');
+    title.className = 'category-title';
+    title.textContent = cat;
+    box.appendChild(title);
+
+    items.forEach(g => {
+      const div = document.createElement('div');
+      div.className = 'form-check';
+      div.innerHTML = `
+        <input class="form-check-input" type="radio" name="gruppo" id="gr_${g.id_gruppo_transazione}" value="${g.id_gruppo_transazione}" ${g.id_gruppo_transazione == currentGroupId ? 'checked' : ''}>
+        <label class="form-check-label" for="gr_${g.id_gruppo_transazione}">${g.descrizione}</label>
+      `;
+      box.appendChild(div);
+    });
+
+    col.appendChild(box);
+    list.appendChild(col);
   }
 }
 
