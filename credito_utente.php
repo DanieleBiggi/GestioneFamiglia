@@ -18,7 +18,7 @@ $utente = $stmtU->get_result()->fetch_assoc();
 $stmtU->close();
 
 if (!$utente) {
-    echo '<p class="text-center text-muted">Utente non trovato.</p>';
+    echo '<p class="text-center text-white">Utente non trovato.</p>';
     include 'includes/footer.php';
     return;
 }
