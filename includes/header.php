@@ -54,7 +54,7 @@
       <?php endif; ?>
       <li class="mb-3">
         <a href="/Gestionale25/credito_utente.php" class="btn btn-outline-light w-100 text-start">
-          💰 Credito Utente
+          💰 Saldo personale
         </a>
       </li>
       <li class="mb-3">
