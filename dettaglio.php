@@ -249,7 +249,7 @@ include 'includes/header.php';
             <label class="form-check-label" for="toggleInactiveGruppi">Vedi anche disattivi</label>
           </div>
         </div>
-        <div id="gruppiList" class="d-flex flex-column gap-2"></div>
+        <div id="gruppiList" class="row row-cols-1 row-cols-md-3 g-2"></div>
         <input type="hidden" id="groupFieldName" value="id_gruppo_transazione">
       </div>
       <div class="modal-footer">
@@ -268,12 +268,14 @@ include 'includes/header.php';
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <input type="text" class="form-control mb-2" placeholder="Cerca..." oninput="filterEtichette(this.value)">
-        <div id="etichetteList" class="d-flex flex-wrap gap-2"></div>
-        <div class="form-check mt-2">
-          <input type="checkbox" class="form-check-input" id="toggleInactive" onchange="toggleInactiveEtichette()">
-          <label class="form-check-label" for="toggleInactive">Mostra etichette vecchie</label>
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <input type="text" class="form-control flex-grow-1" placeholder="Cerca..." oninput="filterEtichette(this.value)">
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="toggleInactive" onchange="toggleInactiveEtichette()">
+            <label class="form-check-label" for="toggleInactive">Vedi anche disattive</label>
+          </div>
         </div>
+        <div id="etichetteList" class="row row-cols-1 row-cols-md-3 g-2"></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary w-100" onclick="saveEtichette()">Salva</button>
@@ -337,7 +339,7 @@ function renderGruppiList() {
     const testo = `${g.descrizione} (${g.categoria} - ${g.tipo_label})`.toLowerCase();
     if (filtroGruppi && !testo.includes(filtroGruppi)) continue;
     const div = document.createElement('div');
-    div.className = 'form-check';
+    div.className = 'col form-check';
     div.innerHTML = `
       <input class="form-check-input" type="radio" name="gruppo" id="gr_${g.id_gruppo_transazione}" value="${g.id_gruppo_transazione}" ${g.id_gruppo_transazione == currentGroupId ? 'checked' : ''}>
       <label class="form-check-label" for="gr_${g.id_gruppo_transazione}">${g.descrizione} (${g.categoria} - ${g.tipo_label})</label>
@@ -365,7 +367,7 @@ function renderEtichetteList() {
     if (!mostraVecchie && e.attivo != 1) continue;
     if (filtroEtichette && !e.descrizione.toLowerCase().includes(filtroEtichette)) continue;
     const div = document.createElement('div');
-    div.className = 'form-check';
+    div.className = 'col form-check';
     div.innerHTML = `
       <input class="form-check-input" type="checkbox" id="et_${e.id_etichetta}" value="${e.id_etichetta}" ${selected.has(String(e.id_etichetta)) ? 'checked' : ''}>
       <label class="form-check-label" for="et_${e.id_etichetta}">${e.descrizione}</label>
