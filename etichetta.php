@@ -16,6 +16,7 @@ if ($etichettaParam === '') {
     return;
 }
 
+
 $stmtEt = $conn->prepare("SELECT id_etichetta, descrizione, attivo, da_dividere, utenti_tra_cui_dividere FROM bilancio_etichette WHERE descrizione = ?");
 $stmtEt->bind_param('s', $etichettaParam);
 $stmtEt->execute();
@@ -23,11 +24,12 @@ $etichettaInfo = $stmtEt->get_result()->fetch_assoc();
 $stmtEt->close();
 
 if (!$etichettaInfo) {
+
     echo '<p class="text-center text-muted">Etichetta non trovata.</p>';
     include 'includes/footer.php';
     return;
 }
-$etichetta = $etichettaInfo['descrizione'];
+
 
 // Lista mesi disponibili per questa etichetta
 $mesi = [];
@@ -52,7 +54,7 @@ $sqlM = "SELECT DATE_FORMAT(data_operazione,'%Y-%m') AS ym, DATE_FORMAT(data_ope
           WHERE FIND_IN_SET(?, etichette)
           GROUP BY ym ORDER BY ym DESC";
 $stmtM = $conn->prepare($sqlM);
-$stmtM->bind_param('s', $etichetta);
+$stmtM->bind_param('s', $etichettaInfo);
 $stmtM->execute();
 $resM = $stmtM->get_result();
 while ($row = $resM->fetch_assoc()) {
@@ -281,7 +283,7 @@ $stmtGrp->close();
 
   <?php if ($movimenti->num_rows > 0): ?>
     <?php while ($mov = $movimenti->fetch_assoc()): ?>
-      <?php render_movimento_etichetta($mov); ?>
+      <?php render_movimento_etichetta($mov, $id_etichetta); ?>
     <?php endwhile; ?>
   <?php else: ?>
     <p class="text-center text-muted">Nessun movimento per questa etichetta.</p>
@@ -330,6 +332,37 @@ $stmtGrp->close();
   <?php endif; ?>
 </div>
 
+
+<!-- Modal modifica etichetta-movimento -->
+<div class="modal fade" id="editE2oModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="editE2oForm" enctype="multipart/form-data">
+      <div class="modal-header">
+        <h5 class="modal-title">Modifica movimento</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="id_e2o" id="id_e2o">
+        <div class="mb-3">
+          <label class="form-label">Descrizione extra</label>
+          <input type="text" class="form-control bg-secondary text-white" name="descrizione_extra">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Importo</label>
+          <input type="number" step="0.01" class="form-control bg-secondary text-white" name="importo">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Allegato</label>
+          <input type="file" class="form-control" name="allegato">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary w-100">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Modifica etichetta Modal -->
 <div class="modal fade" id="editEtichettaModal" tabindex="-1">
   <div class="modal-dialog">
@@ -355,6 +388,7 @@ $stmtGrp->close();
         <div class="mb-3">
           <label for="utenti_tra_cui_dividere" class="form-label">Utenti tra cui dividere</label>
           <input type="text" class="form-control bg-secondary text-white" id="utenti_tra_cui_dividere">
+
         </div>
       </div>
       <div class="modal-footer">
@@ -365,6 +399,39 @@ $stmtGrp->close();
 </div>
 
 <script>
+
+function attachEditHandlers() {
+  document.querySelectorAll('.edit-e2o').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('id_e2o').value = btn.dataset.idE2o;
+      document.querySelector('#editE2oForm [name="descrizione_extra"]').value = btn.dataset.descrizioneExtra || '';
+      document.querySelector('#editE2oForm [name="importo"]').value = btn.dataset.importo || '';
+      new bootstrap.Modal(document.getElementById('editE2oModal')).show();
+    });
+  });
+}
+
+
+document.getElementById('editE2oForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const form = e.target;
+  const formData = new FormData(form);
+  fetch('ajax/update_e2o.php', {method:'POST', body:formData})
+    .then(r=>r.json())
+    .then(res=>{
+      if(res.success){
+        if(res.html && res.rowId){
+          const el = document.getElementById(res.rowId);
+          if(el){
+            el.outerHTML = res.html;
+            attachEditHandlers();
+          }
+        }
+      }
+      bootstrap.Modal.getInstance(document.getElementById('editE2oModal')).hide();
+    });
+});
+
   const etichettaData = {
     id: <?= (int)$etichettaInfo['id_etichetta'] ?>,
     descrizione: <?= json_encode($etichettaInfo['descrizione']) ?>,
@@ -402,6 +469,7 @@ $stmtGrp->close();
       }
     });
   }
+
 </script>
 
 <?php include 'includes/footer.php'; ?>
