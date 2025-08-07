@@ -1,5 +1,5 @@
 <?php
-function render_movimento(array $mov) {
+function render_movimento_etichetta(array $mov) {
     global $conn;
 
     $importo = number_format($mov['amount'], 2, ',', '.');
