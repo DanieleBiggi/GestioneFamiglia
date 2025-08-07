@@ -12,16 +12,15 @@ $stmt->bind_param('ii', $idUtente, $idFamiglia);
 $stmt->execute();
 $res = $stmt->get_result();
 ?>
-
+<div class="d-flex mb-3 justify-content-between">
+  <h4>Password e Siti</h4><a href="password_dettaglio.php" class="btn btn-outline-light btn-sm">Aggiungi nuovo</a>
+</div>
 <div class="d-flex mb-3 align-items-center">
   <input type="text" id="search" class="form-control bg-dark text-white border-secondary me-2" placeholder="Cerca">
   <div class="form-check form-switch text-nowrap">
     <input class="form-check-input" type="checkbox" id="showInactive">
     <label class="form-check-label" for="showInactive">Mostra non attive</label>
   </div>
-</div>
-<div class="mb-3">
-  <a href="password_dettaglio.php" class="btn btn-success w-100">➕ Nuovo</a>
 </div>
 <div id="passwordList">
 <?php while ($row = $res->fetch_assoc()): ?>
