@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <label class="form-label">Note</label>
       <textarea name="note" class="form-control bg-dark text-white"></textarea>
     </div>
-    <button type="submit" class="btn btn-primary">Salva</button>
+    <button type="submit" class="btn btn-primary w-100">Salva</button>
   </form>
 </div>
 
