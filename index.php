@@ -26,7 +26,7 @@ if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'
             UNION ALL
             SELECT be.id_entrata AS id, COALESCE(NULLIF(be.descrizione_extra,''), be.descrizione_operazione) AS descrizione, be.descrizione_extra,
                    be.data_operazione, be.importo AS amount,
-                   (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
+                   (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                      WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette,
@@ -35,7 +35,7 @@ if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'
             UNION ALL
             SELECT bu.id_uscita AS id, COALESCE(NULLIF(bu.descrizione_extra,''), bu.descrizione_operazione) AS descrizione, bu.descrizione_extra,
                    bu.data_operazione, -bu.importo AS amount,
-                   (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
+                   (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                      WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette,
