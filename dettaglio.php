@@ -2,29 +2,89 @@
 include 'includes/session_check.php';
 include 'includes/db.php';
 
-$id = $_GET['id'] ?? null;
+$id  = $_GET['id']  ?? null;
+$src = $_GET['src'] ?? 'movimenti_revolut';
 if (!$id) {
   die("ID mancante");
 }
 
-// Dati del movimento
-$stmt = $conn->prepare("
-  SELECT m.*, g.descrizione AS gruppo_descrizione,
-         COALESCE(c.descrizione_categoria, 'Nessuna categoria') AS categoria_descrizione,
-         g.tipo_gruppo,
-         GROUP_CONCAT(e.descrizione SEPARATOR ', ') AS etichette
-  FROM movimenti_revolut m
-  LEFT JOIN bilancio_gruppi_transazione g ON m.id_gruppo_transazione = g.id_gruppo_transazione
-  LEFT JOIN bilancio_gruppi_categorie c ON g.id_categoria = c.id_categoria
-  LEFT JOIN bilancio_etichette2operazioni eo ON eo.id_tabella = m.id_movimento_revolut AND eo.tabella_operazione = 'movimenti_revolut'
-  LEFT JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-  WHERE m.id_movimento_revolut = ?
-  GROUP BY m.id_movimento_revolut
-");
-$stmt->bind_param("i", $id);
-$stmt->execute();
-$result = $stmt->get_result();
-$movimento = $result->fetch_assoc();
+$allowedSources = ['movimenti_revolut', 'bilancio_entrate', 'bilancio_uscite'];
+if (!in_array($src, $allowedSources, true)) {
+  die("Origine dati non supportata");
+}
+
+$movimento = null;
+if ($src === 'bilancio_entrate') {
+  $stmt = $conn->prepare("
+    SELECT be.descrizione_operazione AS description,
+           be.descrizione_extra,
+           '' AS note,
+           be.importo AS amount,
+           be.data_operazione AS started_date,
+           be.id_gruppo_transazione,
+           g.descrizione AS gruppo_descrizione,
+           COALESCE(c.descrizione_categoria, 'Nessuna categoria') AS categoria_descrizione,
+           g.tipo_gruppo,
+           GROUP_CONCAT(e.descrizione SEPARATOR ', ') AS etichette
+    FROM bilancio_entrate be
+    LEFT JOIN bilancio_gruppi_transazione g ON be.id_gruppo_transazione = g.id_gruppo_transazione
+    LEFT JOIN bilancio_gruppi_categorie c ON g.id_categoria = c.id_categoria
+    LEFT JOIN bilancio_etichette2operazioni eo ON eo.id_tabella = be.id_entrata AND eo.tabella_operazione = 'bilancio_entrate'
+    LEFT JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
+    WHERE be.id_entrata = ?
+    GROUP BY be.id_entrata
+  ");
+  $stmt->bind_param("i", $id);
+  $stmt->execute();
+  $result    = $stmt->get_result();
+  $movimento = $result->fetch_assoc();
+  $stmt->close();
+} elseif ($src === 'bilancio_uscite') {
+  $stmt = $conn->prepare("
+    SELECT bu.descrizione_operazione AS description,
+           bu.descrizione_extra,
+           '' AS note,
+           -bu.importo AS amount,
+           bu.data_operazione AS started_date,
+           bu.id_gruppo_transazione,
+           g.descrizione AS gruppo_descrizione,
+           COALESCE(c.descrizione_categoria, 'Nessuna categoria') AS categoria_descrizione,
+           g.tipo_gruppo,
+           GROUP_CONCAT(e.descrizione SEPARATOR ', ') AS etichette
+    FROM bilancio_uscite bu
+    LEFT JOIN bilancio_gruppi_transazione g ON bu.id_gruppo_transazione = g.id_gruppo_transazione
+    LEFT JOIN bilancio_gruppi_categorie c ON g.id_categoria = c.id_categoria
+    LEFT JOIN bilancio_etichette2operazioni eo ON eo.id_tabella = bu.id_uscita AND eo.tabella_operazione = 'bilancio_uscite'
+    LEFT JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
+    WHERE bu.id_uscita = ?
+    GROUP BY bu.id_uscita
+  ");
+  $stmt->bind_param("i", $id);
+  $stmt->execute();
+  $result    = $stmt->get_result();
+  $movimento = $result->fetch_assoc();
+  $stmt->close();
+} else {
+  $stmt = $conn->prepare("
+    SELECT m.*, g.descrizione AS gruppo_descrizione,
+           COALESCE(c.descrizione_categoria, 'Nessuna categoria') AS categoria_descrizione,
+           g.tipo_gruppo,
+           GROUP_CONCAT(e.descrizione SEPARATOR ', ') AS etichette
+    FROM movimenti_revolut m
+    LEFT JOIN bilancio_gruppi_transazione g ON m.id_gruppo_transazione = g.id_gruppo_transazione
+    LEFT JOIN bilancio_gruppi_categorie c ON g.id_categoria = c.id_categoria
+    LEFT JOIN bilancio_etichette2operazioni eo ON eo.id_tabella = m.id_movimento_revolut AND eo.tabella_operazione = 'movimenti_revolut'
+    LEFT JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
+    WHERE m.id_movimento_revolut = ?
+    GROUP BY m.id_movimento_revolut
+  ");
+  $stmt->bind_param("i", $id);
+  $stmt->execute();
+  $result    = $stmt->get_result();
+  $movimento = $result->fetch_assoc();
+  $stmt->close();
+}
+
 if (!$movimento) {
   die("Movimento non trovato");
 }
@@ -200,6 +260,7 @@ include 'includes/header.php';
 const etichette = <?= json_encode($etichette, JSON_UNESCAPED_UNICODE) ?>;
 const gruppi = <?= json_encode($gruppi, JSON_UNESCAPED_UNICODE) ?>;
 const idMovimento = <?= (int)$id ?>;
+const srcMovimento = <?= json_encode($src) ?>;
 
 let currentGroupId;
 let mostraVecchie = false;
@@ -219,7 +280,7 @@ function saveField(event) {
   fetch('ajax/update_field.php', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ id: idMovimento, field, value })
+    body: JSON.stringify({ id: idMovimento, field, value, src: srcMovimento })
   }).then(() => location.reload());
 }
 
@@ -303,7 +364,7 @@ function saveEtichette() {
   fetch('ajax/update_etichette.php', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ id: idMovimento, etichette: selected })
+    body: JSON.stringify({ id: idMovimento, etichette: selected, src: srcMovimento })
   }).then(() => location.reload());
 }
 </script>
