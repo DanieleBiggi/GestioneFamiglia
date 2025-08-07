@@ -7,8 +7,8 @@ $sql = "SELECT e.id_etichetta, e.descrizione, e.attivo, e.da_dividere,
                 EXISTS (
                   SELECT 1
                   FROM bilancio_etichette2operazioni eo
-                  LEFT JOIN bilancio_utenti2operazioni_etichettate uo ON eo.id_operazione = uo.id_operazione
-                  WHERE eo.id_etichetta = e.id_etichetta AND uo.id_operazione IS NULL
+                  LEFT JOIN bilancio_utenti2operazioni_etichettate uo ON eo.id_e2o = uo.id_e2o
+                  WHERE eo.id_etichetta = e.id_etichetta AND uo.id_u2o IS NULL
                 ) AS has_unassigned
          FROM bilancio_etichette e
          ORDER BY e.descrizione ASC";
