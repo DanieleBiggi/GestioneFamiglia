@@ -259,24 +259,6 @@ include 'includes/header.php';
   </div>
 </div>
 
-<style>
-#gruppiModal .category-box {
-  background-color: #2c2f33;
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: .5rem;
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
-#gruppiModal .category-title {
-  font-size: 1.05rem;
-  font-weight: 600;
-  margin-bottom: .75rem;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  padding-bottom: .25rem;
-  color: #fff;
-}
-</style>
-
 <!-- Etichette modal -->
 <div class="modal fade" id="etichetteModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
@@ -364,10 +346,10 @@ function renderGruppiList() {
 
   for (const [cat, items] of categories) {
     const col = document.createElement('div');
-    col.className = 'col-12 col-md-6 col-lg-4 category-container';
+    col.className = 'col-12 col-md-6 col-lg-4 d-flex category-container';
 
     const box = document.createElement('div');
-    box.className = 'category-box';
+    box.className = 'category-box w-100';
 
     const title = document.createElement('div');
     title.className = 'category-title';
