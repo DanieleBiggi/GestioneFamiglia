@@ -19,9 +19,10 @@ $etichette = $conn->query($sql);
 
   <div class="list-group" id="labelList">
     <?php while ($row = $etichette->fetch_assoc()): ?>
-      <a href="etichetta.php?etichetta=<?= urlencode($row['descrizione']) ?>" class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center text-decoration-none label-card<?= $row['attivo'] ? '' : ' inactive' ?>" data-search="<?= strtolower($row['descrizione']) ?>">
+      <?php $isActive = (int)($row['attivo'] ?? 0) === 1; ?>
+      <a href="etichetta.php?etichetta=<?= urlencode($row['descrizione']) ?>" class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center text-decoration-none label-card<?= $isActive ? '' : ' inactive' ?>" data-search="<?= strtolower($row['descrizione']) ?>" style="<?= $isActive ? '' : 'display:none;' ?>">
         <span><?= htmlspecialchars($row['descrizione']) ?></span>
-        <?php if ($row['attivo']): ?>
+        <?php if ($isActive): ?>
           <i class="bi bi-check-circle-fill text-success"></i>
         <?php else: ?>
           <i class="bi bi-x-circle-fill text-danger"></i>
