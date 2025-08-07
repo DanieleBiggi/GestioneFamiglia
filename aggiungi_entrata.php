@@ -1,8 +1,6 @@
 <?php
 include 'includes/session_check.php';
 include 'includes/db.php';
-include 'includes/header.php';
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $descrizione = $_POST['descrizione'] ?? '';
     $descrizione_extra = $_POST['descrizione_extra'] ?? '';
@@ -10,16 +8,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $note = $_POST['note'] ?? '';
     $data_operazione = $_POST['data_operazione'] ?? date('Y-m-d\TH:i');
     $data_operazione = date('Y-m-d H:i:s', strtotime($data_operazione));
+    
+    $note = isset($note) && trim($note) !== '' ? $note : null;
+    $descrizione_extra = isset($descrizione_extra) && trim($descrizione_extra) !== '' ? $descrizione_extra : null;
+    $descrizione = isset($descrizione) && trim($descrizione) !== '' ? $descrizione : null;
 
     $stmt = $conn->prepare("INSERT INTO bilancio_entrate (id_utente, mezzo, descrizione_operazione, descrizione_extra, importo, note, data_operazione) VALUES (?, 'contanti', ?, ?, ?, ?, ?)");
     $stmt->bind_param('issdss', $_SESSION['utente_id'], $descrizione, $descrizione_extra, $importo, $note, $data_operazione);
-    $stmt->execute();
+    if ($stmt->execute()) {
+        
     $id = $conn->insert_id;
     $stmt->close();
-
     header('Location: dettaglio.php?id=' . $id . '&src=bilancio_entrate');
+} else {
+    die("Errore nell'INSERT: " . $stmt->error);
+}
+
+    
     exit;
 }
+include 'includes/header.php';
+
 ?>
 
 <div class="container text-white">
