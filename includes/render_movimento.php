@@ -8,7 +8,7 @@ function render_movimento(array $mov) {
     // Determine icon based on source
     $icon = $mov['source'] === 'revolut' ? 'assets/revolut.jpeg' : 'assets/credit.jpeg';
 
-    $url = 'dettaglio.php?id=' . (int)$mov['id'] . '&src=' . urlencode($mov['source']);
+    $url = 'dettaglio.php?id=' . (int)$mov['id'] . '&src=' . urlencode($mov['tabella']);
 
     echo '<div class="movement d-flex justify-content-between align-items-start text-white text-decoration-none" style="cursor:pointer" onclick="window.location.href=\'' . $url . '\'">';
     echo '  <img src="' . htmlspecialchars($icon) . '" alt="src" class="me-2" style="width:24px;height:24px">';
