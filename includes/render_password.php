@@ -6,7 +6,7 @@ function render_password(array $row) {
     }
     $search = strtolower(($row['url_login'] ?? '') . ' ' . ($row['username'] ?? '') . ' ' . ($row['note'] ?? ''));
     $searchAttr = htmlspecialchars($search, ENT_QUOTES);
-    $url = 'password_dettaglio.php?id=' . (int)$row['id_account'];
+    $url = 'password_dettaglio.php?id=' . (int)$row['id_account_password'];
     echo '<div class="' . $classes . '" data-search="' . $searchAttr . '" onclick="window.location.href=\'' . $url . '\'">';
     echo '  <div class="flex-grow-1">';
     $icon = !empty($row['attiva']) ? '<i class="bi bi-check-circle-fill text-success me-2"></i>' : '<i class="bi bi-x-circle-fill text-danger me-2"></i>';
