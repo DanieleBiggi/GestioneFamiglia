@@ -19,10 +19,14 @@ if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'
 
 <?php
  $sql = "SELECT * FROM (
-            SELECT id_movimento_revolut AS id, COALESCE(NULLIF(descrizione_extra,''), description) AS descrizione,
-                   descrizione_extra, started_date AS data_operazione, amount,
-                   etichette, id_gruppo_transazione, 'revolut' AS source, 'movimenti_revolut' AS tabella, NULL AS mezzo
-            FROM v_movimenti_revolut
+            SELECT id_movimento_revolut AS id, COALESCE(NULLIF(descrizione_extra,''), description) AS descrizione, bm.descrizione_extra,
+                   started_date AS data_operazione, amount,
+                   (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
+                      FROM bilancio_etichette2operazioni eo
+                      JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
+                     WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut') AS etichette,
+                   be.id_gruppo_transazione, 'revolut' AS source, 'movimenti_revolut' AS tabella, null as mezzo
+            FROM movimenti_revolut bm            
             UNION ALL
             SELECT be.id_entrata AS id, COALESCE(NULLIF(be.descrizione_extra,''), be.descrizione_operazione) AS descrizione, be.descrizione_extra,
                    be.data_operazione, be.importo AS amount,
