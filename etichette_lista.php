@@ -3,52 +3,23 @@
 require_once 'includes/db.php';
 include 'includes/header.php';
 
-$q = trim($_GET['q'] ?? '');
-$show_inactive = isset($_GET['show_inactive']);
-
-$sql = "SELECT id_etichetta, descrizione, attivo FROM bilancio_etichette";
-$params = [];
-$types = '';
-$conds = [];
-
-if ($q !== '') {
-    $conds[] = "descrizione LIKE ?";
-    $params[] = "%$q%";
-    $types .= 's';
-} elseif (!$show_inactive) {
-    $conds[] = "attivo = 1";
-}
-
-if ($conds) {
-    $sql .= ' WHERE ' . implode(' AND ', $conds);
-}
-$sql .= ' ORDER BY descrizione ASC';
-
-$stmt = $conn->prepare($sql);
-if ($params) {
-    $stmt->bind_param($types, ...$params);
-}
-$stmt->execute();
-$etichette = $stmt->get_result();
-$stmt->close();
+$sql = "SELECT id_etichetta, descrizione, attivo FROM bilancio_etichette ORDER BY descrizione ASC";
+$etichette = $conn->query($sql);
 ?>
 
 <div class="text-white">
-  <h4 class="mb-3">Etichette</h4>
-  <form method="get" class="mb-3">
-    <div class="mb-2">
-      <input type="text" name="q" class="form-control" placeholder="Cerca..." value="<?= htmlspecialchars($q) ?>">
+  <div class="d-flex mb-3 justify-content-between"><h4>Etichette</h4><a href="etichetta_dettaglio.php" class="btn btn-outline-light btn-sm">Aggiungi nuova</a></div>
+  <div class="d-flex mb-3 align-items-center">
+    <input type="text" id="search" class="form-control bg-dark text-white border-secondary me-2" placeholder="Cerca">
+    <div class="form-check form-switch text-nowrap">
+      <input class="form-check-input" type="checkbox" id="showInactive">
+      <label class="form-check-label" for="showInactive">Mostra non attive</label>
     </div>
-    <div class="form-check mb-2">
-      <input class="form-check-input" type="checkbox" value="1" id="show_inactive" name="show_inactive" <?= $show_inactive ? 'checked' : '' ?>>
-      <label class="form-check-label" for="show_inactive">Includi etichette disattivate</label>
-    </div>
-    <button class="btn btn-outline-light w-100" type="submit">Filtra</button>
-  </form>
+  </div>
 
-  <div class="list-group">
+  <div class="list-group" id="labelList">
     <?php while ($row = $etichette->fetch_assoc()): ?>
-      <a href="etichetta.php?etichetta=<?= urlencode($row['descrizione']) ?>" class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center text-decoration-none">
+      <a href="etichetta.php?etichetta=<?= urlencode($row['descrizione']) ?>" class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center text-decoration-none label-card<?= $row['attivo'] ? '' : ' inactive' ?>" data-search="<?= strtolower($row['descrizione']) ?>">
         <span><?= htmlspecialchars($row['descrizione']) ?></span>
         <?php if ($row['attivo']): ?>
           <i class="bi bi-check-circle-fill text-success"></i>
@@ -60,5 +31,6 @@ $stmt->close();
   </div>
 </div>
 
+<script src="js/etichette.js"></script>
 <?php include 'includes/footer.php'; ?>
 
