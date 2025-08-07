@@ -8,6 +8,12 @@ require_once 'includes/render_movimento.php';
 
 if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1): ?>
 
+<div class="mb-3">
+  <a href="aggiungi_entrata.php" class="btn btn-success btn-sm">Aggiungi entrata</a>
+  <a href="aggiungi_uscita.php" class="btn btn-danger btn-sm">Aggiungi uscita</a>
+  <a href="upload_movimenti.php" class="btn btn-secondary btn-sm">Carica file</a>
+</div>
+
 <input type="text" id="search" class="form-control bg-dark text-white border-secondary mb-3" placeholder="Cerca nei movimenti">
 <div id="searchResults"></div>
 
