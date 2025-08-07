@@ -54,7 +54,7 @@
       <?php endif; ?>
       <li class="mb-3">
         <a href="/Gestionale25/password.php" class="btn btn-outline-light w-100 text-start">
-          🔐 Password
+          🔐 Siti e password
         </a>
       </li>
       <li class="mb-3">
