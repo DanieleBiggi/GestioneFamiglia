@@ -10,7 +10,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const isInactive = card.classList.contains('inactive');
       const match = text.includes(q);
       const visible = match && (!isInactive || showInactive.checked || q !== '');
-      card.style.display = visible ? '' : 'none';
+      //card.style.display = visible ? '' : 'none';
+      if (visible) {
+        card.style.removeProperty('display');
+      } else {
+        card.style.setProperty('display', 'none', 'important');
+      }
     });
   }
 
