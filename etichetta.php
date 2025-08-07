@@ -99,65 +99,49 @@ $totali = $stmtTot->get_result()->fetch_assoc();
 $stmtTot->close();
 
 // Movimenti dell'etichetta
-if ($mese !== '') {
-    $sqlMov = "SELECT * FROM (
-                SELECT id_movimento_revolut AS id, COALESCE(NULLIF(descrizione_extra,''), description) AS descrizione,
-                       descrizione_extra, started_date AS data_operazione, amount,
-                       etichette, id_gruppo_transazione, 'revolut' AS source, 'movimenti_revolut' AS tabella
-                FROM v_movimenti_revolut
-                UNION ALL
-                SELECT be.id_entrata AS id, be.descrizione_operazione AS descrizione, be.descrizione_extra,
-                       be.data_operazione, be.importo AS amount,
-                       (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
-                          FROM bilancio_etichette2operazioni eo
-                          JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                         WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette,
-                       be.id_gruppo_transazione, 'ca' AS source, 'bilancio_entrate' AS tabella
-                FROM bilancio_entrate be
-                UNION ALL
-                SELECT bu.id_uscita AS id, bu.descrizione_operazione AS descrizione, bu.descrizione_extra,
-                       bu.data_operazione, -bu.importo AS amount,
-                       (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
-                          FROM bilancio_etichette2operazioni eo
-                          JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                         WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette,
-                       bu.id_gruppo_transazione, 'ca' AS source, 'bilancio_uscite' AS tabella
-                FROM bilancio_uscite bu
-              ) t
-              WHERE FIND_IN_SET(?, etichette) AND DATE_FORMAT(data_operazione,'%Y-%m')=?
-              ORDER BY data_operazione DESC";
-    $stmtMov = $conn->prepare($sqlMov);
-    $stmtMov->bind_param('ss', $etichetta, $mese);
-} else {
-    $sqlMov = "SELECT * FROM (
-                SELECT id_movimento_revolut AS id, COALESCE(NULLIF(descrizione_extra,''), description) AS descrizione,
-                       descrizione_extra, started_date AS data_operazione, amount,
-                       etichette, id_gruppo_transazione, 'revolut' AS source, 'movimenti_revolut' AS tabella
-                FROM v_movimenti_revolut
-                UNION ALL
-                SELECT be.id_entrata AS id, be.descrizione_operazione AS descrizione, be.descrizione_extra,
-                       be.data_operazione, be.importo AS amount,
-                       (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
-                          FROM bilancio_etichette2operazioni eo
-                          JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                         WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette,
-                       be.id_gruppo_transazione, 'ca' AS source, 'bilancio_entrate' AS tabella
-                FROM bilancio_entrate be
-                UNION ALL
-                SELECT bu.id_uscita AS id, bu.descrizione_operazione AS descrizione, bu.descrizione_extra,
-                       bu.data_operazione, -bu.importo AS amount,
-                       (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
-                          FROM bilancio_etichette2operazioni eo
-                          JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                         WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette,
-                       bu.id_gruppo_transazione, 'ca' AS source, 'bilancio_uscite' AS tabella
-                FROM bilancio_uscite bu
-              ) t
-              WHERE FIND_IN_SET(?, etichette)
-              ORDER BY data_operazione DESC";
-    $stmtMov = $conn->prepare($sqlMov);
-    $stmtMov->bind_param('s', $etichetta);
-}
+  // Movimenti dell'etichetta con id_e2o
+  $sqlMov = "SELECT m.*, e2o.id_e2o
+             FROM (
+                  SELECT id_movimento_revolut AS id, COALESCE(NULLIF(descrizione_extra,''), description) AS descrizione,
+                         descrizione_extra, started_date AS data_operazione, amount,
+                         (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
+                            FROM bilancio_etichette2operazioni eo
+                            JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
+                           WHERE eo.id_tabella = v.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut') AS etichette,
+                         id_gruppo_transazione, 'revolut' AS source, 'movimenti_revolut' AS tabella
+                  FROM v_movimenti_revolut v
+                  UNION ALL
+                  SELECT be.id_entrata AS id, COALESCE(NULLIF(be.descrizione_extra,''), be.descrizione_operazione) AS descrizione, be.descrizione_extra,
+                         be.data_operazione, be.importo AS amount,
+                         (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
+                            FROM bilancio_etichette2operazioni eo
+                            JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
+                           WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette,
+                         be.id_gruppo_transazione, 'ca' AS source, 'bilancio_entrate' AS tabella
+                  FROM bilancio_entrate be
+                  UNION ALL
+                  SELECT bu.id_uscita AS id, COALESCE(NULLIF(bu.descrizione_extra,''), bu.descrizione_operazione) AS descrizione, bu.descrizione_extra,
+                         bu.data_operazione, -bu.importo AS amount,
+                         (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
+                            FROM bilancio_etichette2operazioni eo
+                            JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
+                           WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette,
+                         bu.id_gruppo_transazione, 'ca' AS source, 'bilancio_uscite' AS tabella
+                  FROM bilancio_uscite bu
+             ) m
+             JOIN bilancio_etichette2operazioni e2o ON e2o.id_tabella = m.id AND e2o.tabella_operazione = m.tabella
+             JOIN bilancio_etichette e ON e.id_etichetta = e2o.id_etichetta
+             WHERE e.descrizione = ?";
+  if ($mese !== '') {
+      $sqlMov .= " AND DATE_FORMAT(m.data_operazione,'%Y-%m')=?";
+      $sqlMov .= " ORDER BY m.data_operazione DESC";
+      $stmtMov = $conn->prepare($sqlMov);
+      $stmtMov->bind_param('ss', $etichetta, $mese);
+  } else {
+      $sqlMov .= " ORDER BY m.data_operazione DESC";
+      $stmtMov = $conn->prepare($sqlMov);
+      $stmtMov->bind_param('s', $etichetta);
+  }
 // Categoria per filtro gruppi
 $categorie = [];
 $resCat = $conn->query("SELECT id_categoria, descrizione_categoria FROM bilancio_gruppi_categorie ORDER BY descrizione_categoria");
@@ -265,19 +249,78 @@ $stmtGrp->close();
     <div>Uscite: <span><?= number_format($totali['uscite'] ?? 0, 2, ',', '.') ?> €</span></div>
   </div>
 
-  <?php if ($movimenti->num_rows > 0): ?>
-    <?php while ($mov = $movimenti->fetch_assoc()): ?>
-      <?php render_movimento_etichetta($mov); ?>
-    <?php endwhile; ?>
-  <?php else: ?>
-    <p class="text-center text-muted">Nessun movimento per questa etichetta.</p>
-  <?php endif; ?>
+    <?php if ($movimenti->num_rows > 0): ?>
+      <?php while ($mov = $movimenti->fetch_assoc()): ?>
+        <?php render_movimento_etichetta($mov); ?>
+      <?php endwhile; ?>
+    <?php else: ?>
+      <p class="text-center text-muted">Nessun movimento per questa etichetta.</p>
+    <?php endif; ?>
 
-  <?php if (!empty($gruppi)): ?>
-    <h5 class="mt-4">Dettaglio per gruppo</h5>
-    <form method="get" class="mb-3">
-      <input type="hidden" name="etichetta" value="<?= htmlspecialchars($etichetta) ?>">
-      <input type="hidden" name="mese" value="<?= htmlspecialchars($mese) ?>">
+    <!-- Modal gestione quote utenti -->
+    <div class="modal fade" id="u2oModal" tabindex="-1">
+      <div class="modal-dialog">
+        <form class="modal-content bg-dark text-white" onsubmit="saveU2o(event)">
+          <div class="modal-header">
+            <h5 class="modal-title">Quote utenti</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div id="u2oRows"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary w-100">Salva</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+    let currentIdE2o = null;
+
+    function openU2oModal(btn) {
+      currentIdE2o = btn.dataset.idE2o;
+      const rows = JSON.parse(btn.dataset.rows || '[]');
+      const container = document.getElementById('u2oRows');
+      container.innerHTML = '';
+      rows.forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'row g-2 align-items-center mb-2 u2o-row';
+        div.dataset.id = r.id_u2o;
+        div.innerHTML = `
+          <div class="col-5">${r.nome} ${r.cognome}${r.utente_pagante == 1 ? ' (P)' : ''}</div>
+          <div class="col-3"><input type="number" step="0.01" class="form-control form-control-sm" value="${r.importo_utente ?? ''}"></div>
+          <div class="col-2 text-center"><input type="checkbox" class="form-check-input" ${r.saldata == 1 ? 'checked' : ''}></div>
+          <div class="col-2"><input type="date" class="form-control form-control-sm" value="${r.data_saldo ? r.data_saldo.substring(0,10) : ''}"></div>
+        `;
+        container.appendChild(div);
+      });
+      new bootstrap.Modal(document.getElementById('u2oModal')).show();
+    }
+
+    function saveU2o(e) {
+      e.preventDefault();
+      const rows = [];
+      document.querySelectorAll('#u2oRows .u2o-row').forEach(row => {
+        const id = parseInt(row.dataset.id);
+        const importo = row.querySelector('input[type="number"]').value;
+        const saldata = row.querySelector('input[type="checkbox"]').checked ? 1 : 0;
+        const dataSaldo = row.querySelector('input[type="date"]').value;
+        rows.push({id_u2o: id, importo_utente: importo, saldata: saldata, data_saldo: dataSaldo});
+      });
+      fetch('ajax/update_utenti2operazioni_etichettate.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({rows})
+      }).then(r => r.json()).then(() => location.reload());
+    }
+    </script>
+
+    <?php if (!empty($gruppi)): ?>
+      <h5 class="mt-4">Dettaglio per gruppo</h5>
+      <form method="get" class="mb-3">
+        <input type="hidden" name="etichetta" value="<?= htmlspecialchars($etichetta) ?>">
+        <input type="hidden" name="mese" value="<?= htmlspecialchars($mese) ?>">
       <div class="d-flex gap-2 align-items-center">
         <label for="categoria" class="form-label mb-0">Categoria:</label>
         <select name="categoria" id="categoria" class="form-select w-auto" onchange="this.form.submit()">
