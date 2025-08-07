@@ -46,7 +46,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 ?>
-
+<div class="container text-white">
+  <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
+  <h4 class="mb-4">Dettaglio Password e Sito</h4>
+</div>
 <form method="post" class="bg-dark text-white p-3 rounded">
   <div class="mb-3">
     <label class="form-label">URL Login</label>
