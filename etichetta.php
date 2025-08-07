@@ -1,7 +1,7 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
 require_once 'includes/db.php';
-require_once 'includes/render_movimento.php';
+require_once 'includes/render_movimento_etichetta.php';
 include 'includes/header.php';
 setlocale(LC_TIME, 'it_IT.UTF-8');
 
@@ -266,7 +266,7 @@ $stmtGrp->close();
 
   <?php if ($movimenti->num_rows > 0): ?>
     <?php while ($mov = $movimenti->fetch_assoc()): ?>
-      <?php render_movimento($mov); ?>
+      <?php render_movimento_etichetta($mov); ?>
     <?php endwhile; ?>
   <?php else: ?>
     <p class="text-center text-muted">Nessun movimento per questa etichetta.</p>
