@@ -1,5 +1,8 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once 'includes/db.php';
 require_once 'includes/render_movimento_etichetta.php';
 include 'includes/header.php';
@@ -35,17 +38,22 @@ if (!$etichettaInfo) {
 $mesi = [];
 $sqlM = "SELECT DATE_FORMAT(data_operazione,'%Y-%m') AS ym, DATE_FORMAT(data_operazione,'%M %Y') AS label
           FROM (
-            SELECT started_date AS data_operazione, etichette FROM v_movimenti_revolut
+            SELECT bm.started_date as data_operazione,
+                   (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
+                      FROM bilancio_etichette2operazioni eo
+                      JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
+                     WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut') AS etichette
+            FROM movimenti_revolut bm
             UNION ALL
             SELECT be.data_operazione,
-                   (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
+                   (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                      WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette
             FROM bilancio_entrate be
             UNION ALL
             SELECT bu.data_operazione,
-                   (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
+                   (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                      WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette
@@ -54,7 +62,7 @@ $sqlM = "SELECT DATE_FORMAT(data_operazione,'%Y-%m') AS ym, DATE_FORMAT(data_ope
           WHERE FIND_IN_SET(?, etichette)
           GROUP BY ym ORDER BY ym DESC";
 $stmtM = $conn->prepare($sqlM);
-$stmtM->bind_param('s', $etichettaInfo);
+$stmtM->bind_param('s', $etichettaInfo['id_etichetta']);
 $stmtM->execute();
 $resM = $stmtM->get_result();
 while ($row = $resM->fetch_assoc()) {
@@ -67,17 +75,22 @@ if ($mese !== '') {
     $sqlTot = "SELECT SUM(CASE WHEN amount>=0 THEN amount ELSE 0 END) AS entrate,
                         SUM(CASE WHEN amount<0 THEN amount ELSE 0 END) AS uscite
                  FROM (
-                    SELECT amount, started_date AS data_operazione, etichette FROM v_movimenti_revolut
+                    SELECT amount, bm.started_date as data_operazione, 
+                           (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
+                              FROM bilancio_etichette2operazioni eo
+                              JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
+                             WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut') AS etichette
+                    FROM movimenti_revolut bm
                     UNION ALL
                     SELECT importo AS amount, data_operazione,
-                           (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
+                           (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                               FROM bilancio_etichette2operazioni eo
                               JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                              WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette
                     FROM bilancio_entrate be
                     UNION ALL
                     SELECT -importo AS amount, data_operazione,
-                           (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
+                           (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                               FROM bilancio_etichette2operazioni eo
                               JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                              WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette
@@ -85,22 +98,27 @@ if ($mese !== '') {
                  ) t
                  WHERE FIND_IN_SET(?, etichette) AND DATE_FORMAT(data_operazione,'%Y-%m')=?";
     $stmtTot = $conn->prepare($sqlTot);
-    $stmtTot->bind_param('ss', $etichetta, $mese);
+    $stmtTot->bind_param('ss', $etichettaInfo['id_etichetta'], $mese);
 } else {
     $sqlTot = "SELECT SUM(CASE WHEN amount>=0 THEN amount ELSE 0 END) AS entrate,
                         SUM(CASE WHEN amount<0 THEN amount ELSE 0 END) AS uscite
                  FROM (
-                    SELECT amount, started_date AS data_operazione, etichette FROM v_movimenti_revolut
+                    SELECT amount, bm.started_date as data_operazione, 
+                           (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
+                              FROM bilancio_etichette2operazioni eo
+                              JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
+                             WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut') AS etichette
+                    FROM movimenti_revolut bm
                     UNION ALL
                     SELECT importo AS amount, data_operazione,
-                           (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
+                           (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                               FROM bilancio_etichette2operazioni eo
                               JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                              WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette
                     FROM bilancio_entrate be
                     UNION ALL
                     SELECT -importo AS amount, data_operazione,
-                           (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
+                           (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                               FROM bilancio_etichette2operazioni eo
                               JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                              WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette
@@ -108,7 +126,7 @@ if ($mese !== '') {
                  ) t
                  WHERE FIND_IN_SET(?, etichette)";
     $stmtTot = $conn->prepare($sqlTot);
-    $stmtTot->bind_param('s', $etichetta);
+    $stmtTot->bind_param('s', $etichettaInfo['id_etichetta']);
 }
 $stmtTot->execute();
 $totali = $stmtTot->get_result()->fetch_assoc();
@@ -147,16 +165,16 @@ $stmtTot->close();
              ) m
              JOIN bilancio_etichette2operazioni e2o ON e2o.id_tabella = m.id AND e2o.tabella_operazione = m.tabella
              JOIN bilancio_etichette e ON e.id_etichetta = e2o.id_etichetta
-             WHERE e.descrizione = ?";
+             WHERE e.id_etichetta = ?";
   if ($mese !== '') {
       $sqlMov .= " AND DATE_FORMAT(m.data_operazione,'%Y-%m')=?";
       $sqlMov .= " ORDER BY m.data_operazione DESC";
       $stmtMov = $conn->prepare($sqlMov);
-      $stmtMov->bind_param('ss', $etichetta, $mese);
+      $stmtMov->bind_param('ss', $etichettaInfo['id_etichetta'], $mese);
   } else {
       $sqlMov .= " ORDER BY m.data_operazione DESC";
       $stmtMov = $conn->prepare($sqlMov);
-      $stmtMov->bind_param('s', $etichetta);
+      $stmtMov->bind_param('s', $etichettaInfo['id_etichetta']);
   }
 // Categoria per filtro gruppi
 $categorie = [];
@@ -184,17 +202,22 @@ $sqlGrp = "SELECT m.id_gruppo_transazione, g.descrizione AS gruppo, g.tipo_grupp
                   SUM(CASE WHEN m.amount>=0 THEN m.amount ELSE 0 END) AS entrate,
                   SUM(CASE WHEN m.amount<0 THEN m.amount ELSE 0 END) AS uscite
            FROM (
-                SELECT id_gruppo_transazione, amount, started_date AS data_operazione, etichette FROM v_movimenti_revolut
+                SELECT id_gruppo_transazione, amount, bm.started_date as data_operazione, 
+                           (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
+                              FROM bilancio_etichette2operazioni eo
+                              JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
+                             WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut') AS etichette
+                    FROM movimenti_revolut bm
                 UNION ALL
                 SELECT be.id_gruppo_transazione, be.importo AS amount, be.data_operazione,
-                       (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
+                       (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                           FROM bilancio_etichette2operazioni eo
                           JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                          WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette
                 FROM bilancio_entrate be
                 UNION ALL
                 SELECT bu.id_gruppo_transazione, -bu.importo AS amount, bu.data_operazione,
-                       (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
+                       (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                           FROM bilancio_etichette2operazioni eo
                           JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                          WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette
@@ -217,19 +240,19 @@ $sqlGrp .= " GROUP BY m.id_gruppo_transazione, g.descrizione, g.tipo_gruppo, cat
 
 if ($mese !== '' && $categoria !== '' && $categoria !== '0') {
     $stmtGrp = $conn->prepare($sqlGrp);
-    $stmtGrp->bind_param('ssi', $etichetta, $mese, $categoria);
+    $stmtGrp->bind_param('ssi', $etichettaInfo['id_etichetta'], $mese, $categoria);
 } elseif ($mese !== '' && $categoria === '0') {
     $stmtGrp = $conn->prepare($sqlGrp);
-    $stmtGrp->bind_param('ss', $etichetta, $mese);
+    $stmtGrp->bind_param('ss', $etichettaInfo['id_etichetta'], $mese);
 } elseif ($mese !== '' && $categoria === '') {
     $stmtGrp = $conn->prepare($sqlGrp);
-    $stmtGrp->bind_param('ss', $etichetta, $mese);
+    $stmtGrp->bind_param('ss', $etichettaInfo['id_etichetta'], $mese);
 } elseif ($mese === '' && $categoria !== '' && $categoria !== '0') {
     $stmtGrp = $conn->prepare($sqlGrp);
-    $stmtGrp->bind_param('si', $etichetta, $categoria);
+    $stmtGrp->bind_param('si', $etichettaInfo['id_etichetta'], $categoria);
 } else {
     $stmtGrp = $conn->prepare($sqlGrp);
-    $stmtGrp->bind_param('s', $etichetta);
+    $stmtGrp->bind_param('s', $etichettaInfo['id_etichetta']);
 }
 
 $stmtGrp->execute();
@@ -245,7 +268,7 @@ $stmtGrp->close();
 
 <div class="text-white">
     <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>    
-  <h4 class="mb-3">Movimenti per etichetta: <span id="etichettaDesc"><?= htmlspecialchars($etichetta) ?></span><i class="bi bi-pencil ms-2" role="button" onclick="openEtichettaModal()"></i></h4>
+  <h4 class="mb-3">Movimenti per etichetta: <span id="etichettaDesc"><?= htmlspecialchars($etichettaInfo['descrizione']) ?></span><i class="bi bi-pencil ms-2" role="button" onclick="openEtichettaModal()"></i></h4>
 
   <form method="get" class="mb-3">
     <input type="hidden" name="etichetta" value="<?= htmlspecialchars($etichetta) ?>">
