@@ -23,3 +23,32 @@ document.addEventListener('DOMContentLoaded', () => {
   showInactive.addEventListener('input', filter);
   filter();
 });
+
+function openEtichettaModal() {
+  document.getElementById('descrizione').value = '';
+  document.getElementById('attivo').checked = true;
+  document.getElementById('da_dividere').checked = false;
+  document.getElementById('utenti_tra_cui_dividere').value = '';
+  new bootstrap.Modal(document.getElementById('editEtichettaModal')).show();
+}
+
+function saveEtichetta(event) {
+  event.preventDefault();
+  const payload = {
+    descrizione: document.getElementById('descrizione').value.trim(),
+    attivo: document.getElementById('attivo').checked ? 1 : 0,
+    da_dividere: document.getElementById('da_dividere').checked ? 1 : 0,
+    utenti_tra_cui_dividere: document.getElementById('utenti_tra_cui_dividere').value.trim()
+  };
+  fetch('ajax/add_etichetta.php', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  }).then(r => r.json()).then(resp => {
+    if (resp.success) {
+      window.location.reload();
+    } else {
+      alert(resp.error || 'Errore nel salvataggio');
+    }
+  });
+}
