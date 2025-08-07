@@ -1,7 +1,12 @@
 <?php
 function render_movimento(array $mov) {
     global $conn;
-
+    
+    if($mov['tabella']=="bilancio_uscite" && $mov['amount'] >= 0)
+    {
+        $mov['amount'] *= -1;
+    }
+    
     $importo = number_format($mov['amount'], 2, ',', '.');
     $dataOra  = date('d/m/Y H:i', strtotime($mov['data_operazione']));
 
