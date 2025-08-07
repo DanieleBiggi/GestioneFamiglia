@@ -399,7 +399,8 @@ class PageManager {
                 return;
             }
 
-            let dati_risposta = JSON.parse(msg);
+            //let dati_risposta = JSON.parse(msg);
+            let dati_risposta = msg;
 
             this.ar_dati[this.nav_attivo] = dati_risposta.ar_dati;
 
@@ -435,7 +436,8 @@ class PageManager {
                 return;
             }
 
-            let dati_risposta = JSON.parse(msg);
+            //let dati_risposta = JSON.parse(msg);
+            let dati_risposta = msg;
 
             this.ar_dati[cosa] = dati_risposta.ar_dati;
 
