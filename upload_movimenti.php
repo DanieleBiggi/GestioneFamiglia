@@ -151,12 +151,11 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
 
         echo
         "<div class='alert alert-success'>Inserite ".$inserita." righe</div><br>".
-        "<a class='btn btn-primary btn-sm ml-2' href='movimenti_revolutlist.php'>Torna alla lista</a>";
+        "<a class='btn btn-primary btn-sm ml-2' href='index.php'>Torna alla lista</a>";
 
         if ($nuove_descrizioni_inserite > 0) {
             echo
-            "<div class='alert alert-warning mt-4'>Sono state inserite ".$nuove_descrizioni_inserite." Nuove descrizioni.</div><br>".
-            "<a class='btn btn-primary btn-sm ml-2' href='movimenti_revolut2salvadanaio_importazionelist.php'>Clicca qui per associarle ai salvadanai</a>";
+            "<div class='alert alert-warning mt-4'>Sono state inserite ".$nuove_descrizioni_inserite." Nuove descrizioni.</div>";
         }
     } else {
         // Importazione bilancio entrate/uscite
@@ -283,7 +282,7 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
 
         echo
         "<div class='alert alert-success'>Inserite ".$inserita." righe su ".$tot_righe."</div><br>".
-        "<a class='btn btn-primary btn-sm ml-2' href='v_elenco_operazionilist.php'>Torna alla lista</a>";
+        "<a class='btn btn-primary btn-sm ml-2' href='index.php'>Torna alla lista</a>";
     }
 } else {
 ?>
