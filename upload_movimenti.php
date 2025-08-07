@@ -1,8 +1,9 @@
 <?php
 include 'includes/session_check.php';
+include 'includes/db.php';
 include 'includes/header.php';
 
-if (is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
+if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
     $file = $_FILES['fileToUpload']['tmp_name'];
     $handle = fopen($file, "r");
 
