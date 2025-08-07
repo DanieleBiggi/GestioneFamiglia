@@ -15,6 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   search.addEventListener('input', filter);
-  showInactive.addEventListener('change', filter);
+  showInactive.addEventListener('input', filter);
   filter();
 });

@@ -1,13 +1,15 @@
 <?php
 function render_password(array $row) {
+    $isActive = (int)($row['attiva'] ?? 0) === 1;
     $classes = 'password-card movement d-flex justify-content-between align-items-start text-white text-decoration-none';
-    if (isset($row['attiva']) && !$row['attiva']) {
+    if (!$isActive) {
         $classes .= ' inactive';
     }
-    $search = strtolower(($row['url_login'] ?? '') . ' ' . ($row['username'] ?? '') . ' ' . ($row['note'] ?? ''));
+    $search = strtolower(($row['url_login'] ?? '') . ' ' . ($row['username'] ?? '') . ' ' . ($row['password_account'] ?? ''));
     $searchAttr = htmlspecialchars($search, ENT_QUOTES);
     $url = 'password_dettaglio.php?id=' . (int)$row['id_account_password'];
-    echo '<div class="' . $classes . '" data-search="' . $searchAttr . '" onclick="window.location.href=\'' . $url . '\'">';
+    $style = $isActive ? '' : ' style="display:none;"';
+    echo '<div class="' . $classes . '" data-search="' . $searchAttr . '"' . $style . ' onclick="window.location.href=\'' . $url . '\'">';
     echo '  <div class="flex-grow-1">';
     $urlLogin = htmlspecialchars($row['url_login']);
     if (filter_var($row['url_login'], FILTER_VALIDATE_URL)) {
@@ -24,7 +26,7 @@ function render_password(array $row) {
     if (!empty($row['condivisa_con_famiglia'])) {
         $icons .= '<i class="bi bi-people-fill text-info me-2" title="Condivisa con famiglia"></i>';
     }
-    $icons .= !empty($row['attiva'])
+    $icons .= $isActive
         ? '<i class="bi bi-check-circle-fill text-success"></i>'
         : '<i class="bi bi-x-circle-fill text-danger"></i>';
     echo '  <div class="ms-2 text-nowrap">' . $icons . '</div>';
