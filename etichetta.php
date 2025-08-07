@@ -8,7 +8,7 @@ require_once 'includes/render_movimento_etichetta.php';
 include 'includes/header.php';
 setlocale(LC_TIME, 'it_IT.UTF-8');
 
-$etichettaParam = $_GET['etichetta'] ?? '';
+$etichettaParam = $_GET['id_etichetta'] ?? '';
 $mese = $_GET['mese'] ?? '';
 $categoria = $_GET['categoria'] ?? '';
 $etichettaInfo = null;
@@ -20,7 +20,7 @@ if ($etichettaParam === '') {
 }
 
 
-$stmtEt = $conn->prepare("SELECT id_etichetta, descrizione, attivo, da_dividere, utenti_tra_cui_dividere FROM bilancio_etichette WHERE descrizione = ?");
+$stmtEt = $conn->prepare("SELECT id_etichetta, descrizione, attivo, da_dividere, utenti_tra_cui_dividere FROM bilancio_etichette WHERE id_etichetta = ?");
 $stmtEt->bind_param('s', $etichettaParam);
 $stmtEt->execute();
 $etichettaInfo = $stmtEt->get_result()->fetch_assoc();
