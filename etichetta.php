@@ -34,6 +34,18 @@ if (!$etichettaInfo) {
 }
 
 
+// Recupera utenti della famiglia corrente per la selezione
+$listaUtenti = [];
+$famigliaId = $_SESSION['id_famiglia_gestione'] ?? 0;
+$stmtUt = $conn->prepare('SELECT u.id, u.nome, u.cognome FROM utenti u JOIN utenti2famiglie u2f ON u.id = u2f.id_utente WHERE u2f.id_famiglia = ? ORDER BY u.nome');
+$stmtUt->bind_param('i', $famigliaId);
+$stmtUt->execute();
+$resUt = $stmtUt->get_result();
+while ($row = $resUt->fetch_assoc()) {
+    $listaUtenti[] = $row;
+}
+$stmtUt->close();
+
 // Lista mesi disponibili per questa etichetta
 $mesi = [];
 $sqlM = "SELECT DATE_FORMAT(data_operazione,'%Y-%m') AS ym, DATE_FORMAT(data_operazione,'%M %Y') AS label
@@ -453,9 +465,17 @@ $stmtGrp->close();
           <label class="form-check-label" for="da_dividere">Da dividere</label>
         </div>
         <div class="mb-3">
-          <label for="utenti_tra_cui_dividere" class="form-label">Utenti tra cui dividere</label>
-          <input type="text" class="form-control bg-secondary text-white" id="utenti_tra_cui_dividere">
-
+          <label class="form-label">Utenti tra cui dividere</label>
+          <div id="utenti_tra_cui_dividere" class="form-control bg-secondary text-white" style="max-height:150px; overflow:auto;">
+            <?php foreach ($listaUtenti as $u): ?>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="<?= (int)$u['id'] ?>" id="utente<?= (int)$u['id'] ?>">
+                <label class="form-check-label" for="utente<?= (int)$u['id'] ?>">
+                  <?= htmlspecialchars(trim(($u['nome'] ?? '') . ' ' . ($u['cognome'] ?? ''))) ?>
+                </label>
+              </div>
+            <?php endforeach; ?>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -534,18 +554,24 @@ document.getElementById('editE2oForm').addEventListener('submit', function(e){
     document.getElementById('descrizione').value = etichettaData.descrizione;
     document.getElementById('attivo').checked = etichettaData.attivo == 1;
     document.getElementById('da_dividere').checked = etichettaData.da_dividere == 1;
-    document.getElementById('utenti_tra_cui_dividere').value = etichettaData.utenti || '';
+    const utentiDiv = document.getElementById('utenti_tra_cui_dividere');
+    utentiDiv.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    (etichettaData.utenti || '').split(',').filter(Boolean).forEach(id => {
+      const cb = utentiDiv.querySelector('input[value="' + id + '"]');
+      if (cb) cb.checked = true;
+    });
     new bootstrap.Modal(document.getElementById('editEtichettaModal')).show();
   }
 
   function saveEtichetta(event) {
     event.preventDefault();
+    const selectedUsers = Array.from(document.querySelectorAll('#utenti_tra_cui_dividere input:checked')).map(cb => cb.value).join(',');
     const payload = {
       id_etichetta: etichettaData.id,
       descrizione: document.getElementById('descrizione').value.trim(),
       attivo: document.getElementById('attivo').checked ? 1 : 0,
       da_dividere: document.getElementById('da_dividere').checked ? 1 : 0,
-      utenti_tra_cui_dividere: document.getElementById('utenti_tra_cui_dividere').value.trim()
+      utenti_tra_cui_dividere: selectedUsers
     };
     fetch('ajax/update_etichetta.php', {
       method: 'POST',
