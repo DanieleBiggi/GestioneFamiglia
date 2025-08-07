@@ -30,14 +30,16 @@ $etichette = $conn->query($sql);
       <?php $isActive = (int)($row['attivo'] ?? 0) === 1; ?>
       <a href="etichetta.php?id_etichetta=<?= urlencode($row['id_etichetta']) ?>" class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center text-decoration-none label-card<?= $isActive ? '' : ' inactive' ?>" data-search="<?= strtolower($row['descrizione']) ?>" style="<?= $isActive ? '' : 'display:none;' ?>">
         <span><?= htmlspecialchars($row['descrizione']) ?></span>
+        <div>
+            <?php if (($row['da_dividere'] ?? 0) == 1 && ($row['has_unassigned'] ?? 0) == 1): ?>
+          <i class="bi bi-exclamation-circle-fill text-warning ms-1"></i>
+        <?php endif; ?>
         <?php if ($isActive): ?>
           <i class="bi bi-check-circle-fill text-success"></i>
         <?php else: ?>
           <i class="bi bi-x-circle-fill text-danger"></i>
-        <?php endif; ?>
-        <?php if (($row['da_dividere'] ?? 0) == 1 && ($row['has_unassigned'] ?? 0) == 1): ?>
-          <i class="bi bi-exclamation-circle-fill text-warning ms-1"></i>
-        <?php endif; ?>
+        <?php endif; ?>        
+        </div>
       </a>
     <?php endwhile; ?>
   </div>
