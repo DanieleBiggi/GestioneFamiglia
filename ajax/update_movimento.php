@@ -17,7 +17,7 @@ if (!$id || !in_array($field, $allowed_fields)) {
     exit;
 }
 
-$sql = "UPDATE movimenti_revolut SET $field = ? WHERE id = ?";
+$sql = "UPDATE movimenti_revolut SET $field = ? WHERE id_movimento_revolut = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("si", $value, $id);
 $success = $stmt->execute();
