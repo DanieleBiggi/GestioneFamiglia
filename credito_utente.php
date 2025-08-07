@@ -10,6 +10,7 @@ setlocale(LC_TIME, 'it_IT.UTF-8');
 // Utente loggato e famiglia corrente
 $loggedUserId = $_SESSION['utente_id'] ?? 0;
 $famigliaId   = $_SESSION['id_famiglia_gestione'] ?? 0;
+$isAdmin      = ($loggedUserId == 1);
 
 // Verifica permessi dell'utente loggato per cambiare utente
 $stmtPerm = $conn->prepare('SELECT u.userlevelid AS lvl, u.admin FROM utenti u WHERE u.id = ?');
@@ -53,6 +54,8 @@ if ($canChangeUser) {
 }
 
 $sqlMov = "SELECT
+                u2o.id_u2o,
+                u2o.id_e2o,
                 CONCAT(ifnull(v.descrizione_extra,v.descrizione_operazione), ' (', v.importo_totale_operazione, ')') AS descrizione,
                 v.data_operazione,
                 v.descrizione AS etichetta_descrizione,
@@ -84,6 +87,40 @@ $movimenti = [];
 $saldoTot = 0.0;
 while ($row = $resMov->fetch_assoc()) {
     $row['saldo_utente'] = (float)$row['saldo_utente'];
+    if ($isAdmin) {
+        $stmtDet = $conn->prepare("SELECT u2o.id_u2o, u.nome, u.cognome,
+                (CASE
+                    WHEN v.id_utente_operazione = u2o.id_utente THEN -(
+                        CASE
+                            WHEN IFNULL(u2o.importo_utente, 0) <> 0 THEN u2o.importo_utente
+                            WHEN v.importo_etichetta <> 0 THEN (v.importo * u2o.quote)
+                            ELSE (v.importo_totale_operazione - (v.importo * u2o.quote))
+                        END
+                    )
+                    ELSE (
+                        CASE
+                            WHEN IFNULL(u2o.importo_utente, 0) <> 0 THEN u2o.importo_utente
+                            ELSE (v.importo * u2o.quote)
+                        END
+                    )
+                END) AS importo,
+                u2o.saldata,
+                u2o.data_saldo
+           FROM bilancio_utenti2operazioni_etichettate u2o
+           JOIN v_bilancio_etichette2operazioni_a_testa v ON u2o.id_e2o = v.id_e2o
+           JOIN utenti u ON u.id = u2o.id_utente
+           WHERE u2o.id_e2o = ?");
+        $stmtDet->bind_param('i', $row['id_e2o']);
+        $stmtDet->execute();
+        $resDet = $stmtDet->get_result();
+        $rowsDet = [];
+        while ($r = $resDet->fetch_assoc()) {
+            $r['importo'] = (float)$r['importo'];
+            $rowsDet[] = $r;
+        }
+        $stmtDet->close();
+        $row['rows'] = $rowsDet;
+    }
     $saldoTot += $row['saldo_utente'];
     $movimenti[] = $row;
 }
@@ -108,7 +145,11 @@ $stmtMov->close();
 
   <?php if (!empty($movimenti)): ?>
     <?php foreach ($movimenti as $mov): ?>
-      <div class="movement d-flex justify-content-between align-items-start text-white mb-2">
+      <?php $rowsAttr = $isAdmin ? htmlspecialchars(json_encode($mov['rows'] ?? []), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : ''; ?>
+      <div class="movement d-flex justify-content-between align-items-start text-white mb-2" <?php if ($isAdmin): ?>data-rows='<?= $rowsAttr ?>' onclick="openDettaglio(this)" style="cursor:pointer"<?php endif; ?>>
+        <?php if ($isAdmin): ?>
+          <input type="checkbox" class="form-check-input me-2" data-id-u2o="<?= $mov['id_u2o'] ?>" onclick="event.stopPropagation(); toggleSaldata(this);">
+        <?php endif; ?>
         <div class="flex-grow-1 me-3">
           <div class="descr fw-semibold"><?= htmlspecialchars($mov['descrizione']) ?></div>
           <div class="small"><?= date('d/m/Y H:i', strtotime($mov['data_operazione'])) ?></div>
@@ -123,5 +164,55 @@ $stmtMov->close();
     <p class="text-center text-muted">Nessun movimento trovato per questo utente.</p>
   <?php endif; ?>
 </div>
+
+<?php if ($isAdmin): ?>
+<div class="modal fade" id="movModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-header">
+        <h5 class="modal-title">Dettaglio movimento</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="movRows"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleSaldata(cb) {
+  const id = cb.dataset.idU2o;
+  const saldata = cb.checked ? 1 : 0;
+  fetch('ajax/update_u2o_saldata.php', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({id_u2o: id, saldata: saldata})
+  }).then(r => r.json()).then(res => {
+    if (!res.success) {
+      alert(res.error || 'Errore');
+      cb.checked = !cb.checked;
+      return;
+    }
+    if (saldata) {
+      const parent = cb.closest('.movement');
+      if (parent) parent.remove();
+    }
+  });
+}
+
+function openDettaglio(div) {
+  const rows = JSON.parse(div.dataset.rows || '[]');
+  const container = document.getElementById('movRows');
+  container.innerHTML = '';
+  rows.forEach(r => {
+    const imp = Number(r.importo).toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2});
+    const status = r.saldata == 1 ? '✔' : '✖';
+    const p = document.createElement('div');
+    p.textContent = `${r.nome} ${r.cognome}: ${imp} € ${status}`;
+    container.appendChild(p);
+  });
+  new bootstrap.Modal(document.getElementById('movModal')).show();
+}
+</script>
+<?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>
