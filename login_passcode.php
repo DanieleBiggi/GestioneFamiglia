@@ -26,7 +26,7 @@ $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pass = $_POST['passcode'] ?? '';
-    $sql = 'SELECT id, nome, passcode FROM utenti WHERE id = ? AND attivo = 1 LIMIT 1';
+    $sql = 'SELECT id, nome, passcode, id_famiglia_gestione FROM utenti WHERE id = ? AND attivo = 1 LIMIT 1';
     $stmt = $conn->prepare($sql);
     $stmt->bind_param('i', $device['id_utente']);
     $stmt->execute();
@@ -36,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($user['passcode']) && password_verify($pass, $user['passcode'])) {
             $_SESSION['utente_id'] = $user['id'];
             $_SESSION['utente_nome'] = $user['nome'];
+            $_SESSION['id_famiglia_gestione'] = $user['id_famiglia_gestione'] ?? 0;
             $newExp = date('Y-m-d H:i:s', time() + 60*60*24*30);
             $upd = $conn->prepare('UPDATE dispositivi_riconosciuti SET scadenza = ? WHERE token_dispositivo = ?');
             $upd->bind_param('ss', $newExp, $token);
