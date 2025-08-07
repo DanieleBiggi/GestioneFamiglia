@@ -7,8 +7,13 @@ include 'includes/header.php';
 $idUtente = $_SESSION['utente_id'] ?? ($_SESSION['id_utente'] ?? 0);
 $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 
-$stmt = $conn->prepare("SELECT g.* FROM gestione_account_password g JOIN utenti2famiglie u2f ON g.id_famiglia = u2f.id_famiglia WHERE u2f.id_utente = ? AND g.id_famiglia = ?");
-$stmt->bind_param('ii', $idUtente, $idFamiglia);
+$stmt = $conn->prepare(
+    "SELECT g.* FROM gestione_account_password g " .
+    "JOIN utenti u ON g.id_utente = u.id " .
+    "WHERE g.id_famiglia = ? " .
+    "AND (g.id_utente = ? OR (g.condivisa_con_famiglia = 1 AND u.id_famiglia_attuale = ?))"
+);
+$stmt->bind_param('iii', $idFamiglia, $idUtente, $idFamiglia);
 $stmt->execute();
 $res = $stmt->get_result();
 ?>

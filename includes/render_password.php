@@ -10,6 +10,9 @@ function render_password(array $row) {
     echo '<div class="' . $classes . '" data-search="' . $searchAttr . '" onclick="window.location.href=\'' . $url . '\'">';
     echo '  <div class="flex-grow-1">';
     $icon = !empty($row['attiva']) ? '<i class="bi bi-check-circle-fill text-success me-2"></i>' : '<i class="bi bi-x-circle-fill text-danger me-2"></i>';
+    if (!empty($row['condivisa_con_famiglia'])) {
+        $icon .= '<i class="bi bi-people-fill text-info me-2" title="Condivisa con famiglia"></i>';
+    }
     $urlLogin = htmlspecialchars($row['url_login']);
     if (filter_var($row['url_login'], FILTER_VALIDATE_URL)) {
         $urlLogin = '<a href="' . htmlspecialchars($row['url_login']) . '" target="_blank" onclick="event.stopPropagation();">' . $urlLogin . '</a>';
