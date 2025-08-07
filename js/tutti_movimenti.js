@@ -10,6 +10,28 @@ document.addEventListener('DOMContentLoaded', () => {
     let minIdx = mesi.length - 1;
     let maxIdx = mesi.length - 1;
 
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+                const ym = entry.target.dataset.mese;
+                const idx = mesi.indexOf(ym);
+                if (idx !== -1) {
+                    buttons.forEach((btn, i) => btn.classList.toggle('active', i === idx));
+                    buttons[idx].scrollIntoView({ inline: 'center', behavior: 'smooth' });
+                }
+            }
+        });
+    }, { threshold: 0.6 });
+
+    const observeSections = () => {
+        document.querySelectorAll('.month-section').forEach(sec => {
+            if (!sec.dataset.observed) {
+                observer.observe(sec);
+                sec.dataset.observed = '1';
+            }
+        });
+    };
+
     const loadMovimenti = (idx, mode = 'replace', setActive = true) => {
         fetch(`ajax/load_movimenti_mese.php?mese=${encodeURIComponent(mesi[idx])}`)
             .then(r => r.text())
@@ -22,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     movimenti.innerHTML = html;
                     window.scrollTo({ top: 0 });
                 }
+                observeSections();
                 if (setActive) {
                     buttons.forEach((btn, i) => btn.classList.toggle('active', i === idx));
                 }

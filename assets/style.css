@@ -34,6 +34,10 @@ body {
 .months-scroll {
   overflow-x: auto;
   white-space: nowrap;
+  position: sticky;
+  top: 0;
+  background-color: #121212;
+  z-index: 1000;
 }
 .months-scroll .btn {
   border-radius: 20px;

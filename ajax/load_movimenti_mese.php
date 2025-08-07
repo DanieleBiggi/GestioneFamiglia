@@ -37,6 +37,7 @@ $stmt->bind_param('s', $mese);
 $stmt->execute();
 $result = $stmt->get_result();
 
+echo '<div class="month-section" data-mese="' . htmlspecialchars($mese, ENT_QUOTES) . '">';
 $giorno_corrente = '';
 while ($mov = $result->fetch_assoc()) {
     $giorno = strftime('%A %e %B', strtotime($mov['data_operazione']));
@@ -47,4 +48,5 @@ while ($mov = $result->fetch_assoc()) {
 
     render_movimento($mov);
 }
+echo '</div>';
 

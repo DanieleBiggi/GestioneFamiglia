@@ -5,8 +5,7 @@ include 'includes/header.php';
 setlocale(LC_TIME, 'it_IT.UTF-8');
 
 $mesi = [];
-$sql = "SELECT DATE_FORMAT(data_operazione, '%Y-%m') AS ym,
-                DATE_FORMAT(data_operazione, '%M %Y') AS mese_label
+$sql = "SELECT DATE_FORMAT(data_operazione, '%Y-%m') AS ym
          FROM (
             SELECT started_date AS data_operazione FROM v_movimenti_revolut
             UNION ALL
@@ -16,15 +15,25 @@ $sql = "SELECT DATE_FORMAT(data_operazione, '%Y-%m') AS ym,
          ) t
          GROUP BY ym ORDER BY ym ASC";
 $result = $conn->query($sql);
+$annoCorrente = date('Y');
 while ($row = $result->fetch_assoc()) {
-    $mesi[] = $row;
+    $timestamp = strtotime($row['ym'] . '-01');
+    $label = strftime('%B', $timestamp);
+    $anno = date('Y', $timestamp);
+    if ($anno < $annoCorrente) {
+        $label .= ' ' . $anno;
+    }
+    $mesi[] = [
+        'ym' => $row['ym'],
+        'label' => ucfirst($label)
+    ];
 }
 $ultimoIndice = count($mesi) - 1;
 ?>
 <div class="months-scroll d-flex mb-3" id="monthsContainer">
     <?php foreach ($mesi as $idx => $m): ?>
         <button class="btn btn-outline-light me-2 <?= $idx === $ultimoIndice ? 'active' : '' ?>" data-mese="<?= htmlspecialchars($m['ym']) ?>">
-            <?= ucfirst($m['mese_label']) ?>
+            <?= $m['label'] ?>
         </button>
     <?php endforeach; ?>
 </div>
