@@ -24,7 +24,7 @@ function render_movimento(array $mov) {
     echo '  <div class="text-end">';
     echo '    <div class="amount text-white">' . ($mov['amount'] >= 0 ? '+' : '') . $importo . ' €';
     if (!empty($mov['mezzo']) && $mov['mezzo'] === 'contanti' && in_array($mov['tabella'], ['bilancio_entrate', 'bilancio_uscite'], true)) {
-        echo ' <i class="bi bi-trash text-danger ms-2 delete-movimento" onclick="event.stopPropagation();"></i>';
+        echo ' <i class="bi bi-trash text-danger ms-2 delete-movimento"></i>';
     }
     echo '</div>';
     if (!empty($mov['etichette'])) {
