@@ -70,6 +70,33 @@
           </ul>
         </div>
       </li>
+      <li class="mb-3">
+        <div class="dropdown w-100">
+          <button class="btn btn-outline-light w-100 text-start dropdown-toggle"
+                  data-bs-toggle="dropdown" aria-expanded="false">
+            🗃️ Tabelle
+          </button>
+          <ul class="dropdown-menu dropdown-menu-dark w-100">
+            <li><h6 class="dropdown-header">Bilancio</h6></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=bilancio_descrizione2id">Descrizioni</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=bilancio_entrate">Entrate</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=bilancio_gruppi_categorie">Gruppi categorie</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=bilancio_gruppi_transazione">Gruppi transazione</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=bilancio_uscite">Uscite</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><h6 class="dropdown-header">Sicurezza</h6></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=codici_2fa">Codici 2FA</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=dispositivi_riconosciuti">Dispositivi riconosciuti</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><h6 class="dropdown-header">Utenti</h6></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=famiglie">Famiglie</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=userlevels">User Levels</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=utenti">Utenti</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=utenti2famiglie">Utenti-Famiglie</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=utenti2ip">Utenti-IP</a></li>
+          </ul>
+        </div>
+      </li>
       <li>
         <a href="/Gestionale25/logout.php" class="btn btn-outline-danger w-100 text-start">
           ⎋ Logout
