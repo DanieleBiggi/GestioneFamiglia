@@ -1,4 +1,5 @@
 <?php
+include '../includes/session_check.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/render_movimento.php';
 setlocale(LC_TIME, 'it_IT.UTF-8');
