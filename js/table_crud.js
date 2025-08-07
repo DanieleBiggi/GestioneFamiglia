@@ -1,6 +1,10 @@
-function initTableManager(table, columns, primaryKey) {
+function initTableManager(table, columns, primaryKey, lookups) {
     const tbody = document.querySelector('#data-table tbody');
     const searchInput = document.getElementById('search');
+    const form = document.getElementById('record-form');
+    const addBtn = document.getElementById('addBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const idField = form.querySelector(`input[name="${primaryKey}"]`);
     let rows = [];
 
     function load() {
@@ -17,14 +21,20 @@ function initTableManager(table, columns, primaryKey) {
                 const tr = document.createElement('tr');
                 columns.forEach(c => {
                     const td = document.createElement('td');
-                    td.textContent = r[c];
+                    let text = r[c];
+                    if (lookups[c] && lookups[c][text] !== undefined) {
+                        text = lookups[c][text];
+                    }
+                    td.textContent = text;
                     tr.appendChild(td);
                 });
                 const actions = document.createElement('td');
                 const editBtn = document.createElement('button');
+                editBtn.className = 'btn btn-sm btn-primary me-2';
                 editBtn.textContent = 'Modifica';
-                editBtn.addEventListener('click', () => editRow(r));
+                editBtn.addEventListener('click', () => showForm(r));
                 const delBtn = document.createElement('button');
+                delBtn.className = 'btn btn-sm btn-danger';
                 delBtn.textContent = 'Elimina';
                 delBtn.addEventListener('click', () => deleteRow(r[primaryKey]));
                 actions.appendChild(editBtn);
@@ -34,35 +44,35 @@ function initTableManager(table, columns, primaryKey) {
             });
     }
 
+    function showForm(data = null) {
+        form.reset();
+        if (data) {
+            form.dataset.mode = 'edit';
+            idField.value = data[primaryKey];
+            columns.forEach(c => {
+                const field = form.querySelector(`[name="${c}"]`);
+                if (field) field.value = data[c];
+            });
+        } else {
+            form.dataset.mode = 'insert';
+            idField.value = '';
+        }
+        form.classList.remove('d-none');
+    }
+
+    addBtn.addEventListener('click', () => showForm());
+    cancelBtn.addEventListener('click', () => form.classList.add('d-none'));
     searchInput.addEventListener('input', render);
 
-    document.getElementById('add-form').addEventListener('submit', e => {
+    form.addEventListener('submit', e => {
         e.preventDefault();
-        const formData = new FormData(e.target);
-        formData.append('action', 'insert');
+        const formData = new FormData(form);
         formData.append('table', table);
+        formData.append('action', form.dataset.mode === 'edit' ? 'update' : 'insert');
         fetch('../ajax/table_crud.php', { method: 'POST', body: formData })
             .then(r => r.json())
-            .then(() => { e.target.reset(); load(); });
+            .then(() => { form.classList.add('d-none'); load(); });
     });
-
-    function editRow(row) {
-        const data = {};
-        columns.forEach(c => {
-            data[c] = prompt(`Modifica ${c}`, row[c]);
-        });
-        const formData = new FormData();
-        formData.append('action', 'update');
-        formData.append('table', table);
-        formData.append(primaryKey, row[primaryKey]);
-        columns.forEach(c => {
-            if (c === primaryKey) return;
-            formData.append(c, data[c]);
-        });
-        fetch('../ajax/table_crud.php', { method: 'POST', body: formData })
-            .then(r => r.json())
-            .then(load);
-    }
 
     function deleteRow(id) {
         if (!confirm('Eliminare il record?')) return;
