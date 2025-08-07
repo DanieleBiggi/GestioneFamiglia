@@ -381,7 +381,7 @@ class PageManager {
 
         $.ajax({
             method: "POST",
-            url: "ajax.php",
+            url: "ajax/ajax_storia.php",
             data:
             {
                 'azione': 'ricerca',
@@ -418,7 +418,7 @@ class PageManager {
 
         $.ajax({
             method: "POST",
-            url: "ajax.php",
+            url: "ajax/ajax_storia.php",
             data:
             {
                 'azione': 'ricerca',
