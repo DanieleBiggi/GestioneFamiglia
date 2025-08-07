@@ -141,15 +141,19 @@ $stmtMov->close();
     </form>
   <?php endif; ?>
 
-  <h4 class="mb-3">Credito/Debito per: <?= htmlspecialchars(trim(($utente['nome'] ?? '') . ' ' . ($utente['cognome'] ?? ''))) ?></h4>
-  <div class="mb-4">Saldo totale: <span><?= ($saldoTot>=0?'+':'') . number_format($saldoTot, 2, ',', '.') ?> €</span></div>
+   <h4 class="mb-3">Credito/Debito per: <?= htmlspecialchars(trim(($utente['nome'] ?? '') . ' ' . ($utente['cognome'] ?? ''))) ?></h4>
+   <div class="mb-4">Saldo totale: <span><?= ($saldoTot>=0?'+':'') . number_format($saldoTot, 2, ',', '.') ?> €</span></div>
 
-  <?php if (!empty($movimenti)): ?>
+   <?php if ($isAdmin): ?>
+     <button id="saldaBtn" class="btn btn-success mb-3">Salda movimenti</button>
+   <?php endif; ?>
+
+   <?php if (!empty($movimenti)): ?>
     <?php foreach ($movimenti as $mov): ?>
       <?php $rowsAttr = $isAdmin ? htmlspecialchars(json_encode($mov['rows'] ?? []), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : ''; ?>
       <div class="movement d-flex justify-content-between align-items-start text-white mb-2" <?php if ($isAdmin): ?>data-rows='<?= $rowsAttr ?>' onclick="openDettaglio(this)" style="cursor:pointer"<?php endif; ?>>
         <?php if ($isAdmin): ?>
-          <input type="checkbox" class="form-check-input me-2" data-id-u2o="<?= $mov['id_u2o'] ?>" onclick="event.stopPropagation(); toggleSaldata(this);">
+          <input type="checkbox" class="form-check-input me-2" data-id-u2o="<?= $mov['id_u2o'] ?>" onclick="event.stopPropagation();">
         <?php endif; ?>
         <div class="flex-grow-1 me-3">
           <div class="descr fw-semibold"><?= htmlspecialchars($mov['descrizione']) ?></div>
@@ -166,54 +170,76 @@ $stmtMov->close();
   <?php endif; ?>
 </div>
 
-<?php if ($isAdmin): ?>
-<div class="modal fade" id="movModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content bg-dark text-white">
-      <div class="modal-header">
-        <h5 class="modal-title">Dettaglio movimento</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+  <?php if ($isAdmin): ?>
+  <div class="modal fade" id="movModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content bg-dark text-white">
+        <div class="modal-header">
+          <h5 class="modal-title">Dettaglio movimento</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="movRows"></div>
       </div>
-      <div class="modal-body" id="movRows"></div>
     </div>
   </div>
-</div>
 
-<script>
-function toggleSaldata(cb) {
-  const id = cb.dataset.idU2o;
-  const saldata = cb.checked ? 1 : 0;
-  fetch('ajax/update_u2o_saldata.php', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({id_u2o: id, saldata: saldata})
-  }).then(r => r.json()).then(res => {
-    if (!res.success) {
-      alert(res.error || 'Errore');
-      cb.checked = !cb.checked;
+  <div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content bg-dark text-white">
+        <div class="modal-header">
+          <h5 class="modal-title">Conferma</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">Sei sicuro di voler saldare i movimenti selezionati?</div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+          <button type="button" class="btn btn-primary" id="confirmSalda">Conferma</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  function openDettaglio(div) {
+    const rows = JSON.parse(div.dataset.rows || '[]');
+    const container = document.getElementById('movRows');
+    container.innerHTML = '';
+    rows.forEach(r => {
+      const imp = Number(r.importo).toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2});
+      const status = r.saldata == 1 ? '✔' : '✖';
+      const p = document.createElement('div');
+      p.textContent = `${r.nome} ${r.cognome}: ${imp} € ${status}`;
+      container.appendChild(p);
+    });
+    new bootstrap.Modal(document.getElementById('movModal')).show();
+  }
+
+  document.getElementById('saldaBtn').addEventListener('click', () => {
+    const checked = document.querySelectorAll('.movement input[type="checkbox"]:checked');
+    if (checked.length === 0) {
+      alert('Seleziona almeno un movimento');
       return;
     }
-    if (saldata) {
-      const parent = cb.closest('.movement');
-      if (parent) parent.remove();
-    }
+    new bootstrap.Modal(document.getElementById('confirmModal')).show();
   });
-}
 
-function openDettaglio(div) {
-  const rows = JSON.parse(div.dataset.rows || '[]');
-  const container = document.getElementById('movRows');
-  container.innerHTML = '';
-  rows.forEach(r => {
-    const imp = Number(r.importo).toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2});
-    const status = r.saldata == 1 ? '✔' : '✖';
-    const p = document.createElement('div');
-    p.textContent = `${r.nome} ${r.cognome}: ${imp} € ${status}`;
-    container.appendChild(p);
+  document.getElementById('confirmSalda').addEventListener('click', () => {
+    const checked = document.querySelectorAll('.movement input[type="checkbox"]:checked');
+    const ids = Array.from(checked).map(cb => cb.dataset.idU2o);
+    fetch('ajax/update_u2o_saldata_bulk.php', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ids: ids})
+    }).then(r => r.json()).then(res => {
+      if (!res.success) {
+        alert(res.error || 'Errore');
+        return;
+      }
+      checked.forEach(cb => cb.closest('.movement').remove());
+      bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+    });
   });
-  new bootstrap.Modal(document.getElementById('movModal')).show();
-}
-</script>
-<?php endif; ?>
+  </script>
+  <?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>
