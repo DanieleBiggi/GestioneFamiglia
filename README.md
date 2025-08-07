@@ -25,3 +25,8 @@ return [
 ```
 
 Il file `includes/db_config.php` è già incluso in `.gitignore` per evitare che le credenziali finiscano nel repository.
+
+## Dipendenze
+
+L'applicazione include una copia leggera di [PHPMailer](https://github.com/PHPMailer/PHPMailer) per l'invio di email. Le componenti relative a DSN, OAuth e POP3 sono state rimosse perché non utilizzate.
+
