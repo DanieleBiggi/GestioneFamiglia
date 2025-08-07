@@ -349,10 +349,11 @@ $stmtGrp->close();
         div.dataset.id = r.id_u2o;
         div.dataset.utenteId = r.id_utente;
         div.innerHTML = `
-          <div class="col-5">${r.nome} ${r.cognome}${r.utente_pagante == 1 ? ' (P)' : ''}</div>
+          <div class="col-4">${r.nome} ${r.cognome}${r.utente_pagante == 1 ? ' (P)' : ''}</div>
           <div class="col-3"><input type="number" step="0.01" class="form-control form-control-sm" value="${r.importo_utente ?? ''}"></div>
           <div class="col-2 text-center"><input type="checkbox" class="form-check-input" ${r.saldata == 1 ? 'checked' : ''}></div>
           <div class="col-2"><input type="date" class="form-control form-control-sm" value="${r.data_saldo ? r.data_saldo.substring(0,10) : ''}"></div>
+          <div class="col-1 text-end"><button type="button" class="btn btn-sm btn-danger" onclick="deleteU2oRow(this)">&times;</button></div>
         `;
         container.appendChild(div);
       });
@@ -369,12 +370,30 @@ $stmtGrp->close();
         options += `<option value="${u.id}">${u.nome} ${u.cognome}</option>`;
       });
       div.innerHTML = `
-        <div class="col-5"><select class="form-select form-select-sm">${options}</select></div>
+        <div class="col-4"><select class="form-select form-select-sm">${options}</select></div>
         <div class="col-3"><input type="number" step="0.01" class="form-control form-control-sm"></div>
         <div class="col-2 text-center"><input type="checkbox" class="form-check-input"></div>
         <div class="col-2"><input type="date" class="form-control form-control-sm"></div>
+        <div class="col-1 text-end"><button type="button" class="btn btn-sm btn-danger" onclick="deleteU2oRow(this)">&times;</button></div>
       `;
       container.appendChild(div);
+    }
+
+    function deleteU2oRow(btn) {
+      const row = btn.closest('.u2o-row');
+      const id = parseInt(row.dataset.id);
+      if (id > 0) {
+        if (!confirm('Eliminare questa riga?')) return;
+        fetch('ajax/delete_u2o.php', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: 'id_u2o=' + encodeURIComponent(id)
+        }).then(r => r.json()).then(res => {
+          if (res.success) row.remove();
+        });
+      } else {
+        row.remove();
+      }
     }
 
     function saveU2o(e) {
