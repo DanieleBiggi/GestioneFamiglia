@@ -14,9 +14,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt = $conn->prepare("INSERT INTO bilancio_uscite (id_utente, mezzo, descrizione_operazione, descrizione_extra, importo, note, data_operazione) VALUES (?, 'contanti', ?, ?, ?, ?, ?)");
     $stmt->bind_param('issdss', $_SESSION['utente_id'], $descrizione, $descrizione_extra, $importo, $note, $data_operazione);
     $stmt->execute();
+    $id = $conn->insert_id;
     $stmt->close();
 
-    header('Location: index.php');
+    header('Location: dettaglio.php?id=' . $id . '&src=bilancio_uscite');
     exit;
 }
 ?>
