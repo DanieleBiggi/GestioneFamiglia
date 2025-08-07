@@ -20,7 +20,7 @@ models.elemento_lista =
 
 models.icona_altro =
 '<div class="d-flex align-items-center ms-sm-4 risultato" style="cursor:pointer" {{valori_chiave}}>'+
-    '<i class="fa fa-chevron-right fa-2x"></i>'+
+    '&gt;'+
 '</div>';
 
 models.contenuto_singolo =
