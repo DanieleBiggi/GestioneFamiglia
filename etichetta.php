@@ -476,7 +476,30 @@ function attachEditHandlers() {
       new bootstrap.Modal(document.getElementById('editE2oModal')).show();
     });
   });
+
+  document.querySelectorAll('.delete-e2o').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.idE2o;
+      const rowId = btn.dataset.rowId;
+      if (!id) return;
+      if (!confirm('Rimuovere questa etichetta dal movimento?')) return;
+      fetch('ajax/delete_e2o.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'id_e2o=' + encodeURIComponent(id)
+      })
+      .then(r => r.json())
+      .then(res => {
+        if (res.success) {
+          const el = document.getElementById(rowId);
+          if (el) el.remove();
+        }
+      });
+    });
+  });
 }
+
+attachEditHandlers();
 
 
 document.getElementById('editE2oForm').addEventListener('submit', function(e){

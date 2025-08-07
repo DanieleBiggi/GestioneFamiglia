@@ -126,6 +126,7 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
     $allAttr = htmlspecialchars($info['allegato'] ?? '', ENT_QUOTES);
     $rowAttr = htmlspecialchars($rowId, ENT_QUOTES);
     echo '    <button class="btn btn-sm btn-link text-white edit-e2o" data-id-e2o="' . $idE2oAttr . '" data-descrizione-extra="' . $descAttr . '" data-importo="' . $impAttr . '" data-allegato="' . $allAttr . '" data-row-id="' . $rowAttr . '" onclick="event.stopPropagation();"><i class="bi bi-pencil"></i></button>';
+    echo '    <button class="btn btn-sm btn-link text-danger delete-e2o" data-id-e2o="' . $idE2oAttr . '" data-row-id="' . $rowAttr . '" onclick="event.stopPropagation();"><i class="bi bi-trash"></i></button>';
     echo '  </div>';
     echo '</div>';
 
