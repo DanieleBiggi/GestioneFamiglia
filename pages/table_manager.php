@@ -67,36 +67,68 @@ include '../includes/header.php';
   <tbody></tbody>
 </table>
 
-<form id="record-form" class="d-none mt-4">
-  <input type="hidden" name="<?= htmlspecialchars($primaryKey) ?>">
-  <?php foreach ($displayColumns as $col): ?>
-    <div class="mb-3">
-      <label class="form-label"><?= htmlspecialchars(format_label($col)) ?></label>
-      <?php if (isset($lookups[$col])): ?>
-        <select name="<?= htmlspecialchars($col) ?>" class="form-select bg-dark text-white border-secondary">
-          <?php foreach ($lookups[$col] as $id => $label): ?>
-            <option value="<?= htmlspecialchars($id) ?>"><?= htmlspecialchars($label) ?></option>
-          <?php endforeach; ?>
-        </select>
-      <?php elseif (in_array($col, $booleanColumns)): ?>
-        <div>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="<?= htmlspecialchars($col) ?>" id="<?= htmlspecialchars($col) ?>_si" value="1">
-            <label class="form-check-label" for="<?= htmlspecialchars($col) ?>_si">Si</label>
-          </div>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="<?= htmlspecialchars($col) ?>" id="<?= htmlspecialchars($col) ?>_no" value="0">
-            <label class="form-check-label" for="<?= htmlspecialchars($col) ?>_no">No</label>
-          </div>
+<div class="modal fade" id="recordModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content bg-dark text-white">
+      <form id="record-form">
+        <div class="modal-header">
+          <h5 class="modal-title">Record</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
         </div>
-      <?php else: ?>
-        <input type="text" name="<?= htmlspecialchars($col) ?>" class="form-control bg-dark text-white border-secondary">
-      <?php endif; ?>
+        <div class="modal-body">
+          <input type="hidden" name="<?= htmlspecialchars($primaryKey) ?>">
+          <?php foreach ($displayColumns as $col): ?>
+            <div class="mb-3">
+              <label class="form-label"><?= htmlspecialchars(format_label($col)) ?></label>
+              <?php if (isset($lookups[$col])): ?>
+                <select name="<?= htmlspecialchars($col) ?>" class="form-select bg-dark text-white border-secondary">
+                  <?php foreach ($lookups[$col] as $id => $label): ?>
+                    <option value="<?= htmlspecialchars($id) ?>"><?= htmlspecialchars($label) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              <?php elseif (in_array($col, $booleanColumns)): ?>
+                <div>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="<?= htmlspecialchars($col) ?>" id="<?= htmlspecialchars($col) ?>_si" value="1">
+                    <label class="form-check-label" for="<?= htmlspecialchars($col) ?>_si">Si</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="<?= htmlspecialchars($col) ?>" id="<?= htmlspecialchars($col) ?>_no" value="0">
+                    <label class="form-check-label" for="<?= htmlspecialchars($col) ?>_no">No</label>
+                  </div>
+                </div>
+              <?php else: ?>
+                <input type="text" name="<?= htmlspecialchars($col) ?>" class="form-control bg-dark text-white border-secondary">
+              <?php endif; ?>
+            </div>
+          <?php endforeach; ?>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="cancelBtn" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+      </form>
     </div>
-  <?php endforeach; ?>
-  <button type="submit" class="btn btn-primary">Salva</button>
-  <button type="button" id="cancelBtn" class="btn btn-secondary">Annulla</button>
-</form>
+  </div>
+</div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-header">
+        <h5 class="modal-title">Conferma eliminazione</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+      </div>
+      <div class="modal-body">
+        Sei sicuro di voler eliminare questo record?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+        <button type="button" id="confirmDeleteBtn" class="btn btn-danger">Elimina</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="../js/table_crud.js"></script>
 <script>
