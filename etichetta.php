@@ -11,6 +11,8 @@ setlocale(LC_TIME, 'it_IT.UTF-8');
 $etichettaParam = $_GET['id_etichetta'] ?? '';
 $mese = $_GET['mese'] ?? '';
 $categoria = $_GET['categoria'] ?? '';
+$idUtente = $_SESSION['utente_id'] ?? ($_SESSION['id_utente'] ?? 0);
+$isAdmin = ($idUtente == 1);
 $etichettaInfo = null;
 
 if ($etichettaParam === '') {
@@ -279,11 +281,13 @@ $stmtGrp->close();
 ?>
 
 <div class="text-white">
-    <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>    
-  <h4 class="mb-3">Movimenti per etichetta: <span id="etichettaDesc"><?= htmlspecialchars($etichettaInfo['descrizione']) ?></span><i class="bi bi-pencil ms-2" role="button" onclick="openEtichettaModal()"></i></h4>
+  <div class="d-flex mb-3 justify-content-between">
+    <h4 class="mb-0">Movimenti per etichetta: <span id="etichettaDesc"><?= htmlspecialchars($etichettaInfo['descrizione']) ?></span><i class="bi bi-pencil ms-2" role="button" onclick="openEtichettaModal()"></i></h4>
+    <a href="javascript:history.back()" class="btn btn-outline-light btn-sm">← Indietro</a>
+  </div>
 
   <form method="get" class="mb-3">
-    <input type="hidden" name="etichetta" value="<?= htmlspecialchars($etichetta) ?>">
+    <input type="hidden" name="id_etichetta" value="<?= htmlspecialchars($etichettaParam) ?>">
     <div class="d-flex gap-2 align-items-center">
       <label for="mese" class="form-label mb-0">Mese:</label>
       <select name="mese" id="mese" class="form-select w-auto" onchange="this.form.submit()">
@@ -295,9 +299,12 @@ $stmtGrp->close();
     </div>
   </form>
 
-  <div class="d-flex gap-4 mb-4">
+  <div class="d-flex gap-4 mb-4 align-items-center">
     <div>Entrate: <span><?= '+' . number_format($totali['entrate'] ?? 0, 2, ',', '.') ?> €</span></div>
     <div>Uscite: <span><?= number_format($totali['uscite'] ?? 0, 2, ',', '.') ?> €</span></div>
+    <?php if ($isAdmin): ?>
+      <button type="button" class="btn btn-outline-light btn-sm ms-auto" onclick="settleSelected()">Segna saldati</button>
+    <?php endif; ?>
   </div>
 
     <?php if ($movimenti->num_rows > 0): ?>
@@ -365,13 +372,28 @@ $stmtGrp->close();
         body: JSON.stringify({rows})
       }).then(r => r.json()).then(() => location.reload());
     }
+
+    function settleSelected() {
+      const today = new Date().toISOString().slice(0,10);
+      const rows = [];
+      document.querySelectorAll('.settle-checkbox:checked').forEach(cb => {
+        const data = JSON.parse(cb.closest('.movement').dataset.rows || '[]');
+        data.forEach(r => rows.push({id_u2o: r.id_u2o, saldata: 1, data_saldo: today}));
+      });
+      if (!rows.length) return;
+      fetch('ajax/update_utenti2operazioni_etichettate.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({rows})
+      }).then(r => r.json()).then(() => location.reload());
+    }
     </script>
 
 
     <?php if (!empty($gruppi)): ?>
       <h5 class="mt-4">Dettaglio per gruppo</h5>
       <form method="get" class="mb-3">
-        <input type="hidden" name="etichetta" value="<?= htmlspecialchars($etichetta) ?>">
+        <input type="hidden" name="id_etichetta" value="<?= htmlspecialchars($etichettaParam) ?>">
         <input type="hidden" name="mese" value="<?= htmlspecialchars($mese) ?>">
       <div class="d-flex gap-2 align-items-center">
         <label for="categoria" class="form-label mb-0">Categoria:</label>
