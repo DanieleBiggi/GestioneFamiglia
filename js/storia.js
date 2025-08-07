@@ -52,8 +52,11 @@ class PageManager {
 
         this.disegna_tabella();
         this.inizializza_menu();
-        $(document).on('click', '.risultato', (e) => {
-            this.handleRisultatoClick(e);
+        document.addEventListener('click', (e) => {
+            const risultato = e.target.closest('.risultato');
+            if (risultato) {
+                this.handleRisultatoClick({ currentTarget: risultato });
+            }
         });
     }
 
