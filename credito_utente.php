@@ -53,7 +53,7 @@ if ($canChangeUser) {
 }
 
 $sqlMov = "SELECT
-                CONCAT(v.descrizione_operazione, ' (', v.importo_totale_operazione, ')') AS descrizione,
+                CONCAT(ifnull(v.descrizione_extra,v.descrizione_operazione), ' (', v.importo_totale_operazione, ')') AS descrizione,
                 v.data_operazione,
                 v.descrizione AS etichetta_descrizione,
                 (CASE
