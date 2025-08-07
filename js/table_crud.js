@@ -1,4 +1,4 @@
-function initTableManager(table, columns, primaryKey, lookups) {
+function initTableManager(table, columns, primaryKey, lookups, boolCols = []) {
     const tbody = document.querySelector('#data-table tbody');
     const searchInput = document.getElementById('search');
     const form = document.getElementById('record-form');
@@ -24,18 +24,20 @@ function initTableManager(table, columns, primaryKey, lookups) {
                     let text = r[c];
                     if (lookups[c] && lookups[c][text] !== undefined) {
                         text = lookups[c][text];
+                    } else if (boolCols.includes(c)) {
+                        text = text == 1 ? 'si' : 'no';
                     }
                     td.textContent = text;
                     tr.appendChild(td);
                 });
                 const actions = document.createElement('td');
                 const editBtn = document.createElement('button');
-                editBtn.className = 'btn btn-sm btn-primary me-2';
-                editBtn.textContent = 'Modifica';
+                editBtn.className = 'btn btn-sm btn-link text-white me-2';
+                editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
                 editBtn.addEventListener('click', () => showForm(r));
                 const delBtn = document.createElement('button');
-                delBtn.className = 'btn btn-sm btn-danger';
-                delBtn.textContent = 'Elimina';
+                delBtn.className = 'btn btn-sm btn-link text-danger';
+                delBtn.innerHTML = '<i class="bi bi-trash"></i>';
                 delBtn.addEventListener('click', () => deleteRow(r[primaryKey]));
                 actions.appendChild(editBtn);
                 actions.appendChild(delBtn);
@@ -50,12 +52,23 @@ function initTableManager(table, columns, primaryKey, lookups) {
             form.dataset.mode = 'edit';
             idField.value = data[primaryKey];
             columns.forEach(c => {
-                const field = form.querySelector(`[name="${c}"]`);
-                if (field) field.value = data[c];
+                if (boolCols.includes(c)) {
+                    const radios = form.querySelectorAll(`input[name="${c}"]`);
+                    radios.forEach(r => r.checked = String(data[c]) === r.value);
+                } else {
+                    const field = form.querySelector(`[name="${c}"]`);
+                    if (field) field.value = data[c];
+                }
             });
         } else {
             form.dataset.mode = 'insert';
             idField.value = '';
+            columns.forEach(c => {
+                if (boolCols.includes(c)) {
+                    const radios = form.querySelectorAll(`input[name="${c}"]`);
+                    radios.forEach(r => r.checked = false);
+                }
+            });
         }
         form.classList.remove('d-none');
     }

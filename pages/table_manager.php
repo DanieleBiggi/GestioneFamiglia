@@ -10,7 +10,29 @@ if (!isset($config[$table])) {
 }
 $columns = $config[$table]['columns'];
 $primaryKey = $config[$table]['primary_key'];
-$displayColumns = array_values(array_filter($columns, fn($c) => $c !== $primaryKey));
+
+// Colonne da non visualizzare per tabella
+$excludeColumns = [];
+if ($table === 'utenti') {
+    $excludeColumns[] = 'profile';
+}
+$displayColumns = array_values(array_filter($columns, function($c) use ($primaryKey, $excludeColumns) {
+    if ($c === $primaryKey) return false;
+    if (in_array($c, $excludeColumns)) return false;
+    return true;
+}));
+
+// Gestione colonne booleane
+$booleanColumns = [];
+if ($table === 'famiglie') {
+    $booleanColumns = ['in_gestione'];
+} elseif ($table === 'utenti') {
+    $booleanColumns = ['attivo'];
+}
+
+function format_label($col) {
+    return ucwords(str_replace('_', ' ', $col));
+}
 
 $lookups = [];
 foreach ($displayColumns as $col) {
@@ -37,7 +59,7 @@ include '../includes/header.php';
   <thead>
     <tr>
       <?php foreach ($displayColumns as $col): ?>
-      <th><?= htmlspecialchars($col) ?></th>
+      <th><?= htmlspecialchars(format_label($col)) ?></th>
       <?php endforeach; ?>
       <th>Azioni</th>
     </tr>
@@ -49,13 +71,24 @@ include '../includes/header.php';
   <input type="hidden" name="<?= htmlspecialchars($primaryKey) ?>">
   <?php foreach ($displayColumns as $col): ?>
     <div class="mb-3">
-      <label class="form-label"><?= htmlspecialchars($col) ?></label>
+      <label class="form-label"><?= htmlspecialchars(format_label($col)) ?></label>
       <?php if (isset($lookups[$col])): ?>
         <select name="<?= htmlspecialchars($col) ?>" class="form-select bg-dark text-white border-secondary">
           <?php foreach ($lookups[$col] as $id => $label): ?>
             <option value="<?= htmlspecialchars($id) ?>"><?= htmlspecialchars($label) ?></option>
           <?php endforeach; ?>
         </select>
+      <?php elseif (in_array($col, $booleanColumns)): ?>
+        <div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="<?= htmlspecialchars($col) ?>" id="<?= htmlspecialchars($col) ?>_si" value="1">
+            <label class="form-check-label" for="<?= htmlspecialchars($col) ?>_si">Si</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="<?= htmlspecialchars($col) ?>" id="<?= htmlspecialchars($col) ?>_no" value="0">
+            <label class="form-check-label" for="<?= htmlspecialchars($col) ?>_no">No</label>
+          </div>
+        </div>
       <?php else: ?>
         <input type="text" name="<?= htmlspecialchars($col) ?>" class="form-control bg-dark text-white border-secondary">
       <?php endif; ?>
@@ -67,6 +100,6 @@ include '../includes/header.php';
 
 <script src="../js/table_crud.js"></script>
 <script>
-initTableManager('<?= $table ?>', <?= json_encode($displayColumns) ?>, '<?= $primaryKey ?>', <?= json_encode($lookups) ?>);
+initTableManager('<?= $table ?>', <?= json_encode($displayColumns) ?>, '<?= $primaryKey ?>', <?= json_encode($lookups) ?>, <?= json_encode($booleanColumns) ?>);
 </script>
 <?php include '../includes/footer.php'; ?>
