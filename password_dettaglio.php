@@ -10,7 +10,7 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $data = ['url_login'=>'','username'=>'','password_account'=>'','note'=>'','attiva'=>1,'id_account'=>0];
 
 if ($id > 0) {
-    $stmt = $conn->prepare("SELECT * FROM gestione_account_password WHERE id_account = ? AND id_famiglia = ?");
+    $stmt = $conn->prepare("SELECT * FROM gestione_account_password WHERE id_account_password = ? AND id_famiglia = ?");
     $stmt->bind_param('ii', $id, $idFamiglia);
     $stmt->execute();
     $res = $stmt->get_result();
@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $attiva = isset($_POST['attiva']) ? 1 : 0;
 
     if ($id_account > 0) {
-        $stmt = $conn->prepare("UPDATE gestione_account_password SET url_login=?, username=?, password_account=?, note=?, attiva=? WHERE id_account=? AND id_famiglia=?");
+        $stmt = $conn->prepare("UPDATE gestione_account_password SET url_login=?, username=?, password_account=?, note=?, attiva=? WHERE id_account_password=? AND id_famiglia=?");
         $stmt->bind_param('ssssiii', $url, $username, $password_account, $note, $attiva, $id_account, $idFamiglia);
         $stmt->execute();
         $stmt->close();
