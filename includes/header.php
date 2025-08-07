@@ -62,6 +62,13 @@
           🔐 Siti e password
         </a>
       </li>
+      <?php if (isset($_SESSION['utente_id']) && $_SESSION['utente_id'] == 1): ?>
+      <li class="mb-3">
+        <a href="/Gestionale25/storia.php" class="btn btn-outline-light w-100 text-start">
+          📜 Storia
+        </a>
+      </li>
+      <?php endif; ?>
       <li class="mb-3">
         <div class="dropdown w-100">
           <button class="btn btn-outline-light w-100 text-start dropdown-toggle"
