@@ -46,6 +46,7 @@ $utentiFam = [];
 if ($canChangeUser) {
     $stmtList = $conn->prepare('SELECT u.id, u.nome, u.cognome
                                  FROM utenti u
+                                 WHERE u.attivo = 1
                                  ORDER BY u.nome');
     $stmtList->execute();
     $utentiFam = $stmtList->get_result()->fetch_all(MYSQLI_ASSOC);
