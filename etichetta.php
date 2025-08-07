@@ -36,10 +36,10 @@ if (!$etichettaInfo) {
 }
 
 
-// Recupera utenti della famiglia corrente per la selezione
+// Recupera utenti attivi della famiglia corrente per la selezione
 $listaUtenti = [];
 $famigliaId = $_SESSION['id_famiglia_gestione'] ?? 0;
-$stmtUt = $conn->prepare('SELECT u.id, u.nome, u.cognome FROM utenti u JOIN utenti2famiglie u2f ON u.id = u2f.id_utente WHERE u2f.id_famiglia = ? ORDER BY u.nome');
+$stmtUt = $conn->prepare('SELECT u.id, u.nome, u.cognome FROM utenti u JOIN utenti2famiglie u2f ON u.id = u2f.id_utente WHERE u2f.id_famiglia = ? AND u.attivo = 1 ORDER BY u.nome');
 $stmtUt->bind_param('i', $famigliaId);
 $stmtUt->execute();
 $resUt = $stmtUt->get_result();
@@ -325,6 +325,7 @@ $stmtGrp->close();
           </div>
           <div class="modal-body">
             <div id="u2oRows"></div>
+            <button type="button" class="btn btn-secondary btn-sm mt-2" onclick="addU2oRow()">Aggiungi utente</button>
           </div>
           <div class="modal-footer">
             <button type="submit" class="btn btn-primary w-100">Salva</button>
@@ -335,6 +336,7 @@ $stmtGrp->close();
 
     <script>
     let currentIdE2o = null;
+    const listaUtenti = <?= json_encode($listaUtenti, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
 
     function openU2oModal(btn) {
       currentIdE2o = btn.dataset.idE2o;
@@ -345,6 +347,7 @@ $stmtGrp->close();
         const div = document.createElement('div');
         div.className = 'row g-2 align-items-center mb-2 u2o-row';
         div.dataset.id = r.id_u2o;
+        div.dataset.utenteId = r.id_utente;
         div.innerHTML = `
           <div class="col-5">${r.nome} ${r.cognome}${r.utente_pagante == 1 ? ' (P)' : ''}</div>
           <div class="col-3"><input type="number" step="0.01" class="form-control form-control-sm" value="${r.importo_utente ?? ''}"></div>
@@ -356,6 +359,24 @@ $stmtGrp->close();
       new bootstrap.Modal(document.getElementById('u2oModal')).show();
     }
 
+    function addU2oRow() {
+      const container = document.getElementById('u2oRows');
+      const div = document.createElement('div');
+      div.className = 'row g-2 align-items-center mb-2 u2o-row';
+      div.dataset.id = 0;
+      let options = '<option value="">Seleziona utente</option>';
+      listaUtenti.forEach(u => {
+        options += `<option value="${u.id}">${u.nome} ${u.cognome}</option>`;
+      });
+      div.innerHTML = `
+        <div class="col-5"><select class="form-select form-select-sm">${options}</select></div>
+        <div class="col-3"><input type="number" step="0.01" class="form-control form-control-sm"></div>
+        <div class="col-2 text-center"><input type="checkbox" class="form-check-input"></div>
+        <div class="col-2"><input type="date" class="form-control form-control-sm"></div>
+      `;
+      container.appendChild(div);
+    }
+
     function saveU2o(e) {
       e.preventDefault();
       const rows = [];
@@ -364,7 +385,8 @@ $stmtGrp->close();
         const importo = row.querySelector('input[type="number"]').value;
         const saldata = row.querySelector('input[type="checkbox"]').checked ? 1 : 0;
         const dataSaldo = row.querySelector('input[type="date"]').value;
-        rows.push({id_u2o: id, importo_utente: importo, saldata: saldata, data_saldo: dataSaldo});
+        const utenteId = row.dataset.utenteId || row.querySelector('select')?.value;
+        rows.push({id_u2o: id, id_e2o: currentIdE2o, id_utente: utenteId, importo_utente: importo, saldata: saldata, data_saldo: dataSaldo});
       });
       fetch('ajax/update_utenti2operazioni_etichettate.php', {
         method: 'POST',
