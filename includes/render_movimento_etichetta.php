@@ -1,6 +1,6 @@
 <?php
 function render_movimento_etichetta(array $mov, int $id_etichetta) {
-    global $conn;
+    global $conn, $isAdmin;
 
     // Dati specifici dell'etichetta
     $stmtInfo = $conn->prepare(
@@ -13,7 +13,10 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
     $info = $stmtInfo->get_result()->fetch_assoc() ?: [];
     $stmtInfo->close();
 
-    $descrizione = $info['descrizione_extra'] ?? $mov['descrizione'];
+    $descrizione = $info['descrizione_extra'] ?? '';
+    if ($descrizione === '') {
+        $descrizione = $mov['descrizione'];
+    }
     $amountValue = $info['importo'] !== null ? (float)$info['importo'] : $mov['amount'];
     if ($mov['tabella'] === 'bilancio_uscite' && $amountValue >= 0) {
         $amountValue *= -1;
@@ -25,27 +28,20 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
     // Determine icon based on source
     $icon = $mov['source'] === 'revolut' ? 'assets/revolut.jpeg' : 'assets/credit.jpeg';
 
-    $url = 'dettaglio.php?id=' . (int)$mov['id'] . '&src=' . urlencode($mov['tabella']);
-
-    $rowId = 'mov-' . $mov['tabella'] . '-' . $mov['id'];
-    echo '<div id="' . $rowId . '" class="movement d-flex justify-content-between align-items-start text-white text-decoration-none" style="cursor:pointer" onclick="window.location.href=\'' . $url . '\'">';
-    echo '  <img src="' . htmlspecialchars($icon) . '" alt="src" class="me-2" style="width:24px;height:24px">';
-    echo '  <div class="flex-grow-1 me-3">';
-    echo '    <div class="descr fw-semibold">' . htmlspecialchars($descrizione) . '</div>';
-    echo '    <div class="small">' . $dataOra . '</div>';
-
-    // Quote per utente se presenti
+    // Quote per utente e dati per la modal
     $stmtU = $conn->prepare(
         "SELECT e2o.id_e2o, e2o.importo AS importo_e2o, e.descrizione AS etichetta_descrizione,
                 u.id AS id_utente, u.nome, u.cognome,
-                u2o.id_u2o, u2o.importo_utente, u2o.utente_pagante, u2o.saldata, u2o.data_saldo
+                u2o.id_u2o, u2o.importo_utente, u2o.quote, u2o.utente_pagante, u2o.saldata, u2o.data_saldo
            FROM bilancio_etichette2operazioni e2o
-           JOIN bilancio_etichette e ON e.id_etichetta = e2o.id_etichetta
-           JOIN bilancio_utenti2operazioni_etichettate u2o ON u2o.id_e2o = e2o.id_e2o
-           JOIN utenti u ON u.id = u2o.id_utente
+            JOIN bilancio_etichette e ON e.id_etichetta = e2o.id_etichetta
+            JOIN bilancio_utenti2operazioni_etichettate u2o ON u2o.id_e2o = e2o.id_e2o
+            JOIN utenti u ON u.id = u2o.id_utente
           WHERE e2o.id_tabella = ? AND e2o.tabella_operazione = ? AND e2o.id_etichetta = ?"
     );
     $stmtU->bind_param('isi', $mov['id'], $mov['tabella'], $id_etichetta);
+    $rowsJson = '[]';
+    $perUser = [];
     if ($stmtU->execute()) {
         $resU = $stmtU->get_result();
         $groups = [];
@@ -64,15 +60,21 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
         }
 
         if ($groups) {
-            $perUser = [];
-            foreach ($groups as $g) {
+            foreach ($groups as $idE2o => $g) {
                 $rows  = $g['rows'];
                 $total = $g['total'];
                 $count = count($rows);
                 foreach ($rows as $r) {
                     $imp = $r['importo_utente'];
                     if ($imp === null) {
-                        $imp = $total / $count;
+                        if ($r['quote'] !== null) {
+                            $imp = $total * $r['quote'];
+                        } else {
+                            $imp = $total / $count;
+                        }
+                    }
+                    if ($r['utente_pagante']) {
+                        $imp = -$imp;
                     }
                     $uid = $r['id_utente'];
                     if (!isset($perUser[$uid])) {
@@ -92,31 +94,34 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
                         $perUser[$uid]['saldata'] = false;
                     }
                 }
-            }
-
-            if ($perUser) {
-                echo '    <div class="mt-1">';
-                foreach ($perUser as $u) {
-                    $name = htmlspecialchars(trim(($u['nome'] ?? '') . ' ' . ($u['cognome'] ?? '')));
-                    $amt  = number_format($u['importo'], 2, ',', '.');
-                    $class = $u['pagante'] ? 'badge bg-success' : 'badge bg-secondary';
-                    $status = $u['saldata'] ? '✔' : '✖';
-                    echo "<span class='" . $class . " me-1'>$name $amt € $status</span>";
+                if (!empty($mov['id_e2o']) && $mov['id_e2o'] == $idE2o) {
+                    $rowsJson = htmlspecialchars(json_encode($rows, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP));
                 }
-                echo '    </div>';
-            }
-
-            // Pulsante per modificare le quote del gruppo corrispondente all'etichetta corrente
-            if (!empty($mov['id_e2o']) && isset($groups[$mov['id_e2o']])) {
-                $rowsJson = htmlspecialchars(json_encode($groups[$mov['id_e2o']]['rows'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP));
-                echo "    <div class='mt-1'>";
-                echo "      <button class='btn btn-sm btn-outline-light' data-id-e2o='{$mov['id_e2o']}' data-rows='{$rowsJson}' onclick='openU2oModal(this);event.stopPropagation();'>Gestisci quote</button>";
-                echo "    </div>";
             }
         }
     }
     $stmtU->close();
 
+    $rowId = 'mov-' . $mov['tabella'] . '-' . $mov['id'];
+    echo '<div id="' . $rowId . '" class="movement d-flex justify-content-between align-items-start text-white text-decoration-none" style="cursor:pointer" data-id-e2o="' . htmlspecialchars($mov['id_e2o'] ?? '', ENT_QUOTES) . '" data-rows="' . $rowsJson . '" onclick="openU2oModal(this)">';
+    if ($isAdmin) {
+        echo '<input type="checkbox" class="form-check-input me-2 settle-checkbox" onclick="event.stopPropagation();">';
+    }
+    echo '  <img src="' . htmlspecialchars($icon) . '" alt="src" class="me-2" style="width:24px;height:24px">';
+    echo '  <div class="flex-grow-1 me-3">';
+    echo '    <div class="descr fw-semibold">' . htmlspecialchars($descrizione) . '</div>';
+    echo '    <div class="small">' . $dataOra . '</div>';
+    if ($perUser) {
+        echo '    <div class="mt-1">';
+        foreach ($perUser as $u) {
+            $name = htmlspecialchars(trim(($u['nome'] ?? '') . ' ' . ($u['cognome'] ?? '')));
+            $amt  = number_format($u['importo'], 2, ',', '.');
+            $class = $u['pagante'] ? 'badge bg-success' : 'badge bg-secondary';
+            $status = $u['saldata'] ? '✔' : '✖';
+            echo "<span class='" . $class . " me-1'>$name $amt € $status</span>";
+        }
+        echo '    </div>';
+    }
     echo '  </div>';
     echo '  <div class="text-end">';
     echo '    <div class="amount text-white">' . ($amountValue >= 0 ? '+' : '') . $importo . ' €</div>';
