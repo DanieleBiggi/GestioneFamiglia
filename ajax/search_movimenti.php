@@ -17,7 +17,7 @@ $sql = "SELECT * FROM (
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                      WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut') AS etichette,
                    bm.id_gruppo_transazione, 'revolut' AS source, 'movimenti_revolut' AS tabella, NULL AS mezzo
-            FROM movimenti_revolut bm
+            FROM v_movimenti_revolut_filtrati bm
             UNION ALL
             SELECT be.id_entrata AS id, be.descrizione_operazione AS descrizione, be.descrizione_extra,
                    be.data_operazione, be.importo AS amount,
