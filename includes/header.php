@@ -29,12 +29,12 @@
     <form method="post" action="cambia_famiglia.php" class="mb-3">
       <select name="id_famiglia_gestione" class="form-select bg-dark text-white border-secondary" onchange="this.form.submit()">
         <?php
-        $stmt = $conn->prepare('SELECT f.id_famiglia, f.nome FROM famiglie f JOIN utenti2famiglie u2f ON f.id_famiglia = u2f.id_famiglia WHERE u2f.id_utente = ?');
+        $stmt = $conn->prepare('SELECT f.id_famiglia, f.nome_famiglia FROM famiglie f JOIN utenti2famiglie u2f ON f.id_famiglia = u2f.id_famiglia WHERE u2f.id_utente = ?');
         $stmt->bind_param('i', $_SESSION['utente_id']);
         $stmt->execute();
         $resFam = $stmt->get_result();
         while ($fam = $resFam->fetch_assoc()): ?>
-          <option value="<?= (int)$fam['id_famiglia'] ?>" <?= (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == $fam['id_famiglia']) ? 'selected' : '' ?>><?= htmlspecialchars($fam['nome']) ?></option>
+          <option value="<?= (int)$fam['id_famiglia'] ?>" <?= (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == $fam['id_famiglia']) ? 'selected' : '' ?>><?= htmlspecialchars($fam['nome_famiglia']) ?></option>
         <?php endwhile; $stmt->close(); ?>
       </select>
     </form>
