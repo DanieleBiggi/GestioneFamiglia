@@ -92,9 +92,7 @@ $permRes = $conn->query($sql);
         </div>
       </div>
     </div>
-    <div class="ms-2 text-nowrap">
-      <button type="submit" class="btn btn-outline-light btn-sm">Salva</button>
-    </div>
+    <!-- Auto-save on checkbox change; button removed -->
     <input type="hidden" name="action" value="update">
     <input type="hidden" name="userlevelid" value="<?= (int)$row['userlevelid'] ?>">
     <input type="hidden" name="resource_id" value="<?= (int)$row['resource_id'] ?>">

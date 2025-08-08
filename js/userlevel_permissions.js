@@ -21,4 +21,13 @@ document.addEventListener('DOMContentLoaded', () => {
   userlevelFilter.addEventListener('change', filter);
   resourceFilter.addEventListener('change', filter);
   filter();
+
+  // Auto-submit permission form when a checkbox is toggled
+  document
+    .querySelectorAll('.permission-card input[type="checkbox"]')
+    .forEach(cb => {
+      cb.addEventListener('change', () => {
+        cb.form.submit();
+      });
+    });
 });
