@@ -103,13 +103,13 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
     $stmtU->close();
 
     $rowId = 'mov-' . $mov['tabella'] . '-' . $mov['id'];
-    echo '<div id="' . $rowId . '" class="movement d-flex justify-content-between align-items-start text-white text-decoration-none" style="cursor:pointer" data-id-e2o="' . htmlspecialchars($mov['id_e2o'] ?? '', ENT_QUOTES) . '" data-rows="' . $rowsJson . '" onclick="openU2oModal(this)">';
+    echo '<div id="' . $rowId . '" class="movement d-flex align-items-start text-white text-decoration-none" style="cursor:pointer" data-id-e2o="' . htmlspecialchars($mov['id_e2o'] ?? '', ENT_QUOTES) . '" data-rows="' . $rowsJson . '" onclick="openU2oModal(this)">';
     if ($isAdmin) {
         echo '<input type="checkbox" class="form-check-input me-2 settle-checkbox d-none d-md-inline" onclick="event.stopPropagation();">';
     }
-    echo '  <img src="' . htmlspecialchars($icon) . '" alt="src" class="me-2" style="width:24px;height:24px">';
-    echo '  <div class="flex-grow-1 me-3">';
-    echo '    <div class="descr fw-semibold">' . htmlspecialchars($descrizione) . '</div>';
+    echo '  <img src="' . htmlspecialchars($icon) . '" alt="src" class="me-2 flex-shrink-0" style="width:24px;height:24px">';
+    echo '  <div class="flex-grow-1 me-3" style="min-width:0">';
+    echo '    <div class="descr fw-semibold text-truncate">' . htmlspecialchars($descrizione) . '</div>';
     echo '    <div class="small">' . $dataOra . '</div>';
     if ($perUser) {
         echo '    <div class="mt-1">';
