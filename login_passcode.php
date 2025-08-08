@@ -100,6 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <input type="password" name="passcode" class="form-control" required pattern="\d{6}" autofocus>
         </div>
         <button type="submit" class="btn btn-primary">Accedi</button>
+        <a href="login.php" class="btn btn-link text-light">Login con utente e password</a>
       </form>
       <?php endif; ?>
     </div>
