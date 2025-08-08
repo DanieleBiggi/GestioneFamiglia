@@ -36,7 +36,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ((int)$user['attivo'] !== 1) {
             $error = 'Account bloccato. Contatta un amministratore.';
         } elseif (!empty($user['passcode_locked_until']) && strtotime($user['passcode_locked_until']) > time()) {
-            $error = 'Troppi tentativi. Account temporaneamente bloccato.';
+            $lockedUntil = strtotime($user['passcode_locked_until']);
+            $now = time();
+            $diff = $lockedUntil - $now;            
+            if ($diff > 60) {
+                $attesa = round($diff / 60) . " minuti.";
+            } elseif ($diff > 0) {
+                $attesa = $diff . " secondi.";
+            }
+            $error = 'Troppi tentativi. Account temporaneamente bloccato. Riprova tra '.$attesa;
         } else {
             if (!empty($user['passcode_locked_until']) && strtotime($user['passcode_locked_until']) <= time()) {
                 $clear = $conn->prepare('UPDATE utenti SET passcode_locked_until = NULL, passcode_attempts = 0 WHERE id = ?');
