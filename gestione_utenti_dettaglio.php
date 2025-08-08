@@ -80,7 +80,7 @@ include 'includes/header.php';
   <button type="submit" class="btn btn-primary w-100 mb-2">Salva</button>
 </form>
 <?php if ($id): ?>
-  <button type="button" id="resetPasscodeBtn" class="btn btn-warning w-100 mb-2">Reset passcode lock</button>
+  <button type="button" id="resetPasscodeBtn" class="btn btn-warning w-100 mb-2 mt-2">Reset passcode lock</button>
   <?php if ($canDelete): ?>
     <button type="button" id="deleteBtn" class="btn btn-danger w-100">Elimina</button>
   <?php endif; ?>
