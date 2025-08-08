@@ -78,7 +78,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $mail->addAddress($user['email'], $user['nome']);
                 $mail->isHTML(true);
                 $mail->Subject = 'Codice di verifica';
-                $mail->Body = '<p>Il tuo codice di verifica &egrave;: <strong>' . $code . '</strong></p>';
+                //$mail->Body = '<p>Il tuo codice di verifica &egrave;: <strong>' . $code . '</strong></p>';
+                $html = file_get_contents(__DIR__ . '/assets/html/invio_codice.html');
+                // Sostituisci il segnaposto [code] con il codice reale
+                $html = str_replace('[code]', $code, $html);                
+                // Imposta il body dell'email
+                $mail->Body = $html;
                 $mail->send();
 
                 $_SESSION['2fa_user_id'] = $user['id'];
