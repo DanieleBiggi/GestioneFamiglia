@@ -91,6 +91,13 @@
         </a>
       </li>
       <?php endif; ?>
+      <?php if (has_permission($conn, 'page:userlevel_permissions.php', 'view')): ?>
+      <li class="mb-3">
+        <a href="/Gestionale25/userlevel_permissions.php" class="btn btn-outline-light w-100 text-start">
+          🛡️ Permessi Userlevel
+        </a>
+      </li>
+      <?php endif; ?>
       <?php $showSecurity = has_permission($conn, 'page:change_password.php', 'view') || has_permission($conn, 'page:setup_passcode.php', 'view');
       if ($showSecurity): ?>
       <li class="mb-3">
