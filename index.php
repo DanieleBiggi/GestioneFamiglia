@@ -6,8 +6,7 @@ if (!has_permission($conn, 'page:index.php', 'view')) { http_response_code(403);
 require_once 'includes/render_movimento.php';
 include 'includes/header.php';
 
-
-if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1): ?>
+if (has_permission($conn, 'page:index.php-movmenti', 'view')): ?>
 
 <div class="mb-3">
   <a href="aggiungi_entrata.php" class="btn btn-outline-light btn-sm">Aggiungi entrata</a>
@@ -19,8 +18,11 @@ if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'
 <div id="searchResults"></div>
 
 <?php
- $sql = "SELECT * FROM (
-            SELECT id_movimento_revolut AS id, COALESCE(NULLIF(descrizione_extra,''), description) AS descrizione, bm.descrizione_extra,
+  $movimenti_revolut = "";
+  if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1)
+  {
+    $movimenti_revolut = 
+      "SELECT id_movimento_revolut AS id, COALESCE(NULLIF(descrizione_extra,''), description) AS descrizione, bm.descrizione_extra,
                    started_date AS data_operazione, amount,
                    (SELECT GROUP_CONCAT(CONCAT(e.id_etichetta, ':', e.descrizione) SEPARATOR ',')
                       FROM bilancio_etichette2operazioni eo
@@ -28,7 +30,10 @@ if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'
                      WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut') AS etichette,
                    bm.id_gruppo_transazione, 'revolut' AS source, 'movimenti_revolut' AS tabella, null as mezzo
             FROM v_movimenti_revolut_filtrati bm            
-            UNION ALL
+            UNION ALL";
+  }
+ $sql = "SELECT * FROM (
+            ".$movimenti_revolut."
             SELECT be.id_entrata AS id, COALESCE(NULLIF(be.descrizione_extra,''), be.descrizione_operazione) AS descrizione, be.descrizione_extra,
                    be.data_operazione, be.importo AS amount,
                    (SELECT GROUP_CONCAT(CONCAT(e.id_etichetta, ':', e.descrizione) SEPARATOR ',')
