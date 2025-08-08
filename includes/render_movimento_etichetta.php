@@ -103,13 +103,13 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
     $stmtU->close();
 
     $rowId = 'mov-' . $mov['tabella'] . '-' . $mov['id'];
-    echo '<div id="' . $rowId . '" class="movement d-flex justify-content-between align-items-start text-white text-decoration-none" style="cursor:pointer" data-id-e2o="' . htmlspecialchars($mov['id_e2o'] ?? '', ENT_QUOTES) . '" data-rows="' . $rowsJson . '" onclick="openU2oModal(this)">';
+    echo '<div id="' . $rowId . '" class="movement d-flex align-items-start text-white text-decoration-none" style="cursor:pointer" data-id-e2o="' . htmlspecialchars($mov['id_e2o'] ?? '', ENT_QUOTES) . '" data-rows="' . $rowsJson . '" onclick="openU2oModal(this)">';
     if ($isAdmin) {
-        echo '<input type="checkbox" class="form-check-input me-2 settle-checkbox" onclick="event.stopPropagation();">';
+        echo '<input type="checkbox" class="form-check-input me-2 settle-checkbox flex-shrink-0" onclick="event.stopPropagation();">';
     }
-    echo '  <img src="' . htmlspecialchars($icon) . '" alt="src" class="me-2" style="width:24px;height:24px">';
-    echo '  <div class="flex-grow-1 me-3">';
-    echo '    <div class="descr fw-semibold">' . htmlspecialchars($descrizione) . '</div>';
+    echo '  <img src="' . htmlspecialchars($icon) . '" alt="src" class="me-2 flex-shrink-0" style="width:24px;height:24px">';
+    echo '  <div class="flex-grow-1 me-3" style="min-width:0">';
+    echo '    <div class="descr fw-semibold text-truncate">' . htmlspecialchars($descrizione) . '</div>';
     echo '    <div class="small">' . $dataOra . '</div>';
     if ($perUser) {
         echo '    <div class="mt-1">';
@@ -123,7 +123,7 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
         echo '    </div>';
     }
     echo '  </div>';
-    echo '  <div class="text-end">';
+    echo '  <div class="text-end flex-shrink-0 ms-auto">';
     echo '    <div class="amount text-white">' . ($amountValue >= 0 ? '+' : '') . $importo . ' €</div>';
     $idE2oAttr = htmlspecialchars($info['id_e2o'] ?? '', ENT_QUOTES);
     $descAttr = htmlspecialchars($info['descrizione_extra'] ?? '', ENT_QUOTES);
