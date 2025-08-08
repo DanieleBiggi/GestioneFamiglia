@@ -65,7 +65,11 @@ function eliminaEtichetteCollegate(string $tabella_operazione, int $id_tabella):
 }
 
 function get_saldo_e_movimenti_utente($idUtente)
-{
+{ 
+    global $conn;
+    $loggedUserId = $_SESSION['utente_id'] ?? 0;
+    $famigliaId   = $_SESSION['id_famiglia_gestione'] ?? 0;
+    $isAdmin      = ($loggedUserId == 1);
     $ar = [];
     $ar['movimenti'] = [];
     $ar['saldoTot'] = 0;    
