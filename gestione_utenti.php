@@ -35,7 +35,6 @@ foreach ($displayColumns as $col) {
 }
 $canInsert = has_permission($conn, 'table:utenti', 'insert');
 $canUpdate = has_permission($conn, 'table:utenti', 'update');
-$canDelete = has_permission($conn, 'table:utenti', 'delete');
 $canManageFamilies = has_permission($conn, 'table:utenti2famiglie', 'update');
 include 'includes/header.php';
 ?>
@@ -67,67 +66,6 @@ include 'includes/header.php';
   </div>
 </div>
 <div id="userList"></div>
-<div class="modal fade" id="recordModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-scrollable">
-    <div class="modal-content bg-dark text-white">
-      <form id="record-form">
-        <div class="modal-header">
-          <h5 class="modal-title">Record</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
-        </div>
-        <div class="modal-body">
-          <input type="hidden" name="<?= htmlspecialchars($primaryKey) ?>">
-          <?php foreach ($displayColumns as $col): ?>
-            <div class="mb-3">
-              <label class="form-label"><?= htmlspecialchars(str_replace('_',' ', $col)) ?></label>
-              <?php if (isset($lookups[$col])): ?>
-                <select name="<?= htmlspecialchars($col) ?>" class="form-select bg-dark text-white border-secondary">
-                  <?php foreach ($lookups[$col] as $id => $label): ?>
-                    <option value="<?= htmlspecialchars($id) ?>"><?= htmlspecialchars($label) ?></option>
-                  <?php endforeach; ?>
-                </select>
-              <?php elseif (in_array($col,$booleanColumns)): ?>
-                <div>
-                  <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="<?= htmlspecialchars($col) ?>" id="<?= htmlspecialchars($col) ?>_si" value="1">
-                    <label class="form-check-label" for="<?= htmlspecialchars($col) ?>_si">Si</label>
-                  </div>
-                  <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="<?= htmlspecialchars($col) ?>" id="<?= htmlspecialchars($col) ?>_no" value="0">
-                    <label class="form-check-label" for="<?= htmlspecialchars($col) ?>_no">No</label>
-                  </div>
-                </div>
-              <?php else: ?>
-                <input type="text" name="<?= htmlspecialchars($col) ?>" class="form-control bg-dark text-white border-secondary">
-              <?php endif; ?>
-            </div>
-          <?php endforeach; ?>
-        </div>
-        <div class="modal-footer">
-          <button type="button" id="cancelBtn" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-          <button type="submit" class="btn btn-primary">Salva</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content bg-dark text-white">
-      <div class="modal-header">
-        <h5 class="modal-title">Conferma eliminazione</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
-      </div>
-      <div class="modal-body">
-        Sei sicuro di voler eliminare questo utente?
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-        <button type="button" id="confirmDeleteBtn" class="btn btn-danger">Elimina</button>
-      </div>
-    </div>
-  </div>
-</div>
 <div class="modal fade" id="familiesModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content bg-dark text-white">
@@ -147,6 +85,6 @@ include 'includes/header.php';
 </div>
 <script src="js/gestione_utenti.js"></script>
 <script>
-initUserManager('<?= $table ?>', <?= json_encode($displayColumns) ?>, '<?= $primaryKey ?>', <?= json_encode($lookups) ?>, <?= json_encode($booleanColumns) ?>, {canInsert: <?= $canInsert ? 'true':'false' ?>, canUpdate: <?= $canUpdate ? 'true':'false' ?>, canDelete: <?= $canDelete ? 'true':'false' ?>, canManageFamilies: <?= $canManageFamilies ? 'true':'false' ?>});
+initUserManager('<?= $table ?>', <?= json_encode($displayColumns) ?>, '<?= $primaryKey ?>', <?= json_encode($lookups) ?>, <?= json_encode($booleanColumns) ?>, {canInsert: <?= $canInsert ? 'true':'false' ?>, canUpdate: <?= $canUpdate ? 'true':'false' ?>, canManageFamilies: <?= $canManageFamilies ? 'true':'false' ?>});
 </script>
 <?php include 'includes/footer.php'; ?>
