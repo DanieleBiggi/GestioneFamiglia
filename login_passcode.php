@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($userRes->num_rows === 1) {
         $user = $userRes->fetch_assoc();
         if ((int)$user['attivo'] !== 1) {
-            $error = 'Account bloccato. Contatta un amministratore.';
+            $error = "Account bloccato. Contatta l'assistenza all'indirizzo <a href='mailto:'>assistenza@gestionefamiglia.it</a>.";
         } elseif (!empty($user['passcode_locked_until']) && strtotime($user['passcode_locked_until']) > time()) {
             $lockedUntil = strtotime($user['passcode_locked_until']);
             $now = time();
@@ -76,11 +76,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $attempts = (int)$user['passcode_attempts'] + 1;
                 if ($attempts >= 3) {
-                    $until = date('Y-m-d H:i:s', time() + 15*60);
+                    $minuti_attesa = 15;
+                    $until = date('Y-m-d H:i:s', time() + $minuti_attesa*60);
                     $block = $conn->prepare('UPDATE utenti SET passcode_locked_until = ?, passcode_attempts = 0 WHERE id = ?');
                     $block->bind_param('si', $until, $user['id']);
                     $block->execute();
-                    $error = 'Troppi tentativi. Account temporaneamente bloccato.';
+                    $error = 'Troppi tentativi. Account temporaneamente bloccato. Riprova tra '.$minuti_attesa.' minuti.';
                 } else {
                     $updAtt = $conn->prepare('UPDATE utenti SET passcode_attempts = ? WHERE id = ?');
                     $updAtt->bind_param('ii', $attempts, $user['id']);
@@ -100,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="card bg-dark text-white p-4">
       <h4 class="mb-3">Login rapido</h4>
       <?php if ($error): ?>
-        <div class="alert alert-danger"><?= $error ?> <a href="login.php" class="alert-link">Login classico</a></div>
+        <div class="alert alert-danger"><?= $error ?> <a href="login.php?scelta_login" class="alert-link">Login classico</a></div>
       <?php else: ?>
       <form method="POST" action="login_passcode.php">
         <div class="mb-3">
@@ -108,8 +109,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <input type="password" name="passcode" class="form-control" required pattern="\d{6}" autofocus>
         </div>
         <button type="submit" class="btn btn-primary">Accedi</button>
-        <a href="login.php" class="btn btn-link text-light">Login con utente e password</a>
-      </form>
+      </form><br>
+        <a href="login.php?scelta_login" class="btn btn-link text-light">Login con utente e password</a>
       <?php endif; ?>
     </div>
   </div>
