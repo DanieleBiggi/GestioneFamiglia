@@ -147,7 +147,7 @@ $stmtMov->close();
    <div class="mb-4">Saldo totale: <span><?= ($saldoTot>=0?'+':'') . number_format($saldoTot, 2, ',', '.') ?> €</span></div>
 
    <?php if ($isAdmin): ?>
-     <button id="saldaBtn" class="btn btn-success mb-3">Salda movimenti</button>
+     <button id="saldaBtn" class="btn btn-outline-light mb-3">Salda movimenti</button>
    <?php endif; ?>
 
    <?php if (!empty($movimenti)): ?>
@@ -155,14 +155,14 @@ $stmtMov->close();
       <?php $rowsAttr = $isAdmin ? htmlspecialchars(json_encode($mov['rows'] ?? []), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : ''; ?>
       <div class="movement d-flex justify-content-between align-items-start text-white mb-2" <?php if ($isAdmin): ?>data-rows='<?= $rowsAttr ?>' onclick="openDettaglio(this)" style="cursor:pointer"<?php endif; ?>>
         <?php if ($isAdmin): ?>
-          <input type="checkbox" class="form-check-input me-2" data-id-u2o="<?= $mov['id_u2o'] ?>" onclick="event.stopPropagation();">
+          <input type="checkbox" class="form-check-input me-2 flex-shrink-0" style="width:1.25rem;height:1.25rem;" data-id-u2o="<?= $mov['id_u2o'] ?>" onclick="event.stopPropagation();">
         <?php endif; ?>
-        <div class="flex-grow-1 me-3">
-          <div class="descr fw-semibold"><?= htmlspecialchars($mov['descrizione']) ?></div>
+        <div class="flex-grow-1 me-3" style="max-width:calc(100% - 8rem);">
+          <div class="descr fw-semibold text-break"><?= htmlspecialchars($mov['descrizione']) ?></div>
           <div class="small"><?= date('d/m/Y H:i', strtotime($mov['data_operazione'])) ?></div>
           <div class="mt-1"><span class="badge bg-secondary"><?= htmlspecialchars($mov['etichetta_descrizione']) ?></span></div>
         </div>
-        <div class="text-end">
+        <div class="text-end flex-shrink-0">
           <div class="amount"><?= ($mov['saldo_utente']>=0?'+':'') . number_format($mov['saldo_utente'], 2, ',', '.') ?> €</div>
         </div>
       </div>
