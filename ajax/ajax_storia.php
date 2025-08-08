@@ -8,15 +8,27 @@ switch($_POST['azione'] ?? '') {
         $utility = new Utility();
         switch($_POST['cosa'] ?? '') {
             case 'utenti':
-                $filtri = '0=1';
-                if(isset($_POST['valore_ricercato']) && $_POST['valore_ricercato']!='') {
+                $conditions = [];
+                $params = [];
+                $types = '';
+                if(!empty($_POST['valore_ricercato'])) {
                     $valore_ricercato = strtoupper($_POST['valore_ricercato']);
-                    $filtri = "COGNOME LIKE '%".$valore_ricercato."%' OR NOME LIKE '%".$valore_ricercato."%'";
+                    $valore_ricercato = Utility::escapeLike($valore_ricercato);
+                    $conditions[] = '(COGNOME LIKE ? OR NOME LIKE ?)';
+                    $params[] = "%$valore_ricercato%";
+                    $params[] = "%$valore_ricercato%";
+                    $types .= 'ss';
                 }
-                if(isset($_POST['ar_filtri']) && isset($_POST['ar_filtri']['codazi']) && $_POST['ar_filtri']['codazi']>0) {
-                    $filtri = 'CODAZI = '.$_POST['ar_filtri']['codazi'];
+                if(!empty($_POST['ar_filtri']['codazi'])) {
+                    $codazi = (int)$_POST['ar_filtri']['codazi'];
+                    $conditions[] = 'CODAZI = ?';
+                    $params[] = $codazi;
+                    $types .= 'i';
                 }
-                $SQLinv = 
+                if(!$conditions) {
+                    $conditions[] = '0=1';
+                }
+                $SQLinv =
 "SELECT TOP 10
     CODAZI, CODDIP, COGNOME, NOME, SESSO, convert(varchar, DATANAS, 103) as DATANAS, COMNAS, PRONAS, COMRES, PRORES,
     VIARES, NUMRES,
@@ -31,10 +43,10 @@ switch($_POST['azione'] ?? '') {
 FROM
     dbo.ARCDIPAN
 WHERE
-    $filtri
+    " . implode(' AND ', $conditions) . "
 ORDER BY
     COGNOME ASC";
-                $per_aziende = $utility->getDati($SQLinv);
+                $per_aziende = $utility->getDatiPrepared($SQLinv, $params, $types);
                 $aziende = array();
                 foreach($per_aziende as $azienda) {
                     $aziende[] = $azienda;
@@ -66,6 +78,8 @@ SQL;
                 echo json_encode($ar_return);
             break;
             case 'dettagli_utente':
+                $codazi = (int)($_POST['ar_filtri']['codazi'] ?? 0);
+                $coddip = (int)($_POST['ar_filtri']['coddip'] ?? 0);
                 $SQLinv = <<<SQL
 SELECT
     ARCDIPAN.CODAZI,
@@ -79,7 +93,7 @@ SELECT
 FROM dbo.VIW_STOVOCI
     JOIN ARCDIPAN ON (ARCDIPAN.CODAZI=VIW_STOVOCI.CODAZI AND ARCDIPAN.CODDIP=VIW_STOVOCI.CODDIP)
     LEFT JOIN TABVOCED ON (TABVOCED.CODICE=CODVOCE)
-WHERE ARCDIPAN.CODAZI = {$_POST['ar_filtri']['codazi']} AND ARCDIPAN.CODDIP = {$_POST['ar_filtri']['coddip']} AND
+WHERE ARCDIPAN.CODAZI = ? AND ARCDIPAN.CODDIP = ? AND
     CODVOCE IN ('002','081','082','C97','C98','C99','I15','V61','V51','I61','019')
 GROUP BY ARCDIPAN.CODAZI,
     ARCDIPAN.CODDIP,
@@ -89,16 +103,19 @@ GROUP BY ARCDIPAN.CODAZI,
     ANNO
 ORDER BY ANNO DESC
 SQL;
-                $risultato = $utility->getDati($SQLinv);
+                $risultato = $utility->getDatiPrepared($SQLinv, [$codazi, $coddip], 'ii');
                 $ar_return = array();
                 $ar_return['ar_dati'] = $risultato;
                 echo json_encode($ar_return);
             break;
             case 'anno':
+                $codazi = (int)($_POST['ar_filtri']['codazi'] ?? 0);
+                $coddip = (int)($_POST['ar_filtri']['coddip'] ?? 0);
+                $anno = (int)($_POST['ar_filtri']['anno'] ?? 0);
                 $SQLinv = <<<SQL
 SELECT
-    {$_POST['ar_filtri']['codazi']} AS CODAZI,
-    {$_POST['ar_filtri']['coddip']} AS CODDIP,
+    ? AS CODAZI,
+    ? AS CODDIP,
     CONCAT(ANNO,'/',MESE) AS ANNO_MESE,
     ANNO,
     MESE,
@@ -112,21 +129,25 @@ SELECT
     SUM(CASE WHEN CODVOCE = 'C99' THEN IMPORTO ELSE 0 END) AS NETTO
     FROM dbo.VIW_STOVOCI
 WHERE
-    CODAZI = {$_POST['ar_filtri']['codazi']} AND
-    CODDIP = {$_POST['ar_filtri']['coddip']} AND
-    ANNO = {$_POST['ar_filtri']['anno']}
+    CODAZI = ? AND
+    CODDIP = ? AND
+    ANNO = ?
  GROUP BY
     ANNO,
     MESE
  ORDER BY
     MESE DESC
 SQL;
-                $risultato = $utility->getDati($SQLinv);
+                $risultato = $utility->getDatiPrepared($SQLinv, [$codazi, $coddip, $codazi, $coddip, $anno], 'iiiii');
                 $ar_return = array();
                 $ar_return['ar_dati'] = $risultato;
                 echo json_encode($ar_return);
             break;
             case 'cedolino':
+                $codazi = (int)($_POST['ar_filtri']['codazi'] ?? 0);
+                $coddip = (int)($_POST['ar_filtri']['coddip'] ?? 0);
+                $mese = (int)($_POST['ar_filtri']['mese'] ?? 0);
+                $anno = (int)($_POST['ar_filtri']['anno'] ?? 0);
                 $SQLinv = <<<SQL
 SELECT
     TABVOCED.DESCRIZ,
@@ -136,12 +157,12 @@ FROM
     dbo.VIW_STOVOCI
     LEFT JOIN TABVOCED ON (TABVOCED.CODICE=CODVOCE)
 WHERE
-    CODAZI = {$_POST['ar_filtri']['codazi']} AND
-    CODDIP = {$_POST['ar_filtri']['coddip']} AND
-    MESE = {$_POST['ar_filtri']['mese']} AND
-    ANNO = {$_POST['ar_filtri']['anno']}
+    CODAZI = ? AND
+    CODDIP = ? AND
+    MESE = ? AND
+    ANNO = ?
 SQL;
-                $risultato = $utility->getDati($SQLinv);
+                $risultato = $utility->getDatiPrepared($SQLinv, [$codazi, $coddip, $mese, $anno], 'iiii');
                 $ar_return = array();
                 $ar_return['ar_dati'] = $risultato;
                 echo json_encode($ar_return);
