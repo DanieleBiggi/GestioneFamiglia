@@ -38,7 +38,18 @@ $lookups = [];
 foreach ($displayColumns as $col) {
     if (isset($foreignMap[$col])) {
         $fk = $foreignMap[$col];
-        $sql = "SELECT {$fk['key']} AS id, {$fk['label']} AS label FROM {$fk['table']}";
+        $table = $fk['table'];
+        $key   = $fk['key'];
+        $label = $fk['label'];
+        if (!preg_match('/^[A-Za-z0-9_]+$/', $table) ||
+            !preg_match('/^[A-Za-z0-9_]+$/', $key) ||
+            !preg_match("/^[A-Za-z0-9_(),\\s']+$/", $label)) {
+            continue;
+        }
+        $table = $conn->real_escape_string($table);
+        $key   = $conn->real_escape_string($key);
+        $label = $conn->real_escape_string($label);
+        $sql = "SELECT `{$key}` AS id, {$label} AS label FROM `{$table}`";
         $res = $conn->query($sql);
         if ($res) {
             while ($row = $res->fetch_assoc()) {
