@@ -5,6 +5,11 @@ $config = include __DIR__ . '/../includes/table_config.php';
 $foreignMap = include __DIR__ . '/../includes/foreign_keys.php';
 
 $table = $_GET['table'] ?? '';
+require_once '../includes/permissions.php';
+if (!has_permission($conn, 'table:' . $table, 'view')) { http_response_code(403); exit('Accesso negato'); }
+$canInsert = has_permission($conn, 'table:' . $table, 'insert');
+$canUpdate = has_permission($conn, 'table:' . $table, 'update');
+$canDelete = has_permission($conn, 'table:' . $table, 'delete');
 if (!isset($config[$table])) {
     die('Tabella non valida');
 }
@@ -52,7 +57,7 @@ include '../includes/header.php';
 ?>
 <div class="d-flex mb-3 justify-content-between">
   <h4><?= htmlspecialchars($table) ?></h4>
-  <button id="addBtn" class="btn btn-outline-light btn-sm">Aggiungi nuovo</button>
+  <button id="addBtn" class="btn btn-outline-light btn-sm <?= $canInsert ? '' : 'd-none' ?>">Aggiungi nuovo</button>
 </div>
 <input type="text" id="search" class="form-control bg-dark text-white border-secondary mb-3" placeholder="Cerca...">
 <table class="table table-dark table-striped" id="data-table">
@@ -132,6 +137,6 @@ include '../includes/header.php';
 
 <script src="../js/table_crud.js"></script>
 <script>
-initTableManager('<?= $table ?>', <?= json_encode($displayColumns) ?>, '<?= $primaryKey ?>', <?= json_encode($lookups) ?>, <?= json_encode($booleanColumns) ?>);
+initTableManager('<?= $table ?>', <?= json_encode($displayColumns) ?>, '<?= $primaryKey ?>', <?= json_encode($lookups) ?>, <?= json_encode($booleanColumns) ?>, {canInsert: <?= $canInsert ? 'true' : 'false' ?>, canUpdate: <?= $canUpdate ? 'true' : 'false' ?>, canDelete: <?= $canDelete ? 'true' : 'false' ?>});
 </script>
 <?php include '../includes/footer.php'; ?>

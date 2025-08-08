@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/permissions.php'; ?>
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -29,92 +30,155 @@
     <form method="post" action="cambia_famiglia.php" class="mb-3">
       <select name="id_famiglia_gestione" class="form-select bg-dark text-white border-secondary" onchange="this.form.submit()">
         <?php
-        $stmt = $conn->prepare('SELECT f.id_famiglia, f.nome_famiglia FROM famiglie f JOIN utenti2famiglie u2f ON f.id_famiglia = u2f.id_famiglia WHERE u2f.id_utente = ?');
+        $stmt = $conn->prepare('SELECT f.id_famiglia, f.nome_famiglia, u2f.userlevelid FROM famiglie f JOIN utenti2famiglie u2f ON f.id_famiglia = u2f.id_famiglia WHERE u2f.id_utente = ?');
         $stmt->bind_param('i', $_SESSION['utente_id']);
         $stmt->execute();
         $resFam = $stmt->get_result();
-        while ($fam = $resFam->fetch_assoc()): ?>
+        while ($fam = $resFam->fetch_assoc()):
+          if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == $fam['id_famiglia']) {
+              $_SESSION['userlevelid'] = $fam['userlevelid'];
+          }
+        ?>
           <option value="<?= (int)$fam['id_famiglia'] ?>" <?= (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == $fam['id_famiglia']) ? 'selected' : '' ?>><?= htmlspecialchars($fam['nome_famiglia']) ?></option>
         <?php endwhile; $stmt->close(); ?>
       </select>
     </form>
     <?php endif; ?>
     <ul class="list-unstyled">
+      <?php if (has_permission($conn, 'page:index.php', 'view')): ?>
       <li class="mb-3">
         <a href="/Gestionale25/index.php" class="btn btn-outline-light w-100 text-start">
           🏠 Home
         </a>
       </li>
-      <?php if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1): ?>
+      <?php endif; ?>
+      <?php if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1 && has_permission($conn, 'page:etichette_lista.php', 'view')): ?>
       <li class="mb-3">
         <a href="/Gestionale25/etichette_lista.php" class="btn btn-outline-light w-100 text-start">
           🏷️ Etichette
         </a>
       </li>
       <?php endif; ?>
+      <?php if (has_permission($conn, 'page:credito_utente.php', 'view')): ?>
       <li class="mb-3">
         <a href="/Gestionale25/credito_utente.php" class="btn btn-outline-light w-100 text-start">
           💰 Saldo personale
         </a>
       </li>
+      <?php endif; ?>
+      <?php if (has_permission($conn, 'page:password.php', 'view')): ?>
       <li class="mb-3">
         <a href="/Gestionale25/password.php" class="btn btn-outline-light w-100 text-start">
           🔐 Siti e password
         </a>
       </li>
-      <?php if (isset($_SESSION['utente_id']) && $_SESSION['utente_id'] == 1): ?>
+      <?php endif; ?>
+      <?php if (has_permission($conn, 'page:storia.php', 'view')): ?>
       <li class="mb-3">
         <a href="/Gestionale25/storia.php" class="btn btn-outline-light w-100 text-start">
           📜 Storia
         </a>
       </li>
       <?php endif; ?>
+      <?php $showSecurity = has_permission($conn, 'page:change_password.php', 'view') || has_permission($conn, 'page:setup_passcode.php', 'view');
+      if ($showSecurity): ?>
       <li class="mb-3">
         <div class="dropdown w-100">
-          <button class="btn btn-outline-light w-100 text-start dropdown-toggle"
-                  data-bs-toggle="dropdown" aria-expanded="false">
+          <button class="btn btn-outline-light w-100 text-start dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
             🔐 Sicurezza
           </button>
           <ul class="dropdown-menu dropdown-menu-dark w-100">
+            <?php if (has_permission($conn, 'page:change_password.php', 'view')): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/change_password.php">🔑 Cambia Password</a></li>
+            <?php endif; ?>
+            <?php if (has_permission($conn, 'page:setup_passcode.php', 'view')): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/setup_passcode.php">🔒 Imposta Passcode</a></li>
+            <?php endif; ?>
             <li><a class="dropdown-item text-white" href="/Gestionale">Torna al vecchio</a></li>
           </ul>
         </div>
       </li>
+      <?php endif; ?>
+      <?php
+        $tables = [
+          'bilancio_descrizione2id' => 'Descrizioni',
+          'bilancio_entrate' => 'Entrate',
+          'bilancio_gruppi_categorie' => 'Gruppi categorie',
+          'bilancio_gruppi_transazione' => 'Gruppi transazione',
+          'bilancio_uscite' => 'Uscite',
+          'codici_2fa' => 'Codici 2FA',
+          'dispositivi_riconosciuti' => 'Dispositivi riconosciuti',
+          'famiglie' => 'Famiglie',
+          'userlevels' => 'User Levels',
+          'utenti' => 'Utenti',
+          'utenti2famiglie' => 'Utenti-Famiglie',
+          'utenti2ip' => 'Utenti-IP'
+        ];
+        $tableLinks = [];
+        foreach ($tables as $tbl => $label) {
+            if (has_permission($conn, 'table:' . $tbl, 'view')) {
+                $tableLinks[$tbl] = $label;
+            }
+        }
+        if (!empty($tableLinks)):
+      ?>
       <li class="mb-3">
         <div class="dropdown w-100">
-          <button class="btn btn-outline-light w-100 text-start dropdown-toggle"
-                  data-bs-toggle="dropdown" aria-expanded="false">
+          <button class="btn btn-outline-light w-100 text-start dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
             🗃️ Tabelle
           </button>
           <ul class="dropdown-menu dropdown-menu-dark w-100">
             <li><h6 class="dropdown-header">Bilancio</h6></li>
+            <?php if (isset($tableLinks['bilancio_descrizione2id'])): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=bilancio_descrizione2id">Descrizioni</a></li>
+            <?php endif; ?>
+            <?php if (isset($tableLinks['bilancio_entrate'])): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=bilancio_entrate">Entrate</a></li>
+            <?php endif; ?>
+            <?php if (isset($tableLinks['bilancio_gruppi_categorie'])): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=bilancio_gruppi_categorie">Gruppi categorie</a></li>
+            <?php endif; ?>
+            <?php if (isset($tableLinks['bilancio_gruppi_transazione'])): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=bilancio_gruppi_transazione">Gruppi transazione</a></li>
+            <?php endif; ?>
+            <?php if (isset($tableLinks['bilancio_uscite'])): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=bilancio_uscite">Uscite</a></li>
+            <?php endif; ?>
             <li><hr class="dropdown-divider"></li>
             <li><h6 class="dropdown-header">Sicurezza</h6></li>
+            <?php if (isset($tableLinks['codici_2fa'])): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=codici_2fa">Codici 2FA</a></li>
+            <?php endif; ?>
+            <?php if (isset($tableLinks['dispositivi_riconosciuti'])): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=dispositivi_riconosciuti">Dispositivi riconosciuti</a></li>
+            <?php endif; ?>
             <li><hr class="dropdown-divider"></li>
             <li><h6 class="dropdown-header">Utenti</h6></li>
+            <?php if (isset($tableLinks['famiglie'])): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=famiglie">Famiglie</a></li>
+            <?php endif; ?>
+            <?php if (isset($tableLinks['userlevels'])): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=userlevels">User Levels</a></li>
+            <?php endif; ?>
+            <?php if (isset($tableLinks['utenti'])): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=utenti">Utenti</a></li>
+            <?php endif; ?>
+            <?php if (isset($tableLinks['utenti2famiglie'])): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=utenti2famiglie">Utenti-Famiglie</a></li>
+            <?php endif; ?>
+            <?php if (isset($tableLinks['utenti2ip'])): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=utenti2ip">Utenti-IP</a></li>
+            <?php endif; ?>
           </ul>
         </div>
       </li>
+      <?php endif; ?>
       <li>
         <a href="/Gestionale25/logout.php" class="btn btn-outline-danger w-100 text-start">
           ⎋ Logout
         </a>
       </li>
-      
+
     </ul>
   </div>
 </div>

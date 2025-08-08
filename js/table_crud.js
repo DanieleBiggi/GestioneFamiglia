@@ -1,8 +1,12 @@
-function initTableManager(table, columns, primaryKey, lookups, boolCols = []) {
+function initTableManager(table, columns, primaryKey, lookups, boolCols = [], perms = {}) {
     const tbody = document.querySelector('#data-table tbody');
     const searchInput = document.getElementById('search');
     const form = document.getElementById('record-form');
     const addBtn = document.getElementById('addBtn');
+    const canInsert = perms.canInsert ?? false;
+    const canUpdate = perms.canUpdate ?? false;
+    const canDelete = perms.canDelete ?? false;
+    if (!canInsert) addBtn.classList.add('d-none');
     const cancelBtn = document.getElementById('cancelBtn');
     const modalTitle = document.querySelector('#recordModal .modal-title');
     const idField = form.querySelector(`input[name="${primaryKey}"]`);
@@ -37,22 +41,27 @@ function initTableManager(table, columns, primaryKey, lookups, boolCols = []) {
                     tr.appendChild(td);
                 });
                 const actions = document.createElement('td');
-                const editBtn = document.createElement('button');
-                editBtn.className = 'btn btn-sm btn-link text-white me-2';
-                editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
-                editBtn.addEventListener('click', () => showForm(r));
-                const delBtn = document.createElement('button');
-                delBtn.className = 'btn btn-sm btn-link text-danger';
-                delBtn.innerHTML = '<i class="bi bi-trash"></i>';
-                delBtn.addEventListener('click', () => confirmDelete(r[primaryKey]));
-                actions.appendChild(editBtn);
-                actions.appendChild(delBtn);
+                if (canUpdate) {
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'btn btn-sm btn-link text-white me-2';
+                    editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+                    editBtn.addEventListener('click', () => showForm(r));
+                    actions.appendChild(editBtn);
+                }
+                if (canDelete) {
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'btn btn-sm btn-link text-danger';
+                    delBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                    delBtn.addEventListener('click', () => deleteRow(r[primaryKey]));
+                    actions.appendChild(delBtn);
+                }
                 tr.appendChild(actions);
                 tbody.appendChild(tr);
             });
     }
 
     function showForm(data = null) {
+        if ((data && !canUpdate) || (!data && !canInsert)) return;
         form.reset();
         if (!recordModal) {
             recordModal = new bootstrap.Modal(document.getElementById('recordModal'));
@@ -93,6 +102,7 @@ function initTableManager(table, columns, primaryKey, lookups, boolCols = []) {
         const formData = new FormData(form);
         formData.append('table', table);
         formData.append('action', form.dataset.mode === 'edit' ? 'update' : 'insert');
+        if ((form.dataset.mode === 'edit' && !canUpdate) || (form.dataset.mode === 'insert' && !canInsert)) return;
         fetch('../ajax/table_crud.php', { method: 'POST', body: formData })
             .then(r => r.json())
             .then(() => { recordModal.hide(); load(); });
@@ -107,6 +117,7 @@ function initTableManager(table, columns, primaryKey, lookups, boolCols = []) {
     }
 
     confirmDeleteBtn.addEventListener('click', () => {
+      if (!canDelete) return;
         if (deleteId === null) return;
         const formData = new FormData();
         formData.append('action', 'delete');

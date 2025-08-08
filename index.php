@@ -1,10 +1,11 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
 include 'includes/db.php';
+require_once 'includes/permissions.php';
+if (!has_permission($conn, 'page:index.php', 'view')) { http_response_code(403); exit('Accesso negato'); }
 require_once 'includes/render_movimento.php';
 include 'includes/header.php';
 
-require_once 'includes/render_movimento.php';
 
 if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1): ?>
 
