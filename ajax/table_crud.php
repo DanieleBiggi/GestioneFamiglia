@@ -3,6 +3,7 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../includes/session_check.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/permissions.php';
+require_once __DIR__ . '/../includes/etichette_utils.php';
 $config = include __DIR__ . '/../includes/table_config.php';
 
 $table = $_GET['table'] ?? $_POST['table'] ?? '';
@@ -89,8 +90,12 @@ switch ($action) {
         $sql = "DELETE FROM `$table` WHERE `$primaryKey`=?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param('i', $id);
-        $stmt->execute();
-        echo json_encode(['success' => true]);
+        $success = $stmt->execute();
+        if ($success && in_array($table, ['bilancio_entrate','bilancio_uscite'], true)) {
+            $tabellaMap = ['bilancio_entrate' => 'entrate', 'bilancio_uscite' => 'uscite'];
+            eliminaEtichetteCollegate($tabellaMap[$table], (int)$id);
+        }
+        echo json_encode(['success' => $success]);
         break;
     default:
         http_response_code(400);
