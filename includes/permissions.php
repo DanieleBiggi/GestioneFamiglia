@@ -42,18 +42,15 @@ function has_permission(mysqli $conn, string $resource, string $action): bool {
              VALUES (?, ?, 0, 0, 0, 0)"
         );
         $stmt->bind_param(
-            "iiiiii",
+            "ii",
             $_SESSION['userlevelid'],
-            $resource_id,
-            $can_view,
-            $can_insert,
-            $can_update,
-            $can_delete
+            $resource_id
         );
         
         if ($stmt->execute()) {
-            echo "Permessi inseriti correttamente";
+            //echo "Permessi inseriti correttamente";
         } else {
+            echo $_SESSION['userlevelid']." - ".$resource_id."<br>";
             echo "Errore nell'INSERT: " . $stmt->error;
         }
         
