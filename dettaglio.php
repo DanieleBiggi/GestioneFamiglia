@@ -25,7 +25,8 @@ if ($src === 'bilancio_entrate') {
            g.descrizione AS gruppo_descrizione,
            COALESCE(c.descrizione_categoria, 'Nessuna categoria') AS categoria_descrizione,
            g.tipo_gruppo,
-           GROUP_CONCAT(e.descrizione SEPARATOR ', ') AS etichette
+           GROUP_CONCAT(e.descrizione SEPARATOR ', ') AS etichette,
+           be.mezzo
     FROM bilancio_entrate be
     LEFT JOIN bilancio_gruppi_transazione g ON be.id_gruppo_transazione = g.id_gruppo_transazione
     LEFT JOIN bilancio_gruppi_categorie c ON g.id_categoria = c.id_categoria
@@ -50,7 +51,8 @@ if ($src === 'bilancio_entrate') {
            g.descrizione AS gruppo_descrizione,
            COALESCE(c.descrizione_categoria, 'Nessuna categoria') AS categoria_descrizione,
            g.tipo_gruppo,
-           GROUP_CONCAT(e.descrizione SEPARATOR ', ') AS etichette
+           GROUP_CONCAT(e.descrizione SEPARATOR ', ') AS etichette,
+           bu.mezzo
     FROM bilancio_uscite bu
     LEFT JOIN bilancio_gruppi_transazione g ON bu.id_gruppo_transazione = g.id_gruppo_transazione
     LEFT JOIN bilancio_gruppi_categorie c ON g.id_categoria = c.id_categoria
@@ -212,6 +214,9 @@ include 'includes/header.php';
       </span>
     </li>
   </ul>
+  <?php if (in_array($src, ['bilancio_entrate', 'bilancio_uscite'], true) && ($movimento['mezzo'] ?? '') === 'contanti'): ?>
+    <button class="btn btn-danger w-100 mt-3" id="deleteMovimento">Elimina movimento</button>
+  <?php endif; ?>
 </div>
 
 <!-- Modal generico -->
@@ -426,6 +431,21 @@ function saveEtichette() {
     body: JSON.stringify({ id: idMovimento, etichette: selected, src: srcMovimento })
   }).then(() => location.reload());
 }
+
+document.getElementById('deleteMovimento')?.addEventListener('click', () => {
+  if (!confirm('Sei sicuro di voler eliminare questo movimento?')) return;
+  fetch('ajax/delete_movimento.php', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ id: idMovimento, src: srcMovimento })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      window.location.href = 'tutti_movimenti.php';
+    }
+  });
+});
 </script>
 
 <?php include 'includes/footer.php'; ?>
