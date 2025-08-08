@@ -4,7 +4,8 @@ function render_evento(array $row): void {
     $searchAttr = htmlspecialchars($search, ENT_QUOTES);
     $data = !empty($row['data_evento']) ? date('d/m/Y', strtotime($row['data_evento'])) : '';
     $ora = $row['ora_evento'] ?? '';
-    echo '<div class="event-card movement d-flex justify-content-between align-items-start text-white text-decoration-none" data-search="' . $searchAttr . '">';
+    $url = 'eventi_dettaglio.php?id=' . (int)($row['id'] ?? 0);
+    echo '<div class="event-card movement d-flex justify-content-between align-items-start text-white text-decoration-none" data-search="' . $searchAttr . '" onclick="window.location.href=\'' . $url . '\'">';
     echo '  <div class="flex-grow-1">';
     echo '    <div class="fw-semibold">' . htmlspecialchars($row['titolo']) . '</div>';
     if ($data || $ora) {
