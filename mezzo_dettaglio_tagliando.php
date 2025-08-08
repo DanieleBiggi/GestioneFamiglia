@@ -44,7 +44,7 @@ if ($id > 0) {
     }
     $stmt->close();
 
-    $stmtRec = $conn->prepare("SELECT id_record, DATE(data_tagliando) AS data_tagliando, chilometri FROM mezzi_mezzi2tagliandi WHERE id_tagliando = ? ORDER BY data_tagliando DESC");
+    $stmtRec = $conn->prepare("SELECT id_m2t, DATE(data_tagliando) AS data_tagliando, km_tagliando FROM mezzi_mezzi2tagliandi WHERE id_tagliando = ? ORDER BY data_tagliando DESC");
     $stmtRec->bind_param('i', $id);
     $stmtRec->execute();
     $resRec = $stmtRec->get_result();
@@ -81,13 +81,13 @@ if ($id > 0): ?>
   <ul class="list-group list-group-flush bg-dark" id="recordsList">
     <?php foreach ($records as $idx => $row): ?>
       <li class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center <?= $idx >= 3 ? 'd-none extra-row' : '' ?>"
-          data-id="<?= (int)$row['id_record'] ?>"
+          data-id="<?= (int)$row['id_m2t'] ?>"
           data-data="<?= htmlspecialchars($row['data_tagliando']) ?>"
-          data-km="<?= (int)$row['chilometri'] ?>">
+          data-km="<?= (int)$row['km_tagliando'] ?>">
         <div class="flex-grow-1"><?= date("d/m/Y", strtotime($row['data_tagliando'])) ?></div>
-        <div class="text-end me-2" style="min-width: 90px;"><?= number_format((int)$row['chilometri'], 0, ',', '.') ?> km</div>
+        <div class="text-end me-2" style="min-width: 90px;"><?= number_format((int)$row['km_tagliando'], 0, ',', '.') ?> km</div>
         <?php if ($isOwner): ?>
-          <button class="btn btn-danger btn-sm ms-2" onclick="deleteRecord(event, <?= (int)$row['id_record'] ?>)">✕</button>
+          <button class="btn btn-danger btn-sm ms-2" onclick="deleteRecord(event, <?= (int)$row['id_m2t'] ?>)">✕</button>
         <?php endif; ?>
       </li>
     <?php endforeach; ?>
@@ -132,14 +132,14 @@ if ($id > 0): ?>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <input type="hidden" name="id_record" id="id_record">
+        <input type="hidden" name="id_m2t" id="id_m2t">
         <div class="mb-3">
           <label class="form-label">Data</label>
           <input type="date" name="data_tagliando" class="form-control bg-secondary text-white" required>
         </div>
         <div class="mb-3">
           <label class="form-label">Chilometri</label>
-          <input type="number" name="chilometri" class="form-control bg-secondary text-white" required>
+          <input type="number" name="km_tagliando" class="form-control bg-secondary text-white" required>
         </div>
       </div>
       <div class="modal-footer">
@@ -182,4 +182,3 @@ const tagliandoData = {
 </form>
 <?php include 'includes/footer.php'; ?>
 <?php endif; ?>
-
