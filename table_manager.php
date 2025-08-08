@@ -37,7 +37,7 @@ if ($table === 'famiglie') {
 
 function format_label($col) {
     $col = str_replace("id_","",$col);
-    $label = ucwords(str_replace('_', ' ', $col))
+    $label = ucwords(str_replace('_', ' ', $col));
     return $label;
 }
 
