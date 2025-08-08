@@ -122,7 +122,7 @@
       <li class="mb-3">
         <div class="dropdown w-100">
           <button class="btn btn-outline-light w-100 text-start dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="bi bi-people-gear me-2 text-white"></i> Utenti
+            <i class="bi bi-people me-2 text-white"></i> Utenti
           </button>
           <ul class="dropdown-menu dropdown-menu-dark w-100">
             <?php if (has_permission($conn, 'page:userlevel_permissions.php', 'view')): ?>
