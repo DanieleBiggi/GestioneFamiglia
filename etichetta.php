@@ -296,15 +296,18 @@ $stmtGrp->close();
           <option value="<?= htmlspecialchars($m['ym']) ?>" <?= $mese === $m['ym'] ? 'selected' : '' ?>><?= ucfirst($m['label']) ?></option>
         <?php endforeach; ?>
       </select>
+      <?php if ($isAdmin): ?>
+      <button type="button" class="btn btn-outline-light btn-sm ms-auto d-inline d-md-none" onclick="toggleSettle()">Seleziona</button>
+    <?php endif; ?>
     </div>
   </form>
 
   <div class="d-flex gap-4 mb-4 align-items-center flex-wrap">
-    <div>Entrate: <span class="text-nowrap"><?= '+' . number_format($totali['entrate'] ?? 0, 2, ',', '.') ?> €</span></div>
-    <div>Uscite: <span class="text-nowrap"><?= number_format($totali['uscite'] ?? 0, 2, ',', '.') ?> €</span></div>
+    <div class="label_entrata_uscita">Entrate: <span class="text-nowrap"><?= '+' . number_format($totali['entrate'] ?? 0, 2, ',', '.') ?> €</span></div>
+    <div class="label_entrata_uscita">Uscite: <span class="text-nowrap"><?= number_format($totali['uscite'] ?? 0, 2, ',', '.') ?> €</span></div>
+    
     <?php if ($isAdmin): ?>
       <button type="button" class="btn btn-outline-light btn-sm ms-auto d-none d-md-inline" id="settleBtn" onclick="settleSelected()">Segna saldati</button>
-      <button type="button" class="btn btn-outline-light btn-sm ms-auto d-inline d-md-none" onclick="toggleSettle()">Seleziona</button>
     <?php endif; ?>
   </div>
 
@@ -439,6 +442,7 @@ $stmtGrp->close();
 
     function toggleSettle() {
       document.querySelectorAll('.settle-checkbox').forEach(cb => cb.classList.toggle('d-none'));
+      document.querySelectorAll('.label_entrata_uscita').forEach(cb => cb.classList.toggle('d-none'));
       document.getElementById('settleBtn').classList.toggle('d-none');
     }
     </script>
