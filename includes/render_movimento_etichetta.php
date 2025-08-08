@@ -105,7 +105,7 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
     $rowId = 'mov-' . $mov['tabella'] . '-' . $mov['id'];
     echo '<div id="' . $rowId . '" class="movement d-flex justify-content-between align-items-start text-white text-decoration-none" style="cursor:pointer" data-id-e2o="' . htmlspecialchars($mov['id_e2o'] ?? '', ENT_QUOTES) . '" data-rows="' . $rowsJson . '" onclick="openU2oModal(this)">';
     if ($isAdmin) {
-        echo '<input type="checkbox" class="form-check-input me-2 settle-checkbox" onclick="event.stopPropagation();">';
+        echo '<input type="checkbox" class="form-check-input me-2 settle-checkbox d-none d-md-inline" onclick="event.stopPropagation();">';
     }
     echo '  <img src="' . htmlspecialchars($icon) . '" alt="src" class="me-2" style="width:24px;height:24px">';
     echo '  <div class="flex-grow-1 me-3">';
@@ -124,7 +124,7 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
     }
     echo '  </div>';
     echo '  <div class="text-end">';
-    echo '    <div class="amount text-white">' . ($amountValue >= 0 ? '+' : '') . $importo . ' €</div>';
+    echo '    <div class="amount text-white text-nowrap">' . ($amountValue >= 0 ? '+' : '') . $importo . ' €</div>';
     $idE2oAttr = htmlspecialchars($info['id_e2o'] ?? '', ENT_QUOTES);
     $descAttr = htmlspecialchars($info['descrizione_extra'] ?? '', ENT_QUOTES);
     $impAttr = htmlspecialchars($info['importo'] ?? '', ENT_QUOTES);
