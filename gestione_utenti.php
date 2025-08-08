@@ -70,7 +70,9 @@ include 'includes/header.php';
   <thead>
     <tr>
       <th>Username</th>
-      <th>Userlevel</th>
+      <th>Nome</th>
+      <th>Cognome</th>
+      <th>Email</th>
       <th>Famiglia attuale</th>
       <th>Famiglie abilitate</th>
       <th>Azioni</th>
