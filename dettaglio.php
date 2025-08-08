@@ -442,7 +442,8 @@ document.getElementById('deleteMovimento')?.addEventListener('click', () => {
   .then(r => r.json())
   .then(data => {
     if (data.success) {
-      window.location.href = 'tutti_movimenti.php';
+      //window.location.href = 'tutti_movimenti.php';
+      history.back();
     }
   });
 });
