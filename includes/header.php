@@ -44,6 +44,17 @@
       </select>
     </form>
     <?php endif; ?>
+    <?php
+      $isAdmin = false;
+      if (isset($_SESSION['utente_id'])) {
+          $stmtAdm = $conn->prepare('SELECT admin FROM utenti WHERE id = ?');
+          $stmtAdm->bind_param('i', $_SESSION['utente_id']);
+          $stmtAdm->execute();
+          $isAdmin = ($stmtAdm->get_result()->fetch_assoc()['admin'] ?? 0) == 1;
+          $stmtAdm->close();
+      }
+      $canImpersonate = $isAdmin && !isset($_SESSION['impersonator_id']);
+    ?>
     <ul class="list-unstyled">
       <?php if (has_permission($conn, 'page:index.php', 'view')): ?>
       <li class="mb-3">
@@ -171,6 +182,20 @@
             <?php endif; ?>
           </ul>
         </div>
+      </li>
+      <?php endif; ?>
+      <?php if ($canImpersonate): ?>
+      <li class="mb-3">
+        <a href="/Gestionale25/impersonate.php" class="btn btn-outline-light w-100 text-start">
+          👤 Impersona utente
+        </a>
+      </li>
+      <?php endif; ?>
+      <?php if (isset($_SESSION['impersonator_id'])): ?>
+      <li class="mb-3">
+        <a href="/Gestionale25/stop_impersonate.php" class="btn btn-outline-warning w-100 text-start">
+          ⏪ Torna al tuo account
+        </a>
       </li>
       <?php endif; ?>
       <li>
