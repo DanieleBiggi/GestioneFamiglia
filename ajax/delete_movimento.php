@@ -35,7 +35,7 @@ $stmt = $conn->prepare($sql);
 $stmt->bind_param('i', $id);
 $success = $stmt->execute();
 if ($success) {
-    eliminaEtichetteCollegate($tabellaOperazione, $id);
+    eliminaEtichetteCollegate($src, $id);
 }
 
 echo json_encode(['success' => $success]);
