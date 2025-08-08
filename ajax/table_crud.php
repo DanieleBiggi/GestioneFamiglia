@@ -1,6 +1,8 @@
 <?php
 header('Content-Type: application/json');
+require_once __DIR__ . '/../includes/session_check.php';
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/permissions.php';
 $config = include __DIR__ . '/../includes/table_config.php';
 
 $table = $_GET['table'] ?? $_POST['table'] ?? '';
@@ -12,6 +14,14 @@ if (!isset($config[$table])) {
 $primaryKey = $config[$table]['primary_key'];
 $columns = $config[$table]['columns'];
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
+$actionMap = ['list' => 'view', 'insert' => 'insert', 'update' => 'update', 'delete' => 'delete'];
+$permAction = $actionMap[$action] ?? '';
+if (!has_permission($conn, 'table:' . $table, $permAction)) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Permesso negato']);
+    exit;
+}
+
 
 switch ($action) {
     case 'list':

@@ -42,7 +42,7 @@ return [
     ],
     'utenti2famiglie' => [
         'primary_key' => 'id_u2f',
-        'columns' => ['id_u2f','id_utente','id_famiglia']
+        'columns' => ['id_u2f','id_utente','id_famiglia','userlevelid']
     ],
     'utenti2ip' => [
         'primary_key' => 'id_u2i',

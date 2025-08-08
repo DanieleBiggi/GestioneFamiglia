@@ -4,6 +4,8 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 require_once 'includes/db.php';
+require_once 'includes/permissions.php';
+if (!has_permission($conn, 'page:credito_utente.php', 'view')) { http_response_code(403); exit('Accesso negato'); }
 include 'includes/header.php';
 setlocale(LC_TIME, 'it_IT.UTF-8');
 
@@ -12,8 +14,8 @@ $loggedUserId = $_SESSION['utente_id'] ?? 0;
 $famigliaId   = $_SESSION['id_famiglia_gestione'] ?? 0;
 
 // Verifica permessi dell'utente loggato per cambiare utente
-$stmtPerm = $conn->prepare('SELECT u.userlevelid AS lvl, u.admin FROM utenti u WHERE u.id = ?');
-$stmtPerm->bind_param('i', $loggedUserId);
+$stmtPerm = $conn->prepare('SELECT u2f.userlevelid AS lvl, u.admin FROM utenti2famiglie u2f JOIN utenti u ON u.id = u2f.id_utente WHERE u.id = ? AND u2f.id_famiglia = ?');
+$stmtPerm->bind_param('ii', $loggedUserId, $famigliaId);
 $stmtPerm->execute();
 $perm = $stmtPerm->get_result()->fetch_assoc();
 $stmtPerm->close();
