@@ -134,12 +134,63 @@ class Utility
         $url = 'https://new.cosulich.it/approvazione_fatture/user_get_inaz_json.php?action=execute_query'
             . '&token=' . $token . '&SQL=' . $SQLen;
 
-
         //echo $url."<br>";
         $response = @file_get_contents($url);
-        
+
         //echo $response;
 
         return json_decode($response, true) ?? [];
+    }
+
+    /**
+     * Build a query replacing placeholders with safely escaped parameters.
+     *
+     * @param string $sql   Query containing `?` placeholders.
+     * @param array  $params Parameters to bind in order.
+     * @param string $types  Type string ("s" for string, "i" for int, "d" for double).
+     */
+    public function prepareQuery(string $sql, array $params, string $types = ''): string
+    {
+        if ($types === '') {
+            $types = str_repeat('s', count($params));
+        }
+
+        $escaped = [];
+        foreach ($params as $index => $param) {
+            $type = $types[$index] ?? 's';
+            switch ($type) {
+                case 'i':
+                    $escaped[] = (string) (int) $param;
+                    break;
+                case 'd':
+                    $escaped[] = (string) (float) $param;
+                    break;
+                default:
+                    $escaped[] = "'" . addslashes((string) $param) . "'";
+                    break;
+            }
+        }
+
+        $i = 0;
+        return preg_replace_callback('/\?/', function () use (&$i, $escaped) {
+            return $escaped[$i++] ?? '?';
+        }, $sql);
+    }
+
+    /**
+     * Execute a query with parameters.
+     */
+    public function getDatiPrepared(string $sql, array $params, string $types = ''): array
+    {
+        $query = $this->prepareQuery($sql, $params, $types);
+        return $this->getDati($query);
+    }
+
+    /**
+     * Escape special characters used in SQL LIKE clauses.
+     */
+    public static function escapeLike(string $value): string
+    {
+        return addcslashes($value, "_%");
     }
 }
