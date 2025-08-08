@@ -1,8 +1,6 @@
 <?php
 include 'includes/session_check.php';
 include 'includes/db.php';
-include 'includes/header.php';
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $descrizione = $_POST['descrizione'] ?? '';
     $descrizione_extra = $_POST['descrizione_extra'] ?? '';
@@ -20,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Location: dettaglio.php?id=' . $id . '&src=bilancio_uscite');
     exit;
 }
+include 'includes/header.php';
 ?>
 
 <div class="container text-white">
@@ -39,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     <div class="mb-3">
       <label class="form-label">Data Operazione</label>
-      <input type="datetime-local" name="data_operazione" class="form-control bg-dark text-white" required>
+      <input type="datetime-local" name="data_operazione" class="form-control bg-dark text-white" value="<?php echo date('Y-m-d\\TH:i'); ?>" required>
     </div>
     <div class="mb-3">
       <label class="form-label">Note</label>

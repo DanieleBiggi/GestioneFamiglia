@@ -16,7 +16,7 @@
   <button class="btn btn-dark border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu">
     <i class="bi bi-list fs-3"></i>
   </button>
-  <span class="navbar-brand mb-0 h1">Gestione Famiglia 2.0</span>
+  <a href="index.php" class="navbar-brand mb-0 h1">Gestione Famiglia 2.0</a>
 </nav>
 
 <!-- Offcanvas Menù Laterale -->

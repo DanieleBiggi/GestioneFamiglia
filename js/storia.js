@@ -10,8 +10,8 @@ models.nessun_risultato =
 "<div class='alert alert-warning'>Nessun risultato</div>";
 
 models.elemento_lista =
-'<div class="border-bottom pb-3 pt-3 d-flex justify-content-between">'+
-    '<div>'+
+'<div class="border-bottom py-3 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">'+
+    '<div class="text-break">'+
         '<b>{{dato_principale}}</b>'+
         '{{contenuto}}'+
     '</div>'+
@@ -19,8 +19,8 @@ models.elemento_lista =
 '</div>';
 
 models.icona_altro =
-'<div class="d-flex align-items-center ml-4 risultato" {{valori_chiave}}>'+ 
-    '<i class="fa fa-chevron-right fa-2x"></i>'+ 
+'<div class="d-flex align-items-center ms-sm-4 risultato p-2" style="cursor:pointer" {{valori_chiave}}>'+
+    '<i class="bi bi-chevron-right fs-3"></i>'+
 '</div>';
 
 models.contenuto_singolo =
@@ -52,6 +52,12 @@ class PageManager {
 
         this.disegna_tabella();
         this.inizializza_menu();
+        document.addEventListener('click', (e) => {
+            const risultato = e.target.closest('.risultato');
+            if (risultato) {
+                this.handleRisultatoClick({ currentTarget: risultato });
+            }
+        });
     }
 
     render_models(json_data, modello)
@@ -86,6 +92,49 @@ class PageManager {
 
             this.ricerca();
         });
+    }
+
+    handleRisultatoClick(e)
+    {
+        const el = $(e.currentTarget);
+        this.ar_filtri = {};
+
+        if(el.data('codazi') !== undefined)
+        {
+            this.ar_filtri['codazi'] = el.data('codazi');
+        }
+
+        if(el.data('coddip') !== undefined)
+        {
+            this.ar_filtri['coddip'] = el.data('coddip');
+        }
+
+        if(el.data('anno') !== undefined)
+        {
+            this.ar_filtri['anno'] = el.data('anno');
+        }
+
+        if(el.data('mese') !== undefined)
+        {
+            this.ar_filtri['mese'] = el.data('mese');
+        }
+
+        let prossimo = 'utenti';
+
+        if(el.data('mese') !== undefined)
+        {
+            prossimo = 'cedolino';
+        }
+        else if(el.data('anno') !== undefined)
+        {
+            prossimo = 'anno';
+        }
+        else if(el.data('coddip') !== undefined)
+        {
+            prossimo = 'dettagli_utente';
+        }
+
+        this.ricerca_dettagli(prossimo);
     }
 
     attiva_nav()
@@ -318,52 +367,6 @@ class PageManager {
             //document.getElementById("div_content").innerHTML = this.render_models(dati_render, models.tabella);
             document.getElementById("div_content").innerHTML = lista;
 
-            switch(tabella_da_disegnare)
-            {
-                case 'aziende':
-
-                    $('.risultato').on('click', (e) => {
-                        this.ar_filtri = {};
-                        this.ar_filtri['codazi'] = $(e.currentTarget).data("codazi");
-                        this.ricerca_dettagli("utenti");
-                    });
-
-                break;
-                case 'utenti':
-
-                    $('.risultato').on('click', (e) => {
-                        this.ar_filtri = {};
-                        this.ar_filtri['codazi'] = $(e.currentTarget).data("codazi");
-                        this.ar_filtri['coddip'] = $(e.currentTarget).data("coddip");
-                        this.ricerca_dettagli("dettagli_utente");
-                    });
-
-                break;
-                case 'dettagli_utente':
-
-                    $('.risultato').on('click', (e) => {
-                        this.ar_filtri = {};
-                        this.ar_filtri['codazi'] = $(e.currentTarget).data("codazi");
-                        this.ar_filtri['coddip'] = $(e.currentTarget).data("coddip");
-                        this.ar_filtri['anno'] = $(e.currentTarget).data("anno");
-                        this.ricerca_dettagli("anno");
-                    });
-
-                break;
-                case 'anno':
-
-                    $('.risultato').on('click', (e) => {
-                        this.ar_filtri = {};
-                        this.ar_filtri['codazi'] = $(e.currentTarget).data("codazi");
-                        this.ar_filtri['coddip'] = $(e.currentTarget).data("coddip");
-                        this.ar_filtri['anno'] = $(e.currentTarget).data("anno");
-                        this.ar_filtri['mese'] = $(e.currentTarget).data("mese");
-                        this.ricerca_dettagli("cedolino");
-                    });
-
-                break;
-            }
-
         }else if(this.valore_ricercato!=""){
             document.getElementById("div_content").innerHTML = this.render_models({}, models.nessun_risultato);
         }else{
@@ -399,7 +402,8 @@ class PageManager {
                 return;
             }
 
-            let dati_risposta = JSON.parse(msg);
+            //let dati_risposta = JSON.parse(msg);
+            let dati_risposta = msg;
 
             this.ar_dati[this.nav_attivo] = dati_risposta.ar_dati;
 
@@ -435,7 +439,8 @@ class PageManager {
                 return;
             }
 
-            let dati_risposta = JSON.parse(msg);
+            //let dati_risposta = JSON.parse(msg);
+            let dati_risposta = msg;
 
             this.ar_dati[cosa] = dati_risposta.ar_dati;
 

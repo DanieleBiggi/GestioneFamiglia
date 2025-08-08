@@ -8,8 +8,14 @@ function initTableManager(table, columns, primaryKey, lookups, boolCols = [], pe
     const canDelete = perms.canDelete ?? false;
     if (!canInsert) addBtn.classList.add('d-none');
     const cancelBtn = document.getElementById('cancelBtn');
+    const modalTitle = document.querySelector('#recordModal .modal-title');
     const idField = form.querySelector(`input[name="${primaryKey}"]`);
+    const deleteModalEl = document.getElementById('deleteModal');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
     let rows = [];
+    let recordModal;
+    let deleteModal;
+    let deleteId = null;
 
     function load() {
         fetch(`../ajax/table_crud.php?action=list&table=${encodeURIComponent(table)}`)
@@ -57,8 +63,12 @@ function initTableManager(table, columns, primaryKey, lookups, boolCols = [], pe
     function showForm(data = null) {
         if ((data && !canUpdate) || (!data && !canInsert)) return;
         form.reset();
+        if (!recordModal) {
+            recordModal = new bootstrap.Modal(document.getElementById('recordModal'));
+        }
         if (data) {
             form.dataset.mode = 'edit';
+            modalTitle.textContent = 'Modifica record';
             idField.value = data[primaryKey];
             columns.forEach(c => {
                 if (boolCols.includes(c)) {
@@ -71,6 +81,7 @@ function initTableManager(table, columns, primaryKey, lookups, boolCols = [], pe
             });
         } else {
             form.dataset.mode = 'insert';
+            modalTitle.textContent = 'Nuovo record';
             idField.value = '';
             columns.forEach(c => {
                 if (boolCols.includes(c)) {
@@ -79,11 +90,11 @@ function initTableManager(table, columns, primaryKey, lookups, boolCols = [], pe
                 }
             });
         }
-        form.classList.remove('d-none');
+        recordModal.show();
     }
 
     addBtn.addEventListener('click', () => showForm());
-    cancelBtn.addEventListener('click', () => form.classList.add('d-none'));
+    cancelBtn.addEventListener('click', () => recordModal.hide());
     searchInput.addEventListener('input', render);
 
     form.addEventListener('submit', e => {
@@ -94,20 +105,28 @@ function initTableManager(table, columns, primaryKey, lookups, boolCols = [], pe
         if ((form.dataset.mode === 'edit' && !canUpdate) || (form.dataset.mode === 'insert' && !canInsert)) return;
         fetch('../ajax/table_crud.php', { method: 'POST', body: formData })
             .then(r => r.json())
-            .then(() => { form.classList.add('d-none'); load(); });
+            .then(() => { recordModal.hide(); load(); });
     });
 
-    function deleteRow(id) {
-        if (!canDelete) return;
-        if (!confirm('Eliminare il record?')) return;
+    function confirmDelete(id) {
+        deleteId = id;
+        if (!deleteModal) {
+            deleteModal = new bootstrap.Modal(deleteModalEl);
+        }
+        deleteModal.show();
+    }
+
+    confirmDeleteBtn.addEventListener('click', () => {
+      if (!canDelete) return;
+        if (deleteId === null) return;
         const formData = new FormData();
         formData.append('action', 'delete');
         formData.append('table', table);
-        formData.append(primaryKey, id);
+        formData.append(primaryKey, deleteId);
         fetch('../ajax/table_crud.php', { method: 'POST', body: formData })
             .then(r => r.json())
-            .then(load);
-    }
+            .then(() => { deleteModal.hide(); load(); });
+    });
 
     load();
 }
