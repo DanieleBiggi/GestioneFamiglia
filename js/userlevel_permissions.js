@@ -22,12 +22,18 @@ document.addEventListener('DOMContentLoaded', () => {
   resourceFilter.addEventListener('change', filter);
   filter();
 
-  // Auto-submit permission form when a checkbox is toggled
+  // Save permission changes via AJAX when a checkbox is toggled
   document
     .querySelectorAll('.permission-card input[type="checkbox"]')
     .forEach(cb => {
       cb.addEventListener('change', () => {
-        cb.form.submit();
+        const form = cb.form;
+        const formData = new FormData(form);
+        fetch('userlevel_permissions.php', {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: formData
+        }).catch(err => console.error('Errore salvataggio permesso', err));
       });
     });
 });

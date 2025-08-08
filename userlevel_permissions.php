@@ -18,6 +18,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
     $stmt->bind_param('iiiiii', $userlevelid, $resource_id, $can_view, $can_insert, $can_update, $can_delete);
     $stmt->execute();
     $stmt->close();
+
+    // Return JSON for AJAX requests; fallback to redirect for normal requests
+    $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+    if ($isAjax) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true]);
+        exit;
+    }
+
     header('Location: userlevel_permissions.php');
     exit;
 }
