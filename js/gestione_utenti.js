@@ -1,5 +1,5 @@
 function initUserManager(table, formColumns, primaryKey, lookups, boolCols = [], perms = {}) {
-    const tbody = document.querySelector('#data-table tbody');
+    const list = document.getElementById('userList');
     const searchInput = document.getElementById('search');
     const userlevelFilter = document.getElementById('userlevelFilter');
     const familyFilter = document.getElementById('familyFilter');
@@ -32,23 +32,28 @@ function initUserManager(table, formColumns, primaryKey, lookups, boolCols = [],
             .then(data => { rows = data; render(); });
     }
     function render() {
-        tbody.innerHTML = '';
+        list.innerHTML = '';
         rows.forEach(r => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${r.username ?? ''}</td>
-                <td>${r.nome ?? ''}</td>
-                <td>${r.cognome ?? ''}</td>
-                <td>${r.email ?? ''}</td>
-                <td>${r.famiglia_attuale ?? ''}</td>
-                <td>${r.famiglie ?? ''}</td>
+            const card = document.createElement('div');
+            card.className = 'movement user-card d-flex justify-content-between align-items-start text-white mb-2';
+
+            const info = document.createElement('div');
+            info.className = 'flex-grow-1';
+            info.innerHTML = `
+                <div class="fw-semibold">${r.username ?? ''}</div>
+                <div class="small">${r.nome ?? ''} ${r.cognome ?? ''}</div>
+                <div class="small">${r.email ?? ''}</div>
+                <div class="small">${r.famiglia_attuale ?? ''}</div>
             `;
-            const actions = document.createElement('td');
+            card.appendChild(info);
+
+            const actions = document.createElement('div');
+            actions.className = 'ms-2 text-nowrap';
             if (canManageFamilies) {
                 const famBtn = document.createElement('button');
                 famBtn.className = 'btn btn-sm btn-link text-white me-2';
                 famBtn.innerHTML = '<i class="bi bi-people"></i>';
-                famBtn.addEventListener('click', () => manageFamilies(r[primaryKey]));
+                famBtn.addEventListener('click', e => { e.stopPropagation(); manageFamilies(r[primaryKey]); });
                 actions.appendChild(famBtn);
             }
             if (canUpdate) {
@@ -56,24 +61,28 @@ function initUserManager(table, formColumns, primaryKey, lookups, boolCols = [],
                     const unlockBtn = document.createElement('button');
                     unlockBtn.className = 'btn btn-sm btn-link text-warning me-2';
                     unlockBtn.innerHTML = '<i class="bi bi-unlock"></i>';
-                    unlockBtn.addEventListener('click', () => unlockPasscode(r[primaryKey]));
+                    unlockBtn.addEventListener('click', e => { e.stopPropagation(); unlockPasscode(r[primaryKey]); });
                     actions.appendChild(unlockBtn);
                 }
                 const editBtn = document.createElement('button');
                 editBtn.className = 'btn btn-sm btn-link text-white me-2';
                 editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
-                editBtn.addEventListener('click', () => showForm(r));
+                editBtn.addEventListener('click', e => { e.stopPropagation(); showForm(r); });
                 actions.appendChild(editBtn);
             }
             if (canDelete) {
                 const delBtn = document.createElement('button');
                 delBtn.className = 'btn btn-sm btn-link text-danger';
                 delBtn.innerHTML = '<i class="bi bi-trash"></i>';
-                delBtn.addEventListener('click', () => confirmDelete(r[primaryKey]));
+                delBtn.addEventListener('click', e => { e.stopPropagation(); confirmDelete(r[primaryKey]); });
                 actions.appendChild(delBtn);
             }
-            tr.appendChild(actions);
-            tbody.appendChild(tr);
+            card.appendChild(actions);
+
+            if (canUpdate) {
+                card.addEventListener('click', () => showForm(r));
+            }
+            list.appendChild(card);
         });
     }
     function showForm(data = null) {
