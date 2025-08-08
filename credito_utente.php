@@ -116,7 +116,7 @@ $saldoTot = $ar['saldoTot'];
           <?php if ($isAdmin): ?><div id="movRows" class="mt-3"></div><?php endif; ?>
         </div>
         <div class="modal-footer">
-          <?php if ($isAdmin): ?><a href="#" target="_blank" class="btn btn-primary" id="linkDettaglio">Vai al dettaglio</a><?php endif; ?>
+          <?php if ($isAdmin): ?><a href="#" class="btn btn-outline-light" id="linkDettaglio">Vai al dettaglio</a><?php endif; ?>
         </div>
       </div>
     </div>
