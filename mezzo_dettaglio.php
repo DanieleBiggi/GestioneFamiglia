@@ -51,7 +51,7 @@ if ($id > 0) {
     }
     $stmtKm->close();
 
-    $stmtTag = $conn->prepare("SELECT id_tagliando, nome_tagliando, data_scadenza, attivo FROM mezzi_tagliandi WHERE id_mezzo = ? ORDER BY nome_tagliando");
+    $stmtTag = $conn->prepare("SELECT * FROM mezzi_tagliandi WHERE id_mezzo = ?  ORDER BY massimo_km_tagliando DESC");
     $stmtTag->bind_param('i', $id);
     $stmtTag->execute();
     $resTag = $stmtTag->get_result();
@@ -112,12 +112,22 @@ if ($id > 0): ?>
            onclick="window.location.href='mezzo_dettaglio_tagliando.php?id=<?= (int)$row['id_tagliando'] ?>&mezzo=<?= (int)$data['id_mezzo'] ?>'">
         <div class="flex-grow-1">
           <div class="fw-semibold"><?= htmlspecialchars($row['nome_tagliando']) ?></div>
-          <?php if (!empty($row['data_scadenza'])): ?>
-            <div class="small">Scadenza: <?= htmlspecialchars($row['data_scadenza']) ?></div>
+        </div>
+        <div class="flex-grow-1">
+            <?php if (!empty($row['massimo_km_tagliando'])): ?>
+            <div class="small text-end">Massimo km: <?= htmlspecialchars($row['massimo_km_tagliando']) ?></div>
+          <?php endif; ?>
+          <?php if (!empty($row['mesi_da_precedente_tagliando'])): ?>
+            <div class="small text-end">Da precedente tagliando km: <?= htmlspecialchars($row['mesi_da_precedente_tagliando']) ?></div>
           <?php endif; ?>
         </div>
-        <div class="ms-2 text-nowrap">
-          <?= ((int)$row['attivo'] === 1) ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>' ?>
+        <div class="flex-grow-1">
+            <?php if (!empty($row['frequenza_mesi'])): ?>
+            <div class="small text-end">Frequenza mesi: <?= htmlspecialchars($row['frequenza_mesi']) ?></div>
+          <?php endif; ?>
+          <?php if (!empty($row['frequenza_km'])): ?>
+            <div class="small text-end">Frequenza km: <?= htmlspecialchars($row['frequenza_km']) ?></div>
+          <?php endif; ?>
         </div>
       </div>
     <?php endforeach; ?>
