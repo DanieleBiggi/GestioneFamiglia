@@ -3,23 +3,16 @@ function initUserManager(table, formColumns, primaryKey, lookups, boolCols = [],
     const searchInput = document.getElementById('search');
     const userlevelFilter = document.getElementById('userlevelFilter');
     const familyFilter = document.getElementById('familyFilter');
-    const form = document.getElementById('record-form');
     const addBtn = document.getElementById('addBtn');
-    const modalTitle = document.querySelector('#recordModal .modal-title');
-    const idField = form.querySelector(`input[name="${primaryKey}"]`);
-    const deleteModalEl = document.getElementById('deleteModal');
-    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
     const familiesModalEl = document.getElementById('familiesModal');
     const familiesList = document.getElementById('familiesList');
     const familiesForm = document.getElementById('families-form');
     const canInsert = perms.canInsert ?? false;
     const canUpdate = perms.canUpdate ?? false;
-    const canDelete = perms.canDelete ?? false;
     const canManageFamilies = perms.canManageFamilies ?? false;
     if (!canInsert) addBtn.classList.add('d-none');
     let rows = [];
-    let recordModal, deleteModal, familiesModal;
-    let deleteId = null;
+    let familiesModal;
     let currentUserId = null;
     function load() {
         const params = new URLSearchParams();
@@ -56,99 +49,26 @@ function initUserManager(table, formColumns, primaryKey, lookups, boolCols = [],
                 famBtn.addEventListener('click', e => { e.stopPropagation(); manageFamilies(r[primaryKey]); });
                 actions.appendChild(famBtn);
             }
-            if (canUpdate) {
-                if (r.passcode_locked_until) {
-                    const unlockBtn = document.createElement('button');
-                    unlockBtn.className = 'btn btn-sm btn-link text-warning me-2';
-                    unlockBtn.innerHTML = '<i class="bi bi-unlock"></i>';
-                    unlockBtn.addEventListener('click', e => { e.stopPropagation(); unlockPasscode(r[primaryKey]); });
-                    actions.appendChild(unlockBtn);
-                }
-                const editBtn = document.createElement('button');
-                editBtn.className = 'btn btn-sm btn-link text-white me-2';
-                editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
-                editBtn.addEventListener('click', e => { e.stopPropagation(); showForm(r); });
-                actions.appendChild(editBtn);
-            }
-            if (canDelete) {
-                const delBtn = document.createElement('button');
-                delBtn.className = 'btn btn-sm btn-link text-danger';
-                delBtn.innerHTML = '<i class="bi bi-trash"></i>';
-                delBtn.addEventListener('click', e => { e.stopPropagation(); confirmDelete(r[primaryKey]); });
-                actions.appendChild(delBtn);
+            if (canUpdate && r.passcode_locked_until) {
+                const unlockBtn = document.createElement('button');
+                unlockBtn.className = 'btn btn-sm btn-link text-warning me-2';
+                unlockBtn.innerHTML = '<i class="bi bi-unlock"></i>';
+                unlockBtn.disabled = true;
+                actions.appendChild(unlockBtn);
             }
             card.appendChild(actions);
 
             if (canUpdate) {
-                card.addEventListener('click', () => showForm(r));
+                card.addEventListener('click', () => {
+                    window.location.href = `gestione_utenti_dettaglio.php?id=${r[primaryKey]}`;
+                });
             }
             list.appendChild(card);
         });
     }
-    function showForm(data = null) {
-        if ((data && !canUpdate) || (!data && !canInsert)) return;
-        form.reset();
-        if (!recordModal) recordModal = new bootstrap.Modal(document.getElementById('recordModal'));
-        if (data) {
-            form.dataset.mode = 'edit';
-            modalTitle.textContent = 'Modifica utente';
-            idField.value = data[primaryKey];
-            formColumns.forEach(c => {
-                if (boolCols.includes(c)) {
-                    const radios = form.querySelectorAll(`input[name="${c}"]`);
-                    radios.forEach(r => r.checked = String(data[c]) === r.value);
-                } else {
-                    const field = form.querySelector(`[name="${c}"]`);
-                    if (field) field.value = data[c] ?? '';
-                }
-            });
-        } else {
-            form.dataset.mode = 'insert';
-            modalTitle.textContent = 'Nuovo utente';
-            idField.value = '';
-            formColumns.forEach(c => {
-                if (boolCols.includes(c)) {
-                    const radios = form.querySelectorAll(`input[name="${c}"]`);
-                    radios.forEach(r => r.checked = false);
-                }
-            });
-        }
-        recordModal.show();
-    }
-    addBtn.addEventListener('click', () => showForm());
-    document.getElementById('cancelBtn').addEventListener('click', () => recordModal.hide());
-    form.addEventListener('submit', e => {
-        e.preventDefault();
-        const fd = new FormData(form);
-        fd.append('table', table);
-        fd.append('action', form.dataset.mode === 'edit' ? 'update' : 'insert');
-        fetch('ajax/table_crud.php', { method: 'POST', body: fd })
-            .then(r => r.json())
-            .then(() => { recordModal.hide(); load(); });
+    addBtn.addEventListener('click', () => {
+        window.location.href = 'gestione_utenti_dettaglio.php';
     });
-    function confirmDelete(id) {
-        deleteId = id;
-        if (!deleteModal) deleteModal = new bootstrap.Modal(deleteModalEl);
-        deleteModal.show();
-    }
-    confirmDeleteBtn.addEventListener('click', () => {
-        if (!canDelete || deleteId === null) return;
-        const fd = new FormData();
-        fd.append('action', 'delete');
-        fd.append('table', table);
-        fd.append(primaryKey, deleteId);
-        fetch('ajax/table_crud.php', { method: 'POST', body: fd })
-            .then(r => r.json())
-            .then(() => { deleteModal.hide(); load(); });
-    });
-    function unlockPasscode(id) {
-        const fd = new FormData();
-        fd.append('action', 'unlock_passcode');
-        fd.append('id', id);
-        fetch('ajax/gestione_utenti.php', { method: 'POST', body: fd })
-            .then(r => r.json())
-            .then(() => load());
-    }
     function manageFamilies(id) {
         currentUserId = id;
         if (!familiesModal) familiesModal = new bootstrap.Modal(familiesModalEl);
