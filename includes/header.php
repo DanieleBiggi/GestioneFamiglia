@@ -14,7 +14,7 @@
 <!-- Navbar -->
 <nav class="navbar navbar-dark bg-dark px-3 d-flex justify-content-between align-items-center">
   <button class="btn btn-dark border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu">
-    <i class="bi bi-list fs-3"></i>
+    <i class="bi bi-list fs-3 text-white"></i>
   </button>
   <a href="index.php" class="navbar-brand mb-0 h1">Gestione Famiglia 2.0</a>
 </nav>
@@ -59,64 +59,75 @@
       <?php if (has_permission($conn, 'page:index.php', 'view')): ?>
       <li class="mb-3">
         <a href="/Gestionale25/index.php" class="btn btn-outline-light w-100 text-start">
-          🏠 Home
+          <i class="bi bi-house me-2 text-white"></i> Home
         </a>
       </li>
       <?php endif; ?>
       <?php if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1 && has_permission($conn, 'page:etichette_lista.php', 'view')): ?>
       <li class="mb-3">
         <a href="/Gestionale25/etichette_lista.php" class="btn btn-outline-light w-100 text-start">
-          🏷️ Etichette
+          <i class="bi bi-tag me-2 text-white"></i> Etichette
         </a>
       </li>
       <?php endif; ?>
       <?php if (has_permission($conn, 'page:credito_utente.php', 'view')): ?>
       <li class="mb-3">
         <a href="/Gestionale25/credito_utente.php" class="btn btn-outline-light w-100 text-start">
-          💰 Saldo personale
+          <i class="bi bi-cash-coin me-2 text-white"></i> Saldo personale
         </a>
       </li>
       <?php endif; ?>
       <?php if (has_permission($conn, 'page:password.php', 'view')): ?>
       <li class="mb-3">
         <a href="/Gestionale25/password.php" class="btn btn-outline-light w-100 text-start">
-          🔐 Siti e password
+          <i class="bi bi-key-fill me-2 text-white"></i> Siti e password
         </a>
       </li>
       <?php endif; ?>
       <?php if (has_permission($conn, 'page:mezzi.php', 'view')): ?>
       <li class="mb-3">
         <a href="/Gestionale25/mezzi.php" class="btn btn-outline-light w-100 text-start">
-          🚗 Mezzi
+          <i class="bi bi-car-front me-2 text-white"></i> Mezzi
         </a>
       </li>
       <?php endif; ?>
       <?php if (has_permission($conn, 'page:eventi.php', 'view')): ?>
       <li class="mb-3">
         <a href="/Gestionale25/eventi.php" class="btn btn-outline-light w-100 text-start">
-          📅 Eventi
+          <i class="bi bi-calendar-event me-2 text-white"></i> Eventi
         </a>
       </li>
       <?php endif; ?>
       <?php if (has_permission($conn, 'page:storia.php', 'view')): ?>
       <li class="mb-3">
         <a href="/Gestionale25/storia.php" class="btn btn-outline-light w-100 text-start">
-          📜 Storia
+          <i class="bi bi-clock-history me-2 text-white"></i> Storia
         </a>
       </li>
       <?php endif; ?>
-      <?php if (has_permission($conn, 'page:userlevel_permissions.php', 'view')): ?>
+      <?php
+        $showUserAdmin = has_permission($conn, 'page:userlevel_permissions.php', 'view') ||
+                         has_permission($conn, 'page:gestione_utenti.php', 'view') ||
+                         $canImpersonate;
+        if ($showUserAdmin):
+      ?>
       <li class="mb-3">
-        <a href="/Gestionale25/userlevel_permissions.php" class="btn btn-outline-light w-100 text-start">
-          🛡️ Permessi Userlevel
-        </a>
-      </li>
-      <?php endif; ?>
-      <?php if (has_permission($conn, 'page:gestione_utenti.php', 'view')): ?>
-      <li class="mb-3">
-        <a href="/Gestionale25/gestione_utenti.php" class="btn btn-outline-light w-100 text-start">
-          👥 Gestione Utenti
-        </a>
+        <div class="dropdown w-100">
+          <button class="btn btn-outline-light w-100 text-start dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-people-gear me-2 text-white"></i> Utenti
+          </button>
+          <ul class="dropdown-menu dropdown-menu-dark w-100">
+            <?php if (has_permission($conn, 'page:userlevel_permissions.php', 'view')): ?>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/userlevel_permissions.php"><i class="bi bi-shield-lock me-2 text-white"></i>Permessi Userlevel</a></li>
+            <?php endif; ?>
+            <?php if (has_permission($conn, 'page:gestione_utenti.php', 'view')): ?>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/gestione_utenti.php"><i class="bi bi-people me-2 text-white"></i>Gestione Utenti</a></li>
+            <?php endif; ?>
+            <?php if ($canImpersonate): ?>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/impersonate.php"><i class="bi bi-person-badge me-2 text-white"></i>Impersona utente</a></li>
+            <?php endif; ?>
+          </ul>
+        </div>
       </li>
       <?php endif; ?>
       <?php $showSecurity = has_permission($conn, 'page:change_password.php', 'view') || has_permission($conn, 'page:setup_passcode.php', 'view');
@@ -124,16 +135,16 @@
       <li class="mb-3">
         <div class="dropdown w-100">
           <button class="btn btn-outline-light w-100 text-start dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-            🔐 Sicurezza
+            <i class="bi bi-shield-lock me-2 text-white"></i> Sicurezza
           </button>
           <ul class="dropdown-menu dropdown-menu-dark w-100">
             <?php if (has_permission($conn, 'page:change_password.php', 'view')): ?>
-            <li><a class="dropdown-item text-white" href="/Gestionale25/change_password.php">🔑 Cambia Password</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/change_password.php"><i class="bi bi-key me-2 text-white"></i>Cambia Password</a></li>
             <?php endif; ?>
             <?php if (has_permission($conn, 'page:setup_passcode.php', 'view')): ?>
-            <li><a class="dropdown-item text-white" href="/Gestionale25/setup_passcode.php">🔒 Imposta Passcode</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/setup_passcode.php"><i class="bi bi-lock me-2 text-white"></i>Imposta Passcode</a></li>
             <?php endif; ?>
-            <li><a class="dropdown-item text-white" href="/Gestionale">Torna al vecchio</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale"><i class="bi bi-arrow-return-left me-2 text-white"></i>Torna al vecchio</a></li>
           </ul>
         </div>
       </li>
@@ -164,7 +175,7 @@
       <li class="mb-3">
         <div class="dropdown w-100">
           <button class="btn btn-outline-light w-100 text-start dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-            🗃️ Tabelle
+            <i class="bi bi-table me-2 text-white"></i> Tabelle
           </button>
           <ul class="dropdown-menu dropdown-menu-dark w-100">
             <li><h6 class="dropdown-header">Bilancio</h6></li>
@@ -203,23 +214,16 @@
         </div>
       </li>
       <?php endif; ?>
-      <?php if ($canImpersonate): ?>
-      <li class="mb-3">
-        <a href="/Gestionale25/impersonate.php" class="btn btn-outline-light w-100 text-start">
-          👤 Impersona utente
-        </a>
-      </li>
-      <?php endif; ?>
       <?php if (isset($_SESSION['impersonator_id'])): ?>
       <li class="mb-3">
         <a href="/Gestionale25/stop_impersonate.php" class="btn btn-outline-warning w-100 text-start">
-          ⏪ Torna al tuo account
+          <i class="bi bi-arrow-counterclockwise me-2 text-white"></i> Torna al tuo account
         </a>
       </li>
       <?php endif; ?>
       <li>
         <a href="/Gestionale25/logout.php" class="btn btn-outline-danger w-100 text-start">
-          ⎋ Logout
+          <i class="bi bi-box-arrow-right me-2 text-white"></i> Logout
         </a>
       </li>
 
