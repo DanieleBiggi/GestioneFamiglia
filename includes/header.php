@@ -84,25 +84,29 @@
         </a>
       </li>
       <?php endif; ?>
-      <?php if (has_permission($conn, 'page:mezzi.php', 'view')): ?>
+      <?php
+        $showUtility = has_permission($conn, 'page:mezzi.php', 'view') ||
+                      has_permission($conn, 'page:eventi.php', 'view') ||
+                      has_permission($conn, 'page:storia.php', 'view');
+        if ($showUtility):
+      ?>
       <li class="mb-3">
-        <a href="/Gestionale25/mezzi.php" class="btn btn-outline-light w-100 text-start">
-          <i class="bi bi-car-front me-2 text-white"></i> Mezzi
-        </a>
-      </li>
-      <?php endif; ?>
-      <?php if (has_permission($conn, 'page:eventi.php', 'view')): ?>
-      <li class="mb-3">
-        <a href="/Gestionale25/eventi.php" class="btn btn-outline-light w-100 text-start">
-          <i class="bi bi-calendar-event me-2 text-white"></i> Eventi
-        </a>
-      </li>
-      <?php endif; ?>
-      <?php if (has_permission($conn, 'page:storia.php', 'view')): ?>
-      <li class="mb-3">
-        <a href="/Gestionale25/storia.php" class="btn btn-outline-light w-100 text-start">
-          <i class="bi bi-clock-history me-2 text-white"></i> Storia
-        </a>
+        <div class="dropdown w-100">
+          <button class="btn btn-outline-light w-100 text-start dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-tools me-2 text-white"></i> Utility
+          </button>
+          <ul class="dropdown-menu dropdown-menu-dark w-100">
+            <?php if (has_permission($conn, 'page:mezzi.php', 'view')): ?>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/mezzi.php"><i class="bi bi-car-front me-2 text-white"></i>Mezzi</a></li>
+            <?php endif; ?>
+            <?php if (has_permission($conn, 'page:eventi.php', 'view')): ?>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/eventi.php"><i class="bi bi-calendar-event me-2 text-white"></i>Eventi</a></li>
+            <?php endif; ?>
+            <?php if (has_permission($conn, 'page:storia.php', 'view')): ?>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/storia.php"><i class="bi bi-clock-history me-2 text-white"></i>Storia</a></li>
+            <?php endif; ?>
+          </ul>
+        </div>
       </li>
       <?php endif; ?>
       <?php
