@@ -51,7 +51,7 @@ include 'includes/header.php';
 <form id="user-form" class="bg-dark text-white p-3 rounded">
   <?php foreach ($displayColumns as $col): ?>
     <div class="mb-3">
-      <label class="form-label"><?= htmlspecialchars(str_replace('_',' ',str_replace('id_','', $col))) ?></label>
+      <label class="form-label"><?= ucwords(htmlspecialchars(str_replace('_',' ',str_replace('id_','', $col)))) ?></label>
       <?php if (isset($lookups[$col])): ?>
         <select name="<?= htmlspecialchars($col) ?>" class="form-select bg-dark text-white border-secondary">
           <?php foreach ($lookups[$col] as $idOpt => $label): ?>
