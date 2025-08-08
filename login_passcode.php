@@ -37,6 +37,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['utente_id'] = $user['id'];
             $_SESSION['utente_nome'] = $user['nome'];
             $_SESSION['id_famiglia_gestione'] = $user['id_famiglia_gestione'] ?? 0;
+
+            $lvlStmt = $conn->prepare('SELECT userlevelid FROM utenti2famiglie WHERE id_utente = ? AND id_famiglia = ? LIMIT 1');
+            $lvlStmt->bind_param('ii', $_SESSION['utente_id'], $_SESSION['id_famiglia_gestione']);
+            $lvlStmt->execute();
+            $lvlRes = $lvlStmt->get_result();
+            $_SESSION['userlevelid'] = ($lvlRes->num_rows === 1) ? intval($lvlRes->fetch_assoc()['userlevelid']) : 0;
+
             $newExp = date('Y-m-d H:i:s', time() + 60*60*24*30);
             $upd = $conn->prepare('UPDATE dispositivi_riconosciuti SET scadenza = ? WHERE token_dispositivo = ?');
             $upd->bind_param('ss', $newExp, $token);
