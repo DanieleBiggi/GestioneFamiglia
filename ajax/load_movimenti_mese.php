@@ -24,7 +24,7 @@ if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'
 
 $sql = "SELECT * FROM (
             {$movimenti_revolut}
-            SELECT be.id_entrata AS id, be.descrizione_operazione AS descrizione, be.descrizione_extra,
+            SELECT be.id_entrata AS id, COALESCE(NULLIF(be.descrizione_extra,''), be.descrizione_operazione) AS descrizione, be.descrizione_extra,
                    be.data_operazione, be.importo AS amount,
                    (SELECT GROUP_CONCAT(CONCAT(e.id_etichetta, ':', e.descrizione) SEPARATOR ',')
                       FROM bilancio_etichette2operazioni eo
@@ -34,7 +34,7 @@ $sql = "SELECT * FROM (
             FROM bilancio_entrate be
             WHERE be.id_utente = {$idUtente}
             UNION ALL
-            SELECT bu.id_uscita AS id, bu.descrizione_operazione AS descrizione, bu.descrizione_extra,
+            SELECT bu.id_uscita AS id, COALESCE(NULLIF(bu.descrizione_extra,''), bu.descrizione_operazione) AS descrizione, bu.descrizione_extra,
                    bu.data_operazione, -bu.importo AS amount,
                    (SELECT GROUP_CONCAT(CONCAT(e.id_etichetta, ':', e.descrizione) SEPARATOR ',')
                       FROM bilancio_etichette2operazioni eo
