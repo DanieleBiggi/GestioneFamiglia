@@ -1,0 +1,1 @@
+ALTER TABLE utenti ADD COLUMN passcode_locked_until DATETIME DEFAULT NULL;

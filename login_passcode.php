@@ -8,7 +8,7 @@ if (!isset($_COOKIE['device_token'])) {
 }
 
 $token = $_COOKIE['device_token'];
-$stmt = $conn->prepare('SELECT id_utente, user_agent, ip FROM dispositivi_riconosciuti WHERE token_dispositivo = ? AND scadenza >= NOW() LIMIT 1');
+$stmt = $conn->prepare('SELECT id_utente, user_agent FROM dispositivi_riconosciuti WHERE token_dispositivo = ? AND scadenza >= NOW() LIMIT 1');
 $stmt->bind_param('s', $token);
 $stmt->execute();
 $res = $stmt->get_result();
@@ -17,7 +17,7 @@ if ($res->num_rows !== 1) {
     exit;
 }
 $device = $res->fetch_assoc();
-if (($device['user_agent'] ?? '') !== ($_SERVER['HTTP_USER_AGENT'] ?? '') || ($device['ip'] ?? '') !== ($_SERVER['REMOTE_ADDR'] ?? '')) {
+if (($device['user_agent'] ?? '') !== ($_SERVER['HTTP_USER_AGENT'] ?? '')) {
     header('Location: login.php');
     exit;
 }
@@ -26,33 +26,64 @@ $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pass = $_POST['passcode'] ?? '';
-    $sql = 'SELECT id, nome, passcode, id_famiglia_gestione FROM utenti WHERE id = ? AND attivo = 1 LIMIT 1';
+    $sql = 'SELECT id, nome, passcode, id_famiglia_gestione, attivo, passcode_attempts, passcode_locked_until FROM utenti WHERE id = ? LIMIT 1';
     $stmt = $conn->prepare($sql);
     $stmt->bind_param('i', $device['id_utente']);
     $stmt->execute();
     $userRes = $stmt->get_result();
     if ($userRes->num_rows === 1) {
         $user = $userRes->fetch_assoc();
-        if (!empty($user['passcode']) && password_verify($pass, $user['passcode'])) {
-            $_SESSION['utente_id'] = $user['id'];
-            $_SESSION['utente_nome'] = $user['nome'];
-            $_SESSION['id_famiglia_gestione'] = $user['id_famiglia_gestione'] ?? 0;
+        if ((int)$user['attivo'] !== 1) {
+            $error = 'Account bloccato. Contatta un amministratore.';
+        } elseif (!empty($user['passcode_locked_until']) && strtotime($user['passcode_locked_until']) > time()) {
+            $error = 'Troppi tentativi. Account temporaneamente bloccato.';
+        } else {
+            if (!empty($user['passcode_locked_until']) && strtotime($user['passcode_locked_until']) <= time()) {
+                $clear = $conn->prepare('UPDATE utenti SET passcode_locked_until = NULL, passcode_attempts = 0 WHERE id = ?');
+                $clear->bind_param('i', $user['id']);
+                $clear->execute();
+                $user['passcode_attempts'] = 0;
+            }
+            if (!empty($user['passcode']) && password_verify($pass, $user['passcode'])) {
+                $reset = $conn->prepare('UPDATE utenti SET passcode_attempts = 0, passcode_locked_until = NULL WHERE id = ?');
+                $reset->bind_param('i', $user['id']);
+                $reset->execute();
 
-            $lvlStmt = $conn->prepare('SELECT userlevelid FROM utenti2famiglie WHERE id_utente = ? AND id_famiglia = ? LIMIT 1');
-            $lvlStmt->bind_param('ii', $_SESSION['utente_id'], $_SESSION['id_famiglia_gestione']);
-            $lvlStmt->execute();
-            $lvlRes = $lvlStmt->get_result();
-            $_SESSION['userlevelid'] = ($lvlRes->num_rows === 1) ? intval($lvlRes->fetch_assoc()['userlevelid']) : 0;
+                $_SESSION['utente_id'] = $user['id'];
+                $_SESSION['utente_nome'] = $user['nome'];
+                $_SESSION['id_famiglia_gestione'] = $user['id_famiglia_gestione'] ?? 0;
 
-            $newExp = date('Y-m-d H:i:s', time() + 60*60*24*30);
-            $upd = $conn->prepare('UPDATE dispositivi_riconosciuti SET scadenza = ? WHERE token_dispositivo = ?');
-            $upd->bind_param('ss', $newExp, $token);
-            $upd->execute();
-            header('Location: index.php');
-            exit;
+                $lvlStmt = $conn->prepare('SELECT userlevelid FROM utenti2famiglie WHERE id_utente = ? AND id_famiglia = ? LIMIT 1');
+                $lvlStmt->bind_param('ii', $_SESSION['utente_id'], $_SESSION['id_famiglia_gestione']);
+                $lvlStmt->execute();
+                $lvlRes = $lvlStmt->get_result();
+                $_SESSION['userlevelid'] = ($lvlRes->num_rows === 1) ? intval($lvlRes->fetch_assoc()['userlevelid']) : 0;
+
+                $newExp = date('Y-m-d H:i:s', time() + 60*60*24*30);
+                $upd = $conn->prepare('UPDATE dispositivi_riconosciuti SET scadenza = ? WHERE token_dispositivo = ?');
+                $upd->bind_param('ss', $newExp, $token);
+                $upd->execute();
+                header('Location: index.php');
+                exit;
+            } else {
+                $attempts = (int)$user['passcode_attempts'] + 1;
+                if ($attempts >= 3) {
+                    $until = date('Y-m-d H:i:s', time() + 15*60);
+                    $block = $conn->prepare('UPDATE utenti SET passcode_locked_until = ?, passcode_attempts = 0 WHERE id = ?');
+                    $block->bind_param('si', $until, $user['id']);
+                    $block->execute();
+                    $error = 'Troppi tentativi. Account temporaneamente bloccato.';
+                } else {
+                    $updAtt = $conn->prepare('UPDATE utenti SET passcode_attempts = ? WHERE id = ?');
+                    $updAtt->bind_param('ii', $attempts, $user['id']);
+                    $updAtt->execute();
+                    $error = 'Passcode errato. Torna al login classico.';
+                }
+            }
         }
+    } else {
+        $error = 'Passcode errato. Torna al login classico.';
     }
-    $error = 'Passcode errato. Torna al login classico.';
 }
 ?>
 <?php include 'includes/header.php'; ?>
