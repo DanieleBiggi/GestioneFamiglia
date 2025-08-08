@@ -1,11 +1,11 @@
 <?php
-include '../includes/session_check.php';
-require_once '../includes/db.php';
-$config = include __DIR__ . '/../includes/table_config.php';
-$foreignMap = include __DIR__ . '/../includes/foreign_keys.php';
+include 'includes/session_check.php';
+require_once 'includes/db.php';
+$config = include __DIR__ . '/includes/table_config.php';
+$foreignMap = include __DIR__ . '/includes/foreign_keys.php';
 
 $table = $_GET['table'] ?? '';
-require_once '../includes/permissions.php';
+require_once 'includes/permissions.php';
 if (!has_permission($conn, 'table:' . $table, 'view')) { http_response_code(403); exit('Accesso negato'); }
 $canInsert = has_permission($conn, 'table:' . $table, 'insert');
 $canUpdate = has_permission($conn, 'table:' . $table, 'update');
@@ -64,7 +64,7 @@ foreach ($displayColumns as $col) {
     }
 }
 
-include '../includes/header.php';
+include 'includes/header.php';
 ?>
 <div class="d-flex mb-3 justify-content-between">
   <h4><?= htmlspecialchars($table) ?></h4>
@@ -146,8 +146,8 @@ include '../includes/header.php';
   </div>
 </div>
 
-<script src="../js/table_crud.js"></script>
+<script src="js/table_crud.js"></script>
 <script>
 initTableManager('<?= $table ?>', <?= json_encode($displayColumns) ?>, '<?= $primaryKey ?>', <?= json_encode($lookups) ?>, <?= json_encode($booleanColumns) ?>, {canInsert: <?= $canInsert ? 'true' : 'false' ?>, canUpdate: <?= $canUpdate ? 'true' : 'false' ?>, canDelete: <?= $canDelete ? 'true' : 'false' ?>});
 </script>
-<?php include '../includes/footer.php'; ?>
+<?php include 'includes/footer.php'; ?>

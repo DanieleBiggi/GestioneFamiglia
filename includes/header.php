@@ -141,44 +141,44 @@
           <ul class="dropdown-menu dropdown-menu-dark w-100">
             <li><h6 class="dropdown-header">Bilancio</h6></li>
             <?php if (isset($tableLinks['bilancio_descrizione2id'])): ?>
-            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=bilancio_descrizione2id">Descrizioni</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=bilancio_descrizione2id">Descrizioni</a></li>
             <?php endif; ?>
             <?php if (isset($tableLinks['bilancio_entrate'])): ?>
-            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=bilancio_entrate">Entrate</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=bilancio_entrate">Entrate</a></li>
             <?php endif; ?>
             <?php if (isset($tableLinks['bilancio_gruppi_categorie'])): ?>
-            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=bilancio_gruppi_categorie">Gruppi categorie</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=bilancio_gruppi_categorie">Gruppi categorie</a></li>
             <?php endif; ?>
             <?php if (isset($tableLinks['bilancio_gruppi_transazione'])): ?>
-            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=bilancio_gruppi_transazione">Gruppi transazione</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=bilancio_gruppi_transazione">Gruppi transazione</a></li>
             <?php endif; ?>
             <?php if (isset($tableLinks['bilancio_uscite'])): ?>
-            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=bilancio_uscite">Uscite</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=bilancio_uscite">Uscite</a></li>
             <?php endif; ?>
             <li><hr class="dropdown-divider"></li>
             <li><h6 class="dropdown-header">Sicurezza</h6></li>
             <?php if (isset($tableLinks['codici_2fa'])): ?>
-            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=codici_2fa">Codici 2FA</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=codici_2fa">Codici 2FA</a></li>
             <?php endif; ?>
             <?php if (isset($tableLinks['dispositivi_riconosciuti'])): ?>
-            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=dispositivi_riconosciuti">Dispositivi riconosciuti</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=dispositivi_riconosciuti">Dispositivi riconosciuti</a></li>
             <?php endif; ?>
             <li><hr class="dropdown-divider"></li>
             <li><h6 class="dropdown-header">Utenti</h6></li>
             <?php if (isset($tableLinks['famiglie'])): ?>
-            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=famiglie">Famiglie</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=famiglie">Famiglie</a></li>
             <?php endif; ?>
             <?php if (isset($tableLinks['userlevels'])): ?>
-            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=userlevels">User Levels</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=userlevels">User Levels</a></li>
             <?php endif; ?>
             <?php if (isset($tableLinks['utenti'])): ?>
-            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=utenti">Utenti</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=utenti">Utenti</a></li>
             <?php endif; ?>
             <?php if (isset($tableLinks['utenti2famiglie'])): ?>
-            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=utenti2famiglie">Utenti-Famiglie</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=utenti2famiglie">Utenti-Famiglie</a></li>
             <?php endif; ?>
             <?php if (isset($tableLinks['utenti2ip'])): ?>
-            <li><a class="dropdown-item text-white" href="/Gestionale25/pages/table_manager.php?table=utenti2ip">Utenti-IP</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=utenti2ip">Utenti-IP</a></li>
             <?php endif; ?>
           </ul>
         </div>
