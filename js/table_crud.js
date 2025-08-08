@@ -18,7 +18,7 @@ function initTableManager(table, columns, primaryKey, lookups, boolCols = [], pe
     let deleteId = null;
 
     function load() {
-        fetch(`../ajax/table_crud.php?action=list&table=${encodeURIComponent(table)}`)
+        fetch(`ajax/table_crud.php?action=list&table=${encodeURIComponent(table)}`)
             .then(r => r.json())
             .then(data => { rows = data; render(); });
     }
@@ -103,7 +103,7 @@ function initTableManager(table, columns, primaryKey, lookups, boolCols = [], pe
         formData.append('table', table);
         formData.append('action', form.dataset.mode === 'edit' ? 'update' : 'insert');
         if ((form.dataset.mode === 'edit' && !canUpdate) || (form.dataset.mode === 'insert' && !canInsert)) return;
-        fetch('../ajax/table_crud.php', { method: 'POST', body: formData })
+        fetch('ajax/table_crud.php', { method: 'POST', body: formData })
             .then(r => r.json())
             .then(() => { recordModal.hide(); load(); });
     });
@@ -123,7 +123,7 @@ function initTableManager(table, columns, primaryKey, lookups, boolCols = [], pe
         formData.append('action', 'delete');
         formData.append('table', table);
         formData.append(primaryKey, deleteId);
-        fetch('../ajax/table_crud.php', { method: 'POST', body: formData })
+        fetch('ajax/table_crud.php', { method: 'POST', body: formData })
             .then(r => r.json())
             .then(() => { deleteModal.hide(); load(); });
     });
