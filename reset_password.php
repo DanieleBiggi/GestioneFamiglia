@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="col-md-6">
     <div class="card bg-dark text-white p-4">
       <h4 class="mb-3">Imposta nuova password</h4>
-      <?php if ($success): ?><div class="alert alert-success"><?= $success ?></div><?php endif; ?>
+      <?php if ($success): ?><div class="alert alert-success"><?= $success ?></div><a href="login.php" class="alert-link">Vai alla login</a><?php endif; ?>
       <?php if ($error): ?><div class="alert alert-danger"><?= $error ?></div><?php endif; ?>
       <?php if ($token && !$success): ?>
       <form method="POST" action="reset_password.php">
