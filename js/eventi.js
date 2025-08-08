@@ -15,4 +15,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   search.addEventListener('input', filter);
   filter();
+
+  const form = document.getElementById('eventoForm');
+  form?.addEventListener('submit', function(e){
+    e.preventDefault();
+    const formData = new FormData(form);
+    fetch('ajax/add_evento.php', {method:'POST', body:formData})
+      .then(r=>r.json())
+      .then(res=>{ if(res.success){ location.reload(); } else { alert(res.error||'Errore'); }});
+  });
 });
+
+function openEventoModal(){
+  const form = document.getElementById('eventoForm');
+  if(form){
+    form.reset();
+    new bootstrap.Modal(document.getElementById('eventoModal')).show();
+  }
+}
