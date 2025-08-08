@@ -36,7 +36,9 @@ if ($table === 'famiglie') {
 }
 
 function format_label($col) {
-    return ucwords(str_replace('_', ' ', $col));
+    $col = str_replace("id_","",$col);
+    $label = ucwords(str_replace('_', ' ', $col))
+    return $label;
 }
 
 $lookups = [];
