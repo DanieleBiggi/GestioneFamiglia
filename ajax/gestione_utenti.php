@@ -11,6 +11,7 @@ switch ($action) {
         $userlevelid = $_GET['userlevelid'] ?? '';
         $id_famiglia = $_GET['id_famiglia'] ?? '';
         $sql = "SELECT u.id, u.username, u.nome, u.cognome, u.soprannome, u.email, u.id_famiglia_attuale, u.id_famiglia_gestione, u.attivo, u.userlevelid,
+                       u.passcode_locked_until,
                        ul.userlevelname, f.nome_famiglia AS famiglia_attuale,
                        GROUP_CONCAT(CONCAT(f2.nome_famiglia, ' (', ul2.userlevelname, ')') ORDER BY f2.nome_famiglia SEPARATOR ', ') AS famiglie
                 FROM utenti u
@@ -70,6 +71,14 @@ switch ($action) {
         }
         $conn->commit();
         echo json_encode(['success'=>true]);
+        break;
+    case 'unlock_passcode':
+        if (!has_permission($conn, 'table:utenti', 'update')) { http_response_code(403); echo json_encode(['error'=>'Permesso negato']); exit; }
+        $id = intval($_POST['id'] ?? 0);
+        $stmt = $conn->prepare("UPDATE utenti SET passcode_locked_until = NULL WHERE id = ?");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        echo json_encode(['success' => true]);
         break;
     default:
         http_response_code(400);
