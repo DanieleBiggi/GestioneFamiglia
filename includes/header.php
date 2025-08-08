@@ -84,6 +84,13 @@
         </a>
       </li>
       <?php endif; ?>
+      <?php if (has_permission($conn, 'page:eventi.php', 'view')): ?>
+      <li class="mb-3">
+        <a href="/Gestionale25/eventi.php" class="btn btn-outline-light w-100 text-start">
+          📅 Eventi
+        </a>
+      </li>
+      <?php endif; ?>
       <?php if (has_permission($conn, 'page:storia.php', 'view')): ?>
       <li class="mb-3">
         <a href="/Gestionale25/storia.php" class="btn btn-outline-light w-100 text-start">
