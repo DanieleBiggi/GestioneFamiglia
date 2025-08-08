@@ -178,21 +178,12 @@
             <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=dispositivi_riconosciuti">Dispositivi riconosciuti</a></li>
             <?php endif; ?>
             <li><hr class="dropdown-divider"></li>
-            <li><h6 class="dropdown-header">Utenti</h6></li>
+            <li><h6 class="dropdown-header">Gruppi di utenti</h6></li>
             <?php if (isset($tableLinks['famiglie'])): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=famiglie">Famiglie</a></li>
             <?php endif; ?>
             <?php if (isset($tableLinks['userlevels'])): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=userlevels">User Levels</a></li>
-            <?php endif; ?>
-            <?php if (isset($tableLinks['utenti'])): ?>
-            <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=utenti">Utenti</a></li>
-            <?php endif; ?>
-            <?php if (isset($tableLinks['utenti2famiglie'])): ?>
-            <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=utenti2famiglie">Utenti-Famiglie</a></li>
-            <?php endif; ?>
-            <?php if (isset($tableLinks['utenti2ip'])): ?>
-            <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=utenti2ip">Utenti-IP</a></li>
             <?php endif; ?>
           </ul>
         </div>
