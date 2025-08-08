@@ -2,12 +2,22 @@
 <?php
 include 'includes/db.php';
 require_once 'includes/permissions.php';
-include 'includes/header.php';
 
 $idUtente = $_SESSION['utente_id'] ?? ($_SESSION['id_utente'] ?? 0);
 $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
-
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $id === 0) {
+    $nome_mezzo = $_POST['nome_mezzo'] ?? '';
+    $data_immatricolazione = $_POST['data_immatricolazione'] ?? '';
+    $attivo = isset($_POST['attivo']) ? 1 : 0;
+    $stmt = $conn->prepare("INSERT INTO mezzi (id_utente, id_famiglia, nome_mezzo, data_immatricolazione, attivo) VALUES (?,?,?,?,?)");
+    $stmt->bind_param('iissi', $idUtente, $idFamiglia, $nome_mezzo, $data_immatricolazione, $attivo);
+    $stmt->execute();
+    $stmt->close();
+    header('Location: mezzi.php');
+    exit;
+}
 $data = [
     'nome_mezzo' => '',
     'data_immatricolazione' => '',
@@ -15,7 +25,7 @@ $data = [
     'id_mezzo' => 0,
     'id_utente' => $idUtente
 ];
-
+$chilometri = [];
 if ($id > 0) {
     $stmt = $conn->prepare("SELECT * FROM mezzi WHERE id_mezzo = ? AND id_famiglia = ?");
     $stmt->bind_param('ii', $id, $idFamiglia);
@@ -24,69 +34,141 @@ if ($id > 0) {
     if ($res && $res->num_rows > 0) {
         $data = $res->fetch_assoc();
     } else {
+        include 'includes/header.php';
         echo '<p class="text-danger">Record non trovato.</p>';
         include 'includes/footer.php';
         exit;
     }
+    $stmt->close();
+
+    $stmtKm = $conn->prepare("SELECT id_chilometro, DATE(data_chilometro) AS data_chilometro, chilometri FROM mezzi_chilometri WHERE id_mezzo = ? ORDER BY data_chilometro DESC");
+    $stmtKm->bind_param('i', $id);
+    $stmtKm->execute();
+    $resKm = $stmtKm->get_result();
+    while ($row = $resKm->fetch_assoc()) {
+        $chilometri[] = $row;
+    }
+    $stmtKm->close();
 }
+
 $isOwner = ($data['id_utente'] ?? $idUtente) == $idUtente;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id_mezzo = isset($_POST['id_mezzo']) ? (int)$_POST['id_mezzo'] : 0;
-    $nome_mezzo = $_POST['nome_mezzo'] ?? '';
-    $data_immatricolazione = $_POST['data_immatricolazione'] ?? '';
-    $attivo = isset($_POST['attivo']) ? 1 : 0;
+include 'includes/header.php';
 
-    if ($id_mezzo > 0) {
-        $stmt = $conn->prepare("SELECT id_utente FROM mezzi WHERE id_mezzo=? AND id_famiglia=?");
-        $stmt->bind_param('ii', $id_mezzo, $idFamiglia);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        $row = $res->fetch_assoc();
-        $stmt->close();
-        if (!$row || (int)$row['id_utente'] !== $idUtente) {
-            echo '<p class="text-danger">Operazione non autorizzata.</p>';
-            include 'includes/footer.php';
-            exit;
-        }
-        $stmt = $conn->prepare("UPDATE mezzi SET nome_mezzo=?, data_immatricolazione=?, attivo=? WHERE id_mezzo=? AND id_famiglia=?");
-        $stmt->bind_param('ssiii', $nome_mezzo, $data_immatricolazione, $attivo, $id_mezzo, $idFamiglia);
-        $stmt->execute();
-        $stmt->close();
-    } else {
-        $stmt = $conn->prepare("INSERT INTO mezzi (id_utente, id_famiglia, nome_mezzo, data_immatricolazione, attivo) VALUES (?,?,?,?,?)");
-        $stmt->bind_param('iissi', $idUtente, $idFamiglia, $nome_mezzo, $data_immatricolazione, $attivo);
-        $stmt->execute();
-        $stmt->close();
-    }
-    header('Location: mezzi.php');
-    exit;
-}
-?>
+if ($id > 0): ?>
 <div class="container text-white">
   <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
-  <h4 class="mb-4">Dettaglio Mezzo</h4>
+  <h4 class="mb-3">
+    <span id="mezzoNome"><?= htmlspecialchars($data['nome_mezzo']) ?></span>
+    <?php if ($isOwner): ?>
+      <i class="bi bi-pencil ms-2" role="button" onclick="openMezzoModal()"></i>
+    <?php endif; ?>
+  </h4>
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h5 class="mb-0">Chilometri</h5>
+    <?php if ($isOwner): ?>
+      <button class="btn btn-outline-light btn-sm" onclick="openChilometroModal()">Aggiungi</button>
+    <?php endif; ?>
+  </div>
+  <ul class="list-group list-group-flush bg-dark" id="chilometriList">
+    <?php foreach ($chilometri as $idx => $row): ?>
+      <li class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center <?= $idx >= 3 ? 'd-none extra-row' : '' ?>" data-id="<?= (int)$row['id_chilometro'] ?>" data-data="<?= htmlspecialchars($row['data_chilometro']) ?>" data-km="<?= (int)$row['chilometri'] ?>">
+        <span><?= htmlspecialchars($row['data_chilometro']) ?> - <?= (int)$row['chilometri'] ?> km</span>
+        <?php if ($isOwner): ?>
+          <button class="btn btn-danger btn-sm" onclick="deleteChilometro(event, <?= (int)$row['id_chilometro'] ?>)">✕</button>
+        <?php endif; ?>
+      </li>
+    <?php endforeach; ?>
+  </ul>
+  <?php if (count($chilometri) > 3): ?>
+    <button id="toggleChilometri" class="btn btn-link mt-2">Mostra tutti</button>
+  <?php endif; ?>
+</div>
+
+<!-- Modal modifica mezzo -->
+<div class="modal fade" id="editMezzoModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="mezzoForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Modifica mezzo</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Nome mezzo</label>
+          <input type="text" name="nome_mezzo" class="form-control bg-secondary text-white" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Data immatricolazione</label>
+          <input type="date" name="data_immatricolazione" class="form-control bg-secondary text-white">
+        </div>
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" name="attivo" id="mezzoAttivo">
+          <label class="form-check-label" for="mezzoAttivo">Attivo</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary w-100">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal chilometro -->
+<div class="modal fade" id="chilometroModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="chilometroForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Chilometro</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="id_chilometro" id="id_chilometro">
+        <div class="mb-3">
+          <label class="form-label">Data</label>
+          <input type="date" name="data_chilometro" class="form-control bg-secondary text-white" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Chilometri</label>
+          <input type="number" name="chilometri" class="form-control bg-secondary text-white" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary w-100">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const mezzoData = {
+  id: <?= (int)$data['id_mezzo'] ?>,
+  nome_mezzo: <?= json_encode($data['nome_mezzo']) ?>,
+  data_immatricolazione: <?= json_encode($data['data_immatricolazione']) ?>,
+  attivo: <?= (int)$data['attivo'] ?>
+};
+</script>
+<script src="js/mezzo_dettaglio.js"></script>
+<?php include 'includes/footer.php'; ?>
+<?php else: ?>
+<div class="container text-white">
+  <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
+  <h4 class="mb-4">Nuovo Mezzo</h4>
 </div>
 <form method="post" class="bg-dark text-white p-3 rounded">
   <div class="mb-3">
     <label class="form-label">Nome mezzo</label>
-    <input type="text" name="nome_mezzo" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['nome_mezzo']) ?>" <?= $isOwner ? '' : 'disabled' ?>>
+    <input type="text" name="nome_mezzo" class="form-control bg-dark text-white border-secondary" required>
   </div>
   <div class="mb-3">
     <label class="form-label">Data immatricolazione</label>
-    <input type="date" name="data_immatricolazione" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['data_immatricolazione']) ?>" <?= $isOwner ? '' : 'disabled' ?>>
+    <input type="date" name="data_immatricolazione" class="form-control bg-dark text-white border-secondary">
   </div>
   <div class="form-check form-switch mb-3">
-    <input class="form-check-input" type="checkbox" id="attivo" name="attivo" <?= $data['attivo'] ? 'checked' : '' ?> <?= $isOwner ? '' : 'disabled' ?>>
+    <input class="form-check-input" type="checkbox" id="attivo" name="attivo" checked>
     <label class="form-check-label" for="attivo">Attivo</label>
   </div>
-  <input type="hidden" name="id_utente" value="<?= (int)$idUtente ?>">
-  <input type="hidden" name="id_famiglia" value="<?= (int)$idFamiglia ?>">
-  <?php if ($data['id_mezzo']): ?>
-    <input type="hidden" name="id_mezzo" value="<?= (int)$data['id_mezzo'] ?>">
-  <?php endif; ?>
-  <?php if ($isOwner): ?>
-    <button type="submit" class="btn btn-primary w-100">Salva</button>
-  <?php endif; ?>
+  <button type="submit" class="btn btn-primary w-100">Salva</button>
 </form>
 <?php include 'includes/footer.php'; ?>
+<?php endif; ?>
