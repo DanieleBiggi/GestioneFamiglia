@@ -26,6 +26,7 @@ $data = [
     'id_utente' => $idUtente
 ];
 $chilometri = [];
+$tagliandi = [];
 if ($id > 0) {
     $stmt = $conn->prepare("SELECT * FROM mezzi WHERE id_mezzo = ? AND id_famiglia = ?");
     $stmt->bind_param('ii', $id, $idFamiglia);
@@ -49,6 +50,15 @@ if ($id > 0) {
         $chilometri[] = $row;
     }
     $stmtKm->close();
+
+    $stmtTag = $conn->prepare("SELECT id_tagliando, nome_tagliando, data_scadenza, attivo FROM mezzi_tagliandi WHERE id_mezzo = ? ORDER BY nome_tagliando");
+    $stmtTag->bind_param('i', $id);
+    $stmtTag->execute();
+    $resTag = $stmtTag->get_result();
+    while ($row = $resTag->fetch_assoc()) {
+        $tagliandi[] = $row;
+    }
+    $stmtTag->close();
 }
 
 $isOwner = ($data['id_utente'] ?? $idUtente) == $idUtente;
@@ -65,7 +75,12 @@ if ($id > 0): ?>
     <?php endif; ?>
   </h4>
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <h5 class="mb-0">Chilometri</h5>
+    <div class="d-flex align-items-center">
+      <h5 class="mb-0 me-3">Chilometri</h5>
+      <?php if (count($chilometri) > 3): ?>
+        <button id="toggleChilometri" class="btn btn-link p-0">Mostra tutti</button>
+      <?php endif; ?>
+    </div>
     <?php if ($isOwner): ?>
       <button class="btn btn-outline-light btn-sm" onclick="openChilometroModal()">Aggiungi</button>
     <?php endif; ?>
@@ -84,9 +99,29 @@ if ($id > 0): ?>
         </li>
     <?php endforeach; ?>
   </ul>
-  <?php if (count($chilometri) > 3): ?>
-    <button id="toggleChilometri" class="btn btn-link mt-2">Mostra tutti</button>
-  <?php endif; ?>
+
+  <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+    <h5 class="mb-0">Tagliandi</h5>
+    <?php if ($isOwner): ?>
+      <a href="mezzo_dettaglio_tagliando.php?mezzo=<?= (int)$data['id_mezzo'] ?>" class="btn btn-outline-light btn-sm">Aggiungi</a>
+    <?php endif; ?>
+  </div>
+  <div id="tagliandiList">
+    <?php foreach ($tagliandi as $row): ?>
+      <div class="mezzo-card movement d-flex justify-content-between align-items-start text-white text-decoration-none"
+           onclick="window.location.href='mezzo_dettaglio_tagliando.php?id=<?= (int)$row['id_tagliando'] ?>&mezzo=<?= (int)$data['id_mezzo'] ?>'">
+        <div class="flex-grow-1">
+          <div class="fw-semibold"><?= htmlspecialchars($row['nome_tagliando']) ?></div>
+          <?php if (!empty($row['data_scadenza'])): ?>
+            <div class="small">Scadenza: <?= htmlspecialchars($row['data_scadenza']) ?></div>
+          <?php endif; ?>
+        </div>
+        <div class="ms-2 text-nowrap">
+          <?= ((int)$row['attivo'] === 1) ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>' ?>
+        </div>
+      </div>
+    <?php endforeach; ?>
+  </div>
 </div>
 
 <!-- Modal modifica mezzo -->
