@@ -4,11 +4,18 @@ require_once 'includes/db.php';
 include 'includes/header.php';
 setlocale(LC_TIME, 'it_IT.UTF-8');
 
+$movimenti_revolut1 = "";
+if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1)
+{
+$movimenti_revolut1 = 
+"SELECT started_date AS data_operazione FROM v_movimenti_revolut
+            UNION ALL";
+}
+
 $mesi = [];
 $sql = "SELECT DATE_FORMAT(data_operazione, '%Y-%m') AS ym
          FROM (
-            SELECT started_date AS data_operazione FROM v_movimenti_revolut
-            UNION ALL
+            ".$movimenti_revolut1."
             SELECT data_operazione FROM bilancio_entrate
             UNION ALL
             SELECT data_operazione FROM bilancio_uscite
