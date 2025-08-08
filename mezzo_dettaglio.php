@@ -18,7 +18,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $id === 0) {
     header('Location: mezzi.php');
     exit;
 }
-
 $data = [
     'nome_mezzo' => '',
     'data_immatricolazione' => '',
@@ -27,7 +26,6 @@ $data = [
     'id_utente' => $idUtente
 ];
 $chilometri = [];
-
 if ($id > 0) {
     $stmt = $conn->prepare("SELECT * FROM mezzi WHERE id_mezzo = ? AND id_famiglia = ?");
     $stmt->bind_param('ii', $id, $idFamiglia);
