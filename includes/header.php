@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/Gestionale25/assets/style.css">
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
 </head>
 <body>
 
@@ -16,7 +17,10 @@
   <button class="btn btn-dark border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu">
     <i class="bi bi-list fs-3 text-white"></i>
   </button>
-  <a href="index.php" class="navbar-brand mb-0 h1">Gestione Famiglia 2.0</a>
+  <!--<a href="index.php" class="navbar-brand mb-0 h1">Gestione Famiglia 2.0</a>-->
+  <a href="index.php" class="navbar-brand mb-0 h1">
+    <img src="assets/banner.png" alt="Gestione Famiglia" height="40" />
+  </a>
 </nav>
 
 <!-- Offcanvas Menù Laterale -->
@@ -223,7 +227,7 @@
       <?php endif; ?>
       <li>
         <a href="/Gestionale25/logout.php" class="btn btn-outline-danger w-100 text-start">
-          <i class="bi bi-box-arrow-right me-2 text-white"></i> Logout
+          <i class="bi bi-box-arrow-right me-2"></i> Logout
         </a>
       </li>
 
