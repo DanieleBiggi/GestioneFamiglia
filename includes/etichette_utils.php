@@ -63,3 +63,89 @@ function eliminaEtichetteCollegate(string $tabella_operazione, int $id_tabella):
         $stmt->close();
     }
 }
+
+function get_saldo_e_movimenti_utente($idUtente)
+{
+    $ar = [];
+    $ar['movimenti'] = [];
+    $ar['saldoTot'] = 0;    
+    $sqlMov = "SELECT
+                    u2o.id_u2o,
+                    u2o.id_e2o,
+                    e2o.id_tabella,
+                    e2o.tabella_operazione AS tabella,
+                    e2o.id_etichetta,
+                    CONCAT(IFNULL(v.descrizione_extra,v.descrizione_operazione), ' (', v.importo_totale_operazione, ')') AS descrizione,
+                    v.data_operazione,
+                    v.descrizione AS etichetta_descrizione,
+                    (CASE
+                        WHEN v.id_utente_operazione = u2o.id_utente THEN -(
+                            CASE
+                                WHEN IFNULL(u2o.importo_utente, 0) <> 0 THEN u2o.importo_utente
+                                WHEN v.importo_etichetta <> 0 THEN (v.importo * u2o.quote)
+                                ELSE (v.importo_totale_operazione - (v.importo * u2o.quote))
+                            END
+                        )
+                        ELSE (
+                            CASE
+                                WHEN IFNULL(u2o.importo_utente, 0) <> 0 THEN u2o.importo_utente
+                                ELSE (v.importo * u2o.quote)
+                            END
+                        )
+                    END) AS saldo_utente
+               FROM bilancio_utenti2operazioni_etichettate u2o
+               JOIN v_bilancio_etichette2operazioni_a_testa v ON u2o.id_e2o = v.id_e2o
+               JOIN bilancio_etichette2operazioni e2o ON e2o.id_e2o = u2o.id_e2o
+               WHERE u2o.id_utente = ? AND u2o.saldata = 0
+               ORDER BY v.data_operazione DESC";
+    
+    $stmtMov = $conn->prepare($sqlMov);
+    $stmtMov->bind_param('i', $idUtente);
+    $stmtMov->execute();
+    $resMov = $stmtMov->get_result();
+    $movimenti = [];
+    $saldoTot = 0.0;
+    while ($row = $resMov->fetch_assoc()) {
+        $row['saldo_utente'] = (float)$row['saldo_utente'];
+        if ($isAdmin) {
+            $stmtDet = $conn->prepare("SELECT u2o.id_u2o, u.nome, u.cognome,
+                    (CASE
+                        WHEN v.id_utente_operazione = u2o.id_utente THEN -(
+                            CASE
+                                WHEN IFNULL(u2o.importo_utente, 0) <> 0 THEN u2o.importo_utente
+                                WHEN v.importo_etichetta <> 0 THEN (v.importo * u2o.quote)
+                                ELSE (v.importo_totale_operazione - (v.importo * u2o.quote))
+                            END
+                        )
+                        ELSE (
+                            CASE
+                                WHEN IFNULL(u2o.importo_utente, 0) <> 0 THEN u2o.importo_utente
+                                ELSE (v.importo * u2o.quote)
+                            END
+                        )
+                    END) AS importo,
+                    u2o.saldata,
+                    u2o.data_saldo
+               FROM bilancio_utenti2operazioni_etichettate u2o
+               JOIN v_bilancio_etichette2operazioni_a_testa v ON u2o.id_e2o = v.id_e2o
+               JOIN utenti u ON u.id = u2o.id_utente
+               WHERE u2o.id_e2o = ?");
+            $stmtDet->bind_param('i', $row['id_e2o']);
+            $stmtDet->execute();
+            $resDet = $stmtDet->get_result();
+            $rowsDet = [];
+            while ($r = $resDet->fetch_assoc()) {
+                $r['importo'] = (float)$r['importo'];
+                $rowsDet[] = $r;
+            }
+            $stmtDet->close();
+            $row['rows'] = $rowsDet;
+        }
+        $saldoTot += $row['saldo_utente'];
+        $movimenti[] = $row;
+    }
+    $stmtMov->close();
+    $ar['movimenti'] = $movimenti;
+    $ar['saldoTot'] = $saldoTot;
+    return $ar;
+}
