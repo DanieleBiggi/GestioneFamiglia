@@ -299,11 +299,12 @@ $stmtGrp->close();
     </div>
   </form>
 
-  <div class="d-flex gap-4 mb-4 align-items-center">
-    <div>Entrate: <span><?= '+' . number_format($totali['entrate'] ?? 0, 2, ',', '.') ?> €</span></div>
-    <div>Uscite: <span><?= number_format($totali['uscite'] ?? 0, 2, ',', '.') ?> €</span></div>
+  <div class="d-flex gap-4 mb-4 align-items-center flex-wrap">
+    <div>Entrate: <span class="text-nowrap"><?= '+' . number_format($totali['entrate'] ?? 0, 2, ',', '.') ?> €</span></div>
+    <div>Uscite: <span class="text-nowrap"><?= number_format($totali['uscite'] ?? 0, 2, ',', '.') ?> €</span></div>
     <?php if ($isAdmin): ?>
-      <button type="button" class="btn btn-outline-light btn-sm ms-auto" onclick="settleSelected()">Segna saldati</button>
+      <button type="button" class="btn btn-outline-light btn-sm ms-auto d-none d-md-inline" id="settleBtn" onclick="settleSelected()">Segna saldati</button>
+      <button type="button" class="btn btn-outline-light btn-sm ms-auto d-inline d-md-none" onclick="toggleSettle()">Seleziona</button>
     <?php endif; ?>
   </div>
 
@@ -324,6 +325,13 @@ $stmtGrp->close();
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
+            <div class="row g-2 mb-2 fw-bold d-none d-sm-flex" id="u2oHeader">
+              <div class="col-sm-4">Utente</div>
+              <div class="col-sm-3">Importo</div>
+              <div class="col-sm-2 text-center">Saldo</div>
+              <div class="col-sm-3">Data</div>
+              <div class="col-sm-1"></div>
+            </div>
             <div id="u2oRows"></div>
             <button type="button" class="btn btn-secondary btn-sm mt-2" onclick="addU2oRow()">Aggiungi utente</button>
           </div>
@@ -349,11 +357,11 @@ $stmtGrp->close();
         div.dataset.id = r.id_u2o;
         div.dataset.utenteId = r.id_utente;
         div.innerHTML = `
-          <div class="col-4">${r.nome} ${r.cognome}${r.utente_pagante == 1 ? ' (P)' : ''}</div>
-          <div class="col-3"><input type="number" step="0.01" class="form-control form-control-sm" value="${r.importo_utente ?? ''}"></div>
-          <div class="col-2 text-center"><input type="checkbox" class="form-check-input" ${r.saldata == 1 ? 'checked' : ''}></div>
-          <div class="col-2"><input type="date" class="form-control form-control-sm" value="${r.data_saldo ? r.data_saldo.substring(0,10) : ''}"></div>
-          <div class="col-1 text-end"><button type="button" class="btn btn-sm btn-danger" onclick="deleteU2oRow(this)">&times;</button></div>
+          <div class="col-12 col-sm-4">${r.nome} ${r.cognome}${r.utente_pagante == 1 ? ' (P)' : ''}</div>
+          <div class="col-6 col-sm-3"><input type="number" step="0.01" class="form-control form-control-sm" value="${r.importo_utente ?? ''}"></div>
+          <div class="col-6 col-sm-2 text-center"><input type="checkbox" class="form-check-input" ${r.saldata == 1 ? 'checked' : ''}></div>
+          <div class="col-6 col-sm-3"><input type="date" class="form-control form-control-sm" value="${r.data_saldo ? r.data_saldo.substring(0,10) : ''}"></div>
+          <div class="col-6 col-sm-1 text-end"><button type="button" class="btn btn-sm btn-danger" onclick="deleteU2oRow(this)">&times;</button></div>
         `;
         container.appendChild(div);
       });
@@ -370,11 +378,11 @@ $stmtGrp->close();
         options += `<option value="${u.id}">${u.nome} ${u.cognome}</option>`;
       });
       div.innerHTML = `
-        <div class="col-4"><select class="form-select form-select-sm">${options}</select></div>
-        <div class="col-3"><input type="number" step="0.01" class="form-control form-control-sm"></div>
-        <div class="col-2 text-center"><input type="checkbox" class="form-check-input"></div>
-        <div class="col-2"><input type="date" class="form-control form-control-sm"></div>
-        <div class="col-1 text-end"><button type="button" class="btn btn-sm btn-danger" onclick="deleteU2oRow(this)">&times;</button></div>
+        <div class="col-12 col-sm-4"><select class="form-select form-select-sm">${options}</select></div>
+        <div class="col-6 col-sm-3"><input type="number" step="0.01" class="form-control form-control-sm"></div>
+        <div class="col-6 col-sm-2 text-center"><input type="checkbox" class="form-check-input"></div>
+        <div class="col-6 col-sm-3"><input type="date" class="form-control form-control-sm"></div>
+        <div class="col-6 col-sm-1 text-end"><button type="button" class="btn btn-sm btn-danger" onclick="deleteU2oRow(this)">&times;</button></div>
       `;
       container.appendChild(div);
     }
@@ -428,6 +436,11 @@ $stmtGrp->close();
         body: JSON.stringify({rows})
       }).then(r => r.json()).then(() => location.reload());
     }
+
+    function toggleSettle() {
+      document.querySelectorAll('.settle-checkbox').forEach(cb => cb.classList.toggle('d-none'));
+      document.getElementById('settleBtn').classList.toggle('d-none');
+    }
     </script>
 
 
@@ -436,9 +449,9 @@ $stmtGrp->close();
       <form method="get" class="mb-3">
         <input type="hidden" name="id_etichetta" value="<?= htmlspecialchars($etichettaParam) ?>">
         <input type="hidden" name="mese" value="<?= htmlspecialchars($mese) ?>">
-      <div class="d-flex gap-2 align-items-center">
+      <div class="d-flex gap-2 align-items-center flex-wrap">
         <label for="categoria" class="form-label mb-0">Categoria:</label>
-        <select name="categoria" id="categoria" class="form-select w-auto" onchange="this.form.submit()">
+        <select name="categoria" id="categoria" class="form-select form-select-sm" style="max-width:200px;" onchange="this.form.submit()">
           <option value="" <?= $categoria === '' ? 'selected' : '' ?>>Tutte</option>
           <option value="0" <?= $categoria === '0' ? 'selected' : '' ?>>Nessuna categoria</option>
           <?php foreach ($categorie as $cat): ?>
@@ -448,12 +461,11 @@ $stmtGrp->close();
       </div>
     </form>
     <div class="table-responsive">
-      <table class="table table-dark table-striped align-middle">
+      <table class="table table-dark table-striped align-middle table-sm">
         <thead>
           <tr>
             <th>Categoria</th>
             <th>Gruppo</th>
-            <th>Tipo</th>
             <th class="text-end">Entrate</th>
             <th class="text-end">Uscite</th>
           </tr>
@@ -463,9 +475,8 @@ $stmtGrp->close();
             <tr>
               <td><?= htmlspecialchars($g['categoria']) ?></td>
               <td><?= htmlspecialchars($g['gruppo'] ?? $g['id_gruppo_transazione']) ?></td>
-              <td><?= htmlspecialchars($g['tipo_label']) ?></td>
-              <td class="text-end"><?= ($g['entrate'] > 0 ? '+' : '') . number_format($g['entrate'], 2, ',', '.') ?> €</td>
-              <td class="text-end"><?= number_format($g['uscite'], 2, ',', '.') ?> €</td>
+              <td class="text-end text-nowrap"><?= ($g['entrate'] > 0 ? '+' : '') . number_format($g['entrate'], 2, ',', '.') ?> €</td>
+              <td class="text-end text-nowrap"><?= number_format($g['uscite'], 2, ',', '.') ?> €</td>
             </tr>
           <?php endforeach; ?>
         </tbody>
