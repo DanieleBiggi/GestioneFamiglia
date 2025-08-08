@@ -24,7 +24,7 @@ function initUserManager(table, formColumns, primaryKey, lookups, boolCols = [],
     function load() {
         const params = new URLSearchParams();
         params.append('action', 'list');
-        params.append('username', searchInput.value);
+        params.append('search', searchInput.value);
         params.append('userlevelid', userlevelFilter.value);
         params.append('id_famiglia', familyFilter.value);
         fetch('ajax/gestione_utenti.php?' + params.toString())
@@ -37,7 +37,9 @@ function initUserManager(table, formColumns, primaryKey, lookups, boolCols = [],
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${r.username ?? ''}</td>
-                <td>${r.userlevelname ?? ''}</td>
+                <td>${r.nome ?? ''}</td>
+                <td>${r.cognome ?? ''}</td>
+                <td>${r.email ?? ''}</td>
                 <td>${r.famiglia_attuale ?? ''}</td>
                 <td>${r.famiglie ?? ''}</td>
             `;

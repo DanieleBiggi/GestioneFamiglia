@@ -7,7 +7,7 @@ $action = $_GET['action'] ?? $_POST['action'] ?? '';
 switch ($action) {
     case 'list':
         if (!has_permission($conn, 'table:utenti', 'view')) { http_response_code(403); echo json_encode(['error'=>'Permesso negato']); exit; }
-        $username = $_GET['username'] ?? '';
+        $search = $_GET['search'] ?? ($_GET['username'] ?? '');
         $userlevelid = $_GET['userlevelid'] ?? '';
         $id_famiglia = $_GET['id_famiglia'] ?? '';
         $sql = "SELECT u.id, u.username, u.nome, u.cognome, u.soprannome, u.email, u.id_famiglia_attuale, u.id_famiglia_gestione, u.attivo, u.userlevelid,
@@ -22,7 +22,12 @@ switch ($action) {
                 WHERE 1=1";
         $params = [];
         $types = '';
-        if ($username !== '') { $sql .= " AND u.username LIKE ?"; $params[] = "%$username%"; $types .= 's'; }
+        if ($search !== '') {
+            $sql .= " AND (u.username LIKE ? OR u.nome LIKE ? OR u.cognome LIKE ? OR u.email LIKE ?)";
+            $wild = "%$search%";
+            $params[] = $wild; $params[] = $wild; $params[] = $wild; $params[] = $wild;
+            $types .= 'ssss';
+        }
         if ($userlevelid !== '') { $sql .= " AND u.userlevelid = ?"; $params[] = $userlevelid; $types .= 'i'; }
         if ($id_famiglia !== '') {
             $sql .= " AND (u.id_famiglia_attuale = ? OR EXISTS (SELECT 1 FROM utenti2famiglie u2 WHERE u2.id_utente = u.id AND u2.id_famiglia = ?))";
