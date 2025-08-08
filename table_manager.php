@@ -57,8 +57,10 @@ foreach ($displayColumns as $col) {
         $sql = "SELECT `{$key}` AS id, {$label} AS label FROM `{$table}`";
         $res = $conn->query($sql);
         if ($res) {
-            while ($row = $res->fetch_assoc()) {
-                $lookups[$col][$row['id']] = $row['label'];
+            while ($row = $res->fetch_assoc()) {                
+                $value = trim((string) $row['label']);
+                $value = mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+                $lookups[$col][$row['id']] = $value;
             }
         }
     }
