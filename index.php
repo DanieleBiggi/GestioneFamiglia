@@ -6,6 +6,9 @@ if (!has_permission($conn, 'page:index.php', 'view')) { http_response_code(403);
 require_once 'includes/render_movimento.php';
 include 'includes/header.php';
 
+// Limit data to the current user when fetching personal balances
+$idUtente = $_SESSION['utente_id'] ?? 0;
+
 if (has_permission($conn, 'page:index.php-movmenti', 'view')): ?>
 
 <div class="mb-3">
@@ -42,6 +45,7 @@ if (has_permission($conn, 'page:index.php-movmenti', 'view')): ?>
                      WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette,
                    be.id_gruppo_transazione, 'ca' AS source, 'bilancio_entrate' AS tabella, be.mezzo
             FROM bilancio_entrate be
+            WHERE be.id_utente = {$idUtente}
             UNION ALL
             SELECT bu.id_uscita AS id, COALESCE(NULLIF(bu.descrizione_extra,''), bu.descrizione_operazione) AS descrizione, bu.descrizione_extra,
                    bu.data_operazione, -bu.importo AS amount,
@@ -51,6 +55,7 @@ if (has_permission($conn, 'page:index.php-movmenti', 'view')): ?>
                      WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette,
                    bu.id_gruppo_transazione, 'ca' AS source, 'bilancio_uscite' AS tabella, bu.mezzo
             FROM bilancio_uscite bu
+            WHERE bu.id_utente = {$idUtente}
         ) t
         ORDER BY data_operazione DESC LIMIT 5";
 

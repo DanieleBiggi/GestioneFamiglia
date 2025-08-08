@@ -4,6 +4,8 @@ require_once 'includes/db.php';
 include 'includes/header.php';
 setlocale(LC_TIME, 'it_IT.UTF-8');
 
+$idUtente = $_SESSION['utente_id'] ?? 0;
+
 $movimenti_revolut1 = "";
 if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1)
 {
@@ -16,9 +18,9 @@ $mesi = [];
 $sql = "SELECT DATE_FORMAT(data_operazione, '%Y-%m') AS ym
          FROM (
             ".$movimenti_revolut1."
-            SELECT data_operazione FROM bilancio_entrate
+            SELECT data_operazione FROM bilancio_entrate WHERE id_utente = {$idUtente}
             UNION ALL
-            SELECT data_operazione FROM bilancio_uscite
+            SELECT data_operazione FROM bilancio_uscite WHERE id_utente = {$idUtente}
          ) t
          GROUP BY ym ORDER BY ym ASC";
 $result = $conn->query($sql);
