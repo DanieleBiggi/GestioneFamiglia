@@ -84,6 +84,13 @@
         </a>
       </li>
       <?php endif; ?>
+
+      <?php if (has_permission($conn, 'page:mezzi.php', 'view')): ?>
+      <li class="mb-3">
+        <a href="/Gestionale25/mezzi.php" class="btn btn-outline-light w-100 text-start">
+          🚗 Mezzi
+        </a>
+      </li>
       <?php if (has_permission($conn, 'page:eventi.php', 'view')): ?>
       <li class="mb-3">
         <a href="/Gestionale25/eventi.php" class="btn btn-outline-light w-100 text-start">
