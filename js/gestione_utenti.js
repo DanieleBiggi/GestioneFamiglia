@@ -52,6 +52,13 @@ function initUserManager(table, formColumns, primaryKey, lookups, boolCols = [],
                 actions.appendChild(famBtn);
             }
             if (canUpdate) {
+                if (r.passcode_locked_until) {
+                    const unlockBtn = document.createElement('button');
+                    unlockBtn.className = 'btn btn-sm btn-link text-warning me-2';
+                    unlockBtn.innerHTML = '<i class="bi bi-unlock"></i>';
+                    unlockBtn.addEventListener('click', () => unlockPasscode(r[primaryKey]));
+                    actions.appendChild(unlockBtn);
+                }
                 const editBtn = document.createElement('button');
                 editBtn.className = 'btn btn-sm btn-link text-white me-2';
                 editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
@@ -125,6 +132,14 @@ function initUserManager(table, formColumns, primaryKey, lookups, boolCols = [],
             .then(r => r.json())
             .then(() => { deleteModal.hide(); load(); });
     });
+    function unlockPasscode(id) {
+        const fd = new FormData();
+        fd.append('action', 'unlock_passcode');
+        fd.append('id', id);
+        fetch('ajax/gestione_utenti.php', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(() => load());
+    }
     function manageFamilies(id) {
         currentUserId = id;
         if (!familiesModal) familiesModal = new bootstrap.Modal(familiesModalEl);
