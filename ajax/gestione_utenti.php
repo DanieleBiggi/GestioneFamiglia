@@ -10,6 +10,7 @@ switch ($action) {
         $search = $_GET['search'] ?? ($_GET['username'] ?? '');
         $userlevelid = $_GET['userlevelid'] ?? '';
         $id_famiglia = $_GET['id_famiglia'] ?? '';
+        $showInactive = $_GET['showInactive'] ?? '';
         $sql = "SELECT u.id, u.username, u.nome, u.cognome, u.soprannome, u.email, u.id_famiglia_attuale, u.id_famiglia_gestione, u.attivo, u.userlevelid,
                        u.passcode_locked_until,
                        ul.userlevelname, f.nome_famiglia AS famiglia_attuale,
@@ -28,6 +29,9 @@ switch ($action) {
             $wild = "%$search%";
             $params[] = $wild; $params[] = $wild; $params[] = $wild; $params[] = $wild;
             $types .= 'ssss';
+        }
+        if ($search === '' && $showInactive !== '1') {
+            $sql .= " AND u.attivo = 1";
         }
         if ($userlevelid !== '') { $sql .= " AND u.userlevelid = ?"; $params[] = $userlevelid; $types .= 'i'; }
         if ($id_famiglia !== '') {

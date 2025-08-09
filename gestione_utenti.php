@@ -64,6 +64,12 @@ include 'includes/header.php';
       <?php endwhile; ?>
     </select>
   </div>
+  <div class="col-12 col-md-auto d-flex align-items-center">
+    <div class="form-check form-switch text-nowrap">
+      <input class="form-check-input" type="checkbox" id="showInactive">
+      <label class="form-check-label" for="showInactive">Mostra disattivati</label>
+    </div>
+  </div>
 </div>
 <div id="userList"></div>
 <div class="modal fade" id="familiesModal" tabindex="-1" aria-hidden="true">
