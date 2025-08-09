@@ -302,8 +302,6 @@ $stmtGrp->close();
           <option value="<?= htmlspecialchars($m['ym']) ?>" <?= $mese === $m['ym'] ? 'selected' : '' ?>><?= ucfirst($m['label']) ?></option>
         <?php endforeach; ?>
       </select>
-      
-  </div>
     </div>
   </form>
 
@@ -315,7 +313,7 @@ $stmtGrp->close();
     <?php else: ?>
       <p class="text-center text-muted">Nessun movimento per questa etichetta.</p>
     <?php endif; ?>
-</div>
+  
     <!-- Modal gestione quote utenti -->
     <div class="modal fade" id="u2oModal" tabindex="-1">
       <div class="modal-dialog">
@@ -489,7 +487,7 @@ $stmtGrp->close();
         </select>
       </div>
     </form>
-    <div class="table-responsive w-100">
+    <div class="table-responsive">
       <table class="table table-dark table-striped align-middle table-sm">
         <thead>
           <tr>
