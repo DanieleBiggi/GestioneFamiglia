@@ -335,9 +335,21 @@ $stmtGrp->close();
   </form>
 
   <div class=" gap-4 mb-4 flex-wrap">
-    <?php if ($movimenti->num_rows > 0): ?>
+    <?php  $ar_totali = [];
+    if ($movimenti->num_rows > 0): ?>
       <?php while ($mov = $movimenti->fetch_assoc()): ?>
-        <?php render_movimento_etichetta($mov,$etichettaInfo['id_etichetta']); ?>
+        <?php 
+        //$ar_totali['id_utente'][$u['id_utente']]['entrate']
+            $per_ar_totali = render_movimento_etichetta($mov,$etichettaInfo['id_etichetta']); 
+            foreach($per_ar_totali['id_utente'] as $id_utente=>$p)
+            {
+                //print_r($p);
+                @$ar_totali[$id_utente]['entrate'] += $p['entrate'];
+                @$ar_totali[$id_utente]['uscite'] += $p['uscite'];
+                @$ar_totali[$id_utente]['utente'] = $p['utente'];
+            }
+            
+        ?>
       <?php endwhile; ?>
     <?php else: ?>
       <p class="text-center text-muted">Nessun movimento per questa etichetta.</p>
@@ -498,7 +510,9 @@ $stmtGrp->close();
       document.getElementById('settleBtn').classList.toggle('d-none');
     }
     </script>
-    <?php if (!empty($utentiDett)): ?>
+    <?php 
+    $utentiDett = $ar_totali;
+    if (!empty($utentiDett)): ?>
       <h5 class="mt-4">Dettaglio per utente</h5>
       <div class="table-responsive">
         <table class="table table-dark table-striped align-middle table-sm">
@@ -507,6 +521,7 @@ $stmtGrp->close();
               <th>Utente</th>
               <th class="text-end">Entrate</th>
               <th class="text-end">Uscite</th>
+              <th class="text-end">Totale</th>
             </tr>
           </thead>
           <tbody>
@@ -515,12 +530,14 @@ $stmtGrp->close();
                 <td><?= htmlspecialchars($u['utente']) ?></td>
                 <td class="text-end text-nowrap"><?= ($u['entrate'] > 0 ? '+' : '') . number_format($u['entrate'], 2, ',', '.') ?> €</td>
                 <td class="text-end text-nowrap"><?= number_format($u['uscite'], 2, ',', '.') ?> €</td>
+                <td class="text-end text-nowrap"><?= number_format($u['entrate']+$u['uscite'], 2, ',', '.') ?> €</td>
               </tr>
             <?php endforeach; ?>
             <tr>
               <td>Totali</td>
               <td class="text-end text-nowrap"><?= '+' . number_format($totali['entrate'] ?? 0, 2, ',', '.') ?> €</td>
               <td class="text-end text-nowrap"><?= number_format($totali['uscite'] ?? 0, 2, ',', '.') ?> €</td>
+              <td class="text-end text-nowrap"><?= number_format($totali['entrate']+$totali['uscite'] ?? 0, 2, ',', '.') ?> €</td>
             </tr>
           </tbody>
         </table>
