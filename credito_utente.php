@@ -60,6 +60,26 @@ if ($canChangeUser) {
 $ar = get_saldo_e_movimenti_utente($idUtente);
 $movimenti = $ar['movimenti'];
 $saldoTot = $ar['saldoTot'];
+
+// Calcola il totale per ogni etichetta
+$totaliEtichette = [];
+foreach ($movimenti as $m) {
+    $idEt = $m['id_etichetta'] ?? null;
+    if ($idEt === null) {
+        continue;
+    }
+    if (!isset($totaliEtichette[$idEt])) {
+        $totaliEtichette[$idEt] = [
+            'descrizione' => $m['etichetta_descrizione'] ?? '',
+            'totale' => 0.0,
+        ];
+    }
+    $totaliEtichette[$idEt]['totale'] += $m['saldo_utente'];
+}
+// Ordina alfabeticamente per descrizione
+uasort($totaliEtichette, function ($a, $b) {
+    return strcasecmp($a['descrizione'], $b['descrizione']);
+});
 ?>
 
 <div class="text-white">
@@ -82,8 +102,8 @@ $saldoTot = $ar['saldoTot'];
      <button id="saldaBtn" class="btn btn-outline-light mb-3">Salda movimenti</button>
    <?php endif; ?>
 
-   <?php if (!empty($movimenti)): ?>
-    <?php foreach ($movimenti as $mov): ?>
+  <?php if (!empty($movimenti)): ?>
+   <?php foreach ($movimenti as $mov): ?>
       <?php $rowsAttr = $isAdmin ? htmlspecialchars(json_encode($mov['rows'] ?? []), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : ''; ?>
       <div class="movement d-flex justify-content-between align-items-start text-white mb-2" data-tabella="<?= htmlspecialchars($mov['tabella']) ?>" data-id-tabella="<?= (int)$mov['id_tabella'] ?>" <?php if ($isAdmin): ?>data-rows='<?= $rowsAttr ?>'<?php endif; ?> onclick="openMovimento(this)" style="cursor:pointer">
         <?php if ($isAdmin): ?>
@@ -98,10 +118,20 @@ $saldoTot = $ar['saldoTot'];
           <div class="amount"><?= ($mov['saldo_utente']>=0?'+':'') . number_format($mov['saldo_utente'], 2, ',', '.') ?> €</div>
         </div>
       </div>
-    <?php endforeach; ?>
-  <?php else: ?>
-    <p class="text-center text-muted">Nessun movimento trovato per questo utente.</p>
-  <?php endif; ?>
+   <?php endforeach; ?>
+
+   <h5 class="mt-4">Dettaglio per etichetta</h5>
+   <ul class="list-unstyled">
+     <?php foreach ($totaliEtichette as $et): ?>
+       <li>
+         <?= htmlspecialchars($et['descrizione']) ?>:
+         <span><?= ($et['totale']>=0?'+':'') . number_format($et['totale'], 2, ',', '.') ?> €</span>
+       </li>
+     <?php endforeach; ?>
+   </ul>
+ <?php else: ?>
+   <p class="text-center text-muted">Nessun movimento trovato per questo utente.</p>
+ <?php endif; ?>
 </div>
 
   <div class="modal fade" id="movModal" tabindex="-1">
