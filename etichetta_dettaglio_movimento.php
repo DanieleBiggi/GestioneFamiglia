@@ -60,6 +60,13 @@ while ($r = $resU->fetch_assoc()) {
 }
 $stmtU->close();
 
+// Lista utenti per la select del modal
+$stmtUt = $conn->prepare('SELECT id, nome, cognome FROM utenti WHERE attivo = 1 ORDER BY nome');
+$stmtUt->execute();
+$resUt = $stmtUt->get_result();
+$listaUtenti = $resUt->fetch_all(MYSQLI_ASSOC);
+$stmtUt->close();
+
 $total = $e2o['importo'] !== null ? (float)$e2o['importo'] : abs($mov['amount']);
 $count = count($u2oRows) ?: 1;
 foreach ($u2oRows as &$r) {
@@ -99,13 +106,16 @@ $dataOra = date('d/m/Y H:i', strtotime($mov['data_operazione']));
     <div class="small"><?= $dataOra ?></div>
     <div class="fw-semibold"><?= ($amountValue >= 0 ? '+' : '') . $importo ?> €</div>
   </div>
-  <h5 class="mb-2">Quote utenti</h5>
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h5 class="mb-0">Quote utenti</h5>
+    <button class="btn btn-sm btn-primary" onclick="openU2oModal()">Aggiungi nuovo</button>
+  </div>
   <ul class="list-group list-group-flush bg-dark mb-3" id="u2oList">
     <?php foreach ($u2oRows as $row): ?>
-      <li class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center">
+      <li class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center" role="button" data-u2o-id="<?= (int)$row['id_u2o'] ?>" data-utente-id="<?= (int)$row['id_utente'] ?>" data-quote="<?= $row['quote'] !== null ? htmlspecialchars($row['quote']) : '' ?>" data-saldata="<?= (int)$row['saldata'] ?>" data-data-saldo="<?= htmlspecialchars($row['data_saldo'] ?? '') ?>" onclick="openU2oModal(this)">
         <div class="flex-grow-1"><?= htmlspecialchars($row['nome'] . ' ' . $row['cognome']) ?></div>
         <div class="text-end me-2" style="min-width:80px;"><?= number_format($row['calc_importo'], 2, ',', '.') ?> €</div>
-        <button class="btn btn-danger btn-sm ms-2" onclick="deleteU2o(<?= (int)$row['id_u2o'] ?>)">✕</button>
+        <button class="btn btn-danger btn-sm ms-2" onclick="event.stopPropagation(); deleteU2o(<?= (int)$row['id_u2o'] ?>)">✕</button>
       </li>
     <?php endforeach; ?>
   </ul>
@@ -131,6 +141,44 @@ $dataOra = date('d/m/Y H:i', strtotime($mov['data_operazione']));
         <div class="mb-3">
           <label class="form-label">Allegato</label>
           <input type="file" name="allegato" class="form-control bg-secondary text-white">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary w-100">Salva</button>
+      </div>
+    </form>
+</div>
+</div>
+
+<div class="modal fade" id="editU2oModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="editU2oForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Quota utente</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="id_u2o" value="0">
+        <div class="mb-3">
+          <label class="form-label">Utente</label>
+          <select name="id_utente" class="form-select bg-secondary text-white">
+            <option value="">Seleziona utente</option>
+            <?php foreach ($listaUtenti as $u): ?>
+              <option value="<?= (int)$u['id'] ?>"><?= htmlspecialchars($u['nome'] . ' ' . $u['cognome']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Quota</label>
+          <input type="number" step="0.01" name="quote" class="form-control bg-secondary text-white">
+        </div>
+        <div class="mb-3 form-check">
+          <input type="checkbox" class="form-check-input" id="u2oSaldata" name="saldata">
+          <label class="form-check-label" for="u2oSaldata">Saldata</label>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Data saldo</label>
+          <input type="date" name="data_saldo" class="form-control bg-secondary text-white">
         </div>
       </div>
       <div class="modal-footer">
