@@ -45,12 +45,26 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
     echo '    <div class="small">' . $dataOra . '</div>';
     if ($perUser) {
         echo '    <div class="mt-1">';
+        $ar_totali = [];
+        $ar_totali['id_utente'] = [];
+        $ar_totali['id_gruppo_transazione'] = [];
         foreach ($perUser as $u) {
+            
+            if($u['importo']>0)
+            {
+                @$ar_totali['id_utente'][$u['id_utente']]['entrate'] += $u['importo'];    
+            }else{
+                @$ar_totali['id_utente'][$u['id_utente']]['uscite'] += $u['importo'];    
+            }
+            
+            @$ar_totali['id_gruppo_transazione'][$u['id_gruppo_transazione']] += $u['importo'];
             $name = htmlspecialchars(trim(($u['nome'] ?? '') . ' ' . ($u['cognome'] ?? '')));
             $amt  = number_format($u['importo'], 2, ',', '.');
             $class = $u['saldata'] ? 'badge bg-success' : 'badge bg-secondary';
             $status = $u['saldata'] ? '✔' : '✖';
             echo "<span class='" . $class . " me-1'>$name $amt € $status</span>";
+            
+            @$ar_totali['id_utente'][$u['id_utente']]['utente'] = $name;
         }
         echo '    </div>';
     }
@@ -61,4 +75,5 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
     echo '  </div>';
     echo '</div>';
 
+    return $ar_totali;
 }
