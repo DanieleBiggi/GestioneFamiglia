@@ -2,6 +2,7 @@
 <?php
 include 'includes/db.php';
 include 'includes/header.php';
+include 'includes/etichette_utils.php';
 
 $idE2o = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($idE2o <= 0) {
@@ -50,7 +51,11 @@ if (!$mov) {
 }
 
 // Dati per gli utenti
-$stmtU = $conn->prepare("SELECT u2o.*, u.nome, u.cognome FROM bilancio_utenti2operazioni_etichettate u2o JOIN utenti u ON u.id = u2o.id_utente WHERE u2o.id_e2o = ?");
+$stmtU = $conn->prepare("SELECT u2o.*, u.nome, u.cognome, v.id_utente_operazione, v.importo_totale_operazione, v.importo_etichetta
+                          FROM bilancio_utenti2operazioni_etichettate u2o
+                          JOIN utenti u ON u.id = u2o.id_utente
+                          JOIN v_bilancio_etichette2operazioni_a_testa v ON v.id_e2o = u2o.id_e2o
+                         WHERE u2o.id_e2o = ?");
 $stmtU->bind_param('i', $idE2o);
 $stmtU->execute();
 $resU = $stmtU->get_result();
@@ -67,25 +72,14 @@ $resUt = $stmtUt->get_result();
 $listaUtenti = $resUt->fetch_all(MYSQLI_ASSOC);
 $stmtUt->close();
 
-$importoEtichetta = $e2o['importo'] !== null ? (float)$e2o['importo'] : 0;
-$importoTotale    = abs($mov['amount']);
-$count            = count($u2oRows) ?: 1;
+$count = count($u2oRows) ?: 1;
 foreach ($u2oRows as &$r) {
-    $hasImpUtente = ($r['importo_utente'] !== null && (float)$r['importo_utente'] != 0);
-    $quote        = $r['quote'] !== null ? (float)$r['quote'] : (1 / $count);
-    if ($hasImpUtente) {
-        $imp = (float)$r['importo_utente'];
-    } elseif ($importoEtichetta != 0) {
-        $imp = $importoEtichetta * $quote;
-    } elseif ($r['utente_pagante']) {
-        $imp = $importoTotale - ($importoTotale * $quote);
-    } else {
-        $imp = $importoTotale * $quote;
-    }
-    if ($r['utente_pagante']) {
-        $imp = -$imp;
-    }
-    $r['calc_importo'] = $imp;
+    $quote         = $r['quote'] !== null ? (float)$r['quote'] : (1 / $count);
+    $importoUtente = (float)($r['importo_utente'] ?? 0);
+    $importoEtic   = (float)($r['importo_etichetta'] ?? 0);
+    $importoTot    = (float)($r['importo_totale_operazione'] ?? 0);
+    $isPagante     = ((int)$r['id_utente_operazione'] === (int)$r['id_utente']);
+    $r['calc_importo'] = calcola_importo_quota($isPagante, $importoUtente, $importoEtic, $importoTot, $quote);
 }
 unset($r);
 

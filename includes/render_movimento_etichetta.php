@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/etichette_utils.php';
+
 function render_movimento_etichetta(array $mov, int $id_etichetta) {
     global $conn, $isAdmin;
 
@@ -32,8 +34,8 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
     $stmtU = $conn->prepare(
         "SELECT e2o.id_e2o, e.descrizione AS etichetta_descrizione,
                 u.id AS id_utente, u.nome, u.cognome,
-                u2o.id_u2o, u2o.importo_utente, u2o.quote, u2o.utente_pagante, u2o.saldata, u2o.data_saldo,
-                v.importo_totale_operazione, v.importo_etichetta
+                u2o.id_u2o, u2o.importo_utente, u2o.quote, u2o.saldata, u2o.data_saldo,
+                v.id_utente_operazione, v.importo_totale_operazione, v.importo_etichetta
            FROM bilancio_etichette2operazioni e2o
             JOIN bilancio_etichette e ON e.id_etichetta = e2o.id_etichetta
             JOIN v_bilancio_etichette2operazioni_a_testa v ON v.id_e2o = e2o.id_e2o
@@ -45,29 +47,18 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
     $perUser = [];
     if ($stmtU->execute()) {
         $resU = $stmtU->get_result();
-        while ($row = $resU->fetch_assoc()) {
+        $rows = [];
+        while ($r = $resU->fetch_assoc()) {
+            $rows[] = $r;
+        }
+        $count = count($rows) ?: 1;
+        foreach ($rows as $row) {
+            $quote = $row['quote'] !== null ? (float)$row['quote'] : (1 / $count);
             $importoTot = (float)($row['importo_totale_operazione'] ?? 0);
             $importoEtic = (float)($row['importo_etichetta'] ?? 0);
             $importoUtente = (float)($row['importo_utente'] ?? 0);
-            $quote = (float)($row['quote'] ?? 0);
-            $imp = 0.0;
-            if ($row['utente_pagante']) {
-                if ($importoUtente != 0.0) {
-                    $imp = -$importoUtente;
-                } elseif ($importoEtic != 0.0) {
-                    $imp = -($importoEtic * $quote);
-                } else {
-                    $imp = -($importoTot - ($importoTot * $quote));
-                }
-            } else {
-                if ($importoUtente != 0.0) {
-                    $imp = $importoUtente;
-                } elseif ($importoEtic != 0.0) {
-                    $imp = $importoEtic * $quote;
-                } else {
-                    $imp = $importoTot * $quote;
-                }
-            }
+            $isPagante = ((int)$row['id_utente_operazione'] === (int)$row['id_utente']);
+            $imp = calcola_importo_quota($isPagante, $importoUtente, $importoEtic, $importoTot, $quote);
             $uid = $row['id_utente'];
             if (!isset($perUser[$uid])) {
                 $perUser[$uid] = [
@@ -79,7 +70,7 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
                 ];
             }
             $perUser[$uid]['importo'] += $imp;
-            if ($row['utente_pagante']) {
+            if ($isPagante) {
                 $perUser[$uid]['pagante'] = true;
             }
             if (!$row['saldata']) {
