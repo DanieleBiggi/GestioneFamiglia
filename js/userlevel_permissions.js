@@ -1,14 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
   const userlevelFilter = document.getElementById('filterUserlevel');
-  const resourceFilter = document.getElementById('filterResource');
+  const resourceSearch = document.getElementById('searchResource');
   const cards = Array.from(document.querySelectorAll('.permission-card'));
 
   function filter() {
     const ul = userlevelFilter.value;
-    const res = resourceFilter.value;
+    const query = resourceSearch.value.toLowerCase();
     cards.forEach(card => {
       const matchUl = !ul || card.dataset.userlevel === ul;
-      const matchRes = !res || card.dataset.resource === res;
+      const matchRes = !query || card.dataset.resourceName.includes(query);
       const visible = matchUl && matchRes;
       if (visible) {
         card.style.removeProperty('display');
@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   userlevelFilter.addEventListener('change', filter);
-  resourceFilter.addEventListener('change', filter);
+  resourceSearch.addEventListener('input', filter);
   filter();
 
   // Save permission changes via AJAX when a checkbox is toggled

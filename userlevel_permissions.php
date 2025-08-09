@@ -48,7 +48,7 @@ if ($res = $conn->query("SELECT id, name FROM resources ORDER BY name")) {
     $res->free();
 }
 
-$sql = "SELECT up.*, ul.userlevelname, r.name FROM userlevel_permissions up JOIN userlevels ul ON up.userlevelid = ul.userlevelid JOIN resources r ON up.resource_id = r.id ORDER BY ul.userlevelname, r.name";
+$sql = "SELECT up.*, ul.userlevelname, r.name FROM userlevel_permissions up JOIN userlevels ul ON up.userlevelid = ul.userlevelid JOIN resources r ON up.resource_id = r.id ORDER BY r.name, ul.userlevelname";
 $permRes = $conn->query($sql);
 ?>
 
@@ -67,18 +67,13 @@ $permRes = $conn->query($sql);
     </select>
   </div>
   <div class="col">
-    <select id="filterResource" class="form-select bg-dark text-white border-secondary">
-      <option value="">Tutte le risorse</option>
-      <?php foreach ($resources as $resItem): ?>
-      <option value="<?= (int)$resItem['id'] ?>"><?= htmlspecialchars($resItem['name']) ?></option>
-      <?php endforeach; ?>
-    </select>
+    <input id="searchResource" type="text" class="form-control bg-dark text-white border-secondary" placeholder="Cerca pagina">
   </div>
 </div>
 
 <div id="permissionsList">
   <?php while ($row = $permRes->fetch_assoc()): ?>
-  <form method="post" class="permission-card movement d-flex justify-content-between align-items-start text-white text-decoration-none bg-dark p-3 mb-2 rounded" data-userlevel="<?= (int)$row['userlevelid'] ?>" data-resource="<?= (int)$row['resource_id'] ?>">
+  <form method="post" class="permission-card movement d-flex justify-content-between align-items-start text-white text-decoration-none bg-dark p-3 mb-2 rounded" data-userlevel="<?= (int)$row['userlevelid'] ?>" data-resource-name="<?= htmlspecialchars(strtolower($row['name'])) ?>">
     <div class="flex-grow-1">
       <div class="fw-semibold"><?= htmlspecialchars($row['userlevelname']) ?></div>
       <div class="small"><?= htmlspecialchars($row['name']) ?></div>
