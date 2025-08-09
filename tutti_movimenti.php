@@ -38,7 +38,21 @@ while ($row = $result->fetch_assoc()) {
     ];
 }
 $ultimoIndice = count($mesi) - 1;
+$anni = [];
+foreach ($mesi as $m) {
+    $y = substr($m['ym'], 0, 4);
+    if (!in_array($y, $anni)) {
+        $anni[] = $y;
+    }
+}
 ?>
+<div class="mb-2">
+    <select id="yearSelector" class="form-select bg-dark text-white border-secondary w-auto">
+        <?php foreach ($anni as $anno): ?>
+            <option value="<?= htmlspecialchars($anno) ?>" <?= $anno == $annoCorrente ? 'selected' : '' ?>><?= htmlspecialchars($anno) ?></option>
+        <?php endforeach; ?>
+    </select>
+</div>
 <div class="months-scroll d-flex mb-3" id="monthsContainer">
     <?php foreach ($mesi as $idx => $m): ?>
         <button class="btn btn-outline-light me-2 <?= $idx === $ultimoIndice ? 'active' : '' ?>" data-mese="<?= htmlspecialchars($m['ym']) ?>">
