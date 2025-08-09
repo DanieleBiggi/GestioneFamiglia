@@ -49,7 +49,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mail->isHTML(true);
             $link = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/reset_password.php?token=' . urlencode($token);
             $mail->Subject = 'Reset password';
-            $mail->Body = '<p>Per reimpostare la password, clicca <a href="' . $link . '">qui</a></p>';
+            $html = file_get_contents(__DIR__ . '/assets/html/codice_verifica.html');
+            $resetButton = '<a href="' . $link . '" style="display:inline-block;padding:15px 25px;background-color:#d32f2f;color:#ffffff;text-decoration:none;border-radius:4px;">Reimposta password</a>';
+            $html = str_replace(['[content]', '[message]'], [$resetButton, 'Per reimpostare la password, clicca sul pulsante seguente:'], $html);
+            $mail->Body = $html;
             $mail->send();
             $success = 'Controlla la tua email per le istruzioni.';
         } catch (Exception $e) {
