@@ -65,6 +65,8 @@ while ($r = $resU->fetch_assoc()) {
 }
 $stmtU->close();
 
+$u2oRows = get_utenti_e_quote_operazione_etichettata($idE2o);
+
 // Lista utenti per la select del modal
 $stmtUt = $conn->prepare('SELECT id, nome, cognome FROM utenti WHERE attivo = 1 ORDER BY nome');
 $stmtUt->execute();
@@ -72,6 +74,7 @@ $resUt = $stmtUt->get_result();
 $listaUtenti = $resUt->fetch_all(MYSQLI_ASSOC);
 $stmtUt->close();
 
+/*
 $count = count($u2oRows) ?: 1;
 foreach ($u2oRows as &$r) {
     $quote         = $r['quote'] !== null ? (float)$r['quote'] : (1 / $count);
@@ -82,6 +85,7 @@ foreach ($u2oRows as &$r) {
     $r['calc_importo'] = calcola_importo_quota($isPagante, $importoUtente, $importoEtic, $importoTot, $quote);
 }
 unset($r);
+*/
 
 $descrizione = $e2o['descrizione_extra'] ?: ($mov['descrizione'] ?? '');
 $amountValue = $e2o['importo'] !== null ? (float)$e2o['importo'] : $mov['amount'];
@@ -112,7 +116,7 @@ $dataOra = date('d/m/Y H:i', strtotime($mov['data_operazione']));
     <?php foreach ($u2oRows as $row): ?>
       <li class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center" role="button" data-u2o-id="<?= (int)$row['id_u2o'] ?>" data-utente-id="<?= (int)$row['id_utente'] ?>" data-quote="<?= $row['quote'] !== null ? htmlspecialchars($row['quote']) : '' ?>" data-saldata="<?= (int)$row['saldata'] ?>" data-data-saldo="<?= htmlspecialchars($row['data_saldo'] ?? '') ?>" onclick="openU2oModal(this)">
         <div class="flex-grow-1"><?= htmlspecialchars($row['nome'] . ' ' . $row['cognome']) ?></div>
-        <div class="text-end me-2" style="min-width:80px;"><?= number_format($row['calc_importo'], 2, ',', '.') ?> €</div>
+        <div class="text-end me-2" style="min-width:80px;"><?= number_format($row['importo_utente'], 2, ',', '.') ?> €</div>
         <button class="btn btn-danger btn-sm ms-2" onclick="event.stopPropagation(); deleteU2o(<?= (int)$row['id_u2o'] ?>)">✕</button>
       </li>
     <?php endforeach; ?>
@@ -142,7 +146,7 @@ $dataOra = date('d/m/Y H:i', strtotime($mov['data_operazione']));
         </div>
       </div>
       <div class="modal-footer">
-        <button type="submit" class="btn btn-primary w-100">Salva</button>
+        <button type="submit" class="btn btn-primary w-100">Salva</button> 
       </div>
     </form>
 </div>
