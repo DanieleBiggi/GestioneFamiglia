@@ -30,11 +30,13 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
 
     // Quote per utente e dati per la modal
     $stmtU = $conn->prepare(
-        "SELECT e2o.id_e2o, e2o.importo AS importo_e2o, e.descrizione AS etichetta_descrizione,
+        "SELECT e2o.id_e2o, e.descrizione AS etichetta_descrizione,
                 u.id AS id_utente, u.nome, u.cognome,
-                u2o.id_u2o, u2o.importo_utente, u2o.quote, u2o.utente_pagante, u2o.saldata, u2o.data_saldo
+                u2o.id_u2o, u2o.importo_utente, u2o.quote, u2o.utente_pagante, u2o.saldata, u2o.data_saldo,
+                v.importo_totale_operazione, v.importo_etichetta
            FROM bilancio_etichette2operazioni e2o
             JOIN bilancio_etichette e ON e.id_etichetta = e2o.id_etichetta
+            JOIN v_bilancio_etichette2operazioni_a_testa v ON v.id_e2o = e2o.id_e2o
             JOIN bilancio_utenti2operazioni_etichettate u2o ON u2o.id_e2o = e2o.id_e2o
             JOIN utenti u ON u.id = u2o.id_utente
           WHERE e2o.id_tabella = ? AND e2o.tabella_operazione = ? AND e2o.id_etichetta = ?"
@@ -43,56 +45,45 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
     $perUser = [];
     if ($stmtU->execute()) {
         $resU = $stmtU->get_result();
-        $groups = [];
         while ($row = $resU->fetch_assoc()) {
-            $idE2o = $row['id_e2o'];
-            if (!isset($groups[$idE2o])) {
-                $groups[$idE2o] = [
-                    'total' => $row['importo_e2o'] !== null ? (float)$row['importo_e2o'] : abs($mov['amount']),
-                    'rows'  => [],
-                    'descrizione' => $row['etichetta_descrizione']
+            $importoTot = (float)($row['importo_totale_operazione'] ?? 0);
+            $importoEtic = (float)($row['importo_etichetta'] ?? 0);
+            $importoUtente = (float)($row['importo_utente'] ?? 0);
+            $quote = (float)($row['quote'] ?? 0);
+            $imp = 0.0;
+            if ($row['utente_pagante']) {
+                if ($importoUtente != 0.0) {
+                    $imp = -$importoUtente;
+                } elseif ($importoEtic != 0.0) {
+                    $imp = -($importoEtic * $quote);
+                } else {
+                    $imp = -($importoTot - ($importoTot * $quote));
+                }
+            } else {
+                if ($importoUtente != 0.0) {
+                    $imp = $importoUtente;
+                } elseif ($importoEtic != 0.0) {
+                    $imp = $importoEtic * $quote;
+                } else {
+                    $imp = $importoTot * $quote;
+                }
+            }
+            $uid = $row['id_utente'];
+            if (!isset($perUser[$uid])) {
+                $perUser[$uid] = [
+                    'nome'    => $row['nome'],
+                    'cognome' => $row['cognome'],
+                    'importo' => 0.0,
+                    'pagante' => false,
+                    'saldata' => true
                 ];
             }
-            if ($row['id_utente']) {
-                $groups[$idE2o]['rows'][] = $row;
+            $perUser[$uid]['importo'] += $imp;
+            if ($row['utente_pagante']) {
+                $perUser[$uid]['pagante'] = true;
             }
-        }
-
-        if ($groups) {
-            foreach ($groups as $idE2o => $g) {
-                $rows  = $g['rows'];
-                $total = $g['total'];
-                $count = count($rows);
-                foreach ($rows as $r) {
-                    $imp = $r['importo_utente'];
-                    if ($imp === null) {
-                        if ($r['quote'] !== null) {
-                            $imp = $total * $r['quote'];
-                        } else {
-                            $imp = $total / $count;
-                        }
-                    }
-                    if ($r['utente_pagante']) {
-                        $imp = -$imp;
-                    }
-                    $uid = $r['id_utente'];
-                    if (!isset($perUser[$uid])) {
-                        $perUser[$uid] = [
-                            'nome'    => $r['nome'],
-                            'cognome' => $r['cognome'],
-                            'importo' => 0,
-                            'pagante' => false,
-                            'saldata' => true
-                        ];
-                    }
-                    $perUser[$uid]['importo'] += $imp;
-                    if ($r['utente_pagante']) {
-                        $perUser[$uid]['pagante'] = true;
-                    }
-                    if (!$r['saldata']) {
-                        $perUser[$uid]['saldata'] = false;
-                    }
-                }
+            if (!$row['saldata']) {
+                $perUser[$uid]['saldata'] = false;
             }
         }
     }
