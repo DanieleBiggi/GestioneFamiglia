@@ -298,4 +298,57 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
 <?php
 }
 
+
+function dividi_operazione_per_etichetta($id_etichetta,$tabella,$id_tabella)
+{
+    $conn = GetConnection();
+    
+    $SQL =
+    "INSERT INTO
+        `bilancio_etichette2operazioni`
+    (
+        `id_etichetta`,
+        `tabella_operazione`,
+        `id_tabella`)
+    VALUE (
+        ".QuotedValue($id_etichetta,DATATYPE_NUMBER).",
+        ".QuotedValue($tabella,DATATYPE_STRING).",
+        ".QuotedValue($id_tabella,DATATYPE_NUMBER).")";
+
+		Execute ($SQL);
+
+    $id_e2o = $conn->Insert_ID();
+
+    $SQLs =
+    "SELECT
+        `utenti_tra_cui_dividere`
+    FROM
+        `bilancio_etichette`
+    WHERE
+        ifnull(`utenti_tra_cui_dividere`,'')!='' AND
+        `id_etichetta` = ".QuotedValue($id_etichetta,DATATYPE_NUMBER);
+
+    $utenti_dividere = ExecuteScalar($SQLs);
+
+    if($utenti_dividere)
+    {
+        $ar_utenti = explode(",",$utenti_dividere);
+
+        foreach($ar_utenti as $id_utente)
+        {
+            $SQL =
+            "INSERT INTO
+                `bilancio_utenti2operazioni_etichettate`
+            (
+                `id_utente`,
+                `id_e2o`)
+            VALUE (
+                ".QuotedValue($id_utente,DATATYPE_NUMBER).",
+                ".QuotedValue($id_e2o,DATATYPE_NUMBER).")";
+
+            Execute($SQL);
+        }
+    }
+}
+
 include 'includes/footer.php';
