@@ -211,6 +211,34 @@ function tipo_label($t) {
     ][$t] ?? $t;
 }
 
+// Dettaglio per utente
+$importoExpr = "(CASE WHEN v.id_utente_operazione = u2o.id_utente THEN -(CASE WHEN IFNULL(u2o.importo_utente, 0) <> 0 THEN u2o.importo_utente WHEN v.importo_etichetta <> 0 THEN (v.importo * u2o.quote) ELSE (v.importo_totale_operazione - (v.importo * u2o.quote)) END) ELSE (CASE WHEN IFNULL(u2o.importo_utente, 0) <> 0 THEN u2o.importo_utente ELSE (v.importo * u2o.quote) END) END)";
+$sqlUsr = "SELECT u.id, CONCAT(u.nome,' ',u.cognome) AS utente,
+                   SUM(CASE WHEN $importoExpr >= 0 THEN $importoExpr ELSE 0 END) AS entrate,
+                   SUM(CASE WHEN $importoExpr < 0 THEN $importoExpr ELSE 0 END) AS uscite
+            FROM bilancio_utenti2operazioni_etichettate u2o
+            JOIN v_bilancio_etichette2operazioni_a_testa v ON u2o.id_e2o = v.id_e2o
+            JOIN bilancio_etichette2operazioni e2o ON e2o.id_e2o = u2o.id_e2o
+            JOIN utenti u ON u.id = u2o.id_utente
+            WHERE e2o.id_etichetta = ?";
+if ($mese !== '') {
+    $sqlUsr .= " AND DATE_FORMAT(v.data_operazione,'%Y-%m')=?";
+}
+$sqlUsr .= " GROUP BY u.id, utente ORDER BY utente";
+$stmtUsr = $conn->prepare($sqlUsr);
+if ($mese !== '') {
+    $stmtUsr->bind_param('ss', $etichettaInfo['id_etichetta'], $mese);
+} else {
+    $stmtUsr->bind_param('s', $etichettaInfo['id_etichetta']);
+}
+$stmtUsr->execute();
+$resUsr = $stmtUsr->get_result();
+$utentiDett = [];
+while ($u = $resUsr->fetch_assoc()) {
+    $utentiDett[] = $u;
+}
+$stmtUsr->close();
+
 // Dettaglio per gruppo
 $sqlGrp = "SELECT m.id_gruppo_transazione, g.descrizione AS gruppo, g.tipo_gruppo,
                   COALESCE(c.descrizione_categoria, 'Nessuna categoria') AS categoria,
@@ -470,7 +498,34 @@ $stmtGrp->close();
       document.getElementById('settleBtn').classList.toggle('d-none');
     }
     </script>
-
+    <?php if (!empty($utentiDett)): ?>
+      <h5 class="mt-4">Dettaglio per utente</h5>
+      <div class="table-responsive">
+        <table class="table table-dark table-striped align-middle table-sm">
+          <thead>
+            <tr>
+              <th>Utente</th>
+              <th class="text-end">Entrate</th>
+              <th class="text-end">Uscite</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($utentiDett as $u): ?>
+              <tr>
+                <td><?= htmlspecialchars($u['utente']) ?></td>
+                <td class="text-end text-nowrap"><?= ($u['entrate'] > 0 ? '+' : '') . number_format($u['entrate'], 2, ',', '.') ?> €</td>
+                <td class="text-end text-nowrap"><?= number_format($u['uscite'], 2, ',', '.') ?> €</td>
+              </tr>
+            <?php endforeach; ?>
+            <tr>
+              <td>Totali</td>
+              <td class="text-end text-nowrap"><?= '+' . number_format($totali['entrate'] ?? 0, 2, ',', '.') ?> €</td>
+              <td class="text-end text-nowrap"><?= number_format($totali['uscite'] ?? 0, 2, ',', '.') ?> €</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    <?php endif; ?>
 
     <?php if (!empty($gruppi)): ?>
       <h5 class="mt-4">Dettaglio per gruppo</h5>
