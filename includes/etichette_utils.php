@@ -83,17 +83,18 @@ function get_saldo_e_movimenti_utente($idUtente)
                     v.data_operazione,
                     v.descrizione AS etichetta_descrizione,
                     (CASE
-                        WHEN v.id_utente_operazione = u2o.id_utente THEN -(
+                        WHEN u2o.utente_pagante = 1 THEN -(
                             CASE
                                 WHEN IFNULL(u2o.importo_utente, 0) <> 0 THEN u2o.importo_utente
-                                WHEN v.importo_etichetta <> 0 THEN (v.importo * u2o.quote)
-                                ELSE (v.importo_totale_operazione - (v.importo * u2o.quote))
+                                WHEN v.importo_etichetta <> 0 THEN (v.importo_etichetta * u2o.quote)
+                                ELSE (v.importo_totale_operazione - (v.importo_totale_operazione * u2o.quote))
                             END
                         )
                         ELSE (
                             CASE
                                 WHEN IFNULL(u2o.importo_utente, 0) <> 0 THEN u2o.importo_utente
-                                ELSE (v.importo * u2o.quote)
+                                WHEN v.importo_etichetta <> 0 THEN (v.importo_etichetta * u2o.quote)
+                                ELSE (v.importo_totale_operazione * u2o.quote)
                             END
                         )
                     END) AS saldo_utente
@@ -114,17 +115,18 @@ function get_saldo_e_movimenti_utente($idUtente)
         if ($isAdmin) {
             $stmtDet = $conn->prepare("SELECT u2o.id_u2o, u.nome, u.cognome,
                     (CASE
-                        WHEN v.id_utente_operazione = u2o.id_utente THEN -(
+                        WHEN u2o.utente_pagante = 1 THEN -(
                             CASE
                                 WHEN IFNULL(u2o.importo_utente, 0) <> 0 THEN u2o.importo_utente
-                                WHEN v.importo_etichetta <> 0 THEN (v.importo * u2o.quote)
-                                ELSE (v.importo_totale_operazione - (v.importo * u2o.quote))
+                                WHEN v.importo_etichetta <> 0 THEN (v.importo_etichetta * u2o.quote)
+                                ELSE (v.importo_totale_operazione - (v.importo_totale_operazione * u2o.quote))
                             END
                         )
                         ELSE (
                             CASE
                                 WHEN IFNULL(u2o.importo_utente, 0) <> 0 THEN u2o.importo_utente
-                                ELSE (v.importo * u2o.quote)
+                                WHEN v.importo_etichetta <> 0 THEN (v.importo_etichetta * u2o.quote)
+                                ELSE (v.importo_totale_operazione * u2o.quote)
                             END
                         )
                     END) AS importo,

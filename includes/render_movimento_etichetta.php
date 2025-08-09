@@ -40,7 +40,6 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
           WHERE e2o.id_tabella = ? AND e2o.tabella_operazione = ? AND e2o.id_etichetta = ?"
     );
     $stmtU->bind_param('isi', $mov['id'], $mov['tabella'], $id_etichetta);
-    $rowsJson = '[]';
     $perUser = [];
     if ($stmtU->execute()) {
         $resU = $stmtU->get_result();
@@ -94,22 +93,21 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
                         $perUser[$uid]['saldata'] = false;
                     }
                 }
-                if (!empty($mov['id_e2o']) && $mov['id_e2o'] == $idE2o) {
-                    $rowsJson = htmlspecialchars(json_encode($rows, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP));
-                }
             }
         }
     }
     $stmtU->close();
 
     $rowId = 'mov-' . $mov['tabella'] . '-' . $mov['id'];
-    echo '<div id="' . $rowId . '" class="movement d-flex align-items-start text-white text-decoration-none" style="cursor:pointer" data-id-e2o="' . htmlspecialchars($mov['id_e2o'] ?? '', ENT_QUOTES) . '" data-rows="' . $rowsJson . '" onclick="openU2oModal(this)">';
+    $idE2o = $mov['id_e2o'] ?? ($info['id_e2o'] ?? 0);
+    $dest = 'etichetta_dettaglio_movimento.php?id=' . (int)$idE2o;
+    echo '<div id="' . $rowId . '" class="movement d-flex align-items-start text-white text-decoration-none" style="cursor:pointer" onclick="window.location.href=\'' . $dest . '\'">';
     if ($isAdmin) {
         echo '<input type="checkbox" class="form-check-input me-2 settle-checkbox d-none d-md-inline" onclick="event.stopPropagation();">';
     }
     echo '  <img src="' . htmlspecialchars($icon) . '" alt="src" class="me-2 flex-shrink-0" style="width:24px;height:24px">';
     echo '  <div class="flex-grow-1 me-3" style="min-width:0">';
-    echo '    <div class="descr fw-semibold text-truncate">' . htmlspecialchars($descrizione) . '</div>';
+    echo '    <div class="descr fw-semibold">' . htmlspecialchars($descrizione) . '</div>';
     echo '    <div class="small">' . $dataOra . '</div>';
     if ($perUser) {
         echo '    <div class="mt-1">';
@@ -125,13 +123,6 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
     echo '  </div>';
     echo '  <div class="text-end">';
     echo '    <div class="amount text-white text-nowrap">' . ($amountValue >= 0 ? '+' : '') . $importo . ' €</div>';
-    $idE2oAttr = htmlspecialchars($info['id_e2o'] ?? '', ENT_QUOTES);
-    $descAttr = htmlspecialchars($info['descrizione_extra'] ?? '', ENT_QUOTES);
-    $impAttr = htmlspecialchars($info['importo'] ?? '', ENT_QUOTES);
-    $allAttr = htmlspecialchars($info['allegato'] ?? '', ENT_QUOTES);
-    $rowAttr = htmlspecialchars($rowId, ENT_QUOTES);
-    echo '    <button class="btn btn-sm btn-link text-white edit-e2o" data-id-e2o="' . $idE2oAttr . '" data-descrizione-extra="' . $descAttr . '" data-importo="' . $impAttr . '" data-allegato="' . $allAttr . '" data-row-id="' . $rowAttr . '" onclick="event.stopPropagation();"><i class="bi bi-pencil"></i></button>';
-    echo '    <button class="btn btn-sm btn-link text-danger delete-e2o" data-id-e2o="' . $idE2oAttr . '" data-row-id="' . $rowAttr . '" onclick="event.stopPropagation();"><i class="bi bi-trash"></i></button>';
     echo '  </div>';
     echo '</div>';
 
