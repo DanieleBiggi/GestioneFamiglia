@@ -39,7 +39,7 @@ if (!$etichettaInfo) {
 // Recupera utenti attivi della famiglia corrente per la selezione
 $listaUtenti = [];
 $famigliaId = $_SESSION['id_famiglia_gestione'] ?? 0;
-$stmtUt = $conn->prepare('SELECT u.id, u.nome, u.cognome FROM utenti u JOIN utenti2famiglie u2f ON u.id = u2f.id_utente WHERE u2f.id_famiglia = ? AND u.attivo = 1 ORDER BY u.nome');
+$stmtUt = $conn->prepare('SELECT u.id, u.nome, u.cognome FROM utenti u JOIN utenti2famiglie u2f ON u.id = u2f.id_utente WHERE u2f.id_famiglia = ? AND u.attivo = 1 AND u2f.attivo = 1 ORDER BY u.nome');
 $stmtUt->bind_param('i', $famigliaId);
 $stmtUt->execute();
 $resUt = $stmtUt->get_result();
@@ -358,12 +358,28 @@ $stmtGrp->close();
         const div = document.createElement('div');
         div.className = 'row g-2 align-items-center mb-2 u2o-row';
         div.dataset.id = r.id_u2o;
-        div.dataset.utenteId = r.id_utente;
+        let options = '<option value="">Seleziona utente</option>';
+        listaUtenti.forEach(u => {
+          const selected = u.id == r.id_utente ? 'selected' : '';
+          options += `<option value="${u.id}" ${selected}>${u.nome} ${u.cognome}</option>`;
+        });
         div.innerHTML = `
-          <div class="col-12 col-sm-4">${r.nome} ${r.cognome}${r.utente_pagante == 1 ? ' (P)' : ''}</div>
-          <div class="col-6 col-sm-3"><input type="number" step="0.01" class="form-control form-control-sm" value="${r.importo_utente ?? ''}"></div>
-          <div class="col-6 col-sm-2 text-center"><input type="checkbox" class="form-check-input" ${r.saldata == 1 ? 'checked' : ''}></div>
-          <div class="col-6 col-sm-3"><input type="date" class="form-control form-control-sm" value="${r.data_saldo ? r.data_saldo.substring(0,10) : ''}"></div>
+          <div class="col-12 col-sm-4">
+            <label class="form-label d-sm-none">Utente</label>
+            <select class="form-select form-select-sm">${options}</select>
+          </div>
+          <div class="col-6 col-sm-3">
+            <label class="form-label d-sm-none">Importo</label>
+            <input type="number" step="0.01" class="form-control form-control-sm" value="${r.importo_utente ?? ''}">
+          </div>
+          <div class="col-6 col-sm-2 text-center">
+            <label class="form-label d-sm-none">Saldo</label>
+            <input type="checkbox" class="form-check-input" ${r.saldata == 1 ? 'checked' : ''}>
+          </div>
+          <div class="col-6 col-sm-3">
+            <label class="form-label d-sm-none">Data</label>
+            <input type="date" class="form-control form-control-sm" value="${r.data_saldo ? r.data_saldo.substring(0,10) : ''}">
+          </div>
           <div class="col-6 col-sm-1 text-end"><button type="button" class="btn btn-sm btn-danger" onclick="deleteU2oRow(this)">&times;</button></div>
         `;
         container.appendChild(div);
@@ -381,10 +397,22 @@ $stmtGrp->close();
         options += `<option value="${u.id}">${u.nome} ${u.cognome}</option>`;
       });
       div.innerHTML = `
-        <div class="col-12 col-sm-4"><select class="form-select form-select-sm">${options}</select></div>
-        <div class="col-6 col-sm-3"><input type="number" step="0.01" class="form-control form-control-sm"></div>
-        <div class="col-6 col-sm-2 text-center"><input type="checkbox" class="form-check-input"></div>
-        <div class="col-6 col-sm-3"><input type="date" class="form-control form-control-sm"></div>
+        <div class="col-12 col-sm-4">
+          <label class="form-label d-sm-none">Utente</label>
+          <select class="form-select form-select-sm">${options}</select>
+        </div>
+        <div class="col-6 col-sm-3">
+          <label class="form-label d-sm-none">Importo</label>
+          <input type="number" step="0.01" class="form-control form-control-sm">
+        </div>
+        <div class="col-6 col-sm-2 text-center">
+          <label class="form-label d-sm-none">Saldo</label>
+          <input type="checkbox" class="form-check-input">
+        </div>
+        <div class="col-6 col-sm-3">
+          <label class="form-label d-sm-none">Data</label>
+          <input type="date" class="form-control form-control-sm">
+        </div>
         <div class="col-6 col-sm-1 text-end"><button type="button" class="btn btn-sm btn-danger" onclick="deleteU2oRow(this)">&times;</button></div>
       `;
       container.appendChild(div);
@@ -415,7 +443,7 @@ $stmtGrp->close();
         const importo = row.querySelector('input[type="number"]').value;
         const saldata = row.querySelector('input[type="checkbox"]').checked ? 1 : 0;
         const dataSaldo = row.querySelector('input[type="date"]').value;
-        const utenteId = row.dataset.utenteId || row.querySelector('select')?.value;
+        const utenteId = row.querySelector('select').value;
         rows.push({id_u2o: id, id_e2o: currentIdE2o, id_utente: utenteId, importo_utente: importo, saldata: saldata, data_saldo: dataSaldo});
       });
       fetch('ajax/update_utenti2operazioni_etichettate.php', {
@@ -657,7 +685,7 @@ document.getElementById('editE2oForm').addEventListener('submit', function(e){
       body: JSON.stringify(payload)
     }).then(r => r.json()).then(resp => {
       if (resp.success) {
-        window.location.href = 'etichetta.php?etichetta=' + encodeURIComponent(payload.descrizione);
+        window.location.href = 'etichetta.php?id_etichetta=' + encodeURIComponent(etichettaData.id);
       } else {
         alert(resp.error || 'Errore nel salvataggio');
       }
