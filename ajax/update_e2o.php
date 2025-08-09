@@ -24,6 +24,8 @@ if (!$info) {
     exit;
 }
 
+$id_etichetta = intval($_POST['id_etichetta'] ?? $info['id_etichetta']);
+
 $allegato = $info['allegato'];
 if (!empty($_FILES['allegato']['name'])) {
     $dir = __DIR__ . '/../uploads';
@@ -37,9 +39,9 @@ if (!empty($_FILES['allegato']['name'])) {
     }
 }
 
-$sql = "UPDATE bilancio_etichette2operazioni SET descrizione_extra = ?, importo = ?, allegato = ? WHERE id_e2o = ?";
+$sql = "UPDATE bilancio_etichette2operazioni SET id_etichetta = ?, descrizione_extra = ?, importo = ?, allegato = ? WHERE id_e2o = ?";
 $stmtU = $conn->prepare($sql);
-$stmtU->bind_param('sdsi', $descrizione_extra, $importo, $allegato, $id_e2o);
+$stmtU->bind_param('isdsi', $id_etichetta, $descrizione_extra, $importo, $allegato, $id_e2o);
 $success = $stmtU->execute();
 $stmtU->close();
 
@@ -70,7 +72,7 @@ if ($success) {
 
 if ($mov) {
     ob_start();
-    render_movimento_etichetta($mov, (int)$info['id_etichetta']);
+    render_movimento_etichetta($mov, (int)$id_etichetta);
     $html = ob_get_clean();
     echo json_encode(['success' => true, 'html' => $html, 'rowId' => 'mov-' . $mov['tabella'] . '-' . $mov['id']]);
 } else {
