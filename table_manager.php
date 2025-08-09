@@ -81,7 +81,6 @@ include 'includes/header.php';
       <?php foreach ($displayColumns as $col): ?>
       <th><?= htmlspecialchars(format_label($col)) ?></th>
       <?php endforeach; ?>
-      <th>Azioni</th>
     </tr>
   </thead>
   <tbody></tbody>
@@ -124,6 +123,7 @@ include 'includes/header.php';
           <?php endforeach; ?>
         </div>
         <div class="modal-footer">
+          <button type="button" id="deleteBtn" class="btn btn-danger me-auto <?= $canDelete ? '' : 'd-none' ?>">Elimina</button>
           <button type="button" id="cancelBtn" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
           <button type="submit" class="btn btn-primary">Salva</button>
         </div>
