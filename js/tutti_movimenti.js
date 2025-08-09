@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const movimenti = document.getElementById('movimenti');
     let minIdx = mesi.length - 1;
     let maxIdx = mesi.length - 1;
+    // Evita il caricamento automatico dovuto allo scroll programmato
+    let suppressScrollLoad = false;
 
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -58,7 +60,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     movimenti.insertAdjacentHTML('afterbegin', html);
                 } else {
                     movimenti.innerHTML = html;
+                    // Imposta un flag per ignorare l'evento scroll generato dal repositioning
+                    suppressScrollLoad = true;
                     window.scrollTo({ top: 0 });
+                    // Rimuove il flag dopo il completamento dello scroll
+                    setTimeout(() => { suppressScrollLoad = false; }, 100);
                 }
                 observeSections();
                 bindMovimenti();
@@ -123,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadInitial();
 
     window.addEventListener('scroll', () => {
+        if (suppressScrollLoad) return;
         if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 50) {
             if (minIdx > 0) {
                 minIdx--;
