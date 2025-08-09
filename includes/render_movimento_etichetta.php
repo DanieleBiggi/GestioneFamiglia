@@ -48,7 +48,7 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
         foreach ($perUser as $u) {
             $name = htmlspecialchars(trim(($u['nome'] ?? '') . ' ' . ($u['cognome'] ?? '')));
             $amt  = number_format($u['importo'], 2, ',', '.');
-            $class = $u['pagante'] ? 'badge bg-success' : 'badge bg-secondary';
+            $class = $u['saldata'] ? 'badge bg-success' : 'badge bg-secondary';
             $status = $u['saldata'] ? '✔' : '✖';
             echo "<span class='" . $class . " me-1'>$name $amt € $status</span>";
         }
