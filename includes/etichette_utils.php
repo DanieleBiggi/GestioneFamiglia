@@ -73,6 +73,7 @@ function get_utenti_e_quote_operazione_etichettata($id_e2o)
         "SELECT
         	e2o.id_e2o,
             v.descrizione,
+            v.id_gruppo_transazione,
             u.id AS id_utente,
             u.nome,
             u.cognome,
@@ -105,6 +106,7 @@ function get_utenti_e_quote_operazione_etichettata($id_e2o)
             WHEN (be2o.tabella_operazione = 'mr') THEN 1 
             ELSE NULL 
         END))) AS id_utente_operazione,
+        COALESCE(bu.id_gruppo_transazione,ben.id_gruppo_transazione,mh.id_gruppo_transazione,mr.id_gruppo_transazione) AS id_gruppo_transazione,
     IFNULL(bu.descrizione_operazione, IFNULL(ben.descrizione_operazione, 
         CONVERT(CONVERT(IFNULL(mh.descrizione, mr.description) USING utf8) USING utf8mb4))) AS descrizione_operazione,
     IFNULL(bu.data_operazione, IFNULL(ben.data_operazione, IFNULL(mh.data_operazione, mr.started_date))) AS data_operazione,
