@@ -178,40 +178,42 @@ include 'includes/header.php';
     </li>
 
     <!-- Campo modificabile: descrizione_extra -->
-    <li class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center">
+    <li class="list-group-item bg-dark text-white d-flex align-items-center">
       <span>Descrizione Extra</span>
-      <span>
-        <?= htmlspecialchars($movimento['descrizione_extra']) ?>
+      <div class="ms-auto d-flex align-items-center">
+        <span class="text-end"><?= htmlspecialchars($movimento['descrizione_extra']) ?></span>
         <i class="bi bi-pencil ms-2" onclick="openModal('descrizione_extra', '<?= htmlspecialchars($movimento['descrizione_extra'], ENT_QUOTES) ?>')"></i>
-      </span>
+      </div>
     </li>
 
     <!-- Campo modificabile: note -->
-    <li class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center">
+    <li class="list-group-item bg-dark text-white d-flex align-items-center">
       <span>Note</span>
-      <span>
-        <?= htmlspecialchars($movimento['note']) ?>
+      <div class="ms-auto d-flex align-items-center">
+        <span class="text-end"><?= htmlspecialchars($movimento['note']) ?></span>
         <i class="bi bi-pencil ms-2" onclick="openModal('note', '<?= htmlspecialchars($movimento['note'], ENT_QUOTES) ?>')"></i>
-      </span>
+      </div>
     </li>
 
     <!-- Campo modificabile: gruppo transazione -->
-    <li class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center">
+    <li class="list-group-item bg-dark text-white d-flex align-items-center">
       <span>Gruppo</span>
-      <span>
-        <?= htmlspecialchars($movimento['gruppo_descrizione']) ?>
-        <small>(<?= htmlspecialchars($movimento['categoria_descrizione']) ?> - <?= htmlspecialchars($movimento['tipo_gruppo_label']) ?>)</small>
+      <div class="ms-auto d-flex align-items-center">
+        <span class="text-end">
+          <?= htmlspecialchars($movimento['gruppo_descrizione']) ?>
+          <small>(<?= htmlspecialchars($movimento['categoria_descrizione']) ?> - <?= htmlspecialchars($movimento['tipo_gruppo_label']) ?>)</small>
+        </span>
         <i class="bi bi-pencil ms-2" onclick="openGruppiModal(<?= $movimento['id_gruppo_transazione'] ?>)"></i>
-      </span>
+      </div>
     </li>
 
     <!-- Campo modificabile: etichette -->
-    <li class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center">
+    <li class="list-group-item bg-dark text-white d-flex align-items-center">
       <span>Etichette</span>
-      <span>
-        <?= htmlspecialchars($movimento['etichette']) ?>
+      <div class="ms-auto d-flex align-items-center">
+        <span class="text-end"><?= htmlspecialchars($movimento['etichette']) ?></span>
         <i class="bi bi-pencil ms-2" onclick="openEtichetteModal()"></i>
-      </span>
+      </div>
     </li>
   </ul>
   <?php if (in_array($src, ['bilancio_entrate', 'bilancio_uscite'], true) && ($movimento['mezzo'] ?? '') === 'contanti'): ?>
@@ -303,8 +305,11 @@ let filtroEtichette = '';
 
 function openModal(field, value) {
   document.getElementById('fieldName').value = field;
-  document.getElementById('fieldValue').value = value;
-  new bootstrap.Modal(document.getElementById('editModal')).show();
+  const textarea = document.getElementById('fieldValue');
+  textarea.value = value;
+  const modalEl = document.getElementById('editModal');
+  modalEl.addEventListener('shown.bs.modal', () => textarea.focus(), { once: true });
+  new bootstrap.Modal(modalEl).show();
 }
 
 function saveField(event) {
