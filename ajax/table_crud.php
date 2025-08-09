@@ -43,7 +43,16 @@ switch ($action) {
         }
         $stmt->execute();
         $result = $stmt->get_result();
-        echo json_encode($result->fetch_all(MYSQLI_ASSOC));
+        $dati = $result->fetch_all(MYSQLI_ASSOC);
+        //print_r($dati);
+        foreach ($dati as &$row) {
+            array_walk_recursive($row, function(&$value) {
+                $value = utf8_encode($value);  // Codifica i valori in UTF-8
+            });
+        }
+        
+        echo json_encode($dati, JSON_UNESCAPED_UNICODE);
+        //echo json_encode($dati);
         break;
     case 'insert':
         $data = [];
