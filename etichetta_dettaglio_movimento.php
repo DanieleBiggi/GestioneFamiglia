@@ -67,16 +67,20 @@ $resUt = $stmtUt->get_result();
 $listaUtenti = $resUt->fetch_all(MYSQLI_ASSOC);
 $stmtUt->close();
 
-$total = $e2o['importo'] !== null ? (float)$e2o['importo'] : abs($mov['amount']);
-$count = count($u2oRows) ?: 1;
+$importoEtichetta = $e2o['importo'] !== null ? (float)$e2o['importo'] : 0;
+$importoTotale    = abs($mov['amount']);
+$count            = count($u2oRows) ?: 1;
 foreach ($u2oRows as &$r) {
-    $imp = $r['importo_utente'];
-    if ($imp === null) {
-        if ($r['quote'] !== null) {
-            $imp = $total * $r['quote'];
-        } else {
-            $imp = $total / $count;
-        }
+    $hasImpUtente = ($r['importo_utente'] !== null && (float)$r['importo_utente'] != 0);
+    $quote        = $r['quote'] !== null ? (float)$r['quote'] : (1 / $count);
+    if ($hasImpUtente) {
+        $imp = (float)$r['importo_utente'];
+    } elseif ($importoEtichetta != 0) {
+        $imp = $importoEtichetta * $quote;
+    } elseif ($r['utente_pagante']) {
+        $imp = $importoTotale - ($importoTotale * $quote);
+    } else {
+        $imp = $importoTotale * $quote;
     }
     if ($r['utente_pagante']) {
         $imp = -$imp;
@@ -108,7 +112,7 @@ $dataOra = date('d/m/Y H:i', strtotime($mov['data_operazione']));
   </div>
   <div class="d-flex justify-content-between align-items-center mb-2">
     <h5 class="mb-0">Quote utenti</h5>
-    <button class="btn btn-sm btn-primary" onclick="openU2oModal()">Aggiungi nuovo</button>
+    <button class="btn btn-outline-light" onclick="openU2oModal()">Aggiungi nuovo</button>
   </div>
   <ul class="list-group list-group-flush bg-dark mb-3" id="u2oList">
     <?php foreach ($u2oRows as $row): ?>
