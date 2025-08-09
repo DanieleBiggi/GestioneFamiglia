@@ -30,11 +30,11 @@ switch ($e2o['tabella_operazione']) {
         $stmtM->bind_param('i', $e2o['id_tabella']);
         break;
     case 'bilancio_entrate':
-        $stmtM = $conn->prepare("SELECT descrizione_operazione AS descrizione, descrizione_extra, data_operazione, importo AS amount FROM bilancio_entrate WHERE id_entrata = ?");
+        $stmtM = $conn->prepare("SELECT COALESCE(NULLIF(descrizione_extra,''), descrizione_operazione) AS descrizione, descrizione_extra, data_operazione, importo AS amount FROM bilancio_entrate WHERE id_entrata = ?");
         $stmtM->bind_param('i', $e2o['id_tabella']);
         break;
     case 'bilancio_uscite':
-        $stmtM = $conn->prepare("SELECT descrizione_operazione AS descrizione, descrizione_extra, data_operazione, -importo AS amount FROM bilancio_uscite WHERE id_uscita = ?");
+        $stmtM = $conn->prepare("SELECT COALESCE(NULLIF(descrizione_extra,''), descrizione_operazione) AS descrizione, descrizione_extra, data_operazione, -importo AS amount FROM bilancio_uscite WHERE id_uscita = ?");
         $stmtM->bind_param('i', $e2o['id_tabella']);
         break;
     default:
