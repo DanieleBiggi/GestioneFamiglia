@@ -243,7 +243,7 @@ include 'includes/header.php';
 <!-- Gruppi modal -->
 <div class="modal fade" id="gruppiModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
-    <form class="modal-content bg-dark text-white" onsubmit="saveField(event)">
+    <form class="modal-content bg-dark text-white" onsubmit="saveGroup(event)">
       <div class="modal-header">
         <h5 class="modal-title">Seleziona gruppo</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -315,6 +315,25 @@ function openModal(field, value) {
 function saveField(event) {
   event.preventDefault();
   const fieldEl = document.getElementById('fieldName') || document.getElementById('groupFieldName');
+  const field = fieldEl ? fieldEl.value : '';
+  let value;
+  if (field === 'id_gruppo_transazione') {
+    const checked = document.querySelector('#gruppiList input[name="gruppo"]:checked');
+    value = checked ? checked.value : null;
+  } else {
+    value = document.getElementById('fieldValue').value;
+  }
+
+  fetch('ajax/update_field.php', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ id: idMovimento, field, value, src: srcMovimento })
+  }).then(() => location.reload());
+}
+
+function saveGroup(event) {
+  event.preventDefault();
+  const fieldEl = document.getElementById('groupFieldName');
   const field = fieldEl ? fieldEl.value : '';
   let value;
   if (field === 'id_gruppo_transazione') {
