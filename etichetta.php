@@ -307,7 +307,7 @@ $stmtGrp->close();
     </div>
   </form>
 
-  <div class="d-flex gap-4 mb-4 align-items-center flex-wrap">
+  <div class=" gap-4 mb-4 flex-wrap">
     <?php if ($movimenti->num_rows > 0): ?>
       <?php while ($mov = $movimenti->fetch_assoc()): ?>
         <?php render_movimento_etichetta($mov,$etichettaInfo['id_etichetta']); ?>
