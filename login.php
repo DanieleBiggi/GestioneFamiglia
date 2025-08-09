@@ -17,7 +17,8 @@ if (isset($_COOKIE['device_token'])) {
     $res = $stmt->get_result();
     if ($res->num_rows === 1) {
         $row = $res->fetch_assoc();
-        if (!isset($_GET['scelta_login']) && ($row['user_agent'] ?? '') === ($_SERVER['HTTP_USER_AGENT'] ?? '') && ($row['ip'] ?? '') === ($_SERVER['REMOTE_ADDR'] ?? '')) {
+        // && ($row['ip'] ?? '') === ($_SERVER['REMOTE_ADDR'] ?? '')
+        if (!isset($_GET['scelta_login']) && ($row['user_agent'] ?? '') === ($_SERVER['HTTP_USER_AGENT'] ?? '')) {
             header('Location: login_passcode.php');
             exit;
         }
