@@ -64,8 +64,48 @@ function eliminaEtichetteCollegate(string $tabella_operazione, int $id_tabella):
     }
 }
 
+/**
+ * Calcola l'importo spettante a un utente in base alle quote e al pagante.
+ *
+ * La logica riprende quella utilizzata nella funzione get_saldo_e_movimenti_utente
+ * per determinare il saldo di ciascun utente.
+ *
+ * @param bool  $isPagante        True se l'utente ha effettuato l'operazione.
+ * @param float $importoUtente    Importo specifico assegnato all'utente.
+ * @param float $importoEtichetta Importo complessivo dell'etichetta (se diverso dal totale).
+ * @param float $importoTotale    Importo totale dell'operazione.
+ * @param float $quota            Quota dell'utente.
+ *
+ * @return float Importo calcolato per l'utente (positivo per credito, negativo per debito).
+ */
+function calcola_importo_quota(
+    bool $isPagante,
+    float $importoUtente,
+    float $importoEtichetta,
+    float $importoTotale,
+    float $quota
+): float {
+    if ($isPagante) {
+        if ($importoUtente != 0.0) {
+            return -$importoUtente;
+        }
+        if ($importoEtichetta != 0.0) {
+            return -($importoEtichetta * $quota);
+        }
+        return -($importoTotale - ($importoTotale * $quota));
+    }
+
+    if ($importoUtente != 0.0) {
+        return $importoUtente;
+    }
+    if ($importoEtichetta != 0.0) {
+        return $importoEtichetta * $quota;
+    }
+    return $importoTotale * $quota;
+}
+
 function get_saldo_e_movimenti_utente($idUtente)
-{ 
+{
     global $conn;
     $loggedUserId = $_SESSION['utente_id'] ?? 0;
     $famigliaId   = $_SESSION['id_famiglia_gestione'] ?? 0;

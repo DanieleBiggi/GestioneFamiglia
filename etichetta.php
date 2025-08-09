@@ -5,6 +5,7 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 require_once 'includes/db.php';
 require_once 'includes/render_movimento_etichetta.php';
+require_once 'includes/etichette_utils.php';
 include 'includes/header.php';
 setlocale(LC_TIME, 'it_IT.UTF-8');
 
