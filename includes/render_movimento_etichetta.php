@@ -101,11 +101,11 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
     $rowId = 'mov-' . $mov['tabella'] . '-' . $mov['id'];
     $idE2o = $mov['id_e2o'] ?? ($info['id_e2o'] ?? 0);
     $dest = 'etichetta_dettaglio_movimento.php?id=' . (int)$idE2o;
-    echo '<div id="' . $rowId . '" class="movement d-flex align-items-start text-white text-decoration-none" style="cursor:pointer" onclick="window.location.href=\'' . $dest . '\'">';
+    echo '<div id="' . $rowId . '" class="movement d-flex align-items-stretch text-white text-decoration-none" style="cursor:pointer" onclick="window.location.href=\'' . $dest . '\'">';
     if ($isAdmin) {
-        echo '<input type="checkbox" class="form-check-input me-2 settle-checkbox d-none d-md-inline" onclick="event.stopPropagation();">';
+        echo '<input type="checkbox" class="form-check-input me-2 settle-checkbox" style="min-width:1rem;height:1rem;" onclick="event.stopPropagation();">';
     }
-    echo '  <img src="' . htmlspecialchars($icon) . '" alt="src" class="me-2 flex-shrink-0" style="width:24px;height:24px">';
+    
     echo '  <div class="flex-grow-1 me-3" style="min-width:0">';
     echo '    <div class="descr fw-semibold">' . htmlspecialchars($descrizione) . '</div>';
     echo '    <div class="small">' . $dataOra . '</div>';
@@ -121,9 +121,10 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
         echo '    </div>';
     }
     echo '  </div>';
-    echo '  <div class="text-end">';
+    echo '  <div class="text-end d-flex flex-column ms-3 align-items-end h-100">';
     echo '    <div class="amount text-white text-nowrap">' . ($amountValue >= 0 ? '+' : '') . $importo . ' €</div>';
-    echo '  </div>';
+    echo '    <img src="' . htmlspecialchars($icon) . '" alt="src" class="flex-shrink-0 mt-auto" style="width:24px;height:24px">';
+    echo '  </div></div>';
     echo '</div>';
 
 }
