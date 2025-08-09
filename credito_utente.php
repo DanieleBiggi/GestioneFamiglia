@@ -99,7 +99,10 @@ uasort($totaliEtichette, function ($a, $b) {
    <div class="mb-4">Saldo totale: <span><?= ($saldoTot>=0?'+':'') . number_format($saldoTot, 2, ',', '.') ?> €</span></div>
 
    <?php if ($isAdmin): ?>
-     <button id="saldaBtn" class="btn btn-outline-light mb-3">Salda movimenti</button>
+     <div class="d-flex align-items-center mb-3">
+       <button id="saldaBtn" class="btn btn-outline-light">Salda movimenti</button>
+       <div id="totaleSelezionati" class="ms-auto"></div>
+     </div>
    <?php endif; ?>
 
   <?php if (!empty($movimenti)): ?>
@@ -107,7 +110,7 @@ uasort($totaliEtichette, function ($a, $b) {
       <?php $rowsAttr = $isAdmin ? htmlspecialchars(json_encode($mov['rows'] ?? []), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : ''; ?>
       <div class="movement d-flex justify-content-between align-items-start text-white mb-2" data-tabella="<?= htmlspecialchars($mov['tabella']) ?>" data-id-tabella="<?= (int)$mov['id_tabella'] ?>" <?php if ($isAdmin): ?>data-rows='<?= $rowsAttr ?>'<?php endif; ?> onclick="openMovimento(this)" style="cursor:pointer">
         <?php if ($isAdmin): ?>
-          <input type="checkbox" class="form-check-input me-2 flex-shrink-0" style="width:1.25rem;height:1.25rem;" data-id-u2o="<?= $mov['id_u2o'] ?>" onclick="event.stopPropagation();">
+          <input type="checkbox" class="form-check-input me-2 flex-shrink-0" style="width:1.25rem;height:1.25rem;" data-id-u2o="<?= $mov['id_u2o'] ?>" data-amount="<?= $mov['saldo_utente'] ?>" onclick="event.stopPropagation();">
         <?php endif; ?>
         <div class="flex-grow-1 me-3" style="max-width:calc(100% - 8rem);">
           <div class="descr fw-semibold text-break"><?= htmlspecialchars($mov['descrizione']) ?></div>
@@ -205,6 +208,23 @@ uasort($totaliEtichette, function ($a, $b) {
   }
 
   <?php if ($isAdmin): ?>
+  const totaleEl = document.getElementById('totaleSelezionati');
+  function updateSelectedTotal() {
+    const checked = document.querySelectorAll('.movement input[type="checkbox"]:checked');
+    let tot = 0;
+    checked.forEach(cb => {
+      tot += parseFloat(cb.dataset.amount) || 0;
+    });
+    if (checked.length > 0) {
+      totaleEl.textContent = 'Totale selezionato: ' + tot.toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+    } else {
+      totaleEl.textContent = '';
+    }
+  }
+  document.querySelectorAll('.movement input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', updateSelectedTotal);
+  });
+
   document.getElementById('saldaBtn').addEventListener('click', () => {
     const checked = document.querySelectorAll('.movement input[type="checkbox"]:checked');
     if (checked.length === 0) {
@@ -227,6 +247,7 @@ uasort($totaliEtichette, function ($a, $b) {
         return;
       }
       checked.forEach(cb => cb.closest('.movement').remove());
+      updateSelectedTotal();
       bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
     });
   });
