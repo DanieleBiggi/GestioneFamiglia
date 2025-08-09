@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-            if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+            if (entry.isIntersecting) {
                 const ym = entry.target.dataset.mese;
                 const idx = mesi.indexOf(ym);
                 if (idx !== -1) {
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
-    }, { threshold: 0.6 });
+    }, { rootMargin: '-50% 0px -50% 0px', threshold: 0 });
 
     const observeSections = () => {
         document.querySelectorAll('.month-section').forEach(sec => {
@@ -79,8 +79,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     buttons.forEach((btn, idx) => {
         btn.addEventListener('click', () => {
+            suppressScrollLoad = true;
             minIdx = maxIdx = idx;
-            loadMovimenti(idx);
+            loadMovimenti(idx).then(() => {
+                setTimeout(() => { suppressScrollLoad = false; }, 100);
+            });
             btn.scrollIntoView({ inline: 'center', behavior: 'smooth' });
         });
     });
@@ -103,6 +106,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const restoreScroll = () => {
         if (savedScroll !== null) {
             window.scrollTo(0, parseFloat(savedScroll));
+            if (savedMonth) {
+                const idx = mesi.indexOf(savedMonth);
+                if (idx !== -1) {
+                    buttons.forEach((btn, i) => btn.classList.toggle('active', i === idx));
+                    if (yearSelect) {
+                        yearSelect.value = mesi[idx].slice(0,4);
+                    }
+                }
+            }
             sessionStorage.removeItem('tmScroll');
             sessionStorage.removeItem('tmMonth');
         }
