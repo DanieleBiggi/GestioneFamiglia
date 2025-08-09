@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(html => {
                 results.innerHTML = html;
                 recent.style.display = 'none';
+                bindMovimenti();
             });
     });
     
