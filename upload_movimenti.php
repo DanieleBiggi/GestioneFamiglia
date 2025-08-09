@@ -248,7 +248,7 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
     <div class="mb-3">
       <input type="file" name="fileToUpload" class="form-control bg-dark text-white">
     </div>
-    <button type="submit" class="btn btn-primary">Carica</button>
+    <button type="submit" class="btn btn-outline-light w-100">Carica</button>
   </form>
 </div>
 <?php
