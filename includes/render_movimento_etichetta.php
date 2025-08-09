@@ -115,7 +115,7 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
     echo '  <div class="text-end d-flex flex-column ms-3 align-items-end h-100">';
     echo '    <div class="amount text-white text-nowrap">' . ($amountValue >= 0 ? '+' : '') . $importo . ' €</div>';
     echo '    <img src="' . htmlspecialchars($icon) . '" alt="src" class="flex-shrink-0 mt-auto" style="width:24px;height:24px">';
-    echo '  </div></div>';
+    echo '  </div>';
     echo '</div>';
 
 }
