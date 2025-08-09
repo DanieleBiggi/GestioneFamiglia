@@ -39,8 +39,8 @@ if (!$etichettaInfo) {
 // Recupera utenti attivi della famiglia corrente per la selezione
 $listaUtenti = [];
 $famigliaId = $_SESSION['id_famiglia_gestione'] ?? 0;
-$stmtUt = $conn->prepare('SELECT u.id, u.nome, u.cognome FROM utenti u JOIN utenti2famiglie u2f ON u.id = u2f.id_utente WHERE u2f.id_famiglia = ? AND u.attivo = 1 AND u2f.attivo = 1 ORDER BY u.nome');
-$stmtUt->bind_param('i', $famigliaId);
+$stmtUt = $conn->prepare('SELECT u.id, u.nome, u.cognome FROM utenti u WHERE u.attivo = 1 ORDER BY u.nome');
+//$stmtUt->bind_param('i', $famigliaId);
 $stmtUt->execute();
 $resUt = $stmtUt->get_result();
 while ($row = $resUt->fetch_assoc()) {
@@ -281,11 +281,17 @@ $stmtGrp->close();
 ?>
 
 <div class="text-white">
-  <div class="d-flex mb-3 justify-content-between">
-    <h4 class="mb-0">Movimenti per etichetta: <span id="etichettaDesc"><?= htmlspecialchars($etichettaInfo['descrizione']) ?></span><i class="bi bi-pencil ms-2" role="button" onclick="openEtichettaModal()"></i></h4>
-    <a href="javascript:history.back()" class="btn btn-outline-light btn-sm">← Indietro</a>
-  </div>
-
+    <div class="d-flex">
+        <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
+      <?php if ($isAdmin): ?>
+      <button type="button" class="btn btn-outline-light btn-sm ms-auto mb-3" id="settleBtn" onclick="settleSelected()">Segna saldati</button>
+      <!--<button type="button" class="btn btn-outline-light btn-sm ms-auto d-inline mb-3" onclick="toggleSettle()">Seleziona</button>-->
+    <?php endif; ?>
+    </div>
+  <h4 class="mb-3">
+    <span id="etichettaDesc"><?= htmlspecialchars($etichettaInfo['descrizione']) ?></span>
+      <i class="bi bi-pencil ms-2" role="button" onclick="openEtichettaModal()"></i>
+  </h4>
   <form method="get" class="mb-3">
     <input type="hidden" name="id_etichetta" value="<?= htmlspecialchars($etichettaParam) ?>">
     <div class="d-flex gap-2 align-items-center">
@@ -296,21 +302,12 @@ $stmtGrp->close();
           <option value="<?= htmlspecialchars($m['ym']) ?>" <?= $mese === $m['ym'] ? 'selected' : '' ?>><?= ucfirst($m['label']) ?></option>
         <?php endforeach; ?>
       </select>
-      <?php if ($isAdmin): ?>
-      <button type="button" class="btn btn-outline-light btn-sm ms-auto d-inline d-md-none" onclick="toggleSettle()">Seleziona</button>
-    <?php endif; ?>
+      
+  </div>
     </div>
   </form>
 
   <div class="d-flex gap-4 mb-4 align-items-center flex-wrap">
-    <div class="label_entrata_uscita">Entrate: <span class="text-nowrap"><?= '+' . number_format($totali['entrate'] ?? 0, 2, ',', '.') ?> €</span></div>
-    <div class="label_entrata_uscita">Uscite: <span class="text-nowrap"><?= number_format($totali['uscite'] ?? 0, 2, ',', '.') ?> €</span></div>
-    
-    <?php if ($isAdmin): ?>
-      <button type="button" class="btn btn-outline-light btn-sm ms-auto d-none d-md-inline" id="settleBtn" onclick="settleSelected()">Segna saldati</button>
-    <?php endif; ?>
-  </div>
-
     <?php if ($movimenti->num_rows > 0): ?>
       <?php while ($mov = $movimenti->fetch_assoc()): ?>
         <?php render_movimento_etichetta($mov,$etichettaInfo['id_etichetta']); ?>
@@ -318,7 +315,7 @@ $stmtGrp->close();
     <?php else: ?>
       <p class="text-center text-muted">Nessun movimento per questa etichetta.</p>
     <?php endif; ?>
-
+</div>
     <!-- Modal gestione quote utenti -->
     <div class="modal fade" id="u2oModal" tabindex="-1">
       <div class="modal-dialog">
@@ -492,11 +489,11 @@ $stmtGrp->close();
         </select>
       </div>
     </form>
-    <div class="table-responsive">
+    <div class="table-responsive w-100">
       <table class="table table-dark table-striped align-middle table-sm">
         <thead>
           <tr>
-            <th>Categoria</th>
+            <!--<th>Categoria</th>-->
             <th>Gruppo</th>
             <th class="text-end">Entrate</th>
             <th class="text-end">Uscite</th>
@@ -505,12 +502,18 @@ $stmtGrp->close();
         <tbody>
           <?php foreach ($gruppi as $g): ?>
             <tr>
-              <td><?= htmlspecialchars($g['categoria']) ?></td>
+              <!--<td><?= htmlspecialchars($g['categoria']) ?></td>-->
               <td><?= htmlspecialchars($g['gruppo'] ?? $g['id_gruppo_transazione']) ?></td>
               <td class="text-end text-nowrap"><?= ($g['entrate'] > 0 ? '+' : '') . number_format($g['entrate'], 2, ',', '.') ?> €</td>
               <td class="text-end text-nowrap"><?= number_format($g['uscite'], 2, ',', '.') ?> €</td>
             </tr>
           <?php endforeach; ?>
+            <tr>
+              <!--<td></td>-->
+              <td>Totali</td>
+              <td class="text-end text-nowrap"><?= '+' . number_format($totali['entrate'] ?? 0, 2, ',', '.') ?> €</td>
+              <td class="text-end text-nowrap"><?= number_format($totali['uscite'] ?? 0, 2, ',', '.') ?> €</td>
+            </tr>
         </tbody>
       </table>
     </div>
@@ -590,6 +593,7 @@ $stmtGrp->close();
     </form>
   </div>
 </div>
+
 
 <script>
 
@@ -695,4 +699,3 @@ document.getElementById('editE2oForm').addEventListener('submit', function(e){
 </script>
 
 <?php include 'includes/footer.php'; ?>
-
