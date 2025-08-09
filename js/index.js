@@ -17,4 +17,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 recent.style.display = 'none';
             });
     });
+    
+    
+    const bindMovimenti = () => {
+        document.querySelectorAll('.movement').forEach(el => {
+            if (el.dataset.bound) return;
+            el.dataset.bound = '1';
+            el.addEventListener('click', () => {
+                sessionStorage.setItem('tmScroll', window.scrollY);
+                sessionStorage.setItem('tmMonth', el.dataset.mese);
+                window.location.href = el.dataset.href;
+            });
+        });
+    };
+    
+    bindMovimenti();
 });
