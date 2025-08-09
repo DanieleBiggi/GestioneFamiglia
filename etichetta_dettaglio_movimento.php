@@ -87,7 +87,10 @@ $importo = number_format($amountValue, 2, ',', '.');
 $dataOra = date('d/m/Y H:i', strtotime($mov['data_operazione']));
 ?>
 <div class="container text-white">
+    <div class="d-flex">
   <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
+  <a href="dettaglio.php?id=<?= $e2o['id_tabella'] ?>&src=<?= $e2o['tabella_operazione'] ?>" class="btn btn-outline-light ms-auto mb-3">Vai al movimento</a>
+  </div>
   <h4 class="mb-3">
     <span id="movDescr"><?= htmlspecialchars($descrizione) ?></span>
     <i class="bi bi-pencil ms-2" role="button" onclick="openE2oModal()"></i>
