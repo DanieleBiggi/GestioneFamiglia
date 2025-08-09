@@ -2,6 +2,7 @@ function openE2oModal(){
   const form = document.getElementById('editE2oForm');
   form.descrizione_extra.value = e2oData.descrizione_extra || '';
   form.importo.value = e2oData.importo !== null ? e2oData.importo : '';
+  form.id_etichetta.value = e2oData.id_etichetta || '';
   new bootstrap.Modal(document.getElementById('editE2oModal')).show();
 }
 

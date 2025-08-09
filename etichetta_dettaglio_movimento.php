@@ -74,6 +74,10 @@ $resUt = $stmtUt->get_result();
 $listaUtenti = $resUt->fetch_all(MYSQLI_ASSOC);
 $stmtUt->close();
 
+// Lista etichette per la select del modal
+$resEt = $conn->query('SELECT id_etichetta, descrizione FROM bilancio_etichette ORDER BY descrizione');
+$listaEtichette = $resEt ? $resEt->fetch_all(MYSQLI_ASSOC) : [];
+
 /*
 $count = count($u2oRows) ?: 1;
 foreach ($u2oRows as &$r) {
@@ -139,6 +143,14 @@ $dataOra = date('d/m/Y H:i', strtotime($mov['data_operazione']));
         <div class="mb-3">
           <label class="form-label">Importo</label>
           <input type="number" step="0.01" name="importo" class="form-control bg-secondary text-white">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Etichetta</label>
+          <select name="id_etichetta" class="form-select bg-secondary text-white">
+            <?php foreach ($listaEtichette as $et): ?>
+              <option value="<?= (int)$et['id_etichetta'] ?>" <?= (int)$et['id_etichetta'] === (int)$e2o['id_etichetta'] ? 'selected' : '' ?>><?= htmlspecialchars($et['descrizione']) ?></option>
+            <?php endforeach; ?>
+          </select>
         </div>
         <div class="mb-3">
           <label class="form-label">Allegato</label>
