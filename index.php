@@ -75,7 +75,7 @@ if ($result && $result->num_rows > 0): ?>
 <?php else: ?>
   <p class="text-center text-muted">Nessun movimento presente.</p>
 <?php endif; 
-
+/*
 $movimenti_revolut = "";
   if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1)
   {
@@ -127,7 +127,9 @@ if ($result && $result->num_rows > 0): ?>
   </div>
 <?php else: ?>
   <p class="text-center text-white">Tutti i movimenti hanno un gruppo.</p>
-<?php endif; ?>
+<?php endif; 
+  */
+    ?>
 
  <!-- Modal conferma eliminazione -->
  <div class="modal fade" id="deleteModal" tabindex="-1">
