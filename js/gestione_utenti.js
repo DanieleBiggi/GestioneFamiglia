@@ -3,6 +3,7 @@ function initUserManager(table, formColumns, primaryKey, lookups, boolCols = [],
     const searchInput = document.getElementById('search');
     const userlevelFilter = document.getElementById('userlevelFilter');
     const familyFilter = document.getElementById('familyFilter');
+    const showInactive = document.getElementById('showInactive');
     const addBtn = document.getElementById('addBtn');
     const familiesModalEl = document.getElementById('familiesModal');
     const familiesList = document.getElementById('familiesList');
@@ -20,13 +21,16 @@ function initUserManager(table, formColumns, primaryKey, lookups, boolCols = [],
         params.append('search', searchInput.value);
         params.append('userlevelid', userlevelFilter.value);
         params.append('id_famiglia', familyFilter.value);
+        params.append('showInactive', showInactive.checked ? '1' : '0');
         fetch('ajax/gestione_utenti.php?' + params.toString())
             .then(r => r.json())
             .then(data => { rows = data; render(); });
     }
     function render() {
         list.innerHTML = '';
+        const showAll = showInactive.checked || searchInput.value.trim() !== '';
         rows.forEach(r => {
+            if (!showAll && !r.attivo) return;
             const card = document.createElement('div');
             card.className = 'movement user-card d-flex justify-content-between align-items-start text-white mb-2';
 
@@ -56,6 +60,9 @@ function initUserManager(table, formColumns, primaryKey, lookups, boolCols = [],
                 unlockBtn.disabled = true;
                 actions.appendChild(unlockBtn);
             }
+            const statusIcon = document.createElement('i');
+            statusIcon.className = r.attivo ? 'bi bi-check-circle-fill text-success' : 'bi bi-x-circle-fill text-danger';
+            actions.appendChild(statusIcon);
             card.appendChild(actions);
 
             if (canUpdate) {
@@ -115,5 +122,6 @@ function initUserManager(table, formColumns, primaryKey, lookups, boolCols = [],
     searchInput.addEventListener('input', load);
     userlevelFilter.addEventListener('change', load);
     familyFilter.addEventListener('change', load);
+    showInactive.addEventListener('input', load);
     load();
 }
