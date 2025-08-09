@@ -97,7 +97,41 @@ function get_utenti_e_quote_operazione_etichettata($id_e2o)
             v.importo_etichetta    
         FROM
             bilancio_utenti2operazioni_etichettate u2o
-        JOIN v_bilancio_etichette2operazioni_a_testa v ON
+        JOIN 
+		(SELECT 
+    IFNULL(bu.id_utente, IFNULL(ben.id_utente, 
+        (CASE 
+            WHEN (be2o.tabella_operazione = 'mh') THEN 1 
+            WHEN (be2o.tabella_operazione = 'mr') THEN 1 
+            ELSE NULL 
+        END))) AS id_utente_operazione,
+    IFNULL(bu.descrizione_operazione, IFNULL(ben.descrizione_operazione, 
+        CONVERT(CONVERT(IFNULL(mh.descrizione, mr.description) USING utf8) USING utf8mb4))) AS descrizione_operazione,
+    IFNULL(bu.data_operazione, IFNULL(ben.data_operazione, IFNULL(mh.data_operazione, mr.started_date))) AS data_operazione,
+    be2o.id_e2o AS id_e2o,
+    be2o.id_etichetta AS id_etichetta,
+    IFNULL(be2o.descrizione_extra, IFNULL(bu.descrizione_extra, ben.descrizione_extra)) AS descrizione_extra,
+    be2o.allegato AS allegato,
+    bet.descrizione AS descrizione,
+    IFNULL(bu.importo, IFNULL(ben.importo, IFNULL(mh.importo, mr.amount))) AS importo_totale_operazione,
+    be2o.importo AS importo_etichetta,
+    ((CASE 
+        WHEN (IFNULL(be2o.importo, 0) <> 0) THEN be2o.importo 
+        ELSE IFNULL(bu.importo, IFNULL(ben.importo, IFNULL(mh.importo, mr.amount))) 
+    END) / SUM(IFNULL(bu2e.quote, 1))) AS importo 
+FROM 
+    bilancio_etichette2operazioni be2o 
+        JOIN bilancio_etichette bet ON (bet.id_etichetta = be2o.id_etichetta)
+        LEFT JOIN bilancio_entrate ben ON ((be2o.tabella_operazione = 'bilancio_entrate') AND (be2o.id_tabella = ben.id_entrata))
+        LEFT JOIN bilancio_uscite bu ON ((be2o.tabella_operazione = 'bilancio_uscite') AND (be2o.id_tabella = bu.id_uscita))
+        LEFT JOIN bilancio_utenti2operazioni_etichettate bu2e ON (bu2e.id_e2o = be2o.id_e2o)
+        LEFT JOIN movimenti_hype mh ON ((be2o.tabella_operazione = 'movimenti_hype') AND (be2o.id_tabella = mh.id_movimento_hype))
+        LEFT JOIN movimenti_revolut mr ON ((be2o.tabella_operazione = 'movimenti_revolut') AND (be2o.id_tabella = mr.id_movimento_revolut))
+WHERE 
+    (bet.attivo in (0,1)) 
+GROUP BY 
+    be2o.id_e2o)
+		v ON
             u2o.id_e2o = v.id_e2o
         JOIN bilancio_etichette2operazioni e2o ON
             e2o.id_e2o = u2o.id_e2o
