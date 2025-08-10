@@ -2,7 +2,7 @@
 require_once __DIR__ . '/db.php';
 session_start();
 $themeId = $_SESSION['theme_id'] ?? 1;
-$stmt = $conn->prepare('SELECT background_color, text_color, primary_color, secondary_color FROM temi WHERE id = ?');
+$stmt = $conn->prepare('SELECT background_color, text_color, primary_color, secondary_color FROM temi WHERE id_tema = ?');
 $stmt->bind_param('i', $themeId);
 $stmt->execute();
 $theme = $stmt->get_result()->fetch_assoc();
