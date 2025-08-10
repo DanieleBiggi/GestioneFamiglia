@@ -94,6 +94,13 @@
         </a>
       </li>
       <?php endif; ?>
+      <?php if (has_permission($conn, 'page:budget.php', 'view')): ?>
+      <li class="mb-3">
+        <a href="/Gestionale25/budget.php" class="btn btn-outline-light w-100 text-start">
+          <i class="bi bi-wallet me-2 text-white"></i> Budget
+        </a>
+      </li>
+      <?php endif; ?>
       <?php if (has_permission($conn, 'page:password.php', 'view')): ?>
       <li class="mb-3">
         <a href="/Gestionale25/password.php" class="btn btn-outline-light w-100 text-start">
