@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const budgetForm = document.getElementById('budgetForm');
   const budgetId = document.getElementById('budgetId');
   const budgetDescrizione = document.getElementById('budgetDescrizione');
+  const budgetTipologia = document.getElementById('budgetTipologia');
+  const budgetTipologiaSpesa = document.getElementById('budgetTipologiaSpesa');
   const budgetImporto = document.getElementById('budgetImporto');
   const budgetDataInizio = document.getElementById('budgetDataInizio');
   const budgetDataFine = document.getElementById('budgetDataFine');
@@ -49,6 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
   populateSelect(filterTipologia, tipologie);
   populateSelect(filterSalvadanaio, salvadanai);
   populateSelect(filterTipologiaSpesa, tipologieSpesa);
+  populateSelect(budgetTipologia, tipologie);
+  populateSelect(budgetTipologiaSpesa, tipologieSpesa);
 
   function applyFilters() {
     const q = (searchInput?.value || '').trim().toLowerCase();
@@ -95,6 +99,8 @@ document.addEventListener('DOMContentLoaded', () => {
   addBudgetBtn?.addEventListener('click', () => {
     budgetForm?.reset();
     if (budgetId) budgetId.value = '';
+    if (budgetTipologia) budgetTipologia.value = '';
+    if (budgetTipologiaSpesa) budgetTipologiaSpesa.value = '';
     if (modalTitle) modalTitle.textContent = 'Nuovo budget';
     deleteBudgetBtn?.classList.add('d-none');
     budgetModal?.show();
@@ -105,6 +111,8 @@ document.addEventListener('DOMContentLoaded', () => {
       budgetForm?.reset();
       if (budgetId) budgetId.value = item.dataset.id || '';
       if (budgetDescrizione) budgetDescrizione.value = item.dataset.descrizione || '';
+      if (budgetTipologia) budgetTipologia.value = item.dataset.tipologia || '';
+      if (budgetTipologiaSpesa) budgetTipologiaSpesa.value = item.dataset.tipologiaSpesa || '';
       if (budgetImporto) budgetImporto.value = item.dataset.importo || '';
       if (budgetDataInizio) budgetDataInizio.value = item.dataset.inizio || '';
       if (budgetDataFine) budgetDataFine.value = item.dataset.fine || '';
