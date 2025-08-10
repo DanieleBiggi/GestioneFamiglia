@@ -18,9 +18,9 @@ document.getElementById('tagliandoForm')?.addEventListener('submit', function(e)
 
 function openRecordModal(data){
   const form = document.getElementById('recordForm');
-  form.id_record.value = data && data.id ? data.id : '';
+  form.id_m2t.value = data && data.id ? data.id : '';
   form.data_tagliando.value = data && data.data ? data.data : '';
-  form.chilometri.value = data && data.km ? data.km : '';
+  form.km_tagliando.value = data && data.km ? data.km : '';
   new bootstrap.Modal(document.getElementById('recordModal')).show();
 }
 
@@ -28,6 +28,9 @@ document.getElementById('recordForm')?.addEventListener('submit', function(e){
   e.preventDefault();
   const fd = new FormData(this);
   fd.append('id_tagliando', tagliandoData.id);
+  // map fields to backend expected names
+  fd.append('id_record', fd.get('id_m2t') || '');
+  fd.append('chilometri', fd.get('km_tagliando') || '');
   fetch('ajax/update_mezzo2tagliando.php', {method:'POST', body:fd})
     .then(r=>r.json())
     .then(res=>{ if(res.success) location.reload(); });
