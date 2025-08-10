@@ -53,7 +53,7 @@ foreach ($mesi as $m) {
         <?php endforeach; ?>
     </select>
 </div>
-<div class="months-scroll d-flex mb-3" id="monthsContainer">
+<div class="months-scroll d-flex mb-3 pt-3 pb-3" id="monthsContainer">
     <?php foreach ($mesi as $idx => $m): ?>
         <button class="btn btn-outline-light me-2 <?= $idx === $ultimoIndice ? 'active' : '' ?>" data-mese="<?= htmlspecialchars($m['ym']) ?>">
             <?= $m['label'] ?>
