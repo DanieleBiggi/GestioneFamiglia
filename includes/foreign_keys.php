@@ -30,6 +30,11 @@ return [
         'key'   => 'id_famiglia',
         'label' => 'nome_famiglia'
     ],
+    'id_tema' => [
+        'table' => 'temi',
+        'key'   => 'id',
+        'label' => 'nome'
+    ],
     'userlevelid' => [
         'table' => 'userlevels',
         'key'   => 'userlevelid',
