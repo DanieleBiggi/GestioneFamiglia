@@ -106,9 +106,9 @@ uasort($totaliEtichette, function ($a, $b) {
    <?php endif; ?>
 
   <?php if (!empty($movimenti)): ?>
-   <?php foreach ($movimenti as $mov): ?>
+   <?php foreach ($movimenti as $mov): ?> 
       <?php $rowsAttr = $isAdmin ? htmlspecialchars(json_encode($mov['rows'] ?? []), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : ''; ?>
-      <div class="movement d-flex justify-content-between align-items-start text-white mb-2" data-tabella="<?= htmlspecialchars($mov['tabella']) ?>" data-id-tabella="<?= (int)$mov['id_tabella'] ?>" <?php if ($isAdmin): ?>data-rows='<?= $rowsAttr ?>'<?php endif; ?> onclick="openMovimento(this)" style="cursor:pointer">
+      <div class="movement d-flex justify-content-between align-items-start text-white mb-2" data-ide20="<?= (int)$mov['id_e2o'] ?>" data-tabella="<?= htmlspecialchars($mov['tabella']) ?>" data-id-tabella="<?= (int)$mov['id_tabella'] ?>" <?php if ($isAdmin): ?>data-rows='<?= $rowsAttr ?>'<?php endif; ?> onclick="openMovimento(this)" style="cursor:pointer">
         <?php if ($isAdmin): ?>
           <input type="checkbox" class="form-check-input me-2 flex-shrink-0" style="width:1.25rem;height:1.25rem;" data-id-u2o="<?= $mov['id_u2o'] ?>" data-amount="<?= $mov['saldo_utente'] ?>" onclick="event.stopPropagation();">
         <?php endif; ?>
@@ -149,7 +149,10 @@ uasort($totaliEtichette, function ($a, $b) {
           <?php if ($isAdmin): ?><div id="movRows" class="mt-3"></div><?php endif; ?>
         </div>
         <div class="modal-footer">
-          <?php if ($isAdmin): ?><a href="#" class="btn btn-outline-light" id="linkDettaglio">Vai al dettaglio</a><?php endif; ?>
+          <?php if ($isAdmin): ?>
+          <a href="#" class="btn btn-outline-light" id="linkDettaglio">Vai al Movimento</a>
+          <a href="#" class="btn btn-outline-light" id="linkQuote">Vai alle Quote</a>
+          <?php endif; ?>
         </div>
       </div>
     </div>
@@ -177,6 +180,7 @@ uasort($totaliEtichette, function ($a, $b) {
   function openMovimento(div) {
     const tabella = div.dataset.tabella;
     const id = div.dataset.idTabella;
+    const ide20 = div.dataset.ide20;
     fetch(`ajax/get_movimento.php?tabella=${encodeURIComponent(tabella)}&id=${id}`)
       .then(r => r.json())
       .then(res => {
@@ -203,6 +207,7 @@ uasort($totaliEtichette, function ($a, $b) {
         });
         <?php endif; ?>
         document.getElementById('linkDettaglio').href = `dettaglio.php?src=${tabella}&id=${id}`;
+        document.getElementById('linkQuote').href = `etichetta_dettaglio_movimento.php?id=${ide20}`;
         new bootstrap.Modal(document.getElementById('movModal')).show();
       });
   }
