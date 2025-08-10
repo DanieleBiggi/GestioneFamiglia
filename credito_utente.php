@@ -277,7 +277,7 @@ uasort($totaliEtichette, function ($a, $b) {
       tot += parseFloat(cb.dataset.amount) || 0;
     });
     if (checked.length > 0) {
-      totaleEl.textContent = 'Totale selezionato: ' + tot.toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+      totaleEl.textContent = 'Tot. selezione: ' + tot.toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
     } else {
       totaleEl.textContent = '';
     }
