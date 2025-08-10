@@ -9,7 +9,7 @@ include 'includes/header.php';
 // Limit data to the current user when fetching personal balances
 $idUtente = $_SESSION['utente_id'] ?? 0;
 
-if (has_permission($conn, 'page:index.php-movmenti', 'view')): ?>
+if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
 
 <div class="row text-center g-2 mb-3">
   <div class="col-3">
