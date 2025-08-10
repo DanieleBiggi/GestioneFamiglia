@@ -32,6 +32,21 @@ document.getElementById('chilometroForm')?.addEventListener('submit', function(e
     .then(res=>{ if(res.success) location.reload(); });
 });
 
+function openTagliandoModal(){
+  const form = document.getElementById('tagliandoForm');
+  form?.reset();
+  new bootstrap.Modal(document.getElementById('tagliandoModal')).show();
+}
+
+document.getElementById('tagliandoForm')?.addEventListener('submit', function(e){
+  e.preventDefault();
+  const fd = new FormData(this);
+  fd.append('id_mezzo', mezzoData.id);
+  fetch('ajax/add_tagliando.php', {method:'POST', body:fd})
+    .then(r=>r.json())
+    .then(res=>{ if(res.success) location.reload(); });
+});
+
 function editChilometro(el){
   openChilometroModal({id:el.dataset.id, data:el.dataset.data, km:el.dataset.km});
 }
