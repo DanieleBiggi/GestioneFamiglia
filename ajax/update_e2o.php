@@ -14,7 +14,7 @@ if (!$id_e2o) {
     exit;
 }
 
-$stmt = $conn->prepare("SELECT id_tabella, tabella_operazione, id_etichetta, allegato FROM bilancio_etichette2operazioni WHERE id_e2o = ?");
+$stmt = $conn->prepare("SELECT id_tabella, tabella_operazione, id_etichetta, allegato, id_caricamento FROM bilancio_etichette2operazioni WHERE id_e2o = ?");
 $stmt->bind_param('i', $id_e2o);
 $stmt->execute();
 $info = $stmt->get_result()->fetch_assoc();
@@ -27,21 +27,35 @@ if (!$info) {
 $id_etichetta = intval($_POST['id_etichetta'] ?? $info['id_etichetta']);
 
 $allegato = $info['allegato'];
+$id_caricamento = $info['id_caricamento'];
 if (!empty($_FILES['allegato']['name'])) {
-    $dir = __DIR__ . '/../uploads';
+    $dir = __DIR__ . '/../files/scontrini';
     if (!is_dir($dir)) {
         mkdir($dir, 0777, true);
     }
     $filename = $id_e2o . '_' . time() . '_' . basename($_FILES['allegato']['name']);
     $target = $dir . '/' . $filename;
     if (move_uploaded_file($_FILES['allegato']['tmp_name'], $target)) {
-        $allegato = 'uploads/' . $filename;
+        $allegato = 'files/scontrini/' . $filename;
+
+        $stmtC = $conn->prepare('INSERT INTO ocr_caricamenti (id_utente, id_supermercato, nome_file, data_scontrino, totale_scontrino, indirizzo_ip, JSON_linee, descrizione) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+        $idUtente = $_SESSION['utente_id'];
+        $idSupermercato = 0;
+        $dataScontrino = null;
+        $totaleScontrino = 0;
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        $jsonLinee = '[]';
+        $descrizione = null;
+        $stmtC->bind_param('iissdsss', $idUtente, $idSupermercato, $filename, $dataScontrino, $totaleScontrino, $ip, $jsonLinee, $descrizione);
+        $stmtC->execute();
+        $id_caricamento = $stmtC->insert_id;
+        $stmtC->close();
     }
 }
 
-$sql = "UPDATE bilancio_etichette2operazioni SET id_etichetta = ?, descrizione_extra = ?, importo = ?, allegato = ? WHERE id_e2o = ?";
+$sql = "UPDATE bilancio_etichette2operazioni SET id_etichetta = ?, descrizione_extra = ?, importo = ?, allegato = ?, id_caricamento = ? WHERE id_e2o = ?";
 $stmtU = $conn->prepare($sql);
-$stmtU->bind_param('isdsi', $id_etichetta, $descrizione_extra, $importo, $allegato, $id_e2o);
+$stmtU->bind_param('isdsii', $id_etichetta, $descrizione_extra, $importo, $allegato, $id_caricamento, $id_e2o);
 $success = $stmtU->execute();
 $stmtU->close();
 
