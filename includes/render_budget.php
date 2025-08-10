@@ -20,7 +20,7 @@ function render_budget(array $row): void {
     } elseif ($tipologiaLower === 'uscita') {
         $icon = 'bi-arrow-up-circle text-danger';
     }
-    echo '<div class="list-group-item bg-dark text-white budget-item d-flex flex-column flex-sm-row justify-content-between align-items-start"'
+    echo '<div class="list-group-item movement text-white budget-item d-flex flex-column flex-sm-row justify-content-between align-items-start"'
         . ' data-id="' . $id . '"'
         . ' data-search="' . $searchAttr . '"'
         . ' data-descrizione="' . htmlspecialchars($descrizione, ENT_QUOTES) . '"'
@@ -37,7 +37,7 @@ function render_budget(array $row): void {
         if ($dataFine) {
             $dates .= ' - ' . $dataFine;
         }
-        echo '    <div class="small text-muted">' . htmlspecialchars($dates) . '</div>';
+        echo '    <div class="small">' . htmlspecialchars($dates) . '</div>';
     }
     echo '  </div>';
     echo '  <div class="text-sm-end mt-2 mt-sm-0 d-flex flex-column align-items-end">';
