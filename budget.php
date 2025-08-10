@@ -6,18 +6,18 @@ include 'includes/header.php';
 
 $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 
-$stmt = $conn->prepare('SELECT * FROM budget WHERE id_famiglia = ? ORDER BY data_inizio');
+$stmt = $conn->prepare('SELECT b.*, s.nome_salvadanaio FROM budget b LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio WHERE b.id_famiglia = ? ORDER BY b.data_inizio');
 $stmt->bind_param('i', $idFamiglia);
 $stmt->execute();
 $res = $stmt->get_result();
 ?>
 <div class="d-flex mb-3 justify-content-between">
   <h4>Budget</h4>
-  <button type="button" class="btn btn-outline-light btn-sm" id="addBudgetBtn" data-bs-toggle="modal" data-bs-target="#budgetModal">Aggiungi</button>
+  <button type="button" class="btn btn-outline-light btn-sm" id="addBudgetBtn">Aggiungi</button>
 </div>
 <div class="d-flex mb-3 align-items-center">
   <input type="text" id="search" class="form-control bg-dark text-white border-secondary me-2" placeholder="Cerca">
-  <button type="button" class="btn btn-outline-light" id="filterBtn" data-bs-toggle="modal" data-bs-target="#filterModal">
+  <button type="button" class="btn btn-outline-light" id="filterBtn">
     <i class="bi bi-funnel"></i>
   </button>
 </div>
