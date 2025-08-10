@@ -39,7 +39,7 @@ function render_movimento_etichetta(array $mov, int $id_etichetta) {
     if ($isAdmin) {
         echo '<input type="checkbox" class="form-check-input me-2 settle-checkbox" style="min-width:1rem;height:1rem;" onclick="event.stopPropagation();">';
     }
-    
+    $ar_totali = [];    
     echo '  <div class="flex-grow-1 me-3" style="min-width:0">';
     echo '    <div class="descr fw-semibold">' . htmlspecialchars($descrizione) . '</div>';
     echo '    <div class="small">' . $dataOra . '</div>';
