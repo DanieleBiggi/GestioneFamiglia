@@ -150,8 +150,8 @@ uasort($totaliEtichette, function ($a, $b) {
         </div>
         <div class="modal-footer">
           <?php if ($isAdmin): ?>
-          <a href="#" class="btn btn-outline-light" id="linkDettaglio">Vai al Movimento</a>
-          <a href="#" class="btn btn-outline-light" id="linkQuote">Vai alle Quote</a>
+          <a href="#" class="btn btn-outline-light w-100" id="linkDettaglio">Vai al Movimento</a>
+          <a href="#" class="btn btn-outline-light w-100" id="linkQuote">Vai alle Quote</a>
           <?php endif; ?>
         </div>
       </div>
