@@ -80,7 +80,7 @@ if ($id > 0): ?>
   </div>
   <ul class="list-group list-group-flush bg-dark" id="recordsList">
     <?php foreach ($records as $idx => $row): ?>
-      <li class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center <?= $idx >= 3 ? 'd-none extra-row' : '' ?>"
+      <li class="list-group-item movement text-white d-flex justify-content-between align-items-center <?= $idx >= 3 ? 'd-none extra-row' : '' ?>"
           data-id="<?= (int)$row['id_m2t'] ?>"
           data-data="<?= htmlspecialchars($row['data_tagliando']) ?>"
           data-km="<?= (int)$row['km_tagliando'] ?>">
