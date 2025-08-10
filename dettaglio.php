@@ -26,7 +26,8 @@ if ($src === 'bilancio_entrate') {
            COALESCE(c.descrizione_categoria, 'Nessuna categoria') AS categoria_descrizione,
            g.tipo_gruppo,
            GROUP_CONCAT(e.descrizione SEPARATOR ', ') AS etichette,
-           be.mezzo
+           be.mezzo,
+           be.id_caricamento
     FROM bilancio_entrate be
     LEFT JOIN bilancio_gruppi_transazione g ON be.id_gruppo_transazione = g.id_gruppo_transazione
     LEFT JOIN bilancio_gruppi_categorie c ON g.id_categoria = c.id_categoria
@@ -52,7 +53,8 @@ if ($src === 'bilancio_entrate') {
            COALESCE(c.descrizione_categoria, 'Nessuna categoria') AS categoria_descrizione,
            g.tipo_gruppo,
            GROUP_CONCAT(e.descrizione SEPARATOR ', ') AS etichette,
-           bu.mezzo
+           bu.mezzo,
+           bu.id_caricamento
     FROM bilancio_uscite bu
     LEFT JOIN bilancio_gruppi_transazione g ON bu.id_gruppo_transazione = g.id_gruppo_transazione
     LEFT JOIN bilancio_gruppi_categorie c ON g.id_categoria = c.id_categoria
@@ -156,6 +158,21 @@ while ($row = $res2->fetch_assoc()) {
 
 $movimento['tipo_gruppo_label'] = tipo_label($movimento['tipo_gruppo'] ?? '');
 
+$allegato = null;
+if (!empty($movimento['id_caricamento'])) {
+  $stmt = $conn->prepare('SELECT * FROM ocr_caricamenti WHERE id_caricamento = ?');
+  $stmt->bind_param('i', $movimento['id_caricamento']);
+  $stmt->execute();
+  $allegato = $stmt->get_result()->fetch_assoc();
+  $stmt->close();
+}
+
+$supermercati = [];
+$resSup = $conn->query('SELECT id_supermercato, descrizione_supermercato FROM ocr_supermercati ORDER BY descrizione_supermercato');
+while ($row = $resSup->fetch_assoc()) {
+  $supermercati[] = $row;
+}
+
 include 'includes/header.php';
 ?>
 
@@ -213,6 +230,19 @@ include 'includes/header.php';
       <div class="ms-auto d-flex align-items-center">
         <span class="text-end"><?= htmlspecialchars($movimento['etichette']) ?></span>
         <i class="bi bi-pencil ms-2" onclick="openEtichetteModal()"></i>
+      </div>
+    </li>
+    <li class="list-group-item bg-dark text-white d-flex align-items-center">
+      <span>Scontrino</span>
+      <div class="ms-auto d-flex align-items-center">
+        <span class="text-end">
+          <?php if ($allegato): ?>
+            <a href="files/scontrini/<?= htmlspecialchars($allegato['nome_file']) ?>" target="_blank"><?= htmlspecialchars($allegato['nome_file']) ?></a>
+          <?php else: ?>
+            Nessun allegato
+          <?php endif; ?>
+        </span>
+        <i class="bi bi-paperclip ms-2" onclick="openAllegatoModal()"></i>
       </div>
     </li>
   </ul>
@@ -291,11 +321,55 @@ include 'includes/header.php';
   </div>
 </div>
 
+<!-- Allegato modal -->
+<div class="modal fade" id="allegatoModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="allegatoForm" enctype="multipart/form-data">
+      <div class="modal-header">
+        <h5 class="modal-title">Gestisci scontrino</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="id_caricamento" id="allegatoId">
+        <div class="mb-3">
+          <label class="form-label">File</label>
+          <input type="file" class="form-control bg-secondary text-white" name="nome_file" id="allegatoFile" <?= $allegato ? '' : 'required' ?>>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Supermercato</label>
+          <select class="form-select bg-secondary text-white" name="id_supermercato" id="idSupermercato">
+            <option value="0"></option>
+            <?php foreach ($supermercati as $s): ?>
+            <option value="<?= (int)$s['id_supermercato'] ?>"><?= htmlspecialchars($s['descrizione_supermercato']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Data scontrino</label>
+          <input type="date" class="form-control bg-secondary text-white" name="data_scontrino" id="dataScontrino">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Totale scontrino</label>
+          <input type="number" step="0.01" class="form-control bg-secondary text-white" name="totale_scontrino" id="totaleScontrino">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Descrizione</label>
+          <input type="text" class="form-control bg-secondary text-white" name="descrizione" id="descrizioneScontrino">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary w-100">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 const etichette = <?= json_encode($etichette, JSON_UNESCAPED_UNICODE) ?>;
 const gruppi = <?= json_encode($gruppi, JSON_UNESCAPED_UNICODE) ?>;
 const idMovimento = <?= (int)$id ?>;
 const srcMovimento = <?= json_encode($src) ?>;
+const allegato = <?= json_encode($allegato, JSON_UNESCAPED_UNICODE) ?>;
 
 let currentGroupId;
 let mostraGruppiInattivi = false;
@@ -455,6 +529,32 @@ function saveEtichette() {
     body: JSON.stringify({ id: idMovimento, etichette: selected, src: srcMovimento })
   }).then(() => location.reload());
 }
+
+function openAllegatoModal() {
+  const form = document.getElementById('allegatoForm');
+  form.reset();
+  document.getElementById('allegatoFile').required = !allegato;
+  if (allegato) {
+    document.getElementById('allegatoId').value = allegato.id_caricamento;
+    document.getElementById('idSupermercato').value = allegato.id_supermercato;
+    if (allegato.data_scontrino) {
+      document.getElementById('dataScontrino').value = allegato.data_scontrino.substring(0,10);
+    }
+    document.getElementById('totaleScontrino').value = allegato.totale_scontrino;
+    document.getElementById('descrizioneScontrino').value = allegato.descrizione;
+  }
+  new bootstrap.Modal(document.getElementById('allegatoModal')).show();
+}
+
+document.getElementById('allegatoForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const fd = new FormData(this);
+  fd.append('id_movimento', idMovimento);
+  fd.append('src', srcMovimento);
+  fetch('ajax/save_caricamento.php', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => { if (data.success) location.reload(); });
+});
 
 document.getElementById('deleteMovimento')?.addEventListener('click', () => {
   if (!confirm('Sei sicuro di voler eliminare questo movimento?')) return;
