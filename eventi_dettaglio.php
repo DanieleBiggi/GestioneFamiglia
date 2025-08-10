@@ -72,9 +72,6 @@ include 'includes/header.php';
   <div class="d-flex justify-content-between align-items-center mb-2">
     <div class="d-flex align-items-center">
       <h5 class="mb-0 me-3">Invitati</h5>
-      <?php if (count($invitati) > 3): ?>
-        <button id="toggleInvitati" class="btn btn-link p-0">Mostra tutti</button>
-      <?php endif; ?>
     </div>
     <button type="button" class="btn btn-outline-light btn-sm" id="addInvitatoBtn">Aggiungi invitato</button>
   </div>
@@ -99,13 +96,15 @@ include 'includes/header.php';
       </li>
     <?php endforeach; ?>
   </ul>
+  <?php if (count($invitati) > 3): ?>
+    <div class="text-center mt-3">
+      <button id="toggleInvitati" class="btn btn-outline-light btn-sm">Mostra tutti</button>
+    </div>
+  <?php endif; ?>
 
   <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
     <div class="d-flex align-items-center">
       <h5 class="mb-0 me-3">Cibo</h5>
-      <?php if (count($cibi) > 3): ?>
-        <button id="toggleCibo" class="btn btn-link p-0">Mostra tutti</button>
-      <?php endif; ?>
     </div>
     <button type="button" class="btn btn-outline-light btn-sm" id="addCiboBtn">Aggiungi cibo</button>
   </div>
@@ -116,6 +115,11 @@ include 'includes/header.php';
       </li>
     <?php endforeach; ?>
   </ul>
+  <?php if (count($cibi) > 3): ?>
+    <div class="text-center mt-3">
+      <button id="toggleCibo" class="btn btn-outline-light btn-sm">Mostra tutti</button>
+    </div>
+  <?php endif; ?>
 </div>
 
 <!-- Modal modifica invitato -->
