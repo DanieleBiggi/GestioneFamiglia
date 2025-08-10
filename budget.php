@@ -1,6 +1,7 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
 include 'includes/db.php';
+require_once 'includes/render_budget.php';
 include 'includes/header.php';
 
 $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
@@ -22,9 +23,7 @@ $res = $stmt->get_result();
 </div>
 <div id="budgetList" class="list-group">
 <?php while ($row = $res->fetch_assoc()): ?>
-  <div class="list-group-item bg-dark text-white budget-item" data-id="<?= (int)$row['id'] ?>" data-bs-toggle="modal" data-bs-target="#budgetModal">
-    <?= htmlspecialchars($row['descrizione'] ?? '') ?>
-  </div>
+  <?php render_budget($row); ?>
 <?php endwhile; ?>
 </div>
 
