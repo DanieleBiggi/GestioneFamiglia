@@ -7,7 +7,7 @@ $id_u2o = intval($_POST['id_u2o'] ?? 0);
 $id_e2o = intval($_POST['id_e2o'] ?? 0);
 $id_utente = intval($_POST['id_utente'] ?? 0);
 $quote_input = trim($_POST['quote'] ?? '');
-$quote = $quote_input === '' ? null : (float)$quote_input;
+$quote = $quote_input === '' ? 1 : (float)$quote_input;
 $saldata = !empty($_POST['saldata']) ? 1 : 0;
 $data_saldo = trim($_POST['data_saldo'] ?? '');
 if ($data_saldo === '') {
