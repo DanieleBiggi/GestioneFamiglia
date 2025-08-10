@@ -213,13 +213,15 @@ function get_saldo_e_movimenti_utente($idUtente, $dataSaldo = null)
     $isAdmin      = ($loggedUserId == 1);
     $ar = [];
     $ar['movimenti'] = [];
-    $ar['saldoTot'] = 0;    
+    $ar['saldoTot'] = 0;
     $sqlMov = "SELECT
                     u2o.id_u2o,
                     u2o.id_e2o,
                     e2o.id_tabella,
                     e2o.tabella_operazione AS tabella,
                     e2o.id_etichetta,
+                    e2o.id_caricamento,
+                    oc.nome_file AS file_allegato,
                     CONCAT(IFNULL(v.descrizione_extra,v.descrizione_operazione), ' (', v.importo_totale_operazione, ')') AS descrizione,
                     v.data_operazione,
                     v.descrizione AS etichetta_descrizione,
@@ -241,6 +243,7 @@ function get_saldo_e_movimenti_utente($idUtente, $dataSaldo = null)
                FROM bilancio_utenti2operazioni_etichettate u2o
                JOIN v_bilancio_etichette2operazioni_a_testa v ON u2o.id_e2o = v.id_e2o
                JOIN bilancio_etichette2operazioni e2o ON e2o.id_e2o = u2o.id_e2o
+               LEFT JOIN ocr_caricamenti oc ON oc.id_caricamento = e2o.id_caricamento
                WHERE u2o.id_utente = ? AND " . ($dataSaldo === null ? "u2o.saldata = 0" : "u2o.saldata = 1 AND DATE(u2o.data_saldo) = ?") . "
                ORDER BY v.data_operazione DESC";
 
