@@ -11,10 +11,39 @@ $idUtente = $_SESSION['utente_id'] ?? 0;
 
 if (has_permission($conn, 'page:index.php-movmenti', 'view')): ?>
 
-<div class="mb-3">
-  <a href="aggiungi_entrata.php" class="btn btn-outline-light btn-sm">Aggiungi entrata</a>
-  <a href="aggiungi_uscita.php" class="btn btn-outline-light btn-sm">Aggiungi uscita</a>
-  <a href="upload_movimenti.php" class="btn btn-outline-light btn-sm">Carica file</a>
+<div class="row text-center g-2 mb-3">
+  <div class="col-3">
+    <a href="aggiungi_entrata.php" class="text-decoration-none text-white">
+      <div class="btn btn-outline-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" style="width:80px;height:80px;">
+        <i class="bi bi-arrow-down-circle fs-1"></i>
+      </div>
+      <div>Aggiungi entrata</div>
+    </a>
+  </div>
+  <div class="col-3">
+    <a href="aggiungi_uscita.php" class="text-decoration-none text-white">
+      <div class="btn btn-outline-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" style="width:80px;height:80px;">
+        <i class="bi bi-arrow-up-circle fs-1"></i>
+      </div>
+      <div>Aggiungi uscita</div>
+    </a>
+  </div>
+  <div class="col-3">
+    <a href="upload_movimenti.php" class="text-decoration-none text-white">
+      <div class="btn btn-outline-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" style="width:80px;height:80px;">
+        <i class="bi bi-cloud-upload fs-1"></i>
+      </div>
+      <div>Carica file</div>
+    </a>
+  </div>
+  <div class="col-3">
+    <a href="#" class="text-decoration-none text-white" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu">
+      <div class="btn btn-outline-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" style="width:80px;height:80px;">
+        <i class="bi bi-three-dots fs-1"></i>
+      </div>
+      <div>Altro</div>
+    </a>
+  </div>
 </div>
 
 <input type="text" id="search" class="form-control bg-dark text-white border-secondary mb-3" placeholder="Cerca nei movimenti">
