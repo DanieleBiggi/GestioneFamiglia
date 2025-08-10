@@ -86,6 +86,18 @@ $res = $stmt->get_result();
           <input type="text" name="descrizione" id="budgetDescrizione" class="form-control bg-secondary text-white" required>
         </div>
         <div class="mb-3">
+          <label class="form-label">Tipologia</label>
+          <select name="tipologia" id="budgetTipologia" class="form-select bg-secondary text-white">
+            <option value=""></option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Tipologia spesa</label>
+          <select name="tipologia_spesa" id="budgetTipologiaSpesa" class="form-select bg-secondary text-white">
+            <option value=""></option>
+          </select>
+        </div>
+        <div class="mb-3">
           <label class="form-label">Importo</label>
           <input type="number" step="0.01" name="importo" id="budgetImporto" class="form-control bg-secondary text-white" required>
         </div>

@@ -13,6 +13,13 @@ function render_budget(array $row): void {
     $dataFine = $dataFineRaw ? date('d/m/Y', strtotime($dataFineRaw)) : '';
     $search = strtolower(trim($descrizione . ' ' . $tipologia . ' ' . $salvadanaio . ' ' . $tipologiaSpesa . ' ' . $dataInizio . ' ' . $dataFine . ' ' . $importoFmt));
     $searchAttr = htmlspecialchars($search, ENT_QUOTES);
+    $icon = '';
+    $tipologiaLower = strtolower($tipologia);
+    if ($tipologiaLower === 'entrata') {
+        $icon = 'bi-arrow-down-circle text-success';
+    } elseif ($tipologiaLower === 'uscita') {
+        $icon = 'bi-arrow-up-circle text-danger';
+    }
     echo '<div class="list-group-item bg-dark text-white budget-item d-flex flex-column flex-sm-row justify-content-between align-items-start"'
         . ' data-id="' . $id . '"'
         . ' data-search="' . $searchAttr . '"'
@@ -25,9 +32,6 @@ function render_budget(array $row): void {
         . ' data-importo="' . htmlspecialchars((string)$importoNum, ENT_QUOTES) . '">';
     echo '  <div class="flex-grow-1 me-sm-3">';
     echo '    <div class="fw-semibold">' . htmlspecialchars($descrizione) . '</div>';
-    if ($tipologia !== '') {
-        echo '    <div class="small">' . htmlspecialchars($tipologia) . '</div>';
-    }
     if ($dataInizio || $dataFine) {
         $dates = $dataInizio;
         if ($dataFine) {
@@ -36,7 +40,15 @@ function render_budget(array $row): void {
         echo '    <div class="small text-muted">' . htmlspecialchars($dates) . '</div>';
     }
     echo '  </div>';
-    echo '  <div class="text-sm-end mt-2 mt-sm-0">' . $importoFmt . ' &euro;</div>';
+    echo '  <div class="text-sm-end mt-2 mt-sm-0 d-flex flex-column align-items-end">';
+    if ($icon) {
+        echo '    <i class="bi ' . $icon . ' mb-1"></i>';
+    }
+    echo '    <div>' . $importoFmt . ' &euro;</div>';
+    if ($salvadanaio !== '') {
+        echo '    <div class="mt-1"><span class="badge-etichetta">' . htmlspecialchars($salvadanaio) . '</span></div>';
+    }
+    echo '  </div>';
     echo '</div>';
 }
 ?>
