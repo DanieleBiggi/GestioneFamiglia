@@ -103,7 +103,7 @@ if ($id > 0): ?>
   <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
     <h5 class="mb-0">Tagliandi</h5>
     <?php if ($isOwner): ?>
-      <a href="mezzo_dettaglio_tagliando.php?mezzo=<?= (int)$data['id_mezzo'] ?>" class="btn btn-outline-light btn-sm">Aggiungi</a>
+      <button class="btn btn-outline-light btn-sm" onclick="openTagliandoModal()">Aggiungi</button>
     <?php endif; ?>
   </div>
   <div id="tagliandiList">
@@ -180,6 +180,47 @@ if ($id > 0): ?>
         <div class="mb-3">
           <label class="form-label">Chilometri</label>
           <input type="number" name="chilometri" class="form-control bg-secondary text-white" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary w-100">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal tagliando -->
+<div class="modal fade" id="tagliandoModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="tagliandoForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Nuovo tagliando</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Nome tagliando</label>
+          <input type="text" name="nome_tagliando" class="form-control bg-secondary text-white" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Mesi da immatricolazione</label>
+          <input type="number" name="mesi_da_immatricolazione" class="form-control bg-secondary text-white">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Mesi da precedente tagliando</label>
+          <input type="number" name="mesi_da_precedente_tagliando" class="form-control bg-secondary text-white">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Massimo km tagliando</label>
+          <input type="number" name="massimo_km_tagliando" class="form-control bg-secondary text-white">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Frequenza mesi</label>
+          <input type="number" name="frequenza_mesi" class="form-control bg-secondary text-white">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Frequenza km</label>
+          <input type="number" name="frequenza_km" class="form-control bg-secondary text-white">
         </div>
       </div>
       <div class="modal-footer">
