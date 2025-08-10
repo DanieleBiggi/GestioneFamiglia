@@ -116,15 +116,32 @@ $dataOra = date('d/m/Y H:i', strtotime($mov['data_operazione']));
     <h5 class="mb-0">Quote utenti</h5>
     <button class="btn btn-outline-light" onclick="openU2oModal()">Aggiungi nuovo</button>
   </div>
-  <ul class="list-group list-group-flush bg-dark mb-3" id="u2oList">
-    <?php foreach ($u2oRows as $row): ?>
-      <li class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center" role="button" data-u2o-id="<?= (int)$row['id_u2o'] ?>" data-utente-id="<?= (int)$row['id_utente'] ?>" data-quote="<?= $row['quote'] !== null ? htmlspecialchars($row['quote']) : '' ?>" data-saldata="<?= (int)$row['saldata'] ?>" data-data-saldo="<?= htmlspecialchars($row['data_saldo'] ?? '') ?>" onclick="openU2oModal(this)">
-        <div class="flex-grow-1"><?= htmlspecialchars($row['nome'] . ' ' . $row['cognome']) ?></div>
-        <div class="text-end me-2" style="min-width:80px;"><?= number_format($row['importo_utente'], 2, ',', '.') ?> €</div>
-        <button class="btn btn-danger btn-sm ms-2" onclick="event.stopPropagation(); deleteU2o(<?= (int)$row['id_u2o'] ?>)">✕</button>
-      </li>
+  <div id='u2oList'>
+    <?php foreach ($u2oRows as $row):
+        $quota = $row['quote'] !== null ? number_format($row['quote'], 2, ',', '.') : '-';
+        $saldataText = (int)$row['saldata'] === 1
+            ? 'Saldata' . (!empty($row['data_saldo']) ? ' il ' . date('d/m/Y', strtotime($row['data_saldo'])) : '')
+            : 'Non saldata';
+    ?>
+      <div class='movement d-flex justify-content-between align-items-start text-white' role='button'
+           data-u2o-id='<?= (int)$row['id_u2o'] ?>'
+           data-utente-id='<?= (int)$row['id_utente'] ?>'
+           data-quote='<?= $row['quote'] !== null ? htmlspecialchars($row['quote']) : '' ?>'
+           data-saldata='<?= (int)$row['saldata'] ?>'
+           data-data-saldo='<?= htmlspecialchars($row['data_saldo'] ?? '') ?>'
+           onclick='openU2oModal(this)'>
+        <div class='flex-grow-1 me-3'>
+          <div class='fw-semibold'><?= htmlspecialchars($row['nome'] . ' ' . $row['cognome']) ?></div>
+          <div class='small'>Quota: <?= $quota ?></div>
+          <div class='small'><?= htmlspecialchars($saldataText) ?></div>
+        </div>
+        <div class='text-end'>
+          <div class='amount'><?= number_format($row['importo_utente'], 2, ',', '.') ?> €</div>
+          <button class='btn btn-danger btn-sm mt-2' onclick='event.stopPropagation(); deleteU2o(<?= (int)$row['id_u2o'] ?>)'>✕</button>
+        </div>
+      </div>
     <?php endforeach; ?>
-  </ul>
+  </div>
   <button class="btn btn-danger w-100" onclick="deleteE2o()">Elimina</button>
 </div>
 
