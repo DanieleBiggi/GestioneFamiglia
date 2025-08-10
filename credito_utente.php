@@ -29,6 +29,12 @@ if ($idUtente !== $loggedUserId && !$canChangeUser) {
     $idUtente = $loggedUserId;
 }
 
+// Eventuale data saldo selezionata
+$dataSaldoSel = null;
+if (isset($_GET['data_saldo']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['data_saldo'])) {
+    $dataSaldoSel = $_GET['data_saldo'];
+}
+
 // Dati utente selezionato (all'interno della famiglia)
 $stmtU = $conn->prepare('SELECT u.id, u.nome, u.cognome
                          FROM utenti u
@@ -57,9 +63,21 @@ if ($canChangeUser) {
     $utentiFam = $stmtList->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmtList->close();
 }
-$ar = get_saldo_e_movimenti_utente($idUtente);
+
+// Elenco date saldo disponibili
+$stmtDate = $conn->prepare('SELECT DISTINCT DATE(data_saldo) AS data_saldo
+                            FROM bilancio_utenti2operazioni_etichettate
+                            WHERE id_utente = ? AND saldata = 1
+                            ORDER BY data_saldo DESC');
+$stmtDate->bind_param('i', $idUtente);
+$stmtDate->execute();
+$dateSaldo = $stmtDate->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmtDate->close();
+
+$ar = get_saldo_e_movimenti_utente($idUtente, $dataSaldoSel);
 $movimenti = $ar['movimenti'];
 $saldoTot = $ar['saldoTot'];
+$showCheckboxes = $isAdmin && !$dataSaldoSel;
 
 // Calcola il totale per ogni etichetta
 $totaliEtichette = [];
@@ -83,7 +101,12 @@ uasort($totaliEtichette, function ($a, $b) {
 ?>
 
 <div class="text-white">
-  <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
+  <div class="d-flex justify-content-between mb-3">
+    <a href="javascript:history.back()" class="btn btn-outline-light">← Indietro</a>
+    <?php if (!empty($dateSaldo)): ?>
+      <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#dateSaldoModal">Vedi operazioni saldate</button>
+    <?php endif; ?>
+  </div>
 
   <?php if ($canChangeUser): ?>
     <form method="get" class="mb-3">
@@ -92,13 +115,19 @@ uasort($totaliEtichette, function ($a, $b) {
           <option value="<?= (int)$u['id'] ?>" <?= $u['id']==$idUtente ? 'selected' : '' ?>><?= htmlspecialchars(trim(($u['nome'] ?? '').' '.($u['cognome'] ?? ''))) ?></option>
         <?php endforeach; ?>
       </select>
+      <?php if ($dataSaldoSel): ?>
+        <input type="hidden" name="data_saldo" value="<?= htmlspecialchars($dataSaldoSel) ?>">
+      <?php endif; ?>
     </form>
   <?php endif; ?>
 
    <h4 class="mb-3">Credito/Debito per: <?= htmlspecialchars(trim(($utente['nome'] ?? '') . ' ' . ($utente['cognome'] ?? ''))) ?></h4>
    <div class="mb-4">Saldo totale: <span><?= ($saldoTot>=0?'+':'') . number_format($saldoTot, 2, ',', '.') ?> €</span></div>
+  <?php if ($dataSaldoSel): ?>
+   <div class="mb-4">Operazioni saldate il <?= date('d/m/Y', strtotime($dataSaldoSel)) ?></div>
+  <?php endif; ?>
 
-   <?php if ($isAdmin): ?>
+   <?php if ($showCheckboxes): ?>
      <div class="d-flex align-items-center mb-3">
        <button id="saldaBtn" class="btn btn-outline-light">Salda movimenti</button>
        <div id="totaleSelezionati" class="ms-auto"></div>
@@ -109,7 +138,7 @@ uasort($totaliEtichette, function ($a, $b) {
    <?php foreach ($movimenti as $mov): ?> 
       <?php $rowsAttr = $isAdmin ? htmlspecialchars(json_encode($mov['rows'] ?? []), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : ''; ?>
       <div class="movement d-flex justify-content-between align-items-start text-white mb-2" data-ide20="<?= (int)$mov['id_e2o'] ?>" data-tabella="<?= htmlspecialchars($mov['tabella']) ?>" data-id-tabella="<?= (int)$mov['id_tabella'] ?>" <?php if ($isAdmin): ?>data-rows='<?= $rowsAttr ?>'<?php endif; ?> onclick="openMovimento(this)" style="cursor:pointer">
-        <?php if ($isAdmin): ?>
+        <?php if ($showCheckboxes): ?>
           <input type="checkbox" class="form-check-input me-2 flex-shrink-0" style="width:1.25rem;height:1.25rem;" data-id-u2o="<?= $mov['id_u2o'] ?>" data-amount="<?= $mov['saldo_utente'] ?>" onclick="event.stopPropagation();">
         <?php endif; ?>
         <div class="flex-grow-1 me-3" style="max-width:calc(100% - 8rem);">
@@ -137,6 +166,25 @@ uasort($totaliEtichette, function ($a, $b) {
  <?php endif; ?>
 </div>
 
+  <div class="modal fade" id="dateSaldoModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content bg-dark text-white">
+        <div class="modal-header">
+          <h5 class="modal-title">Seleziona data saldo</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <ul class="list-unstyled mb-0">
+            <li><a href="credito_utente.php?id_utente=<?= $idUtente ?>" class="text-decoration-none text-white d-block py-1">Movimenti non saldati</a></li>
+            <?php foreach ($dateSaldo as $ds): ?>
+              <li><a href="credito_utente.php?id_utente=<?= $idUtente ?>&data_saldo=<?= $ds['data_saldo'] ?>" class="text-decoration-none text-white d-block py-1"><?= date('d/m/Y', strtotime($ds['data_saldo'])) ?></a></li>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="movModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content bg-dark text-white">
@@ -158,7 +206,7 @@ uasort($totaliEtichette, function ($a, $b) {
     </div>
   </div>
 
-  <?php if ($isAdmin): ?>
+<?php if ($showCheckboxes): ?>
   <div class="modal fade" id="confirmModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content bg-dark text-white">
@@ -174,7 +222,7 @@ uasort($totaliEtichette, function ($a, $b) {
       </div>
     </div>
   </div>
-  <?php endif; ?>
+<?php endif; ?>
 
   <script>
   function openMovimento(div) {
@@ -212,7 +260,7 @@ uasort($totaliEtichette, function ($a, $b) {
       });
   }
 
-  <?php if ($isAdmin): ?>
+  <?php if ($showCheckboxes): ?>
   const totaleEl = document.getElementById('totaleSelezionati');
   function updateSelectedTotal() {
     const checked = document.querySelectorAll('.movement input[type="checkbox"]:checked');

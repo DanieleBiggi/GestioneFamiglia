@@ -205,7 +205,7 @@ function calcola_importo_quota(
     return $importoTotale * $quota;
 }
 
-function get_saldo_e_movimenti_utente($idUtente)
+function get_saldo_e_movimenti_utente($idUtente, $dataSaldo = null)
 {
     global $conn;
     $loggedUserId = $_SESSION['utente_id'] ?? 0;
@@ -241,11 +241,15 @@ function get_saldo_e_movimenti_utente($idUtente)
                FROM bilancio_utenti2operazioni_etichettate u2o
                JOIN v_bilancio_etichette2operazioni_a_testa v ON u2o.id_e2o = v.id_e2o
                JOIN bilancio_etichette2operazioni e2o ON e2o.id_e2o = u2o.id_e2o
-               WHERE u2o.id_utente = ? AND u2o.saldata = 0
+               WHERE u2o.id_utente = ? AND " . ($dataSaldo === null ? "u2o.saldata = 0" : "u2o.saldata = 1 AND DATE(u2o.data_saldo) = ?") . "
                ORDER BY v.data_operazione DESC";
-    
+
     $stmtMov = $conn->prepare($sqlMov);
-    $stmtMov->bind_param('i', $idUtente);
+    if ($dataSaldo === null) {
+        $stmtMov->bind_param('i', $idUtente);
+    } else {
+        $stmtMov->bind_param('is', $idUtente, $dataSaldo);
+    }
     $stmtMov->execute();
     $resMov = $stmtMov->get_result();
     $movimenti = [];
