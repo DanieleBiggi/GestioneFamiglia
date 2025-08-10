@@ -104,6 +104,7 @@
       <?php
         $showUtility = has_permission($conn, 'page:mezzi.php', 'view') ||
                       has_permission($conn, 'page:eventi.php', 'view') ||
+                      has_permission($conn, 'page:lista_spesa.php', 'view') ||
                       has_permission($conn, 'page:storia.php', 'view');
         if ($showUtility):
       ?>
@@ -118,6 +119,9 @@
             <?php endif; ?>
             <?php if (has_permission($conn, 'page:eventi.php', 'view')): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/eventi.php"><i class="bi bi-calendar-event me-2 text-white"></i>Eventi</a></li>
+            <?php endif; ?>
+            <?php if (has_permission($conn, 'page:lista_spesa.php', 'view')): ?>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/lista_spesa.php"><i class="bi bi-basket me-2 text-white"></i>Lista spesa</a></li>
             <?php endif; ?>
             <?php if (has_permission($conn, 'page:storia.php', 'view')): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/storia.php"><i class="bi bi-clock-history me-2 text-white"></i>Storia</a></li>
