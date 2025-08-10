@@ -17,7 +17,7 @@ if (($adminRow['admin'] ?? 0) != 1) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $targetId = (int)($_POST['id_utente'] ?? 0);
-    $stmt = $conn->prepare('SELECT id, nome, id_famiglia_gestione FROM utenti WHERE id = ? LIMIT 1');
+    $stmt = $conn->prepare('SELECT id, nome, id_famiglia_gestione, id_tema FROM utenti WHERE id = ? LIMIT 1');
     $stmt->bind_param('i', $targetId);
     $stmt->execute();
     if ($user = $stmt->get_result()->fetch_assoc()) {
@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['utente_id'] = $user['id'];
         $_SESSION['utente_nome'] = $user['nome'];
         $_SESSION['id_famiglia_gestione'] = $user['id_famiglia_gestione'] ?? 0;
+        $_SESSION['theme_id'] = (int)($user['id_tema'] ?? 1);
         
         $lvlStmt = $conn->prepare('SELECT userlevelid FROM utenti2famiglie WHERE id_utente = ? AND id_famiglia = ? LIMIT 1');
         $lvlStmt->bind_param('ii', $_SESSION['utente_id'], $_SESSION['id_famiglia_gestione']);

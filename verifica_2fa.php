@@ -35,6 +35,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $lvlRes = $lvlStmt->get_result();
         $_SESSION['userlevelid'] = ($lvlRes->num_rows === 1) ? intval($lvlRes->fetch_assoc()['userlevelid']) : 0;
 
+        $themeStmt = $conn->prepare('SELECT id_tema FROM utenti WHERE id = ?');
+        $themeStmt->bind_param('i', $_SESSION['utente_id']);
+        $themeStmt->execute();
+        $themeRes = $themeStmt->get_result();
+        $_SESSION['theme_id'] = (int)($themeRes->fetch_assoc()['id_tema'] ?? 1);
+        $themeStmt->close();
+
         unset($_SESSION['2fa_user_id'], $_SESSION['2fa_user_nome'], $_SESSION['2fa_attempts'], $_SESSION['2fa_id_famiglia_gestione']);
         header('Location: setup_passcode.php');
         exit;
