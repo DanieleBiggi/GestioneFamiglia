@@ -129,6 +129,7 @@ uasort($totaliEtichette, function ($a, $b) {
 
    <?php if ($showCheckboxes): ?>
      <div class="d-flex align-items-center mb-3">
+       <input type="checkbox" id="selectAll" class="form-check-input me-2" style="width:1.25rem;height:1.25rem;">
        <button id="saldaBtn" class="btn btn-outline-light">Salda movimenti</button>
        <div id="totaleSelezionati" class="ms-auto"></div>
      </div>
@@ -137,7 +138,7 @@ uasort($totaliEtichette, function ($a, $b) {
   <?php if (!empty($movimenti)): ?>
    <?php foreach ($movimenti as $mov): ?> 
       <?php $rowsAttr = $isAdmin ? htmlspecialchars(json_encode($mov['rows'] ?? []), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : ''; ?>
-      <div class="movement d-flex justify-content-between align-items-start text-white mb-2" data-ide20="<?= (int)$mov['id_e2o'] ?>" data-tabella="<?= htmlspecialchars($mov['tabella']) ?>" data-id-tabella="<?= (int)$mov['id_tabella'] ?>" <?php if ($isAdmin): ?>data-rows='<?= $rowsAttr ?>'<?php endif; ?> onclick="openMovimento(this)" style="cursor:pointer">
+      <div class="movement d-flex justify-content-between align-items-start text-white mb-2 position-relative" data-ide20="<?= (int)$mov['id_e2o'] ?>" data-tabella="<?= htmlspecialchars($mov['tabella']) ?>" data-id-tabella="<?= (int)$mov['id_tabella'] ?>" <?php if ($isAdmin): ?>data-rows='<?= $rowsAttr ?>'<?php endif; ?> onclick="openMovimento(this)" style="cursor:pointer">
         <?php if ($showCheckboxes): ?>
           <input type="checkbox" class="form-check-input me-2 flex-shrink-0" style="width:1.25rem;height:1.25rem;" data-id-u2o="<?= $mov['id_u2o'] ?>" data-amount="<?= $mov['saldo_utente'] ?>" onclick="event.stopPropagation();">
         <?php endif; ?>
@@ -149,6 +150,11 @@ uasort($totaliEtichette, function ($a, $b) {
         <div class="text-end flex-shrink-0">
           <div class="amount"><?= ($mov['saldo_utente']>=0?'+':'') . number_format($mov['saldo_utente'], 2, ',', '.') ?> €</div>
         </div>
+        <?php if (!empty($mov['file_allegato'])): ?>
+          <a href="files/scontrini/<?= urlencode($mov['file_allegato']) ?>" target="_blank" class="text-white position-absolute bottom-0 end-0 me-2 mb-1" onclick="event.stopPropagation();">
+            <i class="bi bi-paperclip"></i>
+          </a>
+        <?php endif; ?>
       </div>
    <?php endforeach; ?>
 
@@ -262,7 +268,9 @@ uasort($totaliEtichette, function ($a, $b) {
 
   <?php if ($showCheckboxes): ?>
   const totaleEl = document.getElementById('totaleSelezionati');
+  const selectAllCb = document.getElementById('selectAll');
   function updateSelectedTotal() {
+    const all = document.querySelectorAll('.movement input[type="checkbox"]');
     const checked = document.querySelectorAll('.movement input[type="checkbox"]:checked');
     let tot = 0;
     checked.forEach(cb => {
@@ -273,9 +281,17 @@ uasort($totaliEtichette, function ($a, $b) {
     } else {
       totaleEl.textContent = '';
     }
+    selectAllCb.checked = checked.length === all.length && all.length > 0;
   }
   document.querySelectorAll('.movement input[type="checkbox"]').forEach(cb => {
     cb.addEventListener('change', updateSelectedTotal);
+  });
+  selectAllCb.addEventListener('change', () => {
+    const checked = selectAllCb.checked;
+    document.querySelectorAll('.movement input[type="checkbox"]').forEach(cb => {
+      cb.checked = checked;
+    });
+    updateSelectedTotal();
   });
 
   document.getElementById('saldaBtn').addEventListener('click', () => {
