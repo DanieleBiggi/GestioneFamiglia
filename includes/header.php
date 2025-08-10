@@ -7,6 +7,7 @@
   <title>Gestione Famiglia 2.0</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/Gestionale25/includes/theme.php">
   <link rel="stylesheet" href="/Gestionale25/assets/style.css">
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
 </head>
@@ -45,6 +46,18 @@
         ?>
           <option value="<?= (int)$fam['id_famiglia'] ?>" <?= (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == $fam['id_famiglia']) ? 'selected' : '' ?>><?= htmlspecialchars($fam['nome_famiglia']) ?></option>
         <?php endwhile; $stmt->close(); ?>
+      </select>
+    </form>
+    <form method="post" action="cambia_tema.php" class="mb-3">
+      <select name="id_tema" class="form-select bg-dark text-white border-secondary" onchange="this.form.submit()">
+        <?php
+        $stmtTheme = $conn->prepare('SELECT id, nome FROM temi');
+        $stmtTheme->execute();
+        $resTheme = $stmtTheme->get_result();
+        while ($t = $resTheme->fetch_assoc()):
+        ?>
+          <option value="<?= (int)$t['id'] ?>" <?= (($_SESSION['theme_id'] ?? 1) == $t['id']) ? 'selected' : '' ?>><?= htmlspecialchars($t['nome']) ?></option>
+        <?php endwhile; $stmtTheme->close(); ?>
       </select>
     </form>
     <?php endif; ?>
