@@ -39,14 +39,15 @@ function render_budget(array $row): void {
         }
         echo '    <div class="small">' . htmlspecialchars($dates) . '</div>';
     }
+     echo '    <div>' . $importoFmt . ' &euro;</div>';
     echo '  </div>';
     echo '  <div class="text-sm-end mt-2 mt-sm-0 d-flex flex-column align-items-end">';
     if ($icon) {
         echo '    <i class="bi ' . $icon . ' mb-1"></i>';
     }
-    echo '    <div>' . $importoFmt . ' &euro;</div>';
+   
     if ($salvadanaio !== '') {
-        echo '    <div class="mt-1"><span class="badge-etichetta">' . htmlspecialchars($salvadanaio) . '</span></div>';
+        echo '    <div class="mt-1"><span class="badge-etichetta" style=" min-width: 150px;text-align:center">' . htmlspecialchars($salvadanaio) . '</span></div>';
     }
     echo '  </div>';
     echo '</div>';
