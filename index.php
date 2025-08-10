@@ -10,36 +10,39 @@ include 'includes/header.php';
 $idUtente = $_SESSION['utente_id'] ?? 0;
 
 if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
-
 <div class="row text-center g-2 mb-3">
   <div class="col-3">
     <a href="aggiungi_entrata.php" class="text-decoration-none text-white">
-      <div class="btn btn-outline-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" style="width:80px;height:80px;">
-        <i class="bi bi-arrow-down-circle fs-1"></i>
+      <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
+           style="width:50px;height:50px">
+        <i class="bi bi-arrow-down-circle fs-4"></i>
       </div>
       <div>Aggiungi entrata</div>
     </a>
   </div>
   <div class="col-3">
     <a href="aggiungi_uscita.php" class="text-decoration-none text-white">
-      <div class="btn btn-outline-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" style="width:80px;height:80px;">
-        <i class="bi bi-arrow-up-circle fs-1"></i>
+      <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
+           style="width:50px;height:50px">
+        <i class="bi bi-arrow-up-circle fs-4"></i>
       </div>
       <div>Aggiungi uscita</div>
     </a>
   </div>
   <div class="col-3">
     <a href="upload_movimenti.php" class="text-decoration-none text-white">
-      <div class="btn btn-outline-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" style="width:80px;height:80px;">
-        <i class="bi bi-cloud-upload fs-1"></i>
+      <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
+           style="width:50px;height:50px">
+        <i class="bi bi-cloud-upload fs-4"></i>
       </div>
       <div>Carica file</div>
     </a>
   </div>
   <div class="col-3">
     <a href="#" class="text-decoration-none text-white" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu">
-      <div class="btn btn-outline-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" style="width:80px;height:80px;">
-        <i class="bi bi-three-dots fs-1"></i>
+      <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
+           style="width:50px;height:50px">
+        <i class="bi bi-three-dots fs-4"></i>
       </div>
       <div>Altro</div>
     </a>
