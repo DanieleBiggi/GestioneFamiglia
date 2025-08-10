@@ -1,0 +1,3 @@
+ALTER TABLE bilancio_etichette
+  ADD COLUMN anno INT DEFAULT NULL AFTER da_dividere,
+  ADD COLUMN mese TINYINT DEFAULT NULL AFTER anno;

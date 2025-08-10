@@ -8,6 +8,8 @@ $id = intval($data['id_etichetta'] ?? 0);
 $descrizione = trim($data['descrizione'] ?? '');
 $attivo = isset($data['attivo']) && $data['attivo'] == 1 ? 1 : 0;
 $da_dividere = isset($data['da_dividere']) && $data['da_dividere'] == 1 ? 1 : 0;
+$anno = isset($data['anno']) && $data['anno'] !== '' ? (int)$data['anno'] : null;
+$mese = isset($data['mese']) && $data['mese'] !== '' ? (int)$data['mese'] : null;
 $utenti = trim($data['utenti_tra_cui_dividere'] ?? '');
 
 if (!$id || $descrizione === '') {
@@ -15,8 +17,8 @@ if (!$id || $descrizione === '') {
     exit;
 }
 
-$stmt = $conn->prepare('UPDATE bilancio_etichette SET descrizione = ?, attivo = ?, da_dividere = ?, utenti_tra_cui_dividere = ? WHERE id_etichetta = ?');
-$stmt->bind_param('siisi', $descrizione, $attivo, $da_dividere, $utenti, $id);
+$stmt = $conn->prepare('UPDATE bilancio_etichette SET descrizione = ?, attivo = ?, da_dividere = ?, anno = ?, mese = ?, utenti_tra_cui_dividere = ? WHERE id_etichetta = ?');
+$stmt->bind_param('siiiisi', $descrizione, $attivo, $da_dividere, $anno, $mese, $utenti, $id);
 $ok = $stmt->execute();
 
 if ($ok) {
