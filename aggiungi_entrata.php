@@ -1,31 +1,33 @@
 <?php
 include 'includes/session_check.php';
 include 'includes/db.php';
+
+$error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $descrizione = $_POST['descrizione'] ?? '';
-    $descrizione_extra = $_POST['descrizione_extra'] ?? '';
+    $descrizione = trim($_POST['descrizione'] ?? '');
+    $descrizione_extra = trim($_POST['descrizione_extra'] ?? '');
     $importo = $_POST['importo'] ?? 0;
-    $note = $_POST['note'] ?? '';
-    $data_operazione = $_POST['data_operazione'] ?? date('Y-m-d\TH:i');
-    $data_operazione = date('Y-m-d H:i:s', strtotime($data_operazione));
-    
-    $note = isset($note) && trim($note) !== '' ? $note : null;
-    $descrizione_extra = isset($descrizione_extra) && trim($descrizione_extra) !== '' ? $descrizione_extra : null;
-    $descrizione = isset($descrizione) && trim($descrizione) !== '' ? $descrizione : null;
+    $note = trim($_POST['note'] ?? '');
+    $data_operazione = trim($_POST['data_operazione'] ?? '');
 
-    $stmt = $conn->prepare("INSERT INTO bilancio_entrate (id_utente, mezzo, descrizione_operazione, descrizione_extra, importo, note, data_operazione) VALUES (?, 'contanti', ?, ?, ?, ?, ?)");
-    $stmt->bind_param('issdss', $_SESSION['utente_id'], $descrizione, $descrizione_extra, $importo, $note, $data_operazione);
-    if ($stmt->execute()) {
-        
-    $id = $conn->insert_id;
-    $stmt->close();
-    header('Location: dettaglio.php?id=' . $id . '&src=bilancio_entrate');
-} else {
-    die("Errore nell'INSERT: " . $stmt->error);
-}
+    if ($descrizione === '' || $data_operazione === '') {
+        $error = "Descrizione e data operazione sono obbligatorie.";
+    } else {
+        $data_operazione = date('Y-m-d H:i:s', strtotime($data_operazione));
+        $note = $note !== '' ? $note : null;
+        $descrizione_extra = $descrizione_extra !== '' ? $descrizione_extra : null;
 
-    
-    exit;
+        $stmt = $conn->prepare("INSERT INTO bilancio_entrate (id_utente, mezzo, descrizione_operazione, descrizione_extra, importo, note, data_operazione) VALUES (?, 'contanti', ?, ?, ?, ?, ?)");
+        $stmt->bind_param('issdss', $_SESSION['utente_id'], $descrizione, $descrizione_extra, $importo, $note, $data_operazione);
+        if ($stmt->execute()) {
+            $id = $conn->insert_id;
+            $stmt->close();
+            header('Location: dettaglio.php?id=' . $id . '&src=bilancio_entrate');
+            exit;
+        } else {
+            die("Errore nell'INSERT: " . $stmt->error);
+        }
+    }
 }
 include 'includes/header.php';
 
@@ -33,6 +35,7 @@ include 'includes/header.php';
 
 <div class="container text-white">
   <h4 class="mb-4">Nuova entrata</h4>
+  <?php if ($error): ?><div class="alert alert-danger"><?= $error ?></div><?php endif; ?>
   <form method="post">
     <div class="mb-3">
       <label class="form-label">Descrizione</label>
