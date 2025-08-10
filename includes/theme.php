@@ -36,6 +36,14 @@ body {
   background-color: var(--bg-color) !important;
 }
 
+.btn-dark {
+  background-color: var(--bg-color) !important;
+}
+
+.dropdown-menu-dark{
+  background-color: var(--primary-color) !important;
+}
+
 .text-white {
   color: var(--text-color) !important;
 }
@@ -46,6 +54,6 @@ body {
 }
 
 .btn-outline-light:hover {
-  background-color: var(--text-color);
+  background-color: var(--primary-color);
   color: var(--bg-color);
 }
