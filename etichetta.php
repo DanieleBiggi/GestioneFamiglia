@@ -341,6 +341,7 @@ $stmtGrp->close();
         <?php 
         //$ar_totali['id_utente'][$u['id_utente']]['entrate']
             $per_ar_totali = render_movimento_etichetta($mov,$etichettaInfo['id_etichetta']); 
+            if(isset($per_ar_totali['id_utente']))
             foreach($per_ar_totali['id_utente'] as $id_utente=>$p)
             {
                 //print_r($p);
