@@ -7,6 +7,8 @@ $data = json_decode(file_get_contents('php://input'), true);
 $descrizione = trim($data['descrizione'] ?? '');
 $attivo = isset($data['attivo']) && $data['attivo'] == 1 ? 1 : 0;
 $da_dividere = isset($data['da_dividere']) && $data['da_dividere'] == 1 ? 1 : 0;
+$anno = isset($data['anno']) && $data['anno'] !== '' ? (int)$data['anno'] : null;
+$mese = isset($data['mese']) && $data['mese'] !== '' ? (int)$data['mese'] : null;
 $utenti = trim($data['utenti_tra_cui_dividere'] ?? '');
 
 if ($descrizione === '') {
@@ -14,8 +16,8 @@ if ($descrizione === '') {
     exit;
 }
 
-$stmt = $conn->prepare('INSERT INTO bilancio_etichette (descrizione, attivo, da_dividere, utenti_tra_cui_dividere) VALUES (?, ?, ?, ?)');
-$stmt->bind_param('siis', $descrizione, $attivo, $da_dividere, $utenti);
+$stmt = $conn->prepare('INSERT INTO bilancio_etichette (descrizione, attivo, da_dividere, anno, mese, utenti_tra_cui_dividere) VALUES (?, ?, ?, ?, ?, ?)');
+$stmt->bind_param('siiiis', $descrizione, $attivo, $da_dividere, $anno, $mese, $utenti);
 $ok = $stmt->execute();
 
 if ($ok) {

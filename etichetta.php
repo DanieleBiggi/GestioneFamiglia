@@ -23,7 +23,7 @@ if ($etichettaParam === '') {
 }
 
 
-$stmtEt = $conn->prepare("SELECT id_etichetta, descrizione, attivo, da_dividere, utenti_tra_cui_dividere FROM bilancio_etichette WHERE id_etichetta = ?");
+$stmtEt = $conn->prepare("SELECT id_etichetta, descrizione, attivo, da_dividere, anno, mese, utenti_tra_cui_dividere FROM bilancio_etichette WHERE id_etichetta = ?");
 $stmtEt->bind_param('s', $etichettaParam);
 $stmtEt->execute();
 $etichettaInfo = $stmtEt->get_result()->fetch_assoc();
@@ -317,8 +317,22 @@ $stmtGrp->close();
       <!--<button type="button" class="btn btn-outline-light btn-sm ms-auto d-inline mb-3" onclick="toggleSettle()">Seleziona</button>-->
     <?php endif; ?>
     </div>
+  <?php
+    $annoMese = '';
+    if (!empty($etichettaInfo['anno'])) {
+        $annoMese = (string)$etichettaInfo['anno'];
+        if (!empty($etichettaInfo['mese'])) {
+            $annoMese .= '/' . str_pad((int)$etichettaInfo['mese'], 2, '0', STR_PAD_LEFT);
+        }
+    } elseif (!empty($etichettaInfo['mese'])) {
+        $annoMese = str_pad((int)$etichettaInfo['mese'], 2, '0', STR_PAD_LEFT);
+    }
+  ?>
   <h4 class="mb-3">
     <span id="etichettaDesc"><?= htmlspecialchars($etichettaInfo['descrizione']) ?></span>
+    <?php if ($annoMese !== ''): ?>
+      <small id="etichettaDate" class="text-muted ms-2"><?= htmlspecialchars($annoMese) ?></small>
+    <?php endif; ?>
       <i class="bi bi-pencil ms-2" role="button" onclick="openEtichettaModal()"></i>
   </h4>
   <form method="get" class="mb-3">
@@ -646,6 +660,14 @@ $stmtGrp->close();
           <label class="form-check-label" for="da_dividere">Da dividere</label>
         </div>
         <div class="mb-3">
+          <label for="etichetta_anno" class="form-label">Anno</label>
+          <input type="number" class="form-control bg-secondary text-white" id="etichetta_anno">
+        </div>
+        <div class="mb-3">
+          <label for="etichetta_mese" class="form-label">Mese</label>
+          <input type="number" min="1" max="12" class="form-control bg-secondary text-white" id="etichetta_mese">
+        </div>
+        <div class="mb-3">
           <label class="form-label">Utenti tra cui dividere</label>
           <div id="utenti_tra_cui_dividere" class="form-control bg-secondary text-white" style="max-height:150px; overflow:auto;">
             <?php foreach ($listaUtenti as $u): ?>
@@ -729,6 +751,8 @@ document.getElementById('editE2oForm').addEventListener('submit', function(e){
     descrizione: <?= json_encode($etichettaInfo['descrizione']) ?>,
     attivo: <?= (int)($etichettaInfo['attivo'] ?? 0) ?>,
     da_dividere: <?= (int)($etichettaInfo['da_dividere'] ?? 0) ?>,
+    anno: <?= json_encode($etichettaInfo['anno'] ?? null) ?>,
+    mese: <?= json_encode($etichettaInfo['mese'] ?? null) ?>,
     utenti: <?= json_encode($etichettaInfo['utenti_tra_cui_dividere'] ?? '') ?>
   };
 
@@ -736,6 +760,8 @@ document.getElementById('editE2oForm').addEventListener('submit', function(e){
     document.getElementById('descrizione').value = etichettaData.descrizione;
     document.getElementById('attivo').checked = etichettaData.attivo == 1;
     document.getElementById('da_dividere').checked = etichettaData.da_dividere == 1;
+    document.getElementById('etichetta_anno').value = etichettaData.anno !== null ? etichettaData.anno : '';
+    document.getElementById('etichetta_mese').value = etichettaData.mese !== null ? etichettaData.mese : '';
     const utentiDiv = document.getElementById('utenti_tra_cui_dividere');
     utentiDiv.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
     (etichettaData.utenti || '').split(',').filter(Boolean).forEach(id => {
@@ -753,6 +779,8 @@ document.getElementById('editE2oForm').addEventListener('submit', function(e){
       descrizione: document.getElementById('descrizione').value.trim(),
       attivo: document.getElementById('attivo').checked ? 1 : 0,
       da_dividere: document.getElementById('da_dividere').checked ? 1 : 0,
+      anno: document.getElementById('etichetta_anno').value ? parseInt(document.getElementById('etichetta_anno').value, 10) : null,
+      mese: document.getElementById('etichetta_mese').value ? parseInt(document.getElementById('etichetta_mese').value, 10) : null,
       utenti_tra_cui_dividere: selectedUsers
     };
     fetch('ajax/update_etichetta.php', {
