@@ -35,7 +35,7 @@ include 'includes/header.php';
   <?php if ($error): ?><div class="alert alert-danger"><?= $error ?></div><?php endif; ?>
   <form method="post">
     <div class="mb-3">
-      <label class="form-label">Descrizione</label>
+      <label class="form-label">Descrizione*</label>
       <input type="text" name="descrizione" class="form-control bg-dark text-white" required>
     </div>
     <div class="mb-3">
