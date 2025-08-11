@@ -194,3 +194,23 @@ class Utility
         return addcslashes($value, "_%");
     }
 }
+
+/**
+ * Calcola la differenza in mesi interi tra due date.
+ * Sottrae un mese se il giorno del secondo argomento è inferiore al giorno del primo.
+ * Le date devono essere nel formato 'Y-m-d'.
+ */
+function diff_mesi(?string $from, ?string $to): ?int
+{
+    if (!$from || !$to) {
+        return null;
+    }
+    $tz = new DateTimeZone('Europe/Rome');
+    $fromDate = new DateTime($from, $tz);
+    $toDate = new DateTime($to, $tz);
+    $months = ($toDate->format('Y') - $fromDate->format('Y')) * 12 + ($toDate->format('n') - $fromDate->format('n'));
+    if ((int)$toDate->format('j') < (int)$fromDate->format('j')) {
+        $months--;
+    }
+    return $months;
+}

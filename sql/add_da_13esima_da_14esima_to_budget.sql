@@ -1,0 +1,3 @@
+ALTER TABLE budget
+  ADD COLUMN `da_13esima` DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER `tipologia_spesa`,
+  ADD COLUMN `da_14esima` DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER `da_13esima`;
