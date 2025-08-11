@@ -20,7 +20,7 @@ function render_budget(array $row): void {
     } elseif ($tipologiaLower === 'uscita') {
         $icon = 'bi-arrow-up-circle text-danger';
     }
-    echo '<div class="list-group-item movement text-white budget-item d-flex flex-column flex-sm-row justify-content-between align-items-start"'
+    echo '<div class="list-group-item movement text-white budget-item d-flex justify-content-between align-items-start"'
         . ' data-id="' . $id . '"'
         . ' data-search="' . $searchAttr . '"'
         . ' data-descrizione="' . htmlspecialchars($descrizione, ENT_QUOTES) . '"'
