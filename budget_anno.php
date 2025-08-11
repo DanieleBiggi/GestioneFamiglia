@@ -217,7 +217,7 @@ $salStmt->close();
   </thead>
   <tbody>
     <?php foreach ($rows as $r): ?>
-    <tr data-id="<?= (int)$r['id_budget'] ?>" data-salvadanaio="<?= htmlspecialchars((string)$r['id_salvadanaio']) ?>" data-descrizione="<?= htmlspecialchars($r['descrizione'], ENT_QUOTES) ?>" data-inizio="<?= htmlspecialchars($r['data_inizio']) ?>" data-scadenza="<?= htmlspecialchars($r['data_scadenza']) ?>" data-da13="<?= number_format($r['da_13esima'],2,'.','') ?>" data-da14="<?= number_format($r['da_14esima'],2,'.','') ?>" data-importo="<?= number_format($r['importo'],2,'.','') ?>">
+    <tr data-id="<?= (int)$r['id_budget'] ?>" data-salvadanaio="<?= htmlspecialchars((string)$r['id_salvadanaio']) ?>" data-descrizione="<?= htmlspecialchars($r['descrizione'], ENT_QUOTES) ?>" data-inizio="<?= htmlspecialchars($r['data_inizio']) ?>" data-scadenza="<?= htmlspecialchars($r['data_scadenza']) ?>" data-da13="<?= number_format($r['da_13esima'],2,'.','') ?>" data-da14="<?= number_format($r['da_14esima'],2,'.','') ?>" data-importo="<?= number_format($r['importo'],2,'.','') ?>" data-tipologia="<?= htmlspecialchars($r['tipologia']) ?>" data-tipologia-spesa="<?= htmlspecialchars($r['tipologia_spesa']) ?>">
       <td class="text-center">
         <?php if (strtolower($r['tipologia']) === 'entrata'): ?>
           <i class="bi bi-arrow-down-circle text-success"></i>
@@ -273,6 +273,8 @@ $salStmt->close();
       </div>
       <div class="modal-body">
         <input type="hidden" name="id" id="editBudgetId">
+        <input type="hidden" name="tipologia" id="editTipologia">
+        <input type="hidden" name="tipologia_spesa" id="editTipologiaSpesa">
         <div class="mb-3">
           <label class="form-label">Salvadanaio</label>
           <select name="id_salvadanaio" id="editSalvadanaio" class="form-select bg-secondary text-white">
@@ -360,6 +362,8 @@ document.addEventListener('DOMContentLoaded', function(){
   const editModal = editModalEl ? new bootstrap.Modal(editModalEl) : null;
   const fields = {
     id: document.getElementById('editBudgetId'),
+    tipologia: document.getElementById('editTipologia'),
+    tipologiaSpesa: document.getElementById('editTipologiaSpesa'),
     salvadanaio: document.getElementById('editSalvadanaio'),
     descrizione: document.getElementById('editDescrizione'),
     inizio: document.getElementById('editDataInizio'),
@@ -378,6 +382,8 @@ document.addEventListener('DOMContentLoaded', function(){
     btn.addEventListener('click', () => {
       const tr = btn.closest('tr');
       fields.id.value = tr.dataset.id;
+      fields.tipologia.value = tr.dataset.tipologia;
+      fields.tipologiaSpesa.value = tr.dataset.tipologiaSpesa;
       fields.salvadanaio.value = tr.dataset.salvadanaio;
       fields.descrizione.value = tr.dataset.descrizione;
       fields.inizio.value = tr.dataset.inizio;
@@ -392,13 +398,28 @@ document.addEventListener('DOMContentLoaded', function(){
   document.querySelectorAll('.duplicate-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const tr = btn.closest('tr');
-      const fd = new FormData();
-      fd.append('action','duplicate');
-      fd.append('id', tr.dataset.id);
-      fetch('ajax/budget_manage.php', {method:'POST', body:fd})
-        .then(r=>r.json())
-        .then(res => { if(res.success){ location.reload(); } else { alert(res.error || 'Errore'); }});
+      fields.id.value = '';
+      fields.tipologia.value = tr.dataset.tipologia;
+      fields.tipologiaSpesa.value = tr.dataset.tipologiaSpesa;
+      fields.salvadanaio.value = tr.dataset.salvadanaio;
+      fields.descrizione.value = tr.dataset.descrizione;
+      fields.inizio.value = tr.dataset.inizio;
+      fields.scadenza.value = tr.dataset.scadenza;
+      fields.da13.value = tr.dataset.da13;
+      fields.da14.value = tr.dataset.da14;
+      fields.importo.value = tr.dataset.importo;
+      if(editModalEl.querySelector('.modal-title')){
+        editModalEl.querySelector('.modal-title').textContent = 'Duplica budget';
+      }
+      editModal?.show();
     });
+  });
+
+  editModalEl?.addEventListener('hidden.bs.modal', () => {
+    fields.id.value = '';
+    if(editModalEl.querySelector('.modal-title')){
+      editModalEl.querySelector('.modal-title').textContent = 'Modifica budget';
+    }
   });
 
   document.querySelectorAll('.delete-btn').forEach(btn => {
