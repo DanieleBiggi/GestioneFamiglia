@@ -55,7 +55,11 @@ if ($search !== '') {
 }
 $where = implode(' AND ', $conditions);
 
-$sql = "SELECT b.*, s.nome_salvadanaio FROM budget b LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio WHERE $where ORDER BY b.data_scadenza";
+$sql = "SELECT b.id_budget, b.id_salvadanaio, b.tipologia, b.importo, b.descrizione, b.data_inizio, b.data_scadenza, b.tipologia_spesa, b.da_13esima, b.da_14esima, s.nome_salvadanaio
+        FROM budget b
+        LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio
+        WHERE $where
+        ORDER BY b.data_scadenza";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param($types, ...$params);
 $stmt->execute();
@@ -145,7 +149,12 @@ $yearStmt->execute();
 $years = $yearStmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $yearStmt->close();
 
-$salStmt = $conn->prepare('SELECT id_salvadanaio, nome_salvadanaio FROM salvadanai WHERE id_famiglia = ? ORDER BY nome_salvadanaio');
+$salStmt = $conn->prepare('SELECT DISTINCT s.id_salvadanaio, s.nome_salvadanaio
+                            FROM salvadanai s
+                            JOIN utenti2salvadanai u2s ON s.id_salvadanaio = u2s.id_salvadanaio
+                            JOIN utenti2famiglie u2f ON u2s.id_utente = u2f.id_utente
+                            WHERE u2f.id_famiglia = ?
+                            ORDER BY s.nome_salvadanaio');
 $salStmt->bind_param('i', $idFamiglia);
 $salStmt->execute();
 $salvadanai = $salStmt->get_result()->fetch_all(MYSQLI_ASSOC);
