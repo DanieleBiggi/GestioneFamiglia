@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('search');
   const filterBtn = document.getElementById('filterBtn');
   const filterModalEl = document.getElementById('filterModal');
-  const applyFiltersBtn = document.getElementById('applyFilters');
+  const filterForm = document.getElementById('filterForm');
   const filterTipologia = document.getElementById('filterTipologia');
   const filterSalvadanaio = document.getElementById('filterSalvadanaio');
   const filterTipologiaSpesa = document.getElementById('filterTipologiaSpesa');
@@ -96,7 +96,8 @@ document.addEventListener('DOMContentLoaded', () => {
     filterModal?.show();
   });
 
-  applyFiltersBtn?.addEventListener('click', () => {
+  filterForm?.addEventListener('submit', e => {
+    e.preventDefault();
     applyFilters();
     filterModal?.hide();
   });

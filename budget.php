@@ -30,7 +30,7 @@ $res = $stmt->get_result();
 <!-- Modal Filtri -->
 <div class="modal fade" id="filterModal" tabindex="-1">
   <div class="modal-dialog">
-    <div class="modal-content bg-dark text-white">
+    <form class="modal-content bg-dark text-white" id="filterForm">
       <div class="modal-header">
         <h5 class="modal-title">Filtri</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -65,9 +65,9 @@ $res = $stmt->get_result();
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
-        <button type="button" class="btn btn-primary" id="applyFilters">Applica</button>
+        <button type="submit" class="btn btn-primary">Applica</button>
       </div>
-    </div>
+    </form>
   </div>
 </div>
 
