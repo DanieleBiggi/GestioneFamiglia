@@ -1,5 +1,8 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once 'includes/db.php';
 require_once 'includes/utility.php';
 include 'includes/header.php';
@@ -60,6 +63,7 @@ $sql = "SELECT b.id_budget, b.id_salvadanaio, b.tipologia, b.importo, b.descrizi
         LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio
         WHERE $where
         ORDER BY b.data_scadenza";
+        
 $stmt = $conn->prepare($sql);
 $stmt->bind_param($types, ...$params);
 $stmt->execute();
@@ -143,19 +147,14 @@ if ($export) {
 }
 
 // Anni per filtro
-$yearStmt = $conn->prepare('SELECT DISTINCT YEAR(data_scadenza) AS anno FROM budget WHERE id_famiglia = ? AND data_scadenza IS NOT NULL ORDER BY anno');
-$yearStmt->bind_param('i', $idFamiglia);
+$yearStmt = $conn->prepare('SELECT DISTINCT YEAR(data_scadenza) AS anno FROM budget WHERE data_scadenza IS NOT NULL ORDER BY anno');
 $yearStmt->execute();
 $years = $yearStmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $yearStmt->close();
 
 $salStmt = $conn->prepare('SELECT DISTINCT s.id_salvadanaio, s.nome_salvadanaio
                             FROM salvadanai s
-                            JOIN utenti2salvadanai u2s ON s.id_salvadanaio = u2s.id_salvadanaio
-                            JOIN utenti2famiglie u2f ON u2s.id_utente = u2f.id_utente
-                            WHERE u2f.id_famiglia = ?
                             ORDER BY s.nome_salvadanaio');
-$salStmt->bind_param('i', $idFamiglia);
 $salStmt->execute();
 $salvadanai = $salStmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $salStmt->close();
@@ -206,7 +205,7 @@ $salStmt->close();
     <a class="btn btn-outline-light w-100" href="?<?= http_build_query(array_merge($_GET, ['export' => 1])) ?>">Export CSV</a>
   </div>
 </form>
-<div class="table-responsive" style="width:100vw;margin-left:calc(-50vw + 50%);">
+<div class="table-responsive" style="width:90vw;margin-left:calc(-45vw + 50%);">
 <table class="table table-dark table-striped table-sm w-100" id="budgetTable">
   <thead>
     <tr>
