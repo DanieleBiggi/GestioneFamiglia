@@ -44,19 +44,11 @@ document.addEventListener('DOMContentLoaded', () => {
     select.appendChild(frag);
   }
 
-  const tipologie = new Set();
   const salvadanai = new Set();
-  const tipologieSpesa = new Set();
   items.forEach(it => {
-    if (it.dataset.tipologia) tipologie.add(it.dataset.tipologia);
     if (it.dataset.salvadanaio) salvadanai.add(it.dataset.salvadanaio);
-    if (it.dataset.tipologiaSpesa) tipologieSpesa.add(it.dataset.tipologiaSpesa);
   });
-  populateSelect(filterTipologia, tipologie);
   populateSelect(filterSalvadanaio, salvadanai);
-  populateSelect(filterTipologiaSpesa, tipologieSpesa);
-  populateSelect(budgetTipologia, tipologie);
-  populateSelect(budgetTipologiaSpesa, tipologieSpesa);
 
   function applyFilters() {
     const q = (searchInput?.value || '').trim().toLowerCase();

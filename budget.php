@@ -6,6 +6,20 @@ include 'includes/header.php';
 
 $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 
+function getEnumValues(mysqli $conn, string $table, string $field): array {
+    $values = [];
+    $result = $conn->query("SHOW COLUMNS FROM {$table} LIKE '{$field}'");
+    if ($result && $row = $result->fetch_assoc()) {
+        if (preg_match("/^enum\\('(.*)'\\)$/", $row['Type'], $m)) {
+            $values = explode("','", $m[1]);
+        }
+    }
+    return $values;
+}
+
+$tipologie = getEnumValues($conn, 'budget', 'tipologia');
+$tipologieSpesa = getEnumValues($conn, 'budget', 'tipologia_spesa');
+
 $stmt = $conn->prepare('SELECT b.*, s.nome_salvadanaio FROM budget b LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio WHERE b.id_famiglia = ? ORDER BY b.data_inizio');
 $stmt->bind_param('i', $idFamiglia);
 $stmt->execute();
@@ -40,6 +54,9 @@ $res = $stmt->get_result();
           <label class="form-label">Tipologia</label>
           <select id="filterTipologia" class="form-select bg-secondary text-white">
             <option value="">Tutte</option>
+            <?php foreach ($tipologie as $t): ?>
+              <option value="<?= htmlspecialchars($t) ?>"><?= ucfirst($t) ?></option>
+            <?php endforeach; ?>
           </select>
         </div>
         <div class="mb-3">
@@ -52,6 +69,9 @@ $res = $stmt->get_result();
           <label class="form-label">Tipologia spesa</label>
           <select id="filterTipologiaSpesa" class="form-select bg-secondary text-white">
             <option value="">Tutte</option>
+            <?php foreach ($tipologieSpesa as $ts): ?>
+              <option value="<?= htmlspecialchars($ts) ?>"><?= ucfirst(str_replace('_',' ', $ts)) ?></option>
+            <?php endforeach; ?>
           </select>
         </div>
         <div class="mb-3">
@@ -89,12 +109,18 @@ $res = $stmt->get_result();
           <label class="form-label">Tipologia</label>
           <select name="tipologia" id="budgetTipologia" class="form-select bg-secondary text-white">
             <option value=""></option>
+            <?php foreach ($tipologie as $t): ?>
+              <option value="<?= htmlspecialchars($t) ?>"><?= ucfirst($t) ?></option>
+            <?php endforeach; ?>
           </select>
         </div>
         <div class="mb-3">
           <label class="form-label">Tipologia spesa</label>
           <select name="tipologia_spesa" id="budgetTipologiaSpesa" class="form-select bg-secondary text-white">
             <option value=""></option>
+            <?php foreach ($tipologieSpesa as $ts): ?>
+              <option value="<?= htmlspecialchars($ts) ?>"><?= ucfirst(str_replace('_',' ', $ts)) ?></option>
+            <?php endforeach; ?>
           </select>
         </div>
         <div class="mb-3">
