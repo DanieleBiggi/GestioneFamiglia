@@ -21,6 +21,8 @@ if ($action === 'save') {
     $da13 = isset($_POST['da_13esima']) ? (float)$_POST['da_13esima'] : 0;
     $da14 = isset($_POST['da_14esima']) ? (float)$_POST['da_14esima'] : 0;
     $importo = isset($_POST['importo']) ? (float)$_POST['importo'] : 0;
+    $tipologia = $_POST['tipologia'] ?? 'uscita';
+    $tipologia_spesa = $_POST['tipologia_spesa'] ?? 'fissa';
 
     if ($id > 0) {
         $stmt = $conn->prepare('UPDATE budget SET id_salvadanaio=?, descrizione=?, data_inizio=?, data_scadenza=?, da_13esima=?, da_14esima=?, importo=? WHERE id_budget=? AND id_famiglia=?');
@@ -30,8 +32,8 @@ if ($action === 'save') {
         echo json_encode(['success' => $ok]);
         exit;
     } else {
-        $stmt = $conn->prepare('INSERT INTO budget (id_salvadanaio, descrizione, data_inizio, data_scadenza, da_13esima, da_14esima, importo, id_famiglia, id_utente) VALUES (?,?,?,?,?,?,?,?,?)');
-        $stmt->bind_param('isssdddii', $id_salvadanaio, $descrizione, $data_inizio, $data_scadenza, $da13, $da14, $importo, $idFamiglia, $idUtente);
+        $stmt = $conn->prepare('INSERT INTO budget (tipologia, tipologia_spesa, id_salvadanaio, descrizione, data_inizio, data_scadenza, da_13esima, da_14esima, importo, id_famiglia, id_utente) VALUES (?,?,?,?,?,?,?,?,?,?,?)');
+        $stmt->bind_param('ssisssdddii', $tipologia, $tipologia_spesa, $id_salvadanaio, $descrizione, $data_inizio, $data_scadenza, $da13, $da14, $importo, $idFamiglia, $idUtente);
         $ok = $stmt->execute();
         $stmt->close();
         echo json_encode(['success' => $ok]);
@@ -53,19 +55,5 @@ if ($action === 'delete') {
     exit;
 }
 
-if ($action === 'duplicate') {
-    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-    if ($id > 0) {
-        $stmt = $conn->prepare('INSERT INTO budget (tipologia, importo, id_salvadanaio, descrizione, data_inizio, data_scadenza, tipologia_spesa, da_13esima, da_14esima, id_utente, id_famiglia)
-            SELECT tipologia, importo, id_salvadanaio, descrizione, data_inizio, data_scadenza, tipologia_spesa, da_13esima, da_14esima, ?, id_famiglia FROM budget WHERE id_budget=? AND id_famiglia=?');
-        $stmt->bind_param('iii', $idUtente, $id, $idFamiglia);
-        $ok = $stmt->execute();
-        $stmt->close();
-        echo json_encode(['success' => $ok]);
-        exit;
-    }
-    echo json_encode(['success' => false]);
-    exit;
-}
 
 echo json_encode(['success' => false, 'error' => 'Azione non valida']);
