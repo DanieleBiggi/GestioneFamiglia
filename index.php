@@ -30,11 +30,7 @@ if ($idFamiglia) {
 if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
 <?php if (!empty($salvadanaiVisibili)): ?>
 <div id="salvadanaiCarousel" class="carousel slide mb-3" data-bs-interval="false">
-  <div class="carousel-indicators">
-    <?php foreach ($salvadanaiVisibili as $k => $s): ?>
-      <button type="button" data-bs-target="#salvadanaiCarousel" data-bs-slide-to="<?= $k ?>" class="<?= $k === 0 ? 'active' : '' ?>" aria-current="<?= $k === 0 ? 'true' : 'false' ?>" aria-label="Slide <?= $k + 1 ?>"></button>
-    <?php endforeach; ?>
-  </div>
+  
   <div class="carousel-inner">
     <?php foreach ($salvadanaiVisibili as $k => $s): ?>
     <div class="carousel-item <?= $k === 0 ? 'active' : '' ?>">
@@ -48,14 +44,11 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
     </div>
     <?php endforeach; ?>
   </div>
-  <button class="carousel-control-prev" type="button" data-bs-target="#salvadanaiCarousel" data-bs-slide="prev">
-    <span class="carousel-control-prev-icon"></span>
-    <span class="visually-hidden">Precedente</span>
-  </button>
-  <button class="carousel-control-next" type="button" data-bs-target="#salvadanaiCarousel" data-bs-slide="next">
-    <span class="carousel-control-next-icon"></span>
-    <span class="visually-hidden">Successivo</span>
-  </button>
+  <div class="carousel-indicators" style="position: static;margin-top: 0.5rem;">
+    <?php foreach ($salvadanaiVisibili as $k => $s): ?>
+      <button type="button" data-bs-target="#salvadanaiCarousel" data-bs-slide-to="<?= $k ?>" class="<?= $k === 0 ? 'active' : '' ?>" aria-current="<?= $k === 0 ? 'true' : 'false' ?>" aria-label="Slide <?= $k + 1 ?>"></button>
+    <?php endforeach; ?>
+  </div>
 </div>
 <?php endif; ?>
 
