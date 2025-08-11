@@ -8,8 +8,85 @@ include 'includes/header.php';
 
 // Limit data to the current user when fetching personal balances
 $idUtente = $_SESSION['utente_id'] ?? 0;
+$idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
+
+$salvadanai = [];
+$salvadanaiVisibili = [];
+if ($idFamiglia) {
+    $stmt = $conn->prepare("SELECT s.id_salvadanaio, s.nome_salvadanaio, s.importo_attuale, b.importo, COALESCE(u.nascosto,0) AS nascosto, COALESCE(u.preferito,0) AS preferito FROM salvadanai s JOIN budget b ON b.id_salvadanaio = s.id_salvadanaio LEFT JOIN utenti2salvadanai u ON u.id_salvadanaio = s.id_salvadanaio AND u.id_utente = ? WHERE b.id_famiglia = ? AND b.data_scadenza > CURDATE()");
+    $stmt->bind_param('ii', $idUtente, $idFamiglia);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    while ($row = $res->fetch_assoc()) {
+        $salvadanai[] = $row;
+        if (!$row['nascosto']) {
+            $salvadanaiVisibili[] = $row;
+        }
+    }
+    usort($salvadanaiVisibili, fn($a,$b) => $b['preferito'] <=> $a['preferito']);
+    $stmt->close();
+}
 
 if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
+<?php if (!empty($salvadanaiVisibili)): ?>
+<div id="salvadanaiCarousel" class="carousel slide mb-3" data-bs-ride="carousel">
+  <div class="carousel-inner">
+    <?php foreach ($salvadanaiVisibili as $k => $s): ?>
+    <div class="carousel-item <?= $k === 0 ? 'active' : '' ?>">
+      <div class="text-center">
+        <div class="d-flex justify-content-center align-items-center">
+          <h5 class="mb-1 me-2"><?= htmlspecialchars($s['nome_salvadanaio']) ?></h5>
+          <span class="badge bg-secondary"><?= number_format($s['importo'], 2, ',', '.') ?></span>
+        </div>
+        <div class="fs-3"><?= number_format($s['importo_attuale'], 2, ',', '.') ?></div>
+      </div>
+    </div>
+    <?php endforeach; ?>
+  </div>
+  <button class="carousel-control-prev" type="button" data-bs-target="#salvadanaiCarousel" data-bs-slide="prev">
+    <span class="carousel-control-prev-icon"></span>
+    <span class="visually-hidden">Precedente</span>
+  </button>
+  <button class="carousel-control-next" type="button" data-bs-target="#salvadanaiCarousel" data-bs-slide="next">
+    <span class="carousel-control-next-icon"></span>
+    <span class="visually-hidden">Successivo</span>
+  </button>
+</div>
+<?php endif; ?>
+
+<div class="text-end mb-3">
+  <button class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#salvadanaiModal"><i class="bi bi-gear"></i></button>
+</div>
+
+<div class="modal fade" id="salvadanaiModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-header">
+        <h5 class="modal-title">Gestione salvadanai</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="salvadanaiForm">
+          <?php foreach ($salvadanai as $s): ?>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <input class="form-check-input me-1" type="checkbox" name="hidden[]" value="<?= $s['id_salvadanaio'] ?>" <?= $s['nascosto'] ? 'checked' : '' ?> id="hide<?= $s['id_salvadanaio'] ?>">
+              <label for="hide<?= $s['id_salvadanaio'] ?>"><?= htmlspecialchars($s['nome_salvadanaio']) ?></label>
+            </div>
+            <div>
+              <input class="form-check-input" type="radio" name="preferito" value="<?= $s['id_salvadanaio'] ?>" <?= $s['preferito'] ? 'checked' : '' ?>>
+            </div>
+          </div>
+          <?php endforeach; ?>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+        <button type="button" class="btn btn-primary" id="saveSalvadanai">Salva</button>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="row text-center g-2 mb-3">
   <div class="col-3">
     <a href="aggiungi_entrata.php" class="text-decoration-none text-white">
