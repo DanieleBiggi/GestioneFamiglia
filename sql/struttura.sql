@@ -868,7 +868,8 @@ CREATE TABLE `resources` (
 
 CREATE TABLE `salvadanai` (
   `id_salvadanaio` int(11) NOT NULL,
-  `nome_salvadanaio` varchar(250) DEFAULT NULL
+  `nome_salvadanaio` varchar(250) DEFAULT NULL,
+  `importo_attuale` decimal(10,2) NOT NULL DEFAULT '0.00'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -1039,6 +1040,20 @@ CREATE TABLE `utenti2menu_smartadmin` (
   `id_collut2me` int(11) NOT NULL,
   `id_utenti` int(11) NOT NULL DEFAULT '0',
   `id_menu` int(11) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `utenti2salvadanai`
+--
+
+CREATE TABLE `utenti2salvadanai` (
+  `id_u2s` int(11) NOT NULL,
+  `id_utente` int(11) NOT NULL,
+  `id_salvadanaio` int(11) NOT NULL,
+  `nascosto` tinyint(1) NOT NULL DEFAULT '0',
+  `preferito` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
@@ -1511,6 +1526,13 @@ ALTER TABLE `utenti2menu_smartadmin`
   ADD KEY `id_utenti` (`id_utenti`,`id_menu`);
 
 --
+-- Indici per le tabelle `utenti2salvadanai`
+--
+ALTER TABLE `utenti2salvadanai`
+  ADD PRIMARY KEY (`id_u2s`),
+  ADD UNIQUE KEY `uq_u2s` (`id_utente`,`id_salvadanaio`);
+
+--
 -- AUTO_INCREMENT per le tabelle scaricate
 --
 
@@ -1887,6 +1909,12 @@ ALTER TABLE `utenti2menu_smartadmin`
   MODIFY `id_collut2me` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT per la tabella `utenti2salvadanai`
+--
+ALTER TABLE `utenti2salvadanai`
+  MODIFY `id_u2s` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- Limiti per le tabelle scaricate
 --
 
@@ -1997,6 +2025,13 @@ ALTER TABLE `movimenti_revolut`
   ADD CONSTRAINT `fk_revolut_etichetta` FOREIGN KEY (`id_etichetta`) REFERENCES `bilancio_etichette` (`id_etichetta`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_revolut_gruppo` FOREIGN KEY (`id_gruppo_transazione`) REFERENCES `bilancio_gruppi_transazione` (`id_gruppo_transazione`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_revolut_salvadanaio` FOREIGN KEY (`id_salvadanaio`) REFERENCES `salvadanai` (`id_salvadanaio`) ON DELETE SET NULL;
+
+--
+-- Limiti per la tabella `utenti2salvadanai`
+--
+ALTER TABLE `utenti2salvadanai`
+  ADD CONSTRAINT `fk_u2s_utente` FOREIGN KEY (`id_utente`) REFERENCES `utenti` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_u2s_salvadanaio` FOREIGN KEY (`id_salvadanaio`) REFERENCES `salvadanai` (`id_salvadanaio`) ON DELETE CASCADE;
 
 --
 -- Limiti per la tabella `userlevel_permissions`
