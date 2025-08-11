@@ -13,7 +13,7 @@ $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 $salvadanai = [];
 $salvadanaiVisibili = [];
 if ($idFamiglia) {
-    $stmt = $conn->prepare("SELECT s.id_salvadanaio, s.nome_salvadanaio, s.importo_attuale, b.importo, COALESCE(u.nascosto,0) AS nascosto, COALESCE(u.preferito,0) AS preferito FROM salvadanai s JOIN budget b ON b.id_salvadanaio = s.id_salvadanaio LEFT JOIN utenti2salvadanai u ON u.id_salvadanaio = s.id_salvadanaio AND u.id_utente = ? WHERE b.id_famiglia = ? AND b.data_scadenza > CURDATE()");
+    $stmt = $conn->prepare("SELECT s.id_salvadanaio, s.nome_salvadanaio, s.importo_attuale, MAX(b.importo) AS importo, COALESCE(MAX(u.nascosto),0) AS nascosto, COALESCE(MAX(u.preferito),0) AS preferito FROM salvadanai s JOIN budget b ON b.id_salvadanaio = s.id_salvadanaio LEFT JOIN utenti2salvadanai u ON u.id_salvadanaio = s.id_salvadanaio AND u.id_utente = ? WHERE b.id_famiglia = ? AND b.data_scadenza > CURDATE() GROUP BY s.id_salvadanaio, s.nome_salvadanaio, s.importo_attuale");
     $stmt->bind_param('ii', $idUtente, $idFamiglia);
     $stmt->execute();
     $res = $stmt->get_result();
@@ -29,7 +29,12 @@ if ($idFamiglia) {
 
 if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
 <?php if (!empty($salvadanaiVisibili)): ?>
-<div id="salvadanaiCarousel" class="carousel slide mb-3" data-bs-ride="carousel">
+<div id="salvadanaiCarousel" class="carousel slide mb-3" data-bs-interval="false">
+  <div class="carousel-indicators">
+    <?php foreach ($salvadanaiVisibili as $k => $s): ?>
+      <button type="button" data-bs-target="#salvadanaiCarousel" data-bs-slide-to="<?= $k ?>" class="<?= $k === 0 ? 'active' : '' ?>" aria-current="<?= $k === 0 ? 'true' : 'false' ?>" aria-label="Slide <?= $k + 1 ?>"></button>
+    <?php endforeach; ?>
+  </div>
   <div class="carousel-inner">
     <?php foreach ($salvadanaiVisibili as $k => $s): ?>
     <div class="carousel-item <?= $k === 0 ? 'active' : '' ?>">
@@ -68,13 +73,11 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
       <div class="modal-body">
         <form id="salvadanaiForm">
           <?php foreach ($salvadanai as $s): ?>
-          <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="d-flex justify-content-between align-items-center mb-2 salvadanaio-item" data-id="<?= $s['id_salvadanaio'] ?>" data-nascosto="<?= $s['nascosto'] ?>" data-preferito="<?= $s['preferito'] ?>">
+            <span><?= htmlspecialchars($s['nome_salvadanaio']) ?></span>
             <div>
-              <input class="form-check-input me-1" type="checkbox" name="hidden[]" value="<?= $s['id_salvadanaio'] ?>" <?= $s['nascosto'] ? 'checked' : '' ?> id="hide<?= $s['id_salvadanaio'] ?>">
-              <label for="hide<?= $s['id_salvadanaio'] ?>"><?= htmlspecialchars($s['nome_salvadanaio']) ?></label>
-            </div>
-            <div>
-              <input class="form-check-input" type="radio" name="preferito" value="<?= $s['id_salvadanaio'] ?>" <?= $s['preferito'] ? 'checked' : '' ?>>
+              <i class="me-3 toggle-preferito bi <?= $s['preferito'] ? 'bi-star-fill text-warning' : 'bi-star' ?>"></i>
+              <i class="toggle-nascosto bi <?= $s['nascosto'] ? 'bi-eye-slash' : 'bi-eye' ?>"></i>
             </div>
           </div>
           <?php endforeach; ?>
