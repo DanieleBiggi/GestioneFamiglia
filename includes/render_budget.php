@@ -47,7 +47,7 @@ function render_budget(array $row): void {
     }
    
     if ($salvadanaio !== '') {
-        echo '    <div class="mt-1"><span class="badge-etichetta" style=" min-width: 150px;text-align:center">' . htmlspecialchars($salvadanaio) . '</span></div>';
+        echo '    <div class="mt-1"><span class="badge-etichetta" style=">' . htmlspecialchars($salvadanaio) . '</span></div>';
     }
     echo '  </div>';
     echo '</div>';
