@@ -21,7 +21,10 @@ $scadenzaA = $_GET['scadenza_a'] ?? '';
 $search = trim($_GET['q'] ?? '');
 $export = isset($_GET['export']);
 
-$conditions = ['b.id_famiglia = ?'];
+$conditions = [
+    'b.id_famiglia = ?',
+    "b.tipologia_spesa <> 'mensile'",
+];
 $params = [$idFamiglia];
 $types  = 'i';
 

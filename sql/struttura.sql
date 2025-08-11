@@ -278,7 +278,7 @@ CREATE TABLE `budget` (
   `descrizione` varchar(255) DEFAULT NULL,
   `data_inizio` date NOT NULL,
   `data_scadenza` date DEFAULT NULL,
-  `tipologia_spesa` enum('fissa','una_tantum') NOT NULL
+  `tipologia_spesa` enum('fissa','una_tantum','mensile') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
