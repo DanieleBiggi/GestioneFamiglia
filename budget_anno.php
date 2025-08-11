@@ -62,9 +62,8 @@ while ($row = $res->fetch_assoc()) {
     $dataInizio = $row['data_inizio'] ?: null;
     $dataScadenza = $row['data_scadenza'] ?: null;
 
-    $j = $dataScadenza ? diff_mesi($today->format('Y-m-d'), $dataScadenza) : null; // mesi a scadenza
-    $k = $dataInizio ? max(0, diff_mesi($dataInizio, $today->format('Y-m-d'))) : 0; // mesi da inizio
-    $l = ($dataInizio && $dataScadenza) ? diff_mesi($dataInizio, $dataScadenza) : null; // mesi disponibili
+$j = $dataScadenza ? diff_mesi($today->format('Y-m-d'), $dataScadenza) : null; // mesi a scadenza
+$k = $dataInizio ? max(0, diff_mesi($dataInizio, $today->format('Y-m-d'))) : 0; // mesi da inizio
 
     if ($dataScadenza) {
         if ($j < 0) {
@@ -86,11 +85,6 @@ while ($row = $res->fetch_assoc()) {
         'data_inizio' => $dataInizio,
         'data_scadenza' => $dataScadenza,
         'tipologia_spesa' => $row['tipologia_spesa'] ?? '',
-        'anno' => $dataScadenza ? (new DateTime($dataScadenza))->format('Y') : '',
-        'mese' => $dataScadenza ? (new DateTime($dataScadenza))->format('n') : '',
-        'mesi_scadenza' => $j,
-        'mesi_inizio' => $k,
-        'mesi_disponibili' => $l,
         'da_13esima' => $da13,
         'da_14esima' => $da14,
         'importo_stimato' => $importoStimato,
@@ -108,7 +102,7 @@ if ($export) {
     header('Content-Type: text/csv');
     header('Content-Disposition: attachment; filename="budget_anno.csv"');
     $out = fopen('php://output', 'w');
-    fputcsv($out, ['Tipologia','Importo','Salvadanaio','Descrizione','Inizio','Scadenza','Tipologia.1','Anno','Mese','Mesi a scadenza','Mesi da inizio','Mesi disponibili','Da 13esima','Da 14esima','Importo stimato attuale','Importo mensile']);
+    fputcsv($out, ['Tipologia','Tipologia spesa','Salvadanaio','Descrizione','Inizio','Scadenza','Da 13esima','Da 14esima','Importo','Importo stimato attuale','Importo mensile']);
     foreach ($rows as $r) {
         fputcsv($out, [
             $r['tipologia'],
@@ -118,13 +112,9 @@ if ($export) {
             $r['data_inizio'],
             $r['data_scadenza'],
             $r['tipologia_spesa'] === 'fissa' ? 'Fissa' : ($r['tipologia_spesa'] === 'una_tantum' ? 'Una Tantum' : ''),
-            $r['anno'],
-            $r['mese'],
-            $r['mesi_scadenza'],
-            $r['mesi_inizio'],
-            $r['mesi_disponibili'],
             number_format($r['da_13esima'],2,'.',''),
             number_format($r['da_14esima'],2,'.',''),
+            number_format($r['importo'],2,'.',''),
             $r['importo_stimato'] === '' ? '' : number_format($r['importo_stimato'],2,'.',''),
             number_format($r['importo_mensile'],2,'.',''),
         ]);
@@ -167,34 +157,32 @@ $yearStmt->close();
       <option value="una_tantum" <?= $tipologiaSpesa === 'una_tantum' ? 'selected' : '' ?>>Una Tantum</option>
     </select>
   </div>
-  <div class="col-6 col-md-3">
+  <div class="col-6 col-md-2">
     <input type="text" name="q" value="<?= htmlspecialchars($search) ?>" class="form-control bg-dark text-white border-secondary" placeholder="Cerca" />
   </div>
   <div class="col-6 col-md-1">
     <button type="submit" class="btn btn-outline-light w-100">Filtra</button>
   </div>
+  <div class="col-6 col-md-1">
+    <a href="budget_anno.php" class="btn btn-outline-light w-100">Reset filtri</a>
+  </div>
   <div class="col-6 col-md-2">
     <a class="btn btn-outline-light w-100" href="?<?= http_build_query(array_merge($_GET, ['export' => 1])) ?>">Export CSV</a>
   </div>
 </form>
-<div class="table-responsive">
-<table class="table table-dark table-striped table-sm" id="budgetTable">
+<div class="table-responsive" style="width:100vw;margin-left:calc(-50vw + 50%);">
+<table class="table table-dark table-striped table-sm w-100" id="budgetTable">
   <thead>
     <tr>
-      <th>Tipologia</th>
-      <th class="text-end">Importo</th>
+      <th></th>
+      <th></th>
       <th>Salvadanaio</th>
       <th>Descrizione</th>
       <th>Inizio</th>
       <th>Scadenza</th>
-      <th>Tipologia.1</th>
-      <th>Anno</th>
-      <th>Mese</th>
-      <th class="text-end">Mesi a scadenza</th>
-      <th class="text-end">Mesi da inizio</th>
-      <th class="text-end">Mesi disponibili</th>
       <th class="text-end">Da 13esima</th>
       <th class="text-end">Da 14esima</th>
+      <th class="text-end">Importo</th>
       <th class="text-end">Importo stimato attuale</th>
       <th class="text-end">Importo mensile</th>
     </tr>
@@ -202,20 +190,27 @@ $yearStmt->close();
   <tbody>
     <?php foreach ($rows as $r): ?>
     <tr>
-      <td><?= htmlspecialchars($r['tipologia']) ?></td>
-      <td class="text-end" data-sort="<?= number_format($r['importo'],2,'.','') ?>"><?= number_format($r['importo'],2,',','.') ?></td>
+      <td class="text-center">
+        <?php if (strtolower($r['tipologia']) === 'entrata'): ?>
+          <i class="bi bi-arrow-down-circle text-success"></i>
+        <?php elseif (strtolower($r['tipologia']) === 'uscita'): ?>
+          <i class="bi bi-arrow-up-circle text-danger"></i>
+        <?php endif; ?>
+      </td>
+      <td class="text-center">
+        <?php if ($r['tipologia_spesa'] === 'fissa'): ?>
+          <i class="bi bi-arrow-repeat"></i>
+        <?php elseif ($r['tipologia_spesa'] === 'una_tantum'): ?>
+          <i class="bi bi-1-circle"></i>
+        <?php endif; ?>
+      </td>
       <td><?= htmlspecialchars($r['salvadanaio']) ?></td>
       <td><?= htmlspecialchars($r['descrizione']) ?></td>
       <td><?= htmlspecialchars($r['data_inizio']) ?></td>
       <td><?= htmlspecialchars($r['data_scadenza']) ?></td>
-      <td><?= $r['tipologia_spesa'] === 'fissa' ? 'Fissa' : ($r['tipologia_spesa'] === 'una_tantum' ? 'Una Tantum' : '') ?></td>
-      <td><?= htmlspecialchars($r['anno']) ?></td>
-      <td><?= htmlspecialchars($r['mese']) ?></td>
-      <td class="text-end" data-sort="<?= $r['mesi_scadenza'] !== null ? $r['mesi_scadenza'] : '' ?>"><?= $r['mesi_scadenza'] !== null ? $r['mesi_scadenza'] : '' ?></td>
-      <td class="text-end" data-sort="<?= $r['mesi_inizio'] ?>"><?= $r['mesi_inizio'] ?></td>
-      <td class="text-end" data-sort="<?= $r['mesi_disponibili'] !== null ? $r['mesi_disponibili'] : '' ?>"><?= $r['mesi_disponibili'] !== null ? $r['mesi_disponibili'] : '' ?></td>
       <td class="text-end" data-sort="<?= number_format($r['da_13esima'],2,'.','') ?>"><?= number_format($r['da_13esima'],2,',','.') ?></td>
       <td class="text-end" data-sort="<?= number_format($r['da_14esima'],2,'.','') ?>"><?= number_format($r['da_14esima'],2,',','.') ?></td>
+      <td class="text-end" data-sort="<?= number_format($r['importo'],2,'.','') ?>"><?= number_format($r['importo'],2,',','.') ?></td>
       <td class="text-end" data-sort="<?= $r['importo_stimato'] === '' ? '' : number_format($r['importo_stimato'],2,'.','') ?>">
         <?= $r['importo_stimato'] === '' ? '' : number_format($r['importo_stimato'],2,',','.') ?>
       </td>
@@ -225,9 +220,8 @@ $yearStmt->close();
   </tbody>
   <tfoot class="table-dark" style="position: sticky; bottom: 0;">
     <tr>
-      <th>Totali</th>
+      <th colspan="8">Totali</th>
       <th class="text-end"><?= number_format($totImporto,2,',','.') ?></th>
-      <th colspan="12"></th>
       <th class="text-end"><?= number_format($totStimato,2,',','.') ?></th>
       <th class="text-end"><?= number_format($totMensile,2,',','.') ?></th>
     </tr>
