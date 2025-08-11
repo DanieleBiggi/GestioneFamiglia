@@ -41,7 +41,7 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
             $product        = $data[1];
             $started_date   = $data[2];
             $descrizione    = $data[4];
-            $amount         = $data[5];
+            $amount         = (float)$data[5];
             $note           = null;
             $nome           = null;
 
@@ -111,6 +111,23 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
             );
             $stmtInsert->execute();
             $id_tabella = $conn->insert_id;
+
+            if ($id_salvadanaio) {
+                $data_operazione = $data_completed ?? $started_date;
+                $stmtCheck = $conn->prepare('SELECT data_aggiornamento_manuale FROM salvadanai WHERE id_salvadanaio = ?');
+                $stmtCheck->bind_param('i', $id_salvadanaio);
+                $stmtCheck->execute();
+                $salv = $stmtCheck->get_result()->fetch_assoc();
+                $stmtCheck->close();
+
+                if (!$salv || !$salv['data_aggiornamento_manuale'] || $salv['data_aggiornamento_manuale'] <= $data_operazione) {
+                    $importo_da_aggiungere = -1 * $amount;
+                    $stmtUpd = $conn->prepare('UPDATE salvadanai SET importo_attuale = importo_attuale + ? WHERE id_salvadanaio = ?');
+                    $stmtUpd->bind_param('di', $importo_da_aggiungere, $id_salvadanaio);
+                    $stmtUpd->execute();
+                    $stmtUpd->close();
+                }
+            }
 
             if ($id_etichetta > 0) {
                 dividi_operazione_per_etichetta($id_etichetta, $tabella, $id_tabella);
