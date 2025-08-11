@@ -115,6 +115,9 @@
             <?php if (has_permission($conn, 'page:budget_dashboard.php', 'view')): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/budget_dashboard.php">Dashboard budget</a></li>
             <?php endif; ?>
+            <?php if (has_permission($conn, 'page:salvadanai.php', 'view')): ?>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/salvadanai.php">Salvadanai</a></li>
+            <?php endif; ?>
           </ul>
         </div>
       </li>
