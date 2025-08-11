@@ -94,11 +94,29 @@
         </a>
       </li>
       <?php endif; ?>
-      <?php if (has_permission($conn, 'page:budget.php', 'view')): ?>
+      <?php
+        $showBudget = has_permission($conn, 'page:budget.php', 'view') ||
+                      has_permission($conn, 'page:budget_anno.php', 'view') ||
+                      has_permission($conn, 'page:budget_dashboard.php', 'view');
+        if ($showBudget):
+      ?>
       <li class="mb-3">
-        <a href="/Gestionale25/budget.php" class="btn btn-outline-light w-100 text-start">
-          <i class="bi bi-wallet me-2 text-white"></i> Budget
-        </a>
+        <div class="dropdown w-100">
+          <button class="btn btn-outline-light w-100 text-start dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-wallet me-2 text-white"></i> Budget
+          </button>
+          <ul class="dropdown-menu dropdown-menu-dark w-100">
+            <?php if (has_permission($conn, 'page:budget.php', 'view')): ?>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/budget.php">Budget</a></li>
+            <?php endif; ?>
+            <?php if (has_permission($conn, 'page:budget_anno.php', 'view')): ?>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/budget_anno.php">Budget per anno</a></li>
+            <?php endif; ?>
+            <?php if (has_permission($conn, 'page:budget_dashboard.php', 'view')): ?>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/budget_dashboard.php">Dashboard budget</a></li>
+            <?php endif; ?>
+          </ul>
+        </div>
       </li>
       <?php endif; ?>
       <?php if (has_permission($conn, 'page:password.php', 'view')): ?>
