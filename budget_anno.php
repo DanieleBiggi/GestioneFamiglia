@@ -12,6 +12,8 @@ $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 $anno = $_GET['anno'] ?? '';
 $mese = $_GET['mese'] ?? '';
 $tipologiaSpesa = $_GET['tipologia_spesa'] ?? '';
+$scadenzaDa = $_GET['scadenza_da'] ?? '';
+$scadenzaA = $_GET['scadenza_a'] ?? '';
 $search = trim($_GET['q'] ?? '');
 $export = isset($_GET['export']);
 
@@ -32,6 +34,16 @@ if ($mese !== '') {
 if ($tipologiaSpesa !== '') {
     $conditions[] = 'b.tipologia_spesa = ?';
     $params[] = $tipologiaSpesa;
+    $types .= 's';
+}
+if ($scadenzaDa !== '') {
+    $conditions[] = 'b.data_scadenza >= ?';
+    $params[] = $scadenzaDa;
+    $types .= 's';
+}
+if ($scadenzaA !== '') {
+    $conditions[] = 'b.data_scadenza <= ?';
+    $params[] = $scadenzaA;
     $types .= 's';
 }
 if ($search !== '') {
@@ -78,12 +90,16 @@ $k = $dataInizio ? max(0, diff_mesi($dataInizio, $today->format('Y-m-d'))) : 0; 
     }
 
     $rows[] = [
+        'id_budget' => (int)($row['id_budget'] ?? 0),
+        'id_salvadanaio' => $row['id_salvadanaio'] ?? null,
         'tipologia' => $row['tipologia'] ?? '',
         'importo' => $importo,
         'salvadanaio' => $row['nome_salvadanaio'] ?: ($row['id_salvadanaio'] ?? ''),
         'descrizione' => $row['descrizione'] ?? '',
         'data_inizio' => $dataInizio,
+        'data_inizio_fmt' => $dataInizio ? date('d/m/Y', strtotime($dataInizio)) : '',
         'data_scadenza' => $dataScadenza,
+        'data_scadenza_fmt' => $dataScadenza ? date('d/m/Y', strtotime($dataScadenza)) : '',
         'tipologia_spesa' => $row['tipologia_spesa'] ?? '',
         'da_13esima' => $da13,
         'da_14esima' => $da14,
@@ -106,12 +122,11 @@ if ($export) {
     foreach ($rows as $r) {
         fputcsv($out, [
             $r['tipologia'],
-            number_format($r['importo'],2,'.',''),
+            $r['tipologia_spesa'] === 'fissa' ? 'Fissa' : ($r['tipologia_spesa'] === 'una_tantum' ? 'Una Tantum' : ''),
             $r['salvadanaio'],
             $r['descrizione'],
-            $r['data_inizio'],
-            $r['data_scadenza'],
-            $r['tipologia_spesa'] === 'fissa' ? 'Fissa' : ($r['tipologia_spesa'] === 'una_tantum' ? 'Una Tantum' : ''),
+            $r['data_inizio_fmt'],
+            $r['data_scadenza_fmt'],
             number_format($r['da_13esima'],2,'.',''),
             number_format($r['da_14esima'],2,'.',''),
             number_format($r['importo'],2,'.',''),
@@ -129,6 +144,12 @@ $yearStmt->bind_param('i', $idFamiglia);
 $yearStmt->execute();
 $years = $yearStmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $yearStmt->close();
+
+$salStmt = $conn->prepare('SELECT id_salvadanaio, nome_salvadanaio FROM salvadanai WHERE id_famiglia = ? ORDER BY nome_salvadanaio');
+$salStmt->bind_param('i', $idFamiglia);
+$salStmt->execute();
+$salvadanai = $salStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$salStmt->close();
 ?>
 <div class="d-flex mb-3 justify-content-between">
   <h4>Budget per anno</h4>
@@ -158,6 +179,12 @@ $yearStmt->close();
     </select>
   </div>
   <div class="col-6 col-md-2">
+    <input type="date" name="scadenza_da" value="<?= htmlspecialchars($scadenzaDa) ?>" class="form-control bg-dark text-white border-secondary" placeholder="Scadenza da" />
+  </div>
+  <div class="col-6 col-md-2">
+    <input type="date" name="scadenza_a" value="<?= htmlspecialchars($scadenzaA) ?>" class="form-control bg-dark text-white border-secondary" placeholder="Scadenza a" />
+  </div>
+  <div class="col-6 col-md-2">
     <input type="text" name="q" value="<?= htmlspecialchars($search) ?>" class="form-control bg-dark text-white border-secondary" placeholder="Cerca" />
   </div>
   <div class="col-6 col-md-1">
@@ -185,11 +212,12 @@ $yearStmt->close();
       <th class="text-end">Importo</th>
       <th class="text-end">Importo stimato attuale</th>
       <th class="text-end">Importo mensile</th>
+      <th class="text-center">Azioni</th>
     </tr>
   </thead>
   <tbody>
     <?php foreach ($rows as $r): ?>
-    <tr>
+    <tr data-id="<?= (int)$r['id_budget'] ?>" data-salvadanaio="<?= htmlspecialchars((string)$r['id_salvadanaio']) ?>" data-descrizione="<?= htmlspecialchars($r['descrizione'], ENT_QUOTES) ?>" data-inizio="<?= htmlspecialchars($r['data_inizio']) ?>" data-scadenza="<?= htmlspecialchars($r['data_scadenza']) ?>" data-da13="<?= number_format($r['da_13esima'],2,'.','') ?>" data-da14="<?= number_format($r['da_14esima'],2,'.','') ?>" data-importo="<?= number_format($r['importo'],2,'.','') ?>">
       <td class="text-center">
         <?php if (strtolower($r['tipologia']) === 'entrata'): ?>
           <i class="bi bi-arrow-down-circle text-success"></i>
@@ -206,8 +234,8 @@ $yearStmt->close();
       </td>
       <td><?= htmlspecialchars($r['salvadanaio']) ?></td>
       <td><?= htmlspecialchars($r['descrizione']) ?></td>
-      <td><?= htmlspecialchars($r['data_inizio']) ?></td>
-      <td><?= htmlspecialchars($r['data_scadenza']) ?></td>
+      <td data-sort="<?= htmlspecialchars($r['data_inizio']) ?>"><?= htmlspecialchars($r['data_inizio_fmt']) ?></td>
+      <td data-sort="<?= htmlspecialchars($r['data_scadenza']) ?>"><?= htmlspecialchars($r['data_scadenza_fmt']) ?></td>
       <td class="text-end" data-sort="<?= number_format($r['da_13esima'],2,'.','') ?>"><?= number_format($r['da_13esima'],2,',','.') ?></td>
       <td class="text-end" data-sort="<?= number_format($r['da_14esima'],2,'.','') ?>"><?= number_format($r['da_14esima'],2,',','.') ?></td>
       <td class="text-end" data-sort="<?= number_format($r['importo'],2,'.','') ?>"><?= number_format($r['importo'],2,',','.') ?></td>
@@ -215,6 +243,11 @@ $yearStmt->close();
         <?= $r['importo_stimato'] === '' ? '' : number_format($r['importo_stimato'],2,',','.') ?>
       </td>
       <td class="text-end" data-sort="<?= number_format($r['importo_mensile'],2,'.','') ?>"><?= number_format($r['importo_mensile'],2,',','.') ?></td>
+      <td class="text-center">
+        <i class="bi bi-pencil-square text-warning edit-btn" role="button"></i>
+        <i class="bi bi-files text-info duplicate-btn ms-2" role="button"></i>
+        <i class="bi bi-trash text-danger delete-btn ms-2" role="button"></i>
+      </td>
     </tr>
     <?php endforeach; ?>
   </tbody>
@@ -224,11 +257,81 @@ $yearStmt->close();
       <th class="text-end"><?= number_format($totImporto,2,',','.') ?></th>
       <th class="text-end"><?= number_format($totStimato,2,',','.') ?></th>
       <th class="text-end"><?= number_format($totMensile,2,',','.') ?></th>
-    </tr>
+  <th></th>
+  </tr>
   </tfoot>
 </table>
 </div>
+
+<!-- Modal Edit -->
+<div class="modal fade" id="editBudgetModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="editBudgetForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Modifica budget</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="id" id="editBudgetId">
+        <div class="mb-3">
+          <label class="form-label">Salvadanaio</label>
+          <select name="id_salvadanaio" id="editSalvadanaio" class="form-select bg-secondary text-white">
+            <option value=""></option>
+            <?php foreach ($salvadanai as $s): ?>
+              <option value="<?= (int)$s['id_salvadanaio'] ?>"><?= htmlspecialchars($s['nome_salvadanaio']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Descrizione</label>
+          <input type="text" name="descrizione" id="editDescrizione" class="form-control bg-secondary text-white" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Inizio</label>
+          <input type="date" name="data_inizio" id="editDataInizio" class="form-control bg-secondary text-white">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Scadenza</label>
+          <input type="date" name="data_scadenza" id="editDataScadenza" class="form-control bg-secondary text-white">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Da 13esima</label>
+          <input type="number" step="0.01" name="da_13esima" id="editDa13" class="form-control bg-secondary text-white">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Da 14esima</label>
+          <input type="number" step="0.01" name="da_14esima" id="editDa14" class="form-control bg-secondary text-white">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Importo</label>
+          <input type="number" step="0.01" name="importo" id="editImporto" class="form-control bg-secondary text-white" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Delete -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-header">
+        <h5 class="modal-title">Conferma eliminazione</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">Sei sicuro di voler eliminare questo budget?</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Elimina</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script>
+document.addEventListener('DOMContentLoaded', function(){
   // Ordinamento cliccando sull'intestazione
   document.querySelectorAll('#budgetTable th').forEach(function(th, idx){
     th.addEventListener('click', function(){
@@ -251,5 +354,85 @@ $yearStmt->close();
       rows.forEach(r => tbody.appendChild(r));
     });
   });
+
+  const editModalEl = document.getElementById('editBudgetModal');
+  const editForm = document.getElementById('editBudgetForm');
+  const editModal = editModalEl ? new bootstrap.Modal(editModalEl) : null;
+  const fields = {
+    id: document.getElementById('editBudgetId'),
+    salvadanaio: document.getElementById('editSalvadanaio'),
+    descrizione: document.getElementById('editDescrizione'),
+    inizio: document.getElementById('editDataInizio'),
+    scadenza: document.getElementById('editDataScadenza'),
+    da13: document.getElementById('editDa13'),
+    da14: document.getElementById('editDa14'),
+    importo: document.getElementById('editImporto')
+  };
+
+  const deleteModalEl = document.getElementById('deleteModal');
+  const deleteModal = deleteModalEl ? new bootstrap.Modal(deleteModalEl) : null;
+  const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+  let deleteId = null;
+
+  document.querySelectorAll('.edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tr = btn.closest('tr');
+      fields.id.value = tr.dataset.id;
+      fields.salvadanaio.value = tr.dataset.salvadanaio;
+      fields.descrizione.value = tr.dataset.descrizione;
+      fields.inizio.value = tr.dataset.inizio;
+      fields.scadenza.value = tr.dataset.scadenza;
+      fields.da13.value = tr.dataset.da13;
+      fields.da14.value = tr.dataset.da14;
+      fields.importo.value = tr.dataset.importo;
+      editModal?.show();
+    });
+  });
+
+  document.querySelectorAll('.duplicate-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tr = btn.closest('tr');
+      const fd = new FormData();
+      fd.append('action','duplicate');
+      fd.append('id', tr.dataset.id);
+      fetch('ajax/budget_manage.php', {method:'POST', body:fd})
+        .then(r=>r.json())
+        .then(res => { if(res.success){ location.reload(); } else { alert(res.error || 'Errore'); }});
+    });
+  });
+
+  document.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tr = btn.closest('tr');
+      deleteId = tr.dataset.id;
+      deleteModal?.show();
+    });
+  });
+
+  confirmDeleteBtn?.addEventListener('click', () => {
+    if(!deleteId) return;
+    const fd = new FormData();
+    fd.append('action','delete');
+    fd.append('id', deleteId);
+    fetch('ajax/budget_manage.php', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(res => {
+        deleteModal?.hide();
+        if(res.success){ location.reload(); } else { alert(res.error || 'Errore'); }
+      });
+  });
+
+  editForm?.addEventListener('submit', e => {
+    e.preventDefault();
+    const fd = new FormData(editForm);
+    fd.append('action','save');
+    fetch('ajax/budget_manage.php', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(res => {
+        if(res.success){ editModal?.hide(); location.reload(); }
+        else { alert(res.error || 'Errore'); }
+      });
+  });
+});
 </script>
 <?php include 'includes/footer.php'; ?>
