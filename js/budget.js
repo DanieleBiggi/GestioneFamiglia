@@ -25,8 +25,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const items = Array.from(document.querySelectorAll('.budget-item'));
 
-  const filterModal = filterModalEl ? new bootstrap.Modal(filterModalEl) : null;
-  const budgetModal = budgetModalEl ? new bootstrap.Modal(budgetModalEl) : null;
+  const filterModal = (typeof bootstrap !== 'undefined' && filterModalEl)
+    ? new bootstrap.Modal(filterModalEl)
+    : null;
+  const budgetModal = (typeof bootstrap !== 'undefined' && budgetModalEl)
+    ? new bootstrap.Modal(budgetModalEl)
+    : null;
 
   function populateSelect(select, values) {
     if (!select) return;
@@ -81,7 +85,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       const visible = matchSearch && matchTipologia && matchSalvadanaio && matchTipologiaSpesa && matchDate;
-      item.style.display = visible ? '' : 'none';
+      item.classList.toggle('d-none', !visible);
+      item.classList.toggle('d-flex', visible);
     });
   }
 
