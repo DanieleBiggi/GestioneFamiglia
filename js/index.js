@@ -33,4 +33,23 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     bindMovimenti();
+
+    const saveBtn = document.getElementById('saveSalvadanai');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            const form = document.getElementById('salvadanaiForm');
+            const hidden = [...form.querySelectorAll('input[name="hidden[]"]:checked')].map(el => el.value);
+            const prefInput = form.querySelector('input[name="preferito"]:checked');
+            const preferito = prefInput ? prefInput.value : null;
+            fetch('ajax/salvadanai_prefs.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hidden: hidden, preferito: preferito })
+            }).then(r => r.json()).then(data => {
+                if (data.success) {
+                    location.reload();
+                }
+            });
+        });
+    }
 });
