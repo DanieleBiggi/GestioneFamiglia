@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 header('Content-Type: application/json');
 include '../includes/session_check.php';
 include '../includes/db.php';
@@ -32,8 +35,15 @@ if ($action === 'save') {
         echo json_encode(['success' => $ok]);
         exit;
     } else {
-        $stmt = $conn->prepare('INSERT INTO budget (tipologia, tipologia_spesa, id_salvadanaio, descrizione, data_inizio, data_scadenza, da_13esima, da_14esima, importo, id_famiglia, id_utente) VALUES (?,?,?,?,?,?,?,?,?,?,?)');
-        $stmt->bind_param('ssisssdddii', $tipologia, $tipologia_spesa, $id_salvadanaio, $descrizione, $data_inizio, $data_scadenza, $da13, $da14, $importo, $idFamiglia, $idUtente);
+        $stmt = $conn->prepare('INSERT INTO budget (tipologia, tipologia_spesa, id_salvadanaio, descrizione, data_inizio, data_scadenza, da_13esima, da_14esima, importo, id_famiglia) VALUES (?,?,?,?,?,?,?,?,?,?)');
+        if (!$stmt) {
+            die("Errore nella prepare: " . $conn->error);
+        }
+        
+        if (!$stmt->bind_param('ssisssdddi', $tipologia, $tipologia_spesa, $id_salvadanaio, $descrizione, $data_inizio, $data_scadenza, $da13, $da14, $importo, $idFamiglia)) {
+            die("Errore nella bind_param: " . $stmt->error);
+        }
+
         $ok = $stmt->execute();
         $stmt->close();
         echo json_encode(['success' => $ok]);
