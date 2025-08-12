@@ -128,80 +128,86 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
     <button type="submit" class="btn btn-outline-light w-100">Filtra</button>
   </div>
 </form>
-<h5>Importi stimati attuali per salvadanaio</h5>
-<table class="table table-dark table-striped table-sm">
-  <thead>
-    <tr>
-      <th>Salvadanaio</th>
-      <th class="text-end">Importo stimato</th>
-      <th class="text-end">Importo attuale</th>
-      <th class="text-end">Differenza</th>
-    </tr>
-  </thead>
-  <tbody>
-    <?php 
-    $per_totali['stimato'] = 0;
-    $per_totali['attuale'] = 0;
-    foreach ($salvadanai as $nome => $dati): 
-    $per_totali['stimato'] += $dati['stimato'];
-    $per_totali['attuale'] += $dati['attuale'];
-    ?>
-    <tr>
-      <td><?= $dati['nome'] ?></td>
-      <td class="text-end"><?= number_format($dati['stimato'], 2, ',', '.') ?></td>
-      <td class="text-end"><?= number_format($dati['attuale'], 2, ',', '.') ?></td>
-      <td class="text-end"><?= number_format($dati['stimato'] - $dati['attuale'], 2, ',', '.') ?></td>
-    </tr>
-    <?php endforeach; ?>
-    
-    <tr>
-      <td></td>
-      <td class="text-end"><?= number_format($per_totali['stimato'], 2, ',', '.') ?></td>
-      <td class="text-end"><?= number_format($per_totali['attuale'], 2, ',', '.') ?></td>
-      <td class="text-end"></td>
-    </tr>
-  </tbody>
-</table>
-<h5>Entrate mensili fisse</h5>
-<table class="table table-dark table-striped table-sm">
-  <thead>
-    <tr>
-      <th>Descrizione</th>
-      <th class="text-end">Importo</th>
-    </tr>
-  </thead>
-  <tbody>
-    <?php 
-    $totalEntrateMensili = 0;
-    foreach ($entrateMensili as $r):
-    $totalEntrateMensili += $r['importo'];
-    ?>
-    <tr>
-      <td><?= htmlspecialchars($r['descrizione'] ?? '') ?></td>
-      <td class="text-end"><?= number_format((float)$r['importo'], 2, ',', '.') ?></td>
-    </tr>
-    <?php endforeach; ?>
-  </tbody>
-</table>
-<h5>Riepilogo</h5>
-<table class="table table-dark table-striped table-sm">
-  <tbody>
-    <tr>
-      <td>Entrate mensili fisse</td>
-      <td class="text-end"><?= number_format($totalEntrateMensili, 2, ',', '.') ?></td>
-    </tr>
-    <tr>
-      <td>Uscite mensili fisse</td>
-      <td class="text-end"><?= number_format($totalUsciteMensili, 2, ',', '.') ?></td>
-    </tr>
-    <tr>
-      <td>Uscite ricorrenti annuali (mensile)</td>
-      <td class="text-end"><?= number_format($totalAnnualiMensile, 2, ',', '.') ?></td>
-    </tr>
-    <tr>
-      <td>Margine (mensile)</td>
-      <td class="text-end"><?= number_format($totalEntrateMensili-($totalUsciteMensili+$totalAnnualiMensile), 2, ',', '.') ?></td>
-    </tr>
-  </tbody>
-</table>
+<div class="row">
+  <div class="col-12 col-lg-6">
+    <h5>Importi stimati attuali per salvadanaio</h5>
+    <table class="table table-dark table-striped table-sm">
+      <thead>
+        <tr>
+          <th>Salvadanaio</th>
+          <th class="text-end">Importo stimato</th>
+          <th class="text-end">Importo attuale</th>
+          <th class="text-end">Differenza</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php
+        $per_totali['stimato'] = 0;
+        $per_totali['attuale'] = 0;
+        foreach ($salvadanai as $nome => $dati):
+        $per_totali['stimato'] += $dati['stimato'];
+        $per_totali['attuale'] += $dati['attuale'];
+        ?>
+        <tr>
+          <td><?= $dati['nome'] ?></td>
+          <td class="text-end"><?= number_format($dati['stimato'], 2, ',', '.') ?></td>
+          <td class="text-end"><?= number_format($dati['attuale'], 2, ',', '.') ?></td>
+          <td class="text-end"><?= number_format($dati['stimato'] - $dati['attuale'], 2, ',', '.') ?></td>
+        </tr>
+        <?php endforeach; ?>
+
+        <tr>
+          <td></td>
+          <td class="text-end"><?= number_format($per_totali['stimato'], 2, ',', '.') ?></td>
+          <td class="text-end"><?= number_format($per_totali['attuale'], 2, ',', '.') ?></td>
+          <td class="text-end"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="col-12 col-lg-6">
+    <h5>Entrate mensili fisse</h5>
+    <table class="table table-dark table-striped table-sm">
+      <thead>
+        <tr>
+          <th>Descrizione</th>
+          <th class="text-end">Importo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php
+        $totalEntrateMensili = 0;
+        foreach ($entrateMensili as $r):
+        $totalEntrateMensili += $r['importo'];
+        ?>
+        <tr>
+          <td><?= htmlspecialchars($r['descrizione'] ?? '') ?></td>
+          <td class="text-end"><?= number_format((float)$r['importo'], 2, ',', '.') ?></td>
+        </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+    <h5>Riepilogo</h5>
+    <table class="table table-dark table-striped table-sm">
+      <tbody>
+        <tr>
+          <td>Entrate mensili fisse</td>
+          <td class="text-end"><?= number_format($totalEntrateMensili, 2, ',', '.') ?></td>
+        </tr>
+        <tr>
+          <td>Uscite mensili fisse</td>
+          <td class="text-end"><?= number_format($totalUsciteMensili, 2, ',', '.') ?></td>
+        </tr>
+        <tr>
+          <td>Uscite ricorrenti annuali (mensile)</td>
+          <td class="text-end"><?= number_format($totalAnnualiMensile, 2, ',', '.') ?></td>
+        </tr>
+        <tr>
+          <td>Margine (mensile)</td>
+          <td class="text-end"><?= number_format($totalEntrateMensili-($totalUsciteMensili+$totalAnnualiMensile), 2, ',', '.') ?></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 <?php include 'includes/footer.php'; ?>
