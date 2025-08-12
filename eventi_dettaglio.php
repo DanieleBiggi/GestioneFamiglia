@@ -31,7 +31,7 @@ $stmtInv->close();
 
 // Invitati disponibili per l'aggiunta (solo attivi e collegati alla famiglia)
 $invitatiDisponibili = [];
-$stmtDisp = $conn->prepare("SELECT i.id, i.nome, i.cognome FROM eventi_invitati i JOIN eventi_invitati2famiglie f ON i.id = f.id_invitato JOIN utenti u ON i.id_utente = u.id WHERE f.id_famiglia = ? AND f.attivo = 1 AND u.attivo = 1 AND i.id NOT IN (SELECT id_invitato FROM eventi_eventi2invitati WHERE id_evento = ?) ORDER BY i.cognome, i.nome");
+$stmtDisp = $conn->prepare("SELECT i.id, ifnull(u.nome,i.nome) as nome, ifnull(u.cognome,i.cognome) as cognome FROM eventi_invitati i JOIN eventi_invitati2famiglie f ON i.id = f.id_invitato LEFT JOIN utenti u ON i.id_utente = u.id AND u.attivo = 1 WHERE f.id_famiglia = ? AND f.attivo = 1 AND i.id NOT IN (SELECT id_invitato FROM eventi_eventi2invitati WHERE id_evento = ?) ORDER BY i.cognome, i.nome");
 $famiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 $stmtDisp->bind_param('ii', $famiglia, $id);
 $stmtDisp->execute();
