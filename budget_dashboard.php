@@ -17,7 +17,7 @@ $yearStmt->close();
 $today = new DateTime('now', new DateTimeZone('Europe/Rome'));
 
 // 1. Importo stimato attuale per salvadanaio
-$salvStmt = $conn->prepare('SELECT b.*, s.nome_salvadanaio, s.importo_attuale FROM budget b LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio WHERE b.id_famiglia = ? AND year(b.data_scadenza) > ? AND YEAR(b.data_inizio) <= ?');
+$salvStmt = $conn->prepare('SELECT b.*, s.nome_salvadanaio, s.importo_attuale FROM budget b LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio WHERE b.id_famiglia = ? AND year(b.data_scadenza) >= ? AND YEAR(b.data_inizio) <= ?');
 if (!$salvStmt) {
     die("Prepare failed: " . $conn->error);
 }
@@ -127,14 +127,27 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
     </tr>
   </thead>
   <tbody>
-    <?php foreach ($salvadanai as $nome => $dati): ?>
+    <?php 
+    $per_totali['stimato'] = 0;
+    $per_totali['attuale'] = 0;
+    foreach ($salvadanai as $nome => $dati): 
+    $per_totali['stimato'] += $dati['stimato'];
+    $per_totali['attuale'] += $dati['attuale'];
+    ?>
     <tr>
-      <td><?= htmlspecialchars($dati['nome']) ?></td>
+      <td><?= $dati['nome'] ?></td>
       <td class="text-end"><?= number_format($dati['stimato'], 2, ',', '.') ?></td>
       <td class="text-end"><?= number_format($dati['attuale'], 2, ',', '.') ?></td>
       <td class="text-end"><?= number_format($dati['stimato'] - $dati['attuale'], 2, ',', '.') ?></td>
     </tr>
     <?php endforeach; ?>
+    
+    <tr>
+      <td></td>
+      <td class="text-end"><?= number_format($per_totali['stimato'], 2, ',', '.') ?></td>
+      <td class="text-end"><?= number_format($per_totali['attuale'], 2, ',', '.') ?></td>
+      <td class="text-end"></td>
+    </tr>
   </tbody>
 </table>
 <h5>Entrate mensili fisse</h5>
