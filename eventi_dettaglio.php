@@ -45,7 +45,7 @@ $stmtDisp->close();
 
 // Cibo collegato all'evento
 $cibi = [];
-$stmtCibo = $conn->prepare("SELECT c.piatto, c.um, e2c.quantita FROM eventi_eventi2cibo e2c JOIN eventi_cibo c ON e2c.id_cibo = c.id WHERE e2c.id_evento = ? ORDER BY c.piatto");
+$stmtCibo = $conn->prepare("SELECT e2c.id_e2c, c.piatto, c.um, e2c.quantita FROM eventi_eventi2cibo e2c JOIN eventi_cibo c ON e2c.id_cibo = c.id WHERE e2c.id_evento = ? ORDER BY c.piatto");
 $stmtCibo->bind_param('i', $id);
 $stmtCibo->execute();
 $resCibo = $stmtCibo->get_result();
@@ -119,7 +119,10 @@ include 'includes/header.php';
   </div>
   <ul class="list-group list-group-flush bg-dark" id="ciboList">
     <?php foreach ($cibi as $idx => $row): ?>
-      <li class="list-group-item bg-dark text-white <?= $idx >= 3 ? 'd-none extra-row' : '' ?>">
+      <li class="list-group-item bg-dark text-white <?= $idx >= 3 ? 'd-none extra-row' : '' ?> cibo-row"
+          data-id="<?= (int)$row['id_e2c'] ?>"
+          data-piatto="<?= htmlspecialchars($row['piatto'], ENT_QUOTES) ?>"
+          data-quantita="<?= htmlspecialchars($row['quantita'] ?? '', ENT_QUOTES) ?>">
         <?= htmlspecialchars($row['piatto']) ?><?php if ($row['quantita'] !== null) echo ' - ' . htmlspecialchars($row['quantita']) . ' ' . htmlspecialchars($row['um']); ?>
       </li>
     <?php endforeach; ?>
@@ -232,6 +235,7 @@ include 'includes/header.php';
               <option value="<?= htmlspecialchars($inv['nome'] . ' ' . $inv['cognome']) ?>"></option>
             <?php endforeach; ?>
           </datalist>
+          <div class="form-text text-white-50">Inizia a digitare e seleziona un invitato dai suggerimenti</div>
         </div>
         <div class="mb-3">
           <label class="form-label">Stato</label>
@@ -259,6 +263,38 @@ include 'includes/header.php';
         <button type="submit" class="btn btn-primary w-100">Aggiungi</button>
       </div>
     </form>
+</div>
+</div>
+
+<!-- Modal modifica cibo -->
+<div class="modal fade" id="ciboModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="ciboForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Cibo</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="id_e2c" id="id_e2c">
+        <div class="mb-3">
+          <label class="form-label">Cibo</label>
+          <input type="text" name="cibo" id="ciboNome" list="ciboOptionsEdit" class="form-control bg-secondary text-white">
+          <datalist id="ciboOptionsEdit">
+            <?php foreach ($ciboDisponibile as $c): ?>
+              <option value="<?= htmlspecialchars($c['piatto']) ?>"></option>
+            <?php endforeach; ?>
+          </datalist>
+          <div class="form-text text-white-50">Inizia a digitare e seleziona un cibo dai suggerimenti</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Quantità</label>
+          <input type="number" step="0.01" name="quantita" id="ciboQuantita" class="form-control bg-secondary text-white">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary w-100">Salva</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -280,6 +316,7 @@ include 'includes/header.php';
               <option value="<?= htmlspecialchars($c['piatto']) ?>"></option>
             <?php endforeach; ?>
           </datalist>
+          <div class="form-text text-white-50">Inizia a digitare e seleziona un cibo dai suggerimenti</div>
         </div>
         <div class="mb-3">
           <label class="form-label">Quantità</label>
@@ -297,6 +334,7 @@ include 'includes/header.php';
 #invitatiList .list-group-item,
 #ciboList .list-group-item { padding: 0.25rem 0.5rem; }
 #invitatiList .inv-row { cursor: pointer; }
+#ciboList .cibo-row { cursor: pointer; }
 </style>
 <script src="js/eventi_dettaglio.js"></script>
 <?php include 'includes/footer.php'; ?>
