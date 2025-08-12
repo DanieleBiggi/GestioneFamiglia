@@ -152,7 +152,7 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
         $per_totali['attuale'] += $dati['attuale'];
         ?>
         <tr>
-          <td><a href="budget_anno.php?<?= http_build_query(['id_salvadanaio' => $dati['id'], 'anno' => $anno]) ?>"><?= htmlspecialchars($dati['nome']) ?></a></td>
+          <td><a href="budget_anno.php?<?= http_build_query(['id_salvadanaio' => $dati['id']]) ?>"><?= htmlspecialchars($dati['nome']) ?></a></td>
           <td class="text-end"><?= number_format($dati['stimato'], 2, ',', '.') ?></td>
           <td class="text-end"><?= number_format($dati['attuale'], 2, ',', '.') ?></td>
           <td class="text-end"><?= number_format($dati['stimato'] - $dati['attuale'], 2, ',', '.') ?></td>
