@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 89.46.111.63:3306
--- Creato il: Ago 11, 2025 alle 12:45
+-- Creato il: Ago 12, 2025 alle 16:30
 -- Versione del server: 5.6.51-91.0-log
 -- Versione PHP: 8.0.7
 
@@ -130,6 +130,8 @@ CREATE TABLE `bilancio_etichette` (
   `descrizione` varchar(200) NOT NULL,
   `attivo` int(11) NOT NULL DEFAULT '1',
   `da_dividere` int(11) DEFAULT '0',
+  `anno` int(11) DEFAULT NULL,
+  `mese` tinyint(4) DEFAULT NULL,
   `utenti_tra_cui_dividere` varchar(200) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -278,7 +280,9 @@ CREATE TABLE `budget` (
   `descrizione` varchar(255) DEFAULT NULL,
   `data_inizio` date NOT NULL,
   `data_scadenza` date DEFAULT NULL,
-  `tipologia_spesa` enum('fissa','una_tantum','mensile') NOT NULL
+  `tipologia_spesa` enum('fissa','una_tantum','mensile') NOT NULL,
+  `da_13esima` decimal(10,2) DEFAULT '0.00',
+  `da_14esima` decimal(10,2) DEFAULT '0.00'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -589,6 +593,21 @@ CREATE TABLE `importazioni_file_file2colonne` (
   `id_c2f` int(11) NOT NULL,
   `id_file` int(11) NOT NULL,
   `id_colonna` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `lista_spesa`
+--
+
+CREATE TABLE `lista_spesa` (
+  `id` int(11) NOT NULL,
+  `id_famiglia` int(11) NOT NULL,
+  `nome` varchar(255) NOT NULL,
+  `checked` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -1319,6 +1338,13 @@ ALTER TABLE `importazioni_file_file2colonne`
   ADD PRIMARY KEY (`id_c2f`);
 
 --
+-- Indici per le tabelle `lista_spesa`
+--
+ALTER TABLE `lista_spesa`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_lista_spesa_famiglia` (`id_famiglia`);
+
+--
 -- Indici per le tabelle `menu_smartadmin`
 --
 ALTER TABLE `menu_smartadmin`
@@ -1531,7 +1557,8 @@ ALTER TABLE `utenti2menu_smartadmin`
 --
 ALTER TABLE `utenti2salvadanai`
   ADD PRIMARY KEY (`id_u2s`),
-  ADD UNIQUE KEY `uq_u2s` (`id_utente`,`id_salvadanaio`);
+  ADD UNIQUE KEY `uq_u2s` (`id_utente`,`id_salvadanaio`),
+  ADD KEY `fk_u2s_salvadanaio` (`id_salvadanaio`);
 
 --
 -- AUTO_INCREMENT per le tabelle scaricate
@@ -1752,6 +1779,12 @@ ALTER TABLE `importazioni_file_colonne`
 --
 ALTER TABLE `importazioni_file_file2colonne`
   MODIFY `id_c2f` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `lista_spesa`
+--
+ALTER TABLE `lista_spesa`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT per la tabella `menu_smartadmin`
@@ -1992,6 +2025,12 @@ ALTER TABLE `gestione_account_password`
   ADD CONSTRAINT `fk_password_utente` FOREIGN KEY (`id_utente`) REFERENCES `utenti` (`id`);
 
 --
+-- Limiti per la tabella `lista_spesa`
+--
+ALTER TABLE `lista_spesa`
+  ADD CONSTRAINT `fk_lista_spesa_famiglie` FOREIGN KEY (`id_famiglia`) REFERENCES `famiglie` (`id_famiglia`) ON DELETE CASCADE;
+
+--
 -- Limiti per la tabella `mezzi`
 --
 ALTER TABLE `mezzi`
@@ -2028,13 +2067,6 @@ ALTER TABLE `movimenti_revolut`
   ADD CONSTRAINT `fk_revolut_salvadanaio` FOREIGN KEY (`id_salvadanaio`) REFERENCES `salvadanai` (`id_salvadanaio`) ON DELETE SET NULL;
 
 --
--- Limiti per la tabella `utenti2salvadanai`
---
-ALTER TABLE `utenti2salvadanai`
-  ADD CONSTRAINT `fk_u2s_utente` FOREIGN KEY (`id_utente`) REFERENCES `utenti` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_u2s_salvadanaio` FOREIGN KEY (`id_salvadanaio`) REFERENCES `salvadanai` (`id_salvadanaio`) ON DELETE CASCADE;
-
---
 -- Limiti per la tabella `userlevel_permissions`
 --
 ALTER TABLE `userlevel_permissions`
@@ -2046,6 +2078,13 @@ ALTER TABLE `userlevel_permissions`
 --
 ALTER TABLE `utenti`
   ADD CONSTRAINT `fk_utenti_temi` FOREIGN KEY (`id_tema`) REFERENCES `temi` (`id`);
+
+--
+-- Limiti per la tabella `utenti2salvadanai`
+--
+ALTER TABLE `utenti2salvadanai`
+  ADD CONSTRAINT `fk_u2s_salvadanaio` FOREIGN KEY (`id_salvadanaio`) REFERENCES `salvadanai` (`id_salvadanaio`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_u2s_utente` FOREIGN KEY (`id_utente`) REFERENCES `utenti` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
