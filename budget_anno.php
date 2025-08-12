@@ -95,10 +95,11 @@ while ($row = $res->fetch_assoc()) {
 
     $primo_del_mese_di_data_inizio = (new DateTime($dataInizio))->modify('first day of this month');
     $k = $dataInizio ? max(0, diff_mesi($primo_del_mese_di_data_inizio->format('Y-m-d'), $today->format('Y-m-d'))) : 0; // mesi da inizio
+    $mesi_data_inizio_fine = $dataInizio ? max(0, diff_mesi($primo_del_mese_di_data_inizio->format('Y-m-d'), $dataScadenza)) : 0; // mesi da inizio
 
     if(strtotime($dataInizio)<time() && strtotime($dataScadenza)>time())
     {
-        $importoMensile = round($residuo / 12, 2);
+        $importoMensile = round($residuo / $mesi_data_inizio_fine, 2);
     }else{
         $importoMensile = 0;
     }
