@@ -58,13 +58,15 @@ while ($row = $resSalv->fetch_assoc()) {
     $salv = $row['id_salvadanaio'];
     if (!isset($salvadanai[$salv])) {
         $salvadanai[$salv] = [
+            'id'      => $salv,
+            'nome'    => $row['nome_salvadanaio'],
             'stimato' => 0,
             'attuale' => (float)($row['importo_attuale'] ?? 0),
         ];
     }
-    $salvadanai[$salv]['nome'] = $row['nome_salvadanaio'];
     $salvadanai[$salv]['stimato'] += $importoStimato;
 }
+$salvadanai = array_values($salvadanai);
 usort($salvadanai, function($a, $b) {
     return strcasecmp($a['nome'], $b['nome']); // ordinamento case-insensitive
 });
@@ -145,12 +147,12 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
         <?php
         $per_totali['stimato'] = 0;
         $per_totali['attuale'] = 0;
-        foreach ($salvadanai as $nome => $dati):
+        foreach ($salvadanai as $dati):
         $per_totali['stimato'] += $dati['stimato'];
         $per_totali['attuale'] += $dati['attuale'];
         ?>
         <tr>
-          <td><?= $dati['nome'] ?></td>
+          <td><a href="budget_anno.php?<?= http_build_query(['id_salvadanaio' => $dati['id'], 'anno' => $anno]) ?>"><?= htmlspecialchars($dati['nome']) ?></a></td>
           <td class="text-end"><?= number_format($dati['stimato'], 2, ',', '.') ?></td>
           <td class="text-end"><?= number_format($dati['attuale'], 2, ',', '.') ?></td>
           <td class="text-end"><?= number_format($dati['stimato'] - $dati['attuale'], 2, ',', '.') ?></td>
