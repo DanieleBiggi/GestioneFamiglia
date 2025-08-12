@@ -6,8 +6,23 @@ document.addEventListener('DOMContentLoaded', () => {
     list.innerHTML = '';
     items.forEach(item => {
       const div = document.createElement('div');
-      div.className = 'd-flex justify-content-between align-items-center py-2 border-bottom';
+      div.className = 'd-flex align-items-center py-2 border-bottom';
       div.dataset.id = item.id;
+
+      const edit = document.createElement('button');
+      edit.type = 'button';
+      edit.className = 'btn btn-sm btn-outline-light me-2 edit-btn';
+      edit.dataset.id = item.id;
+      edit.dataset.nome = item.nome;
+      edit.dataset.quantita = item.quantita || '';
+      edit.dataset.note = item.note || '';
+      edit.innerHTML = '<i class="bi bi-pencil"></i>';
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'btn btn-sm btn-outline-light me-2 delete-btn';
+      del.dataset.id = item.id;
+      del.innerHTML = '<i class="bi bi-trash"></i>';
 
       const info = document.createElement('div');
       info.className = 'flex-grow-1';
@@ -21,28 +36,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       info.innerHTML = html;
 
-      const actions = document.createElement('div');
-      actions.className = 'd-flex align-items-center ms-2';
-
-      const edit = document.createElement('button');
-      edit.type = 'button';
-      edit.className = 'btn btn-sm btn-outline-light me-2 edit-btn';
-      edit.dataset.id = item.id;
-      edit.dataset.nome = item.nome;
-      edit.dataset.quantita = item.quantita || '';
-      edit.dataset.note = item.note || '';
-      edit.innerHTML = '<i class="bi bi-pencil"></i>';
-
       const chk = document.createElement('input');
       chk.type = 'checkbox';
-      chk.className = 'form-check-input';
+      chk.className = 'form-check-input ms-2';
       chk.dataset.id = item.id;
       chk.checked = item.checked == 1;
 
-      actions.appendChild(edit);
-      actions.appendChild(chk);
+      div.appendChild(edit);
+      div.appendChild(del);
       div.appendChild(info);
-      div.appendChild(actions);
+      div.appendChild(chk);
       list.appendChild(div);
     });
   }
@@ -88,15 +91,52 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   list.addEventListener('click', e => {
-    const btn = e.target.closest('.edit-btn');
-    if (btn) {
+    const editBtn = e.target.closest('.edit-btn');
+    if (editBtn) {
       openListaModal({
-        id: btn.dataset.id,
-        nome: btn.dataset.nome,
-        quantita: btn.dataset.quantita,
-        note: btn.dataset.note
+        id: editBtn.dataset.id,
+        nome: editBtn.dataset.nome,
+        quantita: editBtn.dataset.quantita,
+        note: editBtn.dataset.note
       });
+      return;
     }
+    const delBtn = e.target.closest('.delete-btn');
+    if (delBtn && confirm('Eliminare questo elemento?')) {
+      const fd = new FormData();
+      fd.append('id', delBtn.dataset.id);
+      fetch('ajax/delete_lista_spesa.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(res => { if (res.success) { refresh(); } else { alert(res.error || 'Errore'); } });
+    }
+  });
+
+  document.getElementById('clearListaBtn')?.addEventListener('click', () => {
+    if (confirm('Svuotare tutta la lista?')) {
+      fetch('ajax/clear_lista_spesa.php', { method: 'POST' })
+        .then(r => r.json())
+        .then(res => { if (res.success) { refresh(); } else { alert(res.error || 'Errore'); } });
+    }
+  });
+
+  const importForm = document.getElementById('importForm');
+  importForm?.addEventListener('submit', e => {
+    e.preventDefault();
+    const fd = new FormData(importForm);
+    fetch('ajax/import_lista_spesa.php', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(res => {
+        if (res.success) {
+          importForm.reset();
+          const modalEl = document.getElementById('importModal');
+          if (modalEl) {
+            bootstrap.Modal.getInstance(modalEl)?.hide();
+          }
+          refresh();
+        } else {
+          alert(res.error || 'Errore');
+        }
+      });
   });
 
   refresh();
@@ -117,6 +157,15 @@ function openListaModal(item){
     } else {
       modalEl.querySelector('.modal-title').textContent = 'Nuovo elemento';
     }
+    new bootstrap.Modal(modalEl).show();
+  }
+}
+
+function openImportModal(){
+  const form = document.getElementById('importForm');
+  const modalEl = document.getElementById('importModal');
+  if(form && modalEl){
+    form.reset();
     new bootstrap.Modal(modalEl).show();
   }
 }
