@@ -66,7 +66,7 @@ usort($salvadanai, function($a, $b) {
 $salvStmt->close();
 
 // 2. Uscite mensili (solo totale)
-$usciteStmt = $conn->prepare("SELECT SUM(importo) AS totale FROM budget WHERE id_famiglia = ? AND tipologia = 'uscita' AND tipologia_spesa = 'fissa' AND YEAR(data_inizio) <= ? AND (data_scadenza IS NULL OR YEAR(data_scadenza) >= ?)");
+$usciteStmt = $conn->prepare("SELECT SUM(importo) AS totale FROM budget WHERE id_famiglia = ? AND tipologia = 'uscita' AND tipologia_spesa = 'mensile' AND YEAR(data_inizio) <= ? AND (data_scadenza IS NULL OR YEAR(data_scadenza) >= ?)");
 $usciteStmt->bind_param('iii', $idFamiglia, $anno, $anno);
 $usciteStmt->execute();
 $usciteStmt->bind_result($totalUsciteMensili);
@@ -74,8 +74,8 @@ $usciteStmt->fetch();
 $usciteStmt->close();
 
 // 3. Entrate mensili fisse
-$entrateStmt = $conn->prepare("SELECT * FROM budget WHERE id_famiglia = ? AND tipologia = 'entrata' AND tipologia_spesa = 'fissa' AND YEAR(data_inizio) <= ? AND (data_scadenza IS NULL OR YEAR(data_scadenza) >= ?)");
-$entrateStmt->bind_param('iii', $idFamiglia, $anno, $anno);
+$entrateStmt = $conn->prepare("SELECT * FROM budget WHERE id_famiglia = ? AND tipologia = 'entrata' AND tipologia_spesa = 'mensile' AND YEAR(data_inizio) <= ? AND (data_scadenza IS NULL OR data_scadenza >= now())");
+$entrateStmt->bind_param('ii', $idFamiglia, $anno);
 $entrateStmt->execute();
 $entrateMensili = $entrateStmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $entrateStmt->close();
@@ -83,7 +83,7 @@ $entrateStmt->close();
 $totalEntrateMensili = array_sum(array_column($entrateMensili, 'importo'));
 
 // 4. Uscite annuali (calcolo importo mensile)
-$annualiStmt = $conn->prepare("SELECT * FROM budget WHERE id_famiglia = ? AND tipologia = 'uscita' AND tipologia_spesa = 'una_tantum' AND YEAR(data_inizio) <= ? AND (data_scadenza IS NULL OR YEAR(data_scadenza) >= ?)");
+$annualiStmt = $conn->prepare("SELECT * FROM budget WHERE id_famiglia = ? AND tipologia = 'uscita' AND tipologia_spesa IN ('una_tantum','fissa') AND YEAR(data_inizio) <= ? AND (data_scadenza IS NULL OR YEAR(data_scadenza) >= ?)");
 $annualiStmt->bind_param('iii', $idFamiglia, $anno, $anno);
 $annualiStmt->execute();
 $resAnnuali = $annualiStmt->get_result();
@@ -94,7 +94,14 @@ while ($row = $resAnnuali->fetch_assoc()) {
     $da14 = (float)($row['da_14esima'] ?? 0);
     $residuo = $importo - ($da13 + $da14);
     $importoMensile = round($residuo / 12, 2);
-    $totalAnnualiMensile += $importoMensile;
+    //$totalAnnualiMensile += $importoMensile;
+    
+    $dataInizio = $row['data_inizio'] ?: null;
+    
+    if(strtotime($dataInizio)<time())
+    {
+        $totalAnnualiMensile += round($residuo / 12, 2);
+    }
 }
 $annualiStmt->close();
 
@@ -159,7 +166,11 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
     </tr>
   </thead>
   <tbody>
-    <?php foreach ($entrateMensili as $r): ?>
+    <?php 
+    $totalEntrateMensili = 0;
+    foreach ($entrateMensili as $r):
+    $totalEntrateMensili += $r['importo'];
+    ?>
     <tr>
       <td><?= htmlspecialchars($r['descrizione'] ?? '') ?></td>
       <td class="text-end"><?= number_format((float)$r['importo'], 2, ',', '.') ?></td>
@@ -167,19 +178,25 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
     <?php endforeach; ?>
   </tbody>
 </table>
-<h5>Totale uscite</h5>
+<h5>Riepilogo</h5>
 <table class="table table-dark table-striped table-sm">
   <tbody>
     <tr>
-      <td>Uscite ricorrenti mensili (annuale)</td>
-      <td class="text-end"><?= number_format($totalUsciteMensili * 12, 2, ',', '.') ?></td>
+      <td>Entrate mensili fisse</td>
+      <td class="text-end"><?= number_format($totalEntrateMensili, 2, ',', '.') ?></td>
+    </tr>
+    <tr>
+      <td>Uscite mensili fisse</td>
+      <td class="text-end"><?= number_format($totalUsciteMensili, 2, ',', '.') ?></td>
     </tr>
     <tr>
       <td>Uscite ricorrenti annuali (mensile)</td>
       <td class="text-end"><?= number_format($totalAnnualiMensile, 2, ',', '.') ?></td>
     </tr>
+    <tr>
+      <td>Margine (mensile)</td>
+      <td class="text-end"><?= number_format($totalEntrateMensili-($totalUsciteMensili+$totalAnnualiMensile), 2, ',', '.') ?></td>
+    </tr>
   </tbody>
 </table>
-<h5>Margine mensile</h5>
-<p><?= number_format($margineMensile, 2, ',', '.') ?> &euro;</p>
 <?php include 'includes/footer.php'; ?>
