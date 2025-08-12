@@ -17,7 +17,7 @@ $yearStmt->close();
 $today = new DateTime('now', new DateTimeZone('Europe/Rome'));
 
 // 1. Importo stimato attuale per salvadanaio
-$salvStmt = $conn->prepare('SELECT b.*, s.nome_salvadanaio FROM budget b LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio WHERE b.id_famiglia = ? AND YEAR(b.data_scadenza) = ?');
+$salvStmt = $conn->prepare('SELECT b.*, s.nome_salvadanaio, s.importo_attuale FROM budget b LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio WHERE b.id_famiglia = ? AND YEAR(b.data_scadenza) = ?');
 $salvStmt->bind_param('ii', $idFamiglia, $anno);
 $salvStmt->execute();
 $resSalv = $salvStmt->get_result();
@@ -44,15 +44,22 @@ while ($row = $resSalv->fetch_assoc()) {
         $importoStimato = 0.00;
     }
     $salv = $row['nome_salvadanaio'] ?: ($row['id_salvadanaio'] ?? '');
-    $salvadanai[$salv] = ($salvadanai[$salv] ?? 0) + $importoStimato;
+    if (!isset($salvadanai[$salv])) {
+        $salvadanai[$salv] = [
+            'stimato' => 0,
+            'attuale' => (float)($row['importo_attuale'] ?? 0),
+        ];
+    }
+    $salvadanai[$salv]['stimato'] += $importoStimato;
 }
 $salvStmt->close();
 
-// 2. Uscite mensili
-$usciteStmt = $conn->prepare("SELECT * FROM budget WHERE id_famiglia = ? AND tipologia = 'uscita' AND tipologia_spesa = 'fissa' AND YEAR(data_inizio) <= ? AND (data_scadenza IS NULL OR YEAR(data_scadenza) >= ?)");
+// 2. Uscite mensili (solo totale)
+$usciteStmt = $conn->prepare("SELECT SUM(importo) AS totale FROM budget WHERE id_famiglia = ? AND tipologia = 'uscita' AND tipologia_spesa = 'fissa' AND YEAR(data_inizio) <= ? AND (data_scadenza IS NULL OR YEAR(data_scadenza) >= ?)");
 $usciteStmt->bind_param('iii', $idFamiglia, $anno, $anno);
 $usciteStmt->execute();
-$usciteMensili = $usciteStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$usciteStmt->bind_result($totalUsciteMensili);
+$usciteStmt->fetch();
 $usciteStmt->close();
 
 // 3. Entrate mensili fisse
@@ -62,7 +69,6 @@ $entrateStmt->execute();
 $entrateMensili = $entrateStmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $entrateStmt->close();
 
-$totalUsciteMensili = array_sum(array_column($usciteMensili, 'importo'));
 $totalEntrateMensili = array_sum(array_column($entrateMensili, 'importo'));
 
 // 4. Uscite annuali (calcolo importo mensile)
@@ -105,30 +111,17 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
     <tr>
       <th>Salvadanaio</th>
       <th class="text-end">Importo stimato</th>
+      <th class="text-end">Importo attuale</th>
+      <th class="text-end">Differenza</th>
     </tr>
   </thead>
   <tbody>
-    <?php foreach ($salvadanai as $nome => $importo): ?>
+    <?php foreach ($salvadanai as $nome => $dati): ?>
     <tr>
       <td><?= htmlspecialchars($nome) ?></td>
-      <td class="text-end"><?= number_format($importo, 2, ',', '.') ?></td>
-    </tr>
-    <?php endforeach; ?>
-  </tbody>
-</table>
-<h5>Uscite mensili</h5>
-<table class="table table-dark table-striped table-sm">
-  <thead>
-    <tr>
-      <th>Descrizione</th>
-      <th class="text-end">Importo</th>
-    </tr>
-  </thead>
-  <tbody>
-    <?php foreach ($usciteMensili as $r): ?>
-    <tr>
-      <td><?= htmlspecialchars($r['descrizione'] ?? '') ?></td>
-      <td class="text-end"><?= number_format((float)$r['importo'], 2, ',', '.') ?></td>
+      <td class="text-end"><?= number_format($dati['stimato'], 2, ',', '.') ?></td>
+      <td class="text-end"><?= number_format($dati['attuale'], 2, ',', '.') ?></td>
+      <td class="text-end"><?= number_format($dati['stimato'] - $dati['attuale'], 2, ',', '.') ?></td>
     </tr>
     <?php endforeach; ?>
   </tbody>
