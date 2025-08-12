@@ -16,7 +16,11 @@ $canAdd = has_permission($conn, 'ajax:add_lista_spesa', 'insert');
 <div class="d-flex mb-3 justify-content-between">
   <h4>Lista spesa</h4>
   <?php if ($canAdd): ?>
-  <button type="button" class="btn btn-outline-light btn-sm" onclick="openListaModal()">Aggiungi nuovo</button>
+  <div>
+    <button type="button" class="btn btn-outline-light btn-sm me-2" onclick="openImportModal()">Importa</button>
+    <button type="button" class="btn btn-outline-light btn-sm me-2" id="clearListaBtn">Svuota lista</button>
+    <button type="button" class="btn btn-outline-light btn-sm" onclick="openListaModal()">Aggiungi nuovo</button>
+  </div>
   <?php endif; ?>
 </div>
 <div id="listaSpesaList">
@@ -49,6 +53,26 @@ $canAdd = has_permission($conn, 'ajax:add_lista_spesa', 'insert');
       </div>
       <div class="modal-footer">
         <button type="submit" class="btn btn-primary w-100">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal fade" id="importModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="importForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Importa elementi</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Elementi (uno per riga)</label>
+          <textarea name="items" class="form-control bg-secondary text-white" rows="5" required></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary w-100">Importa</button>
       </div>
     </form>
   </div>

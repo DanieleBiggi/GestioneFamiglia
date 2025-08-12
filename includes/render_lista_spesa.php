@@ -6,7 +6,9 @@ function render_lista_spesa(array $row): void {
     $note = htmlspecialchars($row['note'] ?? '', ENT_QUOTES);
     $checked = !empty($row['checked']);
     $line = $checked ? ' text-decoration-line-through' : '';
-    echo '<div class="d-flex justify-content-between align-items-center py-2 border-bottom" data-id="' . $id . '">';
+    echo '<div class="d-flex align-items-center py-2 border-bottom" data-id="' . $id . '">';
+    echo '  <button type="button" class="btn btn-sm btn-outline-light me-2 edit-btn" data-id="' . $id . '" data-nome="' . $nome . '" data-quantita="' . $quantita . '" data-note="' . $note . '"><i class="bi bi-pencil"></i></button>';
+    echo '  <button type="button" class="btn btn-sm btn-outline-light me-2 delete-btn" data-id="' . $id . '"><i class="bi bi-trash"></i></button>';
     echo '  <div class="flex-grow-1' . $line . '">';
     echo        $nome;
     if ($quantita !== '') {
@@ -16,10 +18,7 @@ function render_lista_spesa(array $row): void {
         echo '<br><small class="text-muted">' . $note . '</small>';
     }
     echo '  </div>';
-    echo '  <div class="d-flex align-items-center ms-2">';
-    echo '    <button type="button" class="btn btn-sm btn-outline-light me-2 edit-btn" data-id="' . $id . '" data-nome="' . $nome . '" data-quantita="' . $quantita . '" data-note="' . $note . '"><i class="bi bi-pencil"></i></button>';
-    echo '    <input type="checkbox" class="form-check-input" data-id="' . $id . '"' . ($checked ? ' checked' : '') . '>';
-    echo '  </div>';
+    echo '  <input type="checkbox" class="form-check-input ms-2" data-id="' . $id . '"' . ($checked ? ' checked' : '') . '>';
     echo '</div>';
 }
 ?>
