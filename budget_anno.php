@@ -68,11 +68,15 @@ if ($search !== '') {
 }
 $where = implode(' AND ', $conditions);
 
-$sql = "SELECT b.id_budget, b.id_salvadanaio, b.tipologia, b.importo, b.descrizione, b.data_inizio, b.data_scadenza, b.tipologia_spesa, b.da_13esima, b.da_14esima, s.nome_salvadanaio, s.importo_attuale, bt.tot_importo
+$sql = "SELECT b.id_budget, b.id_salvadanaio, b.tipologia, b.importo, b.descrizione, b.data_inizio, b.data_scadenza, b.tipologia_spesa, b.da_13esima, b.da_14esima, s.nome_salvadanaio, s.importo_attuale, bt.tot_peso
         FROM budget b
         LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio
         LEFT JOIN (
-            SELECT id_salvadanaio, SUM(importo) AS tot_importo
+            SELECT id_salvadanaio,
+                   SUM(importo / CASE
+                       WHEN TIMESTAMPDIFF(MONTH, CURDATE(), data_scadenza) <= 0 THEN 1
+                       ELSE TIMESTAMPDIFF(MONTH, CURDATE(), data_scadenza)
+                   END) AS tot_peso
             FROM budget
             WHERE id_famiglia = $idFamiglia AND tipologia_spesa = 'una_tantum' AND id_salvadanaio IS NOT NULL
             GROUP BY id_salvadanaio
@@ -92,19 +96,22 @@ while ($row = $res->fetch_assoc()) {
     $importo = (float)($row['importo'] ?? 0);
     $da13 = (float)($row['da_13esima'] ?? 0);
     $da14 = (float)($row['da_14esima'] ?? 0);
-    $quotaSalvadanaio = 0;
-    $importoAttuale = (float)($row['importo_attuale'] ?? 0);
-    $totImporto = (float)($row['tot_importo'] ?? 0);
-    if ($row['tipologia_spesa'] === 'una_tantum' && !empty($row['id_salvadanaio']) && $totImporto > 0) {
-        $quotaSalvadanaio = $importoAttuale * ($importo / $totImporto);
-    }
-    $residuo = $importo - ($da13 + $da14 + $quotaSalvadanaio);
-    
+
     $dataInizio = $row['data_inizio'] ?: null;
     $dataScadenza = $row['data_scadenza'] ?: null;
+    $j = $dataScadenza ? diff_mesi($today->format('Y-m-d'), $dataScadenza) : null; // mesi a scadenza
+    $mesiAllaScadenza = $j !== null ? max(1, $j) : 1;
 
-$j = $dataScadenza ? diff_mesi($today->format('Y-m-d'), $dataScadenza) : null; // mesi a scadenza
-$k = $dataInizio ? max(0, diff_mesi($dataInizio, $today->format('Y-m-d'))) : 0; // mesi da inizio
+    $quotaSalvadanaio = 0;
+    $importoAttuale = (float)($row['importo_attuale'] ?? 0);
+    $totPeso = (float)($row['tot_peso'] ?? 0);
+    if ($row['tipologia_spesa'] === 'una_tantum' && !empty($row['id_salvadanaio']) && $totPeso > 0) {
+        $pesoBudget = $importo / $mesiAllaScadenza;
+        $quotaSalvadanaio = $importoAttuale * ($pesoBudget / $totPeso);
+    }
+    $residuo = $importo - ($da13 + $da14 + $quotaSalvadanaio);
+
+    $k = $dataInizio ? max(0, diff_mesi($dataInizio, $today->format('Y-m-d'))) : 0; // mesi da inizio
 
     if(strtotime($dataInizio)<time() && strtotime($dataScadenza)>time())
     {
