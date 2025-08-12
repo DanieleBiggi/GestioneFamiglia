@@ -226,8 +226,8 @@ include 'includes/header.php';
         <input type="hidden" name="id_evento" value="<?= (int)$id ?>">
         <div class="mb-3">
           <label class="form-label">Invitato</label>
-          <input type="text" name="invitato" list="invitatiList" class="form-control bg-secondary text-white">
-          <datalist id="invitatiList">
+          <input type="text" name="invitato" list="invitatiOptions" class="form-control bg-secondary text-white">
+          <datalist id="invitatiOptions">
             <?php foreach ($invitatiDisponibili as $inv): ?>
               <option value="<?= htmlspecialchars($inv['nome'] . ' ' . $inv['cognome']) ?>"></option>
             <?php endforeach; ?>
@@ -274,8 +274,8 @@ include 'includes/header.php';
         <input type="hidden" name="id_evento" value="<?= (int)$id ?>">
         <div class="mb-3">
           <label class="form-label">Cibo</label>
-          <input type="text" name="cibo" list="ciboList" class="form-control bg-secondary text-white">
-          <datalist id="ciboList">
+          <input type="text" name="cibo" list="ciboOptions" class="form-control bg-secondary text-white">
+          <datalist id="ciboOptions">
             <?php foreach ($ciboDisponibile as $c): ?>
               <option value="<?= htmlspecialchars($c['piatto']) ?>"></option>
             <?php endforeach; ?>
