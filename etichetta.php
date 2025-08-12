@@ -17,7 +17,7 @@ $isAdmin = ($idUtente == 1);
 $etichettaInfo = null;
 
 if ($etichettaParam === '') {
-    echo '<p class="text-center text-muted">Nessuna etichetta selezionata.</p>';
+    echo '<p class="text-center">Nessuna etichetta selezionata.</p>';
     include 'includes/footer.php';
     return;
 }
@@ -331,7 +331,7 @@ $stmtGrp->close();
   <h4 class="mb-3">
     <span id="etichettaDesc"><?= htmlspecialchars($etichettaInfo['descrizione']) ?></span>
     <?php if ($annoMese !== ''): ?>
-      <small id="etichettaDate" class="text-muted ms-2"><?= htmlspecialchars($annoMese) ?></small>
+      <small id="etichettaDate" class="ms-2"><?= htmlspecialchars($annoMese) ?></small>
     <?php endif; ?>
       <i class="bi bi-pencil ms-2" role="button" onclick="openEtichettaModal()"></i>
   </h4>
