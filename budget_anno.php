@@ -88,7 +88,7 @@ while ($row = $res->fetch_assoc()) {
 $j = $dataScadenza ? diff_mesi($today->format('Y-m-d'), $dataScadenza) : null; // mesi a scadenza
 $k = $dataInizio ? max(0, diff_mesi($dataInizio, $today->format('Y-m-d'))) : 0; // mesi da inizio
 
-    if(strtotime($dataInizio)<time())
+    if(strtotime($dataInizio)<time() && strtotime($dataScadenza)>time())
     {
         $importoMensile = round($residuo / 12, 2);
     }else{
