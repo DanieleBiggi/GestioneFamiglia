@@ -4,7 +4,7 @@ require_once 'includes/db.php';
 require_once 'includes/utility.php';
 include 'includes/header.php';
 
-$idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
+$idFamiglia = (int)($_SESSION['id_famiglia_gestione'] ?? 0);
 $anno = $_GET['anno'] ?? date('Y');
 
 // Recupero anni disponibili
@@ -17,7 +17,7 @@ $yearStmt->close();
 $today = new DateTime('now', new DateTimeZone('Europe/Rome'));
 
 // 1. Importo stimato attuale per salvadanaio
-$salvStmt = $conn->prepare('SELECT b.*, s.nome_salvadanaio, s.importo_attuale FROM budget b LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio WHERE b.id_famiglia = ? AND year(b.data_scadenza) >= ? AND YEAR(b.data_inizio) <= ?');
+$salvStmt = $conn->prepare("SELECT b.*, s.nome_salvadanaio, s.importo_attuale, bt.tot_importo FROM budget b LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio LEFT JOIN (SELECT id_salvadanaio, SUM(importo) AS tot_importo FROM budget WHERE id_famiglia = $idFamiglia AND tipologia_spesa = 'una_tantum' AND id_salvadanaio IS NOT NULL GROUP BY id_salvadanaio) bt ON b.id_salvadanaio = bt.id_salvadanaio WHERE b.id_famiglia = ? AND year(b.data_scadenza) >= ? AND YEAR(b.data_inizio) <= ?");
 if (!$salvStmt) {
     die("Prepare failed: " . $conn->error);
 }
@@ -33,7 +33,13 @@ while ($row = $resSalv->fetch_assoc()) {
     $importo = (float)($row['importo'] ?? 0);
     $da13 = (float)($row['da_13esima'] ?? 0);
     $da14 = (float)($row['da_14esima'] ?? 0);
-    $residuo = $importo - ($da13 + $da14);
+    $quotaSalvadanaio = 0;
+    $importoAttuale = (float)($row['importo_attuale'] ?? 0);
+    $totImporto = (float)($row['tot_importo'] ?? 0);
+    if ($row['tipologia_spesa'] === 'una_tantum' && !empty($row['id_salvadanaio']) && $totImporto > 0) {
+        $quotaSalvadanaio = $importoAttuale * ($importo / $totImporto);
+    }
+    $residuo = $importo - ($da13 + $da14 + $quotaSalvadanaio);
     $dataInizio = $row['data_inizio'] ?: null;
     $dataScadenza = $row['data_scadenza'] ?: null;
     $j = $dataScadenza ? diff_mesi($today->format('Y-m-d'), $dataScadenza) : null; // mesi a scadenza
@@ -90,7 +96,7 @@ $entrateStmt->close();
 $totalEntrateMensili = array_sum(array_column($entrateMensili, 'importo'));
 
 // 4. Uscite annuali (calcolo importo mensile)
-$annualiStmt = $conn->prepare("SELECT * FROM budget WHERE id_famiglia = ? AND tipologia = 'uscita' AND tipologia_spesa IN ('una_tantum','fissa') AND YEAR(data_inizio) <= ? AND (data_scadenza IS NULL OR YEAR(data_scadenza) >= ?)");
+$annualiStmt = $conn->prepare("SELECT b.*, s.importo_attuale, bt.tot_importo FROM budget b LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio LEFT JOIN (SELECT id_salvadanaio, SUM(importo) AS tot_importo FROM budget WHERE id_famiglia = $idFamiglia AND tipologia_spesa = 'una_tantum' AND id_salvadanaio IS NOT NULL GROUP BY id_salvadanaio) bt ON b.id_salvadanaio = bt.id_salvadanaio WHERE b.id_famiglia = ? AND b.tipologia = 'uscita' AND b.tipologia_spesa IN ('una_tantum','fissa') AND YEAR(b.data_inizio) <= ? AND (b.data_scadenza IS NULL OR YEAR(b.data_scadenza) >= ?)");
 $annualiStmt->bind_param('iii', $idFamiglia, $anno, $anno);
 $annualiStmt->execute();
 $resAnnuali = $annualiStmt->get_result();
@@ -99,10 +105,15 @@ while ($row = $resAnnuali->fetch_assoc()) {
     $importo = (float)($row['importo'] ?? 0);
     $da13 = (float)($row['da_13esima'] ?? 0);
     $da14 = (float)($row['da_14esima'] ?? 0);
-    $residuo = $importo - ($da13 + $da14) ;
+    $quotaSalvadanaio = 0;
+    $importoAttuale = (float)($row['importo_attuale'] ?? 0);
+    $totImporto = (float)($row['tot_importo'] ?? 0);
+    if ($row['tipologia_spesa'] === 'una_tantum' && !empty($row['id_salvadanaio']) && $totImporto > 0) {
+        $quotaSalvadanaio = $importoAttuale * ($importo / $totImporto);
+    }
+    $residuo = $importo - ($da13 + $da14 + $quotaSalvadanaio);
     $importoMensile = round($residuo / 12, 2);
-    //$totalAnnualiMensile += $importoMensile;
-    
+
     $dataInizio = $row['data_inizio'] ?: null;
     $dataScadenza = $row['data_scadenza'] ?: null;
     if(strtotime($dataInizio)<time() && strtotime($dataScadenza)>time())

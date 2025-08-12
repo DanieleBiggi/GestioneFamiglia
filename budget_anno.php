@@ -9,7 +9,7 @@ include 'includes/header.php';
 
 date_default_timezone_set('Europe/Rome');
 
-$idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
+$idFamiglia = (int)($_SESSION['id_famiglia_gestione'] ?? 0);
 
 // Filtri
 $anno = $_GET['anno'] ?? '';
@@ -68,9 +68,15 @@ if ($search !== '') {
 }
 $where = implode(' AND ', $conditions);
 
-$sql = "SELECT b.id_budget, b.id_salvadanaio, b.tipologia, b.importo, b.descrizione, b.data_inizio, b.data_scadenza, b.tipologia_spesa, b.da_13esima, b.da_14esima, s.nome_salvadanaio
+$sql = "SELECT b.id_budget, b.id_salvadanaio, b.tipologia, b.importo, b.descrizione, b.data_inizio, b.data_scadenza, b.tipologia_spesa, b.da_13esima, b.da_14esima, s.nome_salvadanaio, s.importo_attuale, bt.tot_importo
         FROM budget b
         LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio
+        LEFT JOIN (
+            SELECT id_salvadanaio, SUM(importo) AS tot_importo
+            FROM budget
+            WHERE id_famiglia = $idFamiglia AND tipologia_spesa = 'una_tantum' AND id_salvadanaio IS NOT NULL
+            GROUP BY id_salvadanaio
+        ) bt ON b.id_salvadanaio = bt.id_salvadanaio
         WHERE $where
         ORDER BY b.data_scadenza";
         
@@ -86,7 +92,13 @@ while ($row = $res->fetch_assoc()) {
     $importo = (float)($row['importo'] ?? 0);
     $da13 = (float)($row['da_13esima'] ?? 0);
     $da14 = (float)($row['da_14esima'] ?? 0);
-    $residuo = $importo - ($da13 + $da14);
+    $quotaSalvadanaio = 0;
+    $importoAttuale = (float)($row['importo_attuale'] ?? 0);
+    $totImporto = (float)($row['tot_importo'] ?? 0);
+    if ($row['tipologia_spesa'] === 'una_tantum' && !empty($row['id_salvadanaio']) && $totImporto > 0) {
+        $quotaSalvadanaio = $importoAttuale * ($importo / $totImporto);
+    }
+    $residuo = $importo - ($da13 + $da14 + $quotaSalvadanaio);
     
     $dataInizio = $row['data_inizio'] ?: null;
     $dataScadenza = $row['data_scadenza'] ?: null;
