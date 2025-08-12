@@ -81,19 +81,25 @@ while ($row = $res->fetch_assoc()) {
     $da13 = (float)($row['da_13esima'] ?? 0);
     $da14 = (float)($row['da_14esima'] ?? 0);
     $residuo = $importo - ($da13 + $da14);
-    $importoMensile = round($residuo / 12, 2);
-
+    
     $dataInizio = $row['data_inizio'] ?: null;
     $dataScadenza = $row['data_scadenza'] ?: null;
 
 $j = $dataScadenza ? diff_mesi($today->format('Y-m-d'), $dataScadenza) : null; // mesi a scadenza
 $k = $dataInizio ? max(0, diff_mesi($dataInizio, $today->format('Y-m-d'))) : 0; // mesi da inizio
 
+    if(strtotime($dataInizio)<time())
+    {
+        $importoMensile = round($residuo / 12, 2);
+    }else{
+        $importoMensile = 0;
+    }
+    
     if ($dataScadenza) {
         if ($j < 0) {
             $importoStimato = 0.00;
         } elseif ($j == 0) {
-            $importoStimato = '';
+            $importoStimato = $importo;
         } else {
             $importoStimato = round($importoMensile * $k, 2);
         }
