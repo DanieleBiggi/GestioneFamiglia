@@ -133,7 +133,7 @@ $res = $stmt->get_result();
         </div>
         <div class="mb-3">
           <label class="form-label">Data fine</label>
-          <input type="date" name="data_fine" id="budgetDataFine" class="form-control bg-secondary text-white">
+          <input type="date" name="data_scadenza" id="budgetDataFine" class="form-control bg-secondary text-white">
         </div>
       </div>
       <div class="modal-footer d-flex justify-content-between">

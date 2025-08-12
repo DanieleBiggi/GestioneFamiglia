@@ -120,13 +120,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  budgetForm?.addEventListener('submit', e => {
+    e.preventDefault();
+    const fd = new FormData(budgetForm);
+    fd.append('action', 'save');
+    fetch('ajax/budget_manage.php', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(res => {
+        if (res.success) {
+          location.reload();
+        } else {
+          alert(res.error || 'Errore');
+        }
+      });
+  });
+
   deleteBudgetBtn?.addEventListener('click', () => {
     const id = budgetId?.value;
     if (!id) return;
     if (!confirm('Eliminare questo budget?')) return;
     const fd = new FormData();
     fd.append('id', id);
-    fetch('ajax/delete_budget.php', { method: 'POST', body: fd })
+    fd.append('action', 'delete');
+    fetch('ajax/budget_manage.php', { method: 'POST', body: fd })
       .then(r => r.json())
       .then(res => {
         if (res.success) {
