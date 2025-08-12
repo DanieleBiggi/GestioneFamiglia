@@ -605,6 +605,8 @@ CREATE TABLE `lista_spesa` (
   `id` int(11) NOT NULL,
   `id_famiglia` int(11) NOT NULL,
   `nome` varchar(255) NOT NULL,
+  `quantita` varchar(100) DEFAULT NULL,
+  `note` varchar(255) DEFAULT NULL,
   `checked` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
