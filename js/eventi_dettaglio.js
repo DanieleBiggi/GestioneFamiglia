@@ -58,6 +58,25 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
   });
 
+  // apertura modal modifica cibo
+  document.querySelectorAll('#ciboList .cibo-row').forEach(li => {
+    li.addEventListener('click', () => {
+      const form = document.getElementById('ciboForm');
+      form.id_e2c.value = li.dataset.id;
+      form.cibo.value = li.dataset.piatto;
+      form.quantita.value = li.dataset.quantita || '';
+      new bootstrap.Modal(document.getElementById('ciboModal')).show();
+    });
+  });
+
+  document.getElementById('ciboForm')?.addEventListener('submit', function(e){
+    e.preventDefault();
+    const fd = new FormData(this);
+    fetch('ajax/update_e2c.php', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+  });
+
   document.getElementById('editEventoBtn')?.addEventListener('click', () => {
     new bootstrap.Modal(document.getElementById('eventoModal')).show();
   });
