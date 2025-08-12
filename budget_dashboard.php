@@ -71,11 +71,11 @@ usort($salvadanai, function($a, $b) {
 $salvStmt->close();
 
 // 2. Uscite mensili (solo totale)
-$usciteStmt = $conn->prepare("SELECT SUM(importo) AS totale FROM budget WHERE id_famiglia = ? AND tipologia = 'uscita' AND tipologia_spesa = 'mensile' AND YEAR(data_inizio) <= ? AND (data_scadenza IS NULL OR YEAR(data_scadenza) >= ?)");
+$usciteStmt = $conn->prepare("SELECT * FROM budget WHERE id_famiglia = ? AND tipologia = 'uscita' AND tipologia_spesa = 'mensile' AND YEAR(data_inizio) <= ? AND (data_scadenza IS NULL OR YEAR(data_scadenza) >= ?)");
 $usciteStmt->bind_param('iii', $idFamiglia, $anno, $anno);
 $usciteStmt->execute();
-$usciteStmt->bind_result($totalUsciteMensili);
-$usciteStmt->fetch();
+//$usciteStmt->bind_result($totalUsciteMensili);
+$usciteMensili = $usciteStmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $usciteStmt->close();
 
 // 3. Entrate mensili fisse
@@ -124,8 +124,9 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
       <?php endforeach; ?>
     </select>
   </div>
-  <div class="col-6 col-md-2">
+  <div class="col-6 col-md-4 d-flex">
     <button type="submit" class="btn btn-outline-light w-100">Filtra</button>
+    <a href="budget_anno.php" class="btn btn-outline-light w-100 ms-1">Vai a Anno</a>
   </div>
 </form>
 <div class="row">
@@ -179,6 +180,27 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
         $totalEntrateMensili = 0;
         foreach ($entrateMensili as $r):
         $totalEntrateMensili += $r['importo'];
+        ?>
+        <tr>
+          <td><?= htmlspecialchars($r['descrizione'] ?? '') ?></td>
+          <td class="text-end"><?= number_format((float)$r['importo'], 2, ',', '.') ?></td>
+        </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+    <h5>Uscite mensili fisse</h5>
+    <table class="table table-dark table-striped table-sm">
+      <thead>
+        <tr>
+          <th>Descrizione</th>
+          <th class="text-end">Importo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php
+        $totalUsciteMensili = 0;
+        foreach ($usciteMensili as $r):
+        $totalUsciteMensili += $r['importo'];
         ?>
         <tr>
           <td><?= htmlspecialchars($r['descrizione'] ?? '') ?></td>
