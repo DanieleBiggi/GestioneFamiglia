@@ -15,6 +15,7 @@ $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 $anno = $_GET['anno'] ?? '';
 $mese = $_GET['mese'] ?? '';
 $tipologiaSpesa = $_GET['tipologia_spesa'] ?? '';
+$idSalvadanaio = $_GET['id_salvadanaio'] ?? '';
 $defaultScadenzaDa = (new DateTime('first day of last month', new DateTimeZone('Europe/Rome')))->format('Y-m-d');
 $scadenzaDa = array_key_exists('scadenza_da', $_GET) ? $_GET['scadenza_da'] : $defaultScadenzaDa;
 $scadenzaA = $_GET['scadenza_a'] ?? '';
@@ -42,6 +43,11 @@ if ($tipologiaSpesa !== '') {
     $conditions[] = 'b.tipologia_spesa = ?';
     $params[] = $tipologiaSpesa;
     $types .= 's';
+}
+if ($idSalvadanaio !== '') {
+    $conditions[] = 'b.id_salvadanaio = ?';
+    $params[] = $idSalvadanaio;
+    $types .= 'i';
 }
 if ($scadenzaDa !== '') {
     $conditions[] = 'b.data_scadenza >= ?';
@@ -194,6 +200,14 @@ $salStmt->close();
       <option value="">Tipologia spesa</option>
       <option value="fissa" <?= $tipologiaSpesa === 'fissa' ? 'selected' : '' ?>>Fissa</option>
       <option value="una_tantum" <?= $tipologiaSpesa === 'una_tantum' ? 'selected' : '' ?>>Una Tantum</option>
+    </select>
+  </div>
+  <div class="col-6 col-md-2">
+    <select name="id_salvadanaio" class="form-select bg-dark text-white border-secondary">
+      <option value="">Salvadanaio</option>
+      <?php foreach ($salvadanai as $s): ?>
+      <option value="<?= (int)$s['id_salvadanaio'] ?>" <?= ($idSalvadanaio !== '' && (int)$idSalvadanaio === (int)$s['id_salvadanaio']) ? 'selected' : '' ?>><?= htmlspecialchars($s['nome_salvadanaio']) ?></option>
+      <?php endforeach; ?>
     </select>
   </div>
   <div class="col-6 col-md-2">
