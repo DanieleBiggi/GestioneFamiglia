@@ -214,6 +214,9 @@ $salStmt->close();
   <div class="col-6 col-md-2">
     <a class="btn btn-outline-light w-100" href="?<?= http_build_query(array_merge($_GET, ['export' => 1])) ?>">Export CSV</a>
   </div>
+  <div class="col-6 col-md-2">
+    <a class="btn btn-outline-light w-100" href="budget_dashboard.php">Dashboard</a>
+  </div>
 </form>
 <div class="table-responsive" style="width:90vw;margin-left:calc(-45vw + 50%);">
 <table class="table table-dark table-striped table-sm w-100" id="budgetTable">
