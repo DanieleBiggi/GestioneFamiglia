@@ -36,13 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
     new bootstrap.Modal(document.getElementById('addInvitatoModal')).show();
   });
 
-  document.getElementById('invSearch')?.addEventListener('input', function(){
-    const q = this.value.toLowerCase();
-    document.querySelectorAll('#invSelect option').forEach(opt => {
-      opt.style.display = opt.text.toLowerCase().includes(q) ? '' : 'none';
-    });
-  });
-
   document.getElementById('addInvitatoForm')?.addEventListener('submit', function(e){
     e.preventDefault();
     const fd = new FormData(this);
@@ -61,6 +54,18 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     const fd = new FormData(this);
     fetch('ajax/add_e2c.php', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+  });
+
+  document.getElementById('editEventoBtn')?.addEventListener('click', () => {
+    new bootstrap.Modal(document.getElementById('eventoModal')).show();
+  });
+
+  document.getElementById('eventoForm')?.addEventListener('submit', function(e){
+    e.preventDefault();
+    const fd = new FormData(this);
+    fetch('ajax/update_evento.php', {method:'POST', body:fd})
       .then(r=>r.json())
       .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
   });

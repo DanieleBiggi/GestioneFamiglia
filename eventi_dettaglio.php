@@ -20,6 +20,10 @@ if (!$evento) {
     exit;
 }
 
+$canUpdate = has_permission($conn, 'table:eventi', 'update');
+$tipiRes = $conn->query('SELECT id, tipo_evento FROM eventi_tipi_eventi ORDER BY tipo_evento');
+$tipi = $tipiRes ? $tipiRes->fetch_all(MYSQLI_ASSOC) : [];
+
 // Invitati già collegati all'evento con stato e note
 $invitati = [];
 $stmtInv = $conn->prepare("SELECT e2i.id_e2i, i.nome, i.cognome, e2i.partecipa, e2i.forse, e2i.assente, e2i.note FROM eventi_eventi2invitati e2i JOIN eventi_invitati i ON e2i.id_invitato = i.id WHERE e2i.id_evento = ? ORDER BY i.cognome, i.nome");
@@ -61,7 +65,12 @@ include 'includes/header.php';
 ?>
 <div class="container text-white">
   <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
-  <h4 class="mb-3"><?= htmlspecialchars($evento['titolo'] ?? '') ?></h4>
+  <div class="d-flex align-items-center mb-3">
+    <h4 class="mb-0 me-2" id="eventoTitolo"><?= htmlspecialchars($evento['titolo'] ?? '') ?></h4>
+    <?php if ($canUpdate): ?>
+      <i class="bi bi-pencil-square" id="editEventoBtn" style="cursor:pointer"></i>
+    <?php endif; ?>
+  </div>
   <?php if (!empty($evento['data_evento']) || !empty($evento['ora_evento'])): ?>
     <div class="mb-3"><?= htmlspecialchars(trim(($evento['data_evento'] ?? '') . ' ' . ($evento['ora_evento'] ?? ''))) ?></div>
   <?php endif; ?>
@@ -122,6 +131,50 @@ include 'includes/header.php';
   <?php endif; ?>
 </div>
 
+<?php if ($canUpdate): ?>
+<div class="modal fade" id="eventoModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="eventoForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Modifica evento</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="id" value="<?= (int)$id ?>">
+        <div class="mb-3">
+          <label class="form-label">Titolo</label>
+          <input type="text" name="titolo" class="form-control bg-secondary text-white" value="<?= htmlspecialchars($evento['titolo'] ?? '') ?>" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Descrizione</label>
+          <textarea name="descrizione" class="form-control bg-secondary text-white"><?= htmlspecialchars($evento['descrizione'] ?? '') ?></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Data</label>
+          <input type="date" name="data_evento" class="form-control bg-secondary text-white" value="<?= htmlspecialchars($evento['data_evento'] ?? '') ?>">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Ora</label>
+          <input type="time" name="ora_evento" class="form-control bg-secondary text-white" value="<?= htmlspecialchars($evento['ora_evento'] ?? '') ?>">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Tipo evento</label>
+          <select name="id_tipo_evento" class="form-select bg-secondary text-white">
+            <option value="">-- nessuno --</option>
+            <?php foreach ($tipi as $tipo): ?>
+              <option value="<?= (int)$tipo['id'] ?>" <?= ($evento['id_tipo_evento'] ?? null) == $tipo['id'] ? 'selected' : '' ?>><?= htmlspecialchars($tipo['tipo_evento']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary w-100">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+<?php endif; ?>
+
 <!-- Modal modifica invitato -->
 <div class="modal fade" id="invitatoModal" tabindex="-1">
   <div class="modal-dialog">
@@ -173,12 +226,12 @@ include 'includes/header.php';
         <input type="hidden" name="id_evento" value="<?= (int)$id ?>">
         <div class="mb-3">
           <label class="form-label">Invitato</label>
-          <input type="text" id="invSearch" class="form-control bg-secondary text-white mb-2" placeholder="Cerca">
-          <select name="id_invitato" id="invSelect" class="form-select bg-secondary text-white">
+          <input type="text" name="invitato" list="invitatiList" class="form-control bg-secondary text-white">
+          <datalist id="invitatiList">
             <?php foreach ($invitatiDisponibili as $inv): ?>
-              <option value="<?= (int)$inv['id'] ?>"><?= htmlspecialchars($inv['nome'] . ' ' . $inv['cognome']) ?></option>
+              <option value="<?= htmlspecialchars($inv['nome'] . ' ' . $inv['cognome']) ?>"></option>
             <?php endforeach; ?>
-          </select>
+          </datalist>
         </div>
         <div class="mb-3">
           <label class="form-label">Stato</label>
@@ -221,11 +274,12 @@ include 'includes/header.php';
         <input type="hidden" name="id_evento" value="<?= (int)$id ?>">
         <div class="mb-3">
           <label class="form-label">Cibo</label>
-          <select name="id_cibo" class="form-select bg-secondary text-white">
+          <input type="text" name="cibo" list="ciboList" class="form-control bg-secondary text-white">
+          <datalist id="ciboList">
             <?php foreach ($ciboDisponibile as $c): ?>
-              <option value="<?= (int)$c['id'] ?>"><?= htmlspecialchars($c['piatto']) ?></option>
+              <option value="<?= htmlspecialchars($c['piatto']) ?>"></option>
             <?php endforeach; ?>
-          </select>
+          </datalist>
         </div>
         <div class="mb-3">
           <label class="form-label">Quantità</label>
