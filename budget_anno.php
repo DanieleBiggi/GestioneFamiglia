@@ -9,7 +9,7 @@ include 'includes/header.php';
 
 date_default_timezone_set('Europe/Rome');
 
-$idFamiglia = (int)($_SESSION['id_famiglia_gestione'] ?? 0);
+$idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 
 // Filtri
 $anno = $_GET['anno'] ?? '';
@@ -68,19 +68,9 @@ if ($search !== '') {
 }
 $where = implode(' AND ', $conditions);
 
-$sql = "SELECT b.id_budget, b.id_salvadanaio, b.tipologia, b.importo, b.descrizione, b.data_inizio, b.data_scadenza, b.tipologia_spesa, b.da_13esima, b.da_14esima, s.nome_salvadanaio, s.importo_attuale, bt.tot_peso
+$sql = "SELECT b.id_budget, b.id_salvadanaio, b.tipologia, b.importo, b.descrizione, b.data_inizio, b.data_scadenza, b.tipologia_spesa, b.da_13esima, b.da_14esima, s.nome_salvadanaio
         FROM budget b
         LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio
-        LEFT JOIN (
-            SELECT id_salvadanaio,
-                   SUM(importo / CASE
-                       WHEN TIMESTAMPDIFF(MONTH, CURDATE(), data_scadenza) <= 0 THEN 1
-                       ELSE TIMESTAMPDIFF(MONTH, CURDATE(), data_scadenza)
-                   END) AS tot_peso
-            FROM budget
-            WHERE id_famiglia = $idFamiglia AND id_salvadanaio IS NOT NULL
-            GROUP BY id_salvadanaio
-        ) bt ON b.id_salvadanaio = bt.id_salvadanaio
         WHERE $where
         ORDER BY b.data_scadenza";
         
@@ -91,35 +81,24 @@ $res = $stmt->get_result();
 
 $today = new DateTime('now', new DateTimeZone('Europe/Rome'));
 $rows = [];
-$totImporto = $totStimato = $totMensile = $totAttuale = 0;
+$totImporto = $totStimato = $totMensile = 0;
 while ($row = $res->fetch_assoc()) {
     $importo = (float)($row['importo'] ?? 0);
     $da13 = (float)($row['da_13esima'] ?? 0);
     $da14 = (float)($row['da_14esima'] ?? 0);
-
+    $residuo = $importo - ($da13 + $da14);
+    
     $dataInizio = $row['data_inizio'] ?: null;
     $dataScadenza = $row['data_scadenza'] ?: null;
-    $j = $dataScadenza ? diff_mesi($today->format('Y-m-d'), $dataScadenza) : null; // mesi a scadenza
-    $mesiAllaScadenza = $j !== null ? max(1, $j) : 1;
 
-    $quotaSalvadanaio = 0;
-    $importoAttuale = (float)($row['importo_attuale'] ?? 0);
-    $totPeso = (float)($row['tot_peso'] ?? 0);
-    //if ($row['tipologia_spesa'] === 'una_tantum' && !empty($row['id_salvadanaio']) && $totPeso > 0) {
-    if (!empty($row['id_salvadanaio']) && $totPeso > 0) {
-        $pesoBudget = $importo / $mesiAllaScadenza;
-        $quotaSalvadanaio = $importoAttuale * ($pesoBudget / $totPeso);
-    }
-    $residuo = $importo - ($da13 + $da14 + $quotaSalvadanaio);
+    $j = $dataScadenza ? diff_mesi($today->format('Y-m-d'), $dataScadenza) : null; // mesi a scadenza
 
     $primo_del_mese_di_data_inizio = (new DateTime($dataInizio))->modify('first day of this month');
     $k = $dataInizio ? max(0, diff_mesi($primo_del_mese_di_data_inizio->format('Y-m-d'), $today->format('Y-m-d'))) : 0; // mesi da inizio
-    $mesi_inizio_fine = diff_mesi($dataInizio, $dataScadenza); // mesi a scadenza
-    
+
     if(strtotime($dataInizio)<time() && strtotime($dataScadenza)>time())
     {
-        $importoMensile13e14 = round($importo / $mesi_inizio_fine, 2);
-        $importoMensile = round($residuo / $mesi_inizio_fine, 2);
+        $importoMensile = round($residuo / 12, 2);
     }else{
         $importoMensile = 0;
     }
@@ -130,13 +109,11 @@ while ($row = $res->fetch_assoc()) {
         } elseif ($j == 0) {
             $importoStimato = $importo;
         } else {
-            $importoStimato = round($importoMensile13e14 * $k, 2);
+            $importoStimato = round($importoMensile * $k, 2);
         }
     } else {
         $importoStimato = '';
     }
-    
-    //echo $row['descrizione'].": quotaSalvadanaio:".$quotaSalvadanaio."<br>";
 
     $rows[] = [
         'id_budget' => (int)($row['id_budget'] ?? 0),
@@ -152,14 +129,12 @@ while ($row = $res->fetch_assoc()) {
         'tipologia_spesa' => $row['tipologia_spesa'] ?? '',
         'da_13esima' => $da13,
         'da_14esima' => $da14,
-        'quotaSalvadanaio' => $quotaSalvadanaio,
         'importo_stimato' => $importoStimato,
         'importo_mensile' => $importoMensile,
     ];
 
     $totImporto += $importo;
     $totStimato += ($importoStimato === '' ? 0 : $importoStimato);
-    $totAttuale += $quotaSalvadanaio;
     $totMensile += $importoMensile;
 }
 $stmt->close();
@@ -273,7 +248,6 @@ $salStmt->close();
       <th class="text-end">Da 14esima</th>
       <th class="text-end">Importo</th>
       <th class="text-end">Importo stimato attuale</th>
-      <th class="text-end">Importo attuale</th>
       <th class="text-end">Importo mensile</th>
       <th class="text-center">Azioni</th>
     </tr>
@@ -305,7 +279,6 @@ $salStmt->close();
       <td class="text-end" data-sort="<?= $r['importo_stimato'] === '' ? '' : number_format($r['importo_stimato'],2,'.','') ?>">
         <?= $r['importo_stimato'] === '' ? '' : number_format($r['importo_stimato'],2,',','.') ?>
       </td>
-      <td class="text-end" data-sort="<?= number_format($r['quotaSalvadanaio'],2,'.','') ?>"><?= number_format($r['quotaSalvadanaio'],2,',','.') ?></td>
       <td class="text-end" data-sort="<?= number_format($r['importo_mensile'],2,'.','') ?>"><?= number_format($r['importo_mensile'],2,',','.') ?></td>
       <td class="text-center">
         <i class="bi bi-pencil-square text-warning edit-btn" role="button"></i>
@@ -320,7 +293,6 @@ $salStmt->close();
       <th colspan="8">Totali</th>
       <th class="text-end"><?= number_format($totImporto,2,',','.') ?></th>
       <th class="text-end"><?= number_format($totStimato,2,',','.') ?></th>
-      <th class="text-end"><?= number_format($totAttuale,2,',','.') ?></th>
       <th class="text-end"><?= number_format($totMensile,2,',','.') ?></th>
   <th></th>
   </tr>
