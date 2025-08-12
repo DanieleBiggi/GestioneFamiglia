@@ -17,9 +17,16 @@ $yearStmt->close();
 $today = new DateTime('now', new DateTimeZone('Europe/Rome'));
 
 // 1. Importo stimato attuale per salvadanaio
-$salvStmt = $conn->prepare('SELECT b.*, s.nome_salvadanaio, s.importo_attuale FROM budget b LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio WHERE b.id_famiglia = ? AND YEAR(b.data_scadenza) = ?');
-$salvStmt->bind_param('ii', $idFamiglia, $anno);
-$salvStmt->execute();
+$salvStmt = $conn->prepare('SELECT b.*, s.nome_salvadanaio, s.importo_attuale FROM budget b LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio WHERE b.id_famiglia = ? AND year(b.data_scadenza) > ? AND YEAR(b.data_inizio) <= ?');
+if (!$salvStmt) {
+    die("Prepare failed: " . $conn->error);
+}
+$salvStmt->bind_param('iii', $idFamiglia, $anno, $anno);
+
+if (!$salvStmt->execute()) {
+    die("Execute failed: " . $salvStmt->error);
+}
+
 $resSalv = $salvStmt->get_result();
 $salvadanai = [];
 while ($row = $resSalv->fetch_assoc()) {
@@ -36,22 +43,26 @@ while ($row = $resSalv->fetch_assoc()) {
         if ($j < 0) {
             $importoStimato = 0.00;
         } elseif ($j == 0) {
-            $importoStimato = 0.00;
+            $importoStimato = $importo;
         } else {
             $importoStimato = round($importoMensile * $k, 2);
         }
     } else {
-        $importoStimato = 0.00;
+        $importoStimato = 0;
     }
-    $salv = $row['nome_salvadanaio'] ?: ($row['id_salvadanaio'] ?? '');
+    $salv = $row['id_salvadanaio'];
     if (!isset($salvadanai[$salv])) {
         $salvadanai[$salv] = [
             'stimato' => 0,
             'attuale' => (float)($row['importo_attuale'] ?? 0),
         ];
     }
+    $salvadanai[$salv]['nome'] = $row['nome_salvadanaio'];
     $salvadanai[$salv]['stimato'] += $importoStimato;
 }
+usort($salvadanai, function($a, $b) {
+    return strcasecmp($a['nome'], $b['nome']); // ordinamento case-insensitive
+});
 $salvStmt->close();
 
 // 2. Uscite mensili (solo totale)
@@ -118,7 +129,7 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
   <tbody>
     <?php foreach ($salvadanai as $nome => $dati): ?>
     <tr>
-      <td><?= htmlspecialchars($nome) ?></td>
+      <td><?= htmlspecialchars($dati['nome']) ?></td>
       <td class="text-end"><?= number_format($dati['stimato'], 2, ',', '.') ?></td>
       <td class="text-end"><?= number_format($dati['attuale'], 2, ',', '.') ?></td>
       <td class="text-end"><?= number_format($dati['stimato'] - $dati['attuale'], 2, ',', '.') ?></td>
