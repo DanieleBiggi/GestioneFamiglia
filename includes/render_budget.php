@@ -4,6 +4,7 @@ function render_budget(array $row): void {
     $descrizione = trim($row['descrizione'] ?? '');
     $tipologia = trim($row['tipologia'] ?? '');
     $salvadanaio = trim($row['nome_salvadanaio'] ?? '');
+    $idSalvadanaio = isset($row['id_salvadanaio']) ? (int)$row['id_salvadanaio'] : '';
     $tipologiaSpesa = trim($row['tipologia_spesa'] ?? '');
     $importoNum = isset($row['importo']) ? (float)$row['importo'] : 0;
     $importoFmt = number_format($importoNum, 2, ',', '.');
@@ -26,6 +27,7 @@ function render_budget(array $row): void {
         . ' data-descrizione="' . htmlspecialchars($descrizione, ENT_QUOTES) . '"'
         . ' data-tipologia="' . htmlspecialchars($tipologia, ENT_QUOTES) . '"'
         . ' data-salvadanaio="' . htmlspecialchars($salvadanaio, ENT_QUOTES) . '"'
+        . ' data-id-salvadanaio="' . htmlspecialchars((string)$idSalvadanaio, ENT_QUOTES) . '"'
         . ' data-tipologia-spesa="' . htmlspecialchars($tipologiaSpesa, ENT_QUOTES) . '"'
         . ' data-inizio="' . htmlspecialchars($dataInizioRaw, ENT_QUOTES) . '"'
         . ' data-fine="' . htmlspecialchars($dataFineRaw, ENT_QUOTES) . '"'
