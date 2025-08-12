@@ -12,7 +12,12 @@
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
 </head>
 <body>
+<?php 
 
+header('Content-Type: text/html; charset=utf-8');
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$conn->set_charset('utf8mb4'); // IMPORTANTISSIMO
+?>
 <!-- Navbar -->
 <nav class="navbar navbar-dark bg-dark px-3 d-flex justify-content-between align-items-center">
   <button class="btn btn-dark border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu">
