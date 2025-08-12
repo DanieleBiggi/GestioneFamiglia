@@ -91,7 +91,7 @@ $res = $stmt->get_result();
 
 $today = new DateTime('now', new DateTimeZone('Europe/Rome'));
 $rows = [];
-$totImporto = $totStimato = $totMensile = 0;
+$totImporto = $totStimato = $totMensile = $totAttuale = 0;
 while ($row = $res->fetch_assoc()) {
     $importo = (float)($row['importo'] ?? 0);
     $da13 = (float)($row['da_13esima'] ?? 0);
@@ -152,12 +152,14 @@ while ($row = $res->fetch_assoc()) {
         'tipologia_spesa' => $row['tipologia_spesa'] ?? '',
         'da_13esima' => $da13,
         'da_14esima' => $da14,
+        'quotaSalvadanaio' => $quotaSalvadanaio,
         'importo_stimato' => $importoStimato,
         'importo_mensile' => $importoMensile,
     ];
 
     $totImporto += $importo;
     $totStimato += ($importoStimato === '' ? 0 : $importoStimato);
+    $totAttuale += $quotaSalvadanaio;
     $totMensile += $importoMensile;
 }
 $stmt->close();
@@ -271,6 +273,7 @@ $salStmt->close();
       <th class="text-end">Da 14esima</th>
       <th class="text-end">Importo</th>
       <th class="text-end">Importo stimato attuale</th>
+      <th class="text-end">Importo attuale</th>
       <th class="text-end">Importo mensile</th>
       <th class="text-center">Azioni</th>
     </tr>
@@ -302,6 +305,7 @@ $salStmt->close();
       <td class="text-end" data-sort="<?= $r['importo_stimato'] === '' ? '' : number_format($r['importo_stimato'],2,'.','') ?>">
         <?= $r['importo_stimato'] === '' ? '' : number_format($r['importo_stimato'],2,',','.') ?>
       </td>
+      <td class="text-end" data-sort="<?= number_format($r['quotaSalvadanaio'],2,'.','') ?>"><?= number_format($r['quotaSalvadanaio'],2,',','.') ?></td>
       <td class="text-end" data-sort="<?= number_format($r['importo_mensile'],2,'.','') ?>"><?= number_format($r['importo_mensile'],2,',','.') ?></td>
       <td class="text-center">
         <i class="bi bi-pencil-square text-warning edit-btn" role="button"></i>
@@ -316,6 +320,7 @@ $salStmt->close();
       <th colspan="8">Totali</th>
       <th class="text-end"><?= number_format($totImporto,2,',','.') ?></th>
       <th class="text-end"><?= number_format($totStimato,2,',','.') ?></th>
+      <th class="text-end"><?= number_format($totAttuale,2,',','.') ?></th>
       <th class="text-end"><?= number_format($totMensile,2,',','.') ?></th>
   <th></th>
   </tr>
