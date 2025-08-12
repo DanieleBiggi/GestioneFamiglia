@@ -37,10 +37,13 @@ while ($row = $resSalv->fetch_assoc()) {
     $dataInizio = $row['data_inizio'] ?: null;
     $dataScadenza = $row['data_scadenza'] ?: null;
     $j = $dataScadenza ? diff_mesi($today->format('Y-m-d'), $dataScadenza) : null; // mesi a scadenza
-    $k = $dataInizio ? max(0, diff_mesi($dataInizio, $today->format('Y-m-d'))) : 0; // mesi da inizio
+    //$k = $dataInizio ? max(0, diff_mesi($dataInizio, $today->format('Y-m-d'))) : 0; // mesi da inizio
+    $primo_del_mese_di_data_inizio = (new DateTime($dataInizio))->modify('first day of this month');
+    $k = $dataInizio ? max(0, diff_mesi($primo_del_mese_di_data_inizio->format('Y-m-d'), $today->format('Y-m-d'))) : 0; // mesi da inizio
+    $mesi_data_inizio_fine = $dataInizio ? max(0, diff_mesi($primo_del_mese_di_data_inizio->format('Y-m-d'), $dataScadenza)) : 0; // mesi da inizio
     if(strtotime($dataInizio)<time() && strtotime($dataScadenza)>time())
     {
-        $importoMensile = round($residuo / 12, 2);
+        $importoMensile = round($residuo / $mesi_data_inizio_fine, 2);
     }else{
         $importoMensile = 0;
     }
@@ -60,10 +63,12 @@ while ($row = $resSalv->fetch_assoc()) {
         $salvadanai[$salv] = [
             'id'      => $salv,
             'nome'    => $row['nome_salvadanaio'],
+            'importo_mensile' => 0,
             'stimato' => 0,
             'attuale' => (float)($row['importo_attuale'] ?? 0),
         ];
     }
+    $salvadanai[$salv]['importo_mensile'] += $importoMensile;
     $salvadanai[$salv]['stimato'] += $importoStimato;
 }
 $salvadanai = array_values($salvadanai);
@@ -132,12 +137,13 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
   </div>
 </form>
 <div class="row">
-  <div class="col-12 col-lg-6">
+  <div class="col-12 col-lg-8">
     <h5>Importi stimati attuali per salvadanaio</h5>
     <table class="table table-dark table-striped table-sm">
       <thead>
         <tr>
           <th>Salvadanaio</th>
+          <th class="text-end">Importo mensile</th>
           <th class="text-end">Importo stimato</th>
           <th class="text-end">Importo attuale</th>
           <th class="text-end">Differenza</th>
@@ -148,11 +154,13 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
         $per_totali['stimato'] = 0;
         $per_totali['attuale'] = 0;
         foreach ($salvadanai as $dati):
+        $per_totali['mensile'] += $dati['importo_mensile'];
         $per_totali['stimato'] += $dati['stimato'];
         $per_totali['attuale'] += $dati['attuale'];
         ?>
         <tr>
           <td><a href="budget_anno.php?<?= http_build_query(['id_salvadanaio' => $dati['id']]) ?>"><?= htmlspecialchars($dati['nome']) ?></a></td>
+          <td class="text-end"><?= number_format($dati['importo_mensile'], 2, ',', '.') ?></td>
           <td class="text-end"><?= number_format($dati['stimato'], 2, ',', '.') ?></td>
           <td class="text-end"><?= number_format($dati['attuale'], 2, ',', '.') ?></td>
           <td class="text-end"><?= number_format($dati['stimato'] - $dati['attuale'], 2, ',', '.') ?></td>
@@ -161,6 +169,7 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
 
         <tr>
           <td></td>
+          <td class="text-end"><?= number_format($per_totali['mensile'], 2, ',', '.') ?></td>
           <td class="text-end"><?= number_format($per_totali['stimato'], 2, ',', '.') ?></td>
           <td class="text-end"><?= number_format($per_totali['attuale'], 2, ',', '.') ?></td>
           <td class="text-end"></td>
@@ -168,7 +177,7 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
       </tbody>
     </table>
   </div>
-  <div class="col-12 col-lg-6">
+  <div class="col-12 col-lg-4">
     <h5>Entrate mensili fisse</h5>
     <table class="table table-dark table-striped table-sm">
       <thead>
