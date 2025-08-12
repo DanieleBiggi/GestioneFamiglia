@@ -20,7 +20,7 @@ if ($action === 'save') {
     $id_salvadanaio = isset($_POST['id_salvadanaio']) && $_POST['id_salvadanaio'] !== '' ? (int)$_POST['id_salvadanaio'] : null;
     $descrizione = trim($_POST['descrizione'] ?? '');
     $data_inizio = $_POST['data_inizio'] ?? null;
-    $data_scadenza = $_POST['data_scadenza'] ?? null;
+    $data_scadenza = !empty($_POST['data_scadenza']) ? $_POST['data_scadenza'] : null;
     $da13 = isset($_POST['da_13esima']) ? (float)$_POST['da_13esima'] : 0;
     $da14 = isset($_POST['da_14esima']) ? (float)$_POST['da_14esima'] : 0;
     $importo = isset($_POST['importo']) ? (float)$_POST['importo'] : 0;
@@ -29,14 +29,7 @@ if ($action === 'save') {
 
     if ($id > 0) {
         $stmt = $conn->prepare('UPDATE budget SET id_salvadanaio=?, descrizione=?, data_inizio=?, data_scadenza=?, da_13esima=?, da_14esima=?, importo=? WHERE id_budget=? AND id_famiglia=?');
-        if (!$stmt) {
-            die("Errore nella prepare: " . $conn->error);
-        }
-
-        if (!$stmt->bind_param('isssdddii', $id_salvadanaio, $descrizione, $data_inizio, $data_scadenza, $da13, $da14, $importo, $id, $idFamiglia)) {
-            die("Errore nella bind_param: " . $stmt->error);
-        }
-
+        $stmt->bind_param('isssdddii', $id_salvadanaio, $descrizione, $data_inizio, $data_scadenza, $da13, $da14, $importo, $id, $idFamiglia);
         $ok = $stmt->execute();
         $stmt->close();
         echo json_encode(['success' => $ok]);
