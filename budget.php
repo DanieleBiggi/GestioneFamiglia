@@ -20,6 +20,15 @@ function getEnumValues(mysqli $conn, string $table, string $field): array {
 $tipologie = getEnumValues($conn, 'budget', 'tipologia');
 $tipologieSpesa = getEnumValues($conn, 'budget', 'tipologia_spesa');
 
+$salvadanai = [];
+$stmtSalv = $conn->prepare('SELECT id_salvadanaio, nome_salvadanaio FROM salvadanai ORDER BY nome_salvadanaio');
+$stmtSalv->execute();
+$resSalv = $stmtSalv->get_result();
+while ($rowSalv = $resSalv->fetch_assoc()) {
+    $salvadanai[] = $rowSalv;
+}
+$stmtSalv->close();
+
 $stmt = $conn->prepare('SELECT b.*, s.nome_salvadanaio FROM budget b LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio WHERE b.id_famiglia = ? ORDER BY b.data_inizio');
 $stmt->bind_param('i', $idFamiglia);
 $stmt->execute();
@@ -120,6 +129,15 @@ $res = $stmt->get_result();
             <option value=""></option>
             <?php foreach ($tipologieSpesa as $ts): ?>
               <option value="<?= htmlspecialchars($ts) ?>"><?= ucfirst(str_replace('_',' ', $ts)) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Salvadanaio</label>
+          <select name="id_salvadanaio" id="budgetSalvadanaio" class="form-select bg-secondary text-white">
+            <option value=""></option>
+            <?php foreach ($salvadanai as $s): ?>
+              <option value="<?= (int)$s['id_salvadanaio'] ?>"><?= htmlspecialchars($s['nome_salvadanaio']) ?></option>
             <?php endforeach; ?>
           </select>
         </div>

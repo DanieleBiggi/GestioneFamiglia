@@ -29,7 +29,14 @@ if ($action === 'save') {
 
     if ($id > 0) {
         $stmt = $conn->prepare('UPDATE budget SET id_salvadanaio=?, descrizione=?, data_inizio=?, data_scadenza=?, da_13esima=?, da_14esima=?, importo=? WHERE id_budget=? AND id_famiglia=?');
-        $stmt->bind_param('isssdddii', $id_salvadanaio, $descrizione, $data_inizio, $data_scadenza, $da13, $da14, $importo, $id, $idFamiglia);
+        if (!$stmt) {
+            die("Errore nella prepare: " . $conn->error);
+        }
+
+        if (!$stmt->bind_param('isssdddii', $id_salvadanaio, $descrizione, $data_inizio, $data_scadenza, $da13, $da14, $importo, $id, $idFamiglia)) {
+            die("Errore nella bind_param: " . $stmt->error);
+        }
+
         $ok = $stmt->execute();
         $stmt->close();
         echo json_encode(['success' => $ok]);

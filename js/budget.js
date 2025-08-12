@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const budgetDescrizione = document.getElementById('budgetDescrizione');
   const budgetTipologia = document.getElementById('budgetTipologia');
   const budgetTipologiaSpesa = document.getElementById('budgetTipologiaSpesa');
+  const budgetSalvadanaio = document.getElementById('budgetSalvadanaio');
   const budgetImporto = document.getElementById('budgetImporto');
   const budgetDataInizio = document.getElementById('budgetDataInizio');
   const budgetDataFine = document.getElementById('budgetDataFine');
@@ -99,6 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (budgetId) budgetId.value = '';
     if (budgetTipologia) budgetTipologia.value = '';
     if (budgetTipologiaSpesa) budgetTipologiaSpesa.value = '';
+    if (budgetSalvadanaio) budgetSalvadanaio.value = '';
     if (modalTitle) modalTitle.textContent = 'Nuovo budget';
     deleteBudgetBtn?.classList.add('d-none');
     budgetModal?.show();
@@ -111,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (budgetDescrizione) budgetDescrizione.value = item.dataset.descrizione || '';
       if (budgetTipologia) budgetTipologia.value = item.dataset.tipologia || '';
       if (budgetTipologiaSpesa) budgetTipologiaSpesa.value = item.dataset.tipologiaSpesa || '';
+      if (budgetSalvadanaio) budgetSalvadanaio.value = item.dataset.idSalvadanaio || '';
       if (budgetImporto) budgetImporto.value = item.dataset.importo || '';
       if (budgetDataInizio) budgetDataInizio.value = item.dataset.inizio || '';
       if (budgetDataFine) budgetDataFine.value = item.dataset.fine || '';
