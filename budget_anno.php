@@ -78,7 +78,7 @@ $sql = "SELECT b.id_budget, b.id_salvadanaio, b.tipologia, b.importo, b.descrizi
                        ELSE TIMESTAMPDIFF(MONTH, CURDATE(), data_scadenza)
                    END) AS tot_peso
             FROM budget
-            WHERE id_famiglia = $idFamiglia AND tipologia_spesa = 'una_tantum' AND id_salvadanaio IS NOT NULL
+            WHERE id_famiglia = $idFamiglia AND id_salvadanaio IS NOT NULL
             GROUP BY id_salvadanaio
         ) bt ON b.id_salvadanaio = bt.id_salvadanaio
         WHERE $where
@@ -105,17 +105,21 @@ while ($row = $res->fetch_assoc()) {
     $quotaSalvadanaio = 0;
     $importoAttuale = (float)($row['importo_attuale'] ?? 0);
     $totPeso = (float)($row['tot_peso'] ?? 0);
-    if ($row['tipologia_spesa'] === 'una_tantum' && !empty($row['id_salvadanaio']) && $totPeso > 0) {
+    //if ($row['tipologia_spesa'] === 'una_tantum' && !empty($row['id_salvadanaio']) && $totPeso > 0) {
+    if (!empty($row['id_salvadanaio']) && $totPeso > 0) {
         $pesoBudget = $importo / $mesiAllaScadenza;
         $quotaSalvadanaio = $importoAttuale * ($pesoBudget / $totPeso);
     }
     $residuo = $importo - ($da13 + $da14 + $quotaSalvadanaio);
 
-    $k = $dataInizio ? max(0, diff_mesi($dataInizio, $today->format('Y-m-d'))) : 0; // mesi da inizio
-
+    $primo_del_mese_di_data_inizio = (new DateTime($dataInizio))->modify('first day of this month');
+    $k = $dataInizio ? max(0, diff_mesi($primo_del_mese_di_data_inizio->format('Y-m-d'), $today->format('Y-m-d'))) : 0; // mesi da inizio
+    $mesi_inizio_fine = diff_mesi($dataInizio, $dataScadenza); // mesi a scadenza
+    
     if(strtotime($dataInizio)<time() && strtotime($dataScadenza)>time())
     {
-        $importoMensile = round($residuo / 12, 2);
+        $importoMensile13e14 = round($importo / $mesi_inizio_fine, 2);
+        $importoMensile = round($residuo / $mesi_inizio_fine, 2);
     }else{
         $importoMensile = 0;
     }
@@ -126,11 +130,13 @@ while ($row = $res->fetch_assoc()) {
         } elseif ($j == 0) {
             $importoStimato = $importo;
         } else {
-            $importoStimato = round($importoMensile * $k, 2);
+            $importoStimato = round($importoMensile13e14 * $k, 2);
         }
     } else {
         $importoStimato = '';
     }
+    
+    //echo $row['descrizione'].": quotaSalvadanaio:".$quotaSalvadanaio."<br>";
 
     $rows[] = [
         'id_budget' => (int)($row['id_budget'] ?? 0),
