@@ -25,7 +25,7 @@ $conn->set_charset('utf8mb4'); // IMPORTANTISSIMO
   </button>
   <!--<a href="index.php" class="navbar-brand mb-0 h1">Gestione Famiglia 2.0</a>-->
   <a href="index.php" class="navbar-brand mb-0 h1">
-    <img src="assets/banner.png" alt="Gestione Famiglia" height="40" />
+    <img src="assets/<?= (($_SESSION['theme_id'] ?? 1) == 2) ? 'banner_nero.png' : 'banner.png' ?>" alt="Gestione Famiglia" height="40" />
   </a>
 </nav>
 
