@@ -20,7 +20,7 @@ $month++; // convert to 1-based
 $start = sprintf('%04d-%02d-01', $year, $month);
 $end = date('Y-m-t', strtotime($start));
 // Query turni
-$stmt = $conn->prepare('SELECT t.data, t.id_tipo, tp.descrizione, tp.colore_bg, tp.colore_testo FROM turni_calendario t JOIN turni_tipi tp ON t.id_tipo = tp.id WHERE t.id_famiglia = ? AND t.data BETWEEN ? AND ? ORDER BY t.data');
+$stmt = $conn->prepare('SELECT t.id, t.data, t.id_tipo, t.inizio_turno, t.fine_turno, tp.descrizione, tp.colore_bg, tp.colore_testo, tp.inizio_turno AS tp_inizio_turno, tp.fine_turno AS tp_fine_turno FROM turni_calendario t JOIN turni_tipi tp ON t.id_tipo = tp.id WHERE t.id_famiglia = ? AND t.data BETWEEN ? AND ? ORDER BY t.data');
 $stmt->bind_param('iss', $idFamiglia, $start, $end);
 $stmt->execute();
 $res = $stmt->get_result();
@@ -30,7 +30,7 @@ while ($row = $res->fetch_assoc()) {
 }
 $stmt->close();
 // Query eventi
-$evStmt = $conn->prepare('SELECT e.id, e.titolo, e.data_evento, te.colore FROM eventi e JOIN eventi_eventi2famiglie f ON e.id = f.id_evento LEFT JOIN eventi_tipi_eventi te ON e.id_tipo_evento = te.id WHERE f.id_famiglia = ? AND e.data_evento BETWEEN ? AND ? ORDER BY e.data_evento');
+$evStmt = $conn->prepare('SELECT e.id, e.titolo, e.data_evento, e.ora_evento, te.colore FROM eventi e JOIN eventi_eventi2famiglie f ON e.id = f.id_evento LEFT JOIN eventi_tipi_eventi te ON e.id_tipo_evento = te.id WHERE f.id_famiglia = ? AND e.data_evento BETWEEN ? AND ? ORDER BY e.data_evento');
 $evStmt->bind_param('iss', $idFamiglia, $start, $end);
 $evStmt->execute();
 $evRes = $evStmt->get_result();
@@ -39,7 +39,8 @@ while ($row = $evRes->fetch_assoc()) {
     $eventi[$row['data_evento']][] = [
         'id' => (int)$row['id'],
         'titolo' => $row['titolo'],
-        'colore' => $row['colore']
+        'colore' => $row['colore'],
+        'ora_evento' => $row['ora_evento']
     ];
 }
 $evStmt->close();
@@ -70,24 +71,67 @@ try {
     $service = new Google_Service_Calendar($client);
     $calendarIdTurni = getenv('GOOGLE_CALENDAR_ID') ?: 'primary';
     $calendarIdEventi = getenv('GOOGLE_CALENDAR_ID') ?: 'primary';
+    $timeZone = date_default_timezone_get();
     foreach ($turni as $date => $items) {
         foreach ($items as $t) {
-            $event = new Google_Service_Calendar_Event([
+            $startTime = $t['inizio_turno'] ?: $t['tp_inizio_turno'];
+            $endTime = $t['fine_turno'] ?: $t['tp_fine_turno'];
+            if ($startTime && $endTime) {
+                $start = ['dateTime' => $date . 'T' . $startTime, 'timeZone' => $timeZone];
+                $end = ['dateTime' => $date . 'T' . $endTime, 'timeZone' => $timeZone];
+            } else {
+                $start = ['date' => $date];
+                $end = ['date' => $date];
+            }
+            $eventData = [
                 'summary' => $t['descrizione'],
-                'start' => ['date' => $date],
-                'end' => ['date' => $date],
-            ]);
-            $service->events->insert($calendarIdTurni, $event);
+                'start' => $start,
+                'end' => $end,
+            ];
+            $eventId = 'turno' . $t['id'];
+            $event = new Google_Service_Calendar_Event($eventData);
+            try {
+                $service->events->patch($calendarIdTurni, $eventId, $event);
+            } catch (Exception $ex) {
+                if ($ex instanceof Google_Service_Exception && $ex->getCode() == 404) {
+                    $eventData['id'] = $eventId;
+                    $event = new Google_Service_Calendar_Event($eventData);
+                    $service->events->insert($calendarIdTurni, $event);
+                } else {
+                    throw $ex;
+                }
+            }
         }
     }
     foreach ($eventi as $date => $items) {
         foreach ($items as $e) {
-            $event = new Google_Service_Calendar_Event([
+            $eventId = 'evento' . $e['id'];
+            if ($e['ora_evento']) {
+                $startDateTime = $date . 'T' . $e['ora_evento'];
+                $endDateTime = date('Y-m-d\TH:i:s', strtotime($startDateTime . ' +1 hour'));
+                $start = ['dateTime' => $startDateTime, 'timeZone' => $timeZone];
+                $end = ['dateTime' => $endDateTime, 'timeZone' => $timeZone];
+            } else {
+                $start = ['date' => $date];
+                $end = ['date' => $date];
+            }
+            $eventData = [
                 'summary' => $e['titolo'],
-                'start' => ['date' => $date],
-                'end' => ['date' => $date],
-            ]);
-            $service->events->insert($calendarIdEventi, $event);
+                'start' => $start,
+                'end' => $end,
+            ];
+            $event = new Google_Service_Calendar_Event($eventData);
+            try {
+                $service->events->patch($calendarIdEventi, $eventId, $event);
+            } catch (Exception $ex) {
+                if ($ex instanceof Google_Service_Exception && $ex->getCode() == 404) {
+                    $eventData['id'] = $eventId;
+                    $event = new Google_Service_Calendar_Event($eventData);
+                    $service->events->insert($calendarIdEventi, $event);
+                } else {
+                    throw $ex;
+                }
+            }
         }
     }
     echo json_encode(['success' => true, 'message' => 'Sincronizzazione completata']);
