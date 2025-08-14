@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const col = document.createElement('div');
       col.className='col border py-2';
       col.textContent=h;
+      col.style="height: fit-content;";
       headerRow.appendChild(col);
     });
     calendarContainer.appendChild(headerRow);
