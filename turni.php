@@ -33,7 +33,7 @@ $tipi = $tipiRes ? $tipiRes->fetch_all(MYSQLI_ASSOC) : [];
     <div id="stateA" class="d-flex justify-content-around">
       <button class="btn btn-outline-light flex-fill mx-1" id="btnSingolo">SINGOLA</button>
       <button class="btn btn-outline-light flex-fill mx-1" id="btnMultipla">MULTIPLA</button>
-      <button class="btn btn-outline-light flex-fill mx-1" disabled>TURNI</button>
+      <button class="btn btn-outline-light flex-fill mx-1" id="btnGoogle">GOOGLE</button>
     </div>
     <div id="stateB" class="d-none">
       <div class="d-flex align-items-center">

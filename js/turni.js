@@ -168,5 +168,16 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('prevMonth').addEventListener('click', ()=>{current.setMonth(current.getMonth()-1);loadTurni(current.getFullYear(),current.getMonth());});
   document.getElementById('nextMonth').addEventListener('click', ()=>{current.setMonth(current.getMonth()+1);loadTurni(current.getFullYear(),current.getMonth());});
 
+  document.getElementById('btnGoogle').addEventListener('click', ()=>{
+    fetch('ajax/turni_sync_google.php',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({year:current.getFullYear(),month:current.getMonth()})
+    })
+    .then(r=>r.json())
+    .then(res=>alert(res.message||'Operazione completata'))
+    .catch(()=>alert('Errore durante la sincronizzazione'));
+  });
+
   loadTurni(current.getFullYear(), current.getMonth());
 });
