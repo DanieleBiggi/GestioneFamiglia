@@ -30,6 +30,16 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
   });
 
+  document.getElementById('deleteInvitatoBtn')?.addEventListener('click', function(){
+    const id = document.getElementById('invitatoForm')?.id_e2i.value;
+    if(!id || !confirm('Eliminare questo invitato dall\'evento?')) return;
+    const fd = new FormData();
+    fd.append('id_e2i', id);
+    fetch('ajax/delete_e2i.php', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+  });
+
   document.getElementById('addInvitatoBtn')?.addEventListener('click', () => {
     const form = document.getElementById('addInvitatoForm');
     form.reset();
