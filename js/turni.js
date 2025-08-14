@@ -1,16 +1,19 @@
 document.addEventListener('DOMContentLoaded', () => {
   let current = new Date();
   let selectedType = null;
+  let multiMode = false;
+  let dragging = false;
+  let dragDates = new Set();
   const monthLabel = document.getElementById('monthLabel');
   const calendarContainer = document.getElementById('calendarContainer');
 
   function loadTurni(year, month){
     fetch(`ajax/turni_get.php?year=${year}&month=${month+1}`)
       .then(r=>r.json())
-      .then(data=>renderCalendar(year, month, data));
+      .then(data=>renderCalendar(year, month, data.turni || {}, data.eventi || {}));
   }
 
-  function renderCalendar(year, month, turni){
+  function renderCalendar(year, month, turni, eventi){
     calendarContainer.innerHTML = '';
     const headers = ['LUN','MAR','MER','GIO','VEN','SAB','DOM'];
     const headerRow = document.createElement('div');
@@ -52,6 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
         col.style.background=info.colore_bg;
         col.style.color=info.colore_testo;
       }
+      if(eventi[dateStr]){
+        eventi[dateStr].forEach(ev=>{
+          col.insertAdjacentHTML('beforeend', `<div class="event-link text-truncate"><a href="eventi_dettaglio.php?id=${ev.id}" class="text-white text-decoration-none">${ev.titolo}</a></div>`);
+        });
+      }
       const t=new Date();
       if(year===t.getFullYear() && month===t.getMonth() && day===t.getDate()){
         col.classList.add('border-primary');
@@ -69,6 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   calendarContainer.addEventListener('click', e=>{
+    if(e.target.closest('a')) return;
+    if(multiMode) return;
     const cell=e.target.closest('.day-cell');
     if(!cell || selectedType===null) return;
     const date=cell.dataset.date;
@@ -81,10 +91,17 @@ document.addEventListener('DOMContentLoaded', () => {
   function toggleStateB(show){
     document.getElementById('stateA').classList.toggle('d-none', show);
     document.getElementById('stateB').classList.toggle('d-none', !show);
+    if(!show){
+      multiMode=false;
+      selectedType=null;
+      dragDates.clear();
+      calendarContainer.querySelectorAll('.multi-selected').forEach(c=>c.classList.remove('multi-selected'));
+    }
   }
 
-  document.getElementById('btnSingolo').addEventListener('click', ()=>toggleStateB(true));
-  document.getElementById('closeStateB').addEventListener('click', ()=>{selectedType=null;toggleStateB(false);});
+  document.getElementById('btnSingolo').addEventListener('click', ()=>{multiMode=false;toggleStateB(true);});
+  document.getElementById('btnMultipla').addEventListener('click', ()=>{multiMode=true;toggleStateB(true);});
+  document.getElementById('closeStateB').addEventListener('click', ()=>toggleStateB(false));
 
   document.getElementById('pillContainer').addEventListener('click', e=>{
     if(e.target.classList.contains('pill')){
@@ -92,6 +109,40 @@ document.addEventListener('DOMContentLoaded', () => {
       e.target.classList.add('active');
       selectedType=e.target.dataset.type;
     }
+  });
+
+  function handleSelection(cell){
+    const date = cell.dataset.date;
+    if(!date || dragDates.has(date)) return;
+    dragDates.add(date);
+    cell.classList.add('multi-selected');
+  }
+
+  calendarContainer.addEventListener('pointerdown', e=>{
+    if(!multiMode || selectedType===null) return;
+    const cell=e.target.closest('.day-cell');
+    if(!cell) return;
+    dragging=true;
+    dragDates.clear();
+    calendarContainer.querySelectorAll('.multi-selected').forEach(c=>c.classList.remove('multi-selected'));
+    handleSelection(cell);
+  });
+
+  calendarContainer.addEventListener('pointerover', e=>{
+    if(!dragging) return;
+    const cell=e.target.closest('.day-cell');
+    if(cell) handleSelection(cell);
+  });
+
+  document.addEventListener('pointerup', ()=>{
+    if(!dragging) return;
+    dragging=false;
+    const requests=[];
+    dragDates.forEach(date=>{
+      const payload = selectedType==='delete'?{date}:{date,id_tipo:selectedType};
+      requests.push(fetch('ajax/turni_update.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json()));
+    });
+    Promise.all(requests).then(()=>{ loadTurni(current.getFullYear(), current.getMonth()); });
   });
 
   document.getElementById('prevMonth').addEventListener('click', ()=>{current.setMonth(current.getMonth()-1);loadTurni(current.getFullYear(),current.getMonth());});
