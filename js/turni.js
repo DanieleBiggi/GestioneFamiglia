@@ -44,22 +44,34 @@ document.addEventListener('DOMContentLoaded', () => {
         row.className='row row-cols-7 g-0';
       }
       const col=document.createElement('div');
-      col.className='col border p-2 position-relative day-cell';
+      col.className='col border position-relative day-cell';
       const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
       col.dataset.date=dateStr;
-      col.innerHTML=`<div class="small text-start">${day}</div>`;
+      const dateLabel=document.createElement('div');
+      dateLabel.className='small text-start p-1';
+      dateLabel.textContent=day;
+      col.appendChild(dateLabel);
       const info=turni[dateStr];
+      const turniContainer=document.createElement('div');
+      turniContainer.className='turni-container';
       if(info){
-        col.dataset.idTipo=info.id_tipo;
-        col.insertAdjacentHTML('beforeend', `<div class="text-center">${info.descrizione}</div>`);
-        col.style.background=info.colore_bg;
-        col.style.color=info.colore_testo;
+        info.forEach(t=>{
+          const turno=document.createElement('div');
+          turno.className='turno';
+          turno.textContent=t.descrizione;
+          turno.style.background=t.colore_bg;
+          turno.style.color=t.colore_testo;
+          turniContainer.appendChild(turno);
+        });
       }
+      col.appendChild(turniContainer);
       if(eventi[dateStr]){
+        const evWrap=document.createElement('div');
         eventi[dateStr].forEach(ev=>{
           const bg = ev.colore || '#6c757d';
-          col.insertAdjacentHTML('beforeend', `<div class="event-link text-truncate" style="background:${bg}"><a href="eventi_dettaglio.php?id=${ev.id}" class="text-white text-decoration-none">${ev.titolo}</a></div>`);
+          evWrap.insertAdjacentHTML('beforeend', `<div class="event-link text-truncate" style="background:${bg}"><a href="eventi_dettaglio.php?id=${ev.id}" class="text-white text-decoration-none">${ev.titolo}</a></div>`);
         });
+        col.appendChild(evWrap);
       }
       const t=new Date();
       if(year===t.getFullYear() && month===t.getMonth() && day===t.getDate()){

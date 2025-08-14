@@ -17,13 +17,13 @@ if (!$year || !$month || !$idFamiglia) {
 }
 $start = sprintf('%04d-%02d-01', $year, $month);
 $end = date('Y-m-t', strtotime($start));
-$stmt = $conn->prepare('SELECT t.data, t.id_tipo, tp.descrizione, tp.colore_bg, tp.colore_testo FROM turni_calendario t JOIN turni_tipi tp ON t.id_tipo = tp.id WHERE t.id_famiglia = ? AND t.data BETWEEN ? AND ?');
+$stmt = $conn->prepare('SELECT t.data, t.id_tipo, tp.descrizione, tp.colore_bg, tp.colore_testo FROM turni_calendario t JOIN turni_tipi tp ON t.id_tipo = tp.id WHERE t.id_famiglia = ? AND t.data BETWEEN ? AND ? ORDER BY t.data');
 $stmt->bind_param('iss', $idFamiglia, $start, $end);
 $stmt->execute();
 $res = $stmt->get_result();
 $turni = [];
 while ($row = $res->fetch_assoc()) {
-    $turni[$row['data']] = $row;
+    $turni[$row['data']][] = $row;
 }
 $stmt->close();
 
