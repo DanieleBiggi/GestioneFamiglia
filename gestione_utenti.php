@@ -33,6 +33,12 @@ foreach ($displayColumns as $col) {
         }
     }
 }
+$sql = "SELECT userlevelid AS id, userlevelname AS label FROM userlevels ORDER BY userlevelname";
+if ($res = $conn->query($sql)) {
+    while ($row = $res->fetch_assoc()) {
+        $lookups['userlevelid'][$row['id']] = trim((string)$row['label']);
+    }
+}
 $canInsert = has_permission($conn, 'table:utenti', 'insert');
 $canUpdate = has_permission($conn, 'table:utenti', 'update');
 $canManageFamilies = has_permission($conn, 'table:utenti2famiglie', 'update');
