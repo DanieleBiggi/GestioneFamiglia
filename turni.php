@@ -20,21 +20,12 @@ $tipi = $tipiRes ? $tipiRes->fetch_all(MYSQLI_ASSOC) : [];
 </style>
 <div id="shifter" class="d-flex flex-column min-vh-100 p-0">
   <div class="bg-dark text-white p-3 position-sticky top-0">
-    <div class="d-flex justify-content-between align-items-center">
-      <div class="d-flex align-items-center">
-        <span class="fw-bold me-3">Shifter</span>
-        <span class="text-muted">Turni neuro</span>
-      </div>
+    <div class="d-flex justify-content-center align-items-center">
       <div class="d-flex align-items-center">
         <i class="bi bi-chevron-left me-2" id="prevMonth" role="button"></i>
         <span id="monthLabel" class="mx-2 text-uppercase"></span>
         <i class="bi bi-chevron-right ms-2" id="nextMonth" role="button"></i>
       </div>
-    </div>
-    <div class="mt-2 text-center">
-      <span class="me-3">SETTEMBRE</span>
-      <span class="me-3">AGOSTO</span>
-      <span>RIEPILOGO</span>
     </div>
   </div>
   <div class="flex-grow-1 overflow-auto" id="calendarContainer"></div>
