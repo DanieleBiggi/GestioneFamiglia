@@ -153,6 +153,9 @@ $conn->set_charset('utf8mb4'); // IMPORTANTISSIMO
             <?php if (has_permission($conn, 'page:eventi.php', 'view')): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/eventi.php"><i class="bi bi-calendar-event me-2 text-white"></i>Eventi</a></li>
             <?php endif; ?>
+            <?php if (has_permission($conn, 'page:turni.php', 'view')): ?>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/turni.php"><i class="bi bi-calendar-week me-2 text-white"></i>Turni</a></li>
+            <?php endif; ?>
             <?php if (has_permission($conn, 'page:lista_spesa.php', 'view')): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/lista_spesa.php"><i class="bi bi-basket me-2 text-white"></i>Lista spesa</a></li>
             <?php endif; ?>
