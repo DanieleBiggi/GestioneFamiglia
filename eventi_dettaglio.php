@@ -261,11 +261,11 @@ include 'includes/header.php';
           <label class="form-label">Stato</label>
           <div>
             <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" name="stato" id="addStatoPartecipa" value="partecipa" checked>
+              <input class="form-check-input" type="radio" name="stato" id="addStatoPartecipa" value="partecipa">
               <label class="form-check-label" for="addStatoPartecipa"><i class="bi bi-check-circle text-success"></i> Partecipa</label>
             </div>
             <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" name="stato" id="addStatoForse" value="forse">
+              <input class="form-check-input" type="radio" name="stato" id="addStatoForse" value="forse" checked>
               <label class="form-check-label" for="addStatoForse"><i class="bi bi-question-circle text-warning"></i> Forse</label>
             </div>
             <div class="form-check form-check-inline">
