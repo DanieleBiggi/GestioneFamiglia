@@ -281,6 +281,11 @@ $conn->set_charset('utf8mb4'); // IMPORTANTISSIMO
             <li><a class="dropdown-item text-white" href="/Gestionale25/invitati_cibo.php">Cibo</a></li>
             <?php endif; ?>
             <?php endif; ?>
+            <?php if (has_permission($conn, 'page:turni_tipi.php', 'view')): ?>
+            <li><hr class="dropdown-divider"></li>
+            <li><h6 class="dropdown-header">Turni</h6></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/turni_tipi.php">Tipi turni</a></li>
+            <?php endif; ?>
             <?php if (has_permission($conn, 'page:temi.php', 'view')): ?>
             <li><hr class="dropdown-divider"></li>
             <li><h6 class="dropdown-header">Aspetto</h6></li>
