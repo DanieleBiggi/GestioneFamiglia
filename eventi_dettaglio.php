@@ -211,7 +211,8 @@ include 'includes/header.php';
         </div>
       </div>
       <div class="modal-footer">
-        <button type="submit" class="btn btn-primary w-100">Salva</button>
+        <button type="button" class="btn btn-danger me-auto" id="deleteInvitatoBtn">Elimina</button>
+        <button type="submit" class="btn btn-primary">Salva</button>
       </div>
     </form>
   </div>
