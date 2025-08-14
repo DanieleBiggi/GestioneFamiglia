@@ -10,9 +10,9 @@ $tipiRes = $conn->query("SELECT id, descrizione, colore_bg, colore_testo FROM tu
 $tipi = $tipiRes ? $tipiRes->fetch_all(MYSQLI_ASSOC) : [];
 ?>
 <style>
-  #calendarContainer .col {height: 100px;}
+  #calendarContainer .col {height: 100px; min-width:0; overflow:hidden;}
   #pillContainer .pill.active {outline:2px solid #fff;}
-  #calendarContainer .event-link {font-size: .8rem;}
+  #calendarContainer .event-link {font-size: .8rem; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;}
   #calendarContainer .day-cell.multi-selected {outline:2px solid #0d6efd;}
 </style>
 <div id="shifter" class="d-flex flex-column min-vh-100 p-0">
