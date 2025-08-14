@@ -12,6 +12,9 @@ $res = $stmt->get_result();
 $canInsert = has_permission($conn, 'table:eventi', 'insert');
 $tipiRes = $conn->query('SELECT id, tipo_evento FROM eventi_tipi_eventi ORDER BY tipo_evento');
 $tipi = $tipiRes ? $tipiRes->fetch_all(MYSQLI_ASSOC) : [];
+$famRes = $conn->query('SELECT id_famiglia, nome_famiglia FROM famiglie ORDER BY nome_famiglia');
+$famiglie = $famRes ? $famRes->fetch_all(MYSQLI_ASSOC) : [];
+$famigliaDefault = $_SESSION['id_famiglia_gestione'] ?? 0;
 ?>
 <div class="d-flex mb-3 justify-content-between">
   <h4>Eventi</h4>
@@ -60,6 +63,15 @@ $tipi = $tipiRes ? $tipiRes->fetch_all(MYSQLI_ASSOC) : [];
               <option value="<?= (int)$tipo['id'] ?>"><?= htmlspecialchars($tipo['tipo_evento']) ?></option>
             <?php endforeach; ?>
           </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Famiglie</label>
+          <?php foreach ($famiglie as $fam): ?>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="famiglie[]" id="fam<?= (int)$fam['id_famiglia'] ?>" value="<?= (int)$fam['id_famiglia'] ?>" <?= $fam['id_famiglia'] == $famigliaDefault ? 'checked' : '' ?>>
+              <label class="form-check-label" for="fam<?= (int)$fam['id_famiglia'] ?>"><?= htmlspecialchars($fam['nome_famiglia']) ?></label>
+            </div>
+          <?php endforeach; ?>
         </div>
       </div>
       <div class="modal-footer">

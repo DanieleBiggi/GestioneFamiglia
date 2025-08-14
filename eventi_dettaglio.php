@@ -24,6 +24,16 @@ $canUpdate = has_permission($conn, 'table:eventi', 'update');
 $tipiRes = $conn->query('SELECT id, tipo_evento FROM eventi_tipi_eventi ORDER BY tipo_evento');
 $tipi = $tipiRes ? $tipiRes->fetch_all(MYSQLI_ASSOC) : [];
 
+$famiglieEvento = [];
+$stmtFam = $conn->prepare('SELECT id_famiglia FROM eventi_eventi2famiglie WHERE id_evento = ?');
+$stmtFam->bind_param('i', $id);
+$stmtFam->execute();
+$resFam = $stmtFam->get_result();
+while ($row = $resFam->fetch_assoc()) { $famiglieEvento[] = (int)$row['id_famiglia']; }
+$stmtFam->close();
+$allFamRes = $conn->query('SELECT id_famiglia, nome_famiglia FROM famiglie ORDER BY nome_famiglia');
+$allFamiglie = $allFamRes ? $allFamRes->fetch_all(MYSQLI_ASSOC) : [];
+
 // Invitati già collegati all'evento con stato e note
 $invitati = [];
 $stmtInv = $conn->prepare("SELECT e2i.id_e2i, i.nome, i.cognome, e2i.partecipa, e2i.forse, e2i.assente, e2i.note FROM eventi_eventi2invitati e2i JOIN eventi_invitati i ON e2i.id_invitato = i.id WHERE e2i.id_evento = ? ORDER BY i.cognome, i.nome");
@@ -168,6 +178,15 @@ include 'includes/header.php';
               <option value="<?= (int)$tipo['id'] ?>" <?= ($evento['id_tipo_evento'] ?? null) == $tipo['id'] ? 'selected' : '' ?>><?= htmlspecialchars($tipo['tipo_evento']) ?></option>
             <?php endforeach; ?>
           </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Famiglie</label>
+          <?php foreach ($allFamiglie as $fam): ?>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="famiglie[]" id="fam<?= (int)$fam['id_famiglia'] ?>" value="<?= (int)$fam['id_famiglia'] ?>" <?= in_array((int)$fam['id_famiglia'], $famiglieEvento, true) ? 'checked' : '' ?>>
+              <label class="form-check-label" for="fam<?= (int)$fam['id_famiglia'] ?>"><?= htmlspecialchars($fam['nome_famiglia']) ?></label>
+            </div>
+          <?php endforeach; ?>
         </div>
       </div>
       <div class="modal-footer">
