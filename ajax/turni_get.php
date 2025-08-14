@@ -27,13 +27,17 @@ while ($row = $res->fetch_assoc()) {
 }
 $stmt->close();
 
-$evStmt = $conn->prepare('SELECT e.id, e.titolo, e.data_evento FROM eventi e JOIN eventi_eventi2famiglie f ON e.id = f.id_evento WHERE f.id_famiglia = ? AND e.data_evento BETWEEN ? AND ? ORDER BY e.data_evento');
+$evStmt = $conn->prepare('SELECT e.id, e.titolo, e.data_evento, te.colore FROM eventi e JOIN eventi_eventi2famiglie f ON e.id = f.id_evento LEFT JOIN eventi_tipi_eventi te ON e.id_tipo_evento = te.id WHERE f.id_famiglia = ? AND e.data_evento BETWEEN ? AND ? ORDER BY e.data_evento');
 $evStmt->bind_param('iss', $idFamiglia, $start, $end);
 $evStmt->execute();
 $evRes = $evStmt->get_result();
 $eventi = [];
 while ($row = $evRes->fetch_assoc()) {
-    $eventi[$row['data_evento']][] = ['id' => (int)$row['id'], 'titolo' => $row['titolo']];
+    $eventi[$row['data_evento']][] = [
+        'id' => (int)$row['id'],
+        'titolo' => $row['titolo'],
+        'colore' => $row['colore']
+    ];
 }
 $evStmt->close();
 

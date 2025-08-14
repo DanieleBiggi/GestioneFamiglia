@@ -57,7 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if(eventi[dateStr]){
         eventi[dateStr].forEach(ev=>{
-          col.insertAdjacentHTML('beforeend', `<div class="event-link text-truncate"><a href="eventi_dettaglio.php?id=${ev.id}" class="text-white text-decoration-none">${ev.titolo}</a></div>`);
+          const bg = ev.colore || '#6c757d';
+          col.insertAdjacentHTML('beforeend', `<div class="event-link text-truncate" style="background:${bg}"><a href="eventi_dettaglio.php?id=${ev.id}" class="text-white text-decoration-none">${ev.titolo}</a></div>`);
         });
       }
       const t=new Date();
