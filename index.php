@@ -121,17 +121,8 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
     </a>
   </div>
   <div class="col-2">
-    <a href="lista_spesa.php" class="text-decoration-none text-white">
-      <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
-           style="width:50px;height:50px">
-        <i class="bi bi-cart4 fs-4"></i>
-      </div>
-      <div>Lista spesa</div>
-    </a>
-  </div>
-  <div class="col-2">
-    <a href="#" class="text-decoration-none text-white" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu">
-      <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
+    <a href="#" class="text-decoration-none text-white" data-bs-toggle="modal" data-bs-target="#altroModal">
+      <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
            style="width:50px;height:50px">
         <i class="bi bi-three-dots fs-4"></i>
       </div>
@@ -142,6 +133,48 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
 
 <input type="text" id="search" class="form-control bg-dark text-white border-secondary mb-3" placeholder="Cerca nei movimenti">
 <div id="searchResults"></div>
+
+<div class="modal fade" id="altroModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-header">
+        <h5 class="modal-title">Altre funzioni</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-grid gap-2">
+          <?php if (has_permission($conn, 'page:mezzi.php', 'view')): ?>
+          <a href="mezzi.php" class="btn btn-outline-light w-100 text-start">Mezzi</a>
+          <?php endif; ?>
+          <?php if (has_permission($conn, 'page:eventi.php', 'view')): ?>
+          <a href="eventi.php" class="btn btn-outline-light w-100 text-start">Eventi</a>
+          <?php endif; ?>
+          <?php if (has_permission($conn, 'page:turni.php', 'view')): ?>
+          <a href="turni.php" class="btn btn-outline-light w-100 text-start">Turni</a>
+          <?php endif; ?>
+          <?php if (has_permission($conn, 'page:lista_spesa.php', 'view')): ?>
+          <a href="lista_spesa.php" class="btn btn-outline-light w-100 text-start">Lista spesa</a>
+          <?php endif; ?>
+          <?php if (has_permission($conn, 'page:storia.php', 'view')): ?>
+          <a href="storia.php" class="btn btn-outline-light w-100 text-start">Storia</a>
+          <?php endif; ?>
+          <?php if (has_permission($conn, 'page:password.php', 'view')): ?>
+          <a href="password.php" class="btn btn-outline-light w-100 text-start">Siti e password</a>
+          <?php endif; ?>
+          <?php if (has_permission($conn, 'page:budget.php', 'view')): ?>
+          <a href="budget.php" class="btn btn-outline-light w-100 text-start">Budget</a>
+          <?php endif; ?>
+          <?php if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1 && has_permission($conn, 'page:etichette_lista.php', 'view')): ?>
+          <a href="etichette_lista.php" class="btn btn-outline-light w-100 text-start">Etichette</a>
+          <?php endif; ?>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <?php
   $movimenti_revolut = "";
