@@ -98,7 +98,9 @@ function initUserManager(table, formColumns, primaryKey, lookups, boolCols = [],
                     `;
                     familiesList.appendChild(div);
                     const sel = div.querySelector('select');
-                    if (f.userlevelid) sel.value = f.userlevelid;
+                    if (f.userlevelid !== null && f.userlevelid !== undefined) {
+                        sel.value = String(f.userlevelid);
+                    }
                 });
                 familiesModal.show();
             });
