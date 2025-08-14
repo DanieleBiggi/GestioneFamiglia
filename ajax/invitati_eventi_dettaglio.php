@@ -48,6 +48,17 @@ try {
             $stmt->execute();
             echo json_encode(['success'=>true]);
             break;
+        case 'delete_invitato':
+            if (!has_permission($conn,'table:eventi_invitati','delete')) throw new Exception('Accesso negato');
+            $id = (int)($_POST['id'] ?? 0);
+            $stmt = $conn->prepare('DELETE FROM eventi_invitati2famiglie WHERE id_invitato=?');
+            $stmt->bind_param('i',$id);
+            $stmt->execute();
+            $stmt = $conn->prepare('DELETE FROM eventi_invitati WHERE id=?');
+            $stmt->bind_param('i',$id);
+            $stmt->execute();
+            echo json_encode(['success'=>true]);
+            break;
         default:
             throw new Exception('Azione non valida');
     }

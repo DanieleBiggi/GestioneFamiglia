@@ -25,6 +25,16 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch('ajax/invitati_eventi_dettaglio.php',{method:'POST',body:fd})
       .then(r=>r.json()).then(res=>{ if(res.success){ location.reload(); } else { alert(res.error||'Errore'); }});
   });
+  document.getElementById('deleteInvitato')?.addEventListener('click', e => {
+    const id = e.currentTarget.dataset.id;
+    if(!id) return;
+    if(!confirm('Sei sicuro di voler eliminare questo invitato?')) return;
+    const fd = new FormData();
+    fd.append('action','delete_invitato');
+    fd.append('id', id);
+    fetch('ajax/invitati_eventi_dettaglio.php',{method:'POST',body:fd})
+      .then(r=>r.json()).then(res=>{ if(res.success){ history.back(); } else { alert(res.error||'Errore'); }});
+  });
 });
 function openInvitatoEditModal(){
   new bootstrap.Modal(document.getElementById('invitatoEditModal')).show();

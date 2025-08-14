@@ -17,7 +17,9 @@ $famRes = $famStmt->get_result();
 $families = $famRes->fetch_all(MYSQLI_ASSOC);
 $allFamRes = $conn->query('SELECT id_famiglia, nome_famiglia FROM famiglie ORDER BY nome_famiglia');
 $allFamilies = $allFamRes ? $allFamRes->fetch_all(MYSQLI_ASSOC) : [];
+$canDelete = has_permission($conn, 'table:eventi_invitati', 'delete');
 ?>
+<a href="javascript:history.back()" class="btn btn-outline-light mb-3">&larr; Indietro</a>
 <div class="d-flex mb-3 align-items-center">
   <h4 class="mb-0 me-2"><?= htmlspecialchars($inv['nome'] . ' ' . $inv['cognome']) ?></h4>
   <button class="btn btn-outline-light btn-sm" onclick="openInvitatoEditModal()"><i class="bi bi-pencil"></i></button>
@@ -35,6 +37,9 @@ $allFamilies = $allFamRes ? $allFamRes->fetch_all(MYSQLI_ASSOC) : [];
   </div>
 <?php endforeach; ?>
 </div>
+<?php if ($canDelete): ?>
+  <button type="button" class="btn btn-danger w-100 mt-3" id="deleteInvitato" data-id="<?= (int)$inv['id'] ?>">Elimina</button>
+<?php endif; ?>
 <div class="modal fade" id="invitatoEditModal" tabindex="-1">
   <div class="modal-dialog">
     <form class="modal-content bg-dark text-white" id="invitatoEditForm">
