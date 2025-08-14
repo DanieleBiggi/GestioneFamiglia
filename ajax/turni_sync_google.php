@@ -68,7 +68,8 @@ try {
         exit;
     }
     $service = new Google_Service_Calendar($client);
-    $calendarId = getenv('GOOGLE_CALENDAR_ID') ?: 'primary';
+    $calendarIdTurni = getenv('GOOGLE_CALENDAR_ID') ?: 'primary';
+    $calendarIdEventi = getenv('GOOGLE_CALENDAR_ID') ?: 'primary';
     foreach ($turni as $date => $items) {
         foreach ($items as $t) {
             $event = new Google_Service_Calendar_Event([
@@ -76,7 +77,7 @@ try {
                 'start' => ['date' => $date],
                 'end' => ['date' => $date],
             ]);
-            $service->events->insert($calendarId, $event);
+            $service->events->insert($calendarIdTurni, $event);
         }
     }
     foreach ($eventi as $date => $items) {
@@ -86,7 +87,7 @@ try {
                 'start' => ['date' => $date],
                 'end' => ['date' => $date],
             ]);
-            $service->events->insert($calendarId, $event);
+            $service->events->insert($calendarIdEventi, $event);
         }
     }
     echo json_encode(['success' => true, 'message' => 'Sincronizzazione completata']);
