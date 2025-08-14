@@ -84,7 +84,7 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
   </div>
 </div>
 <div class="row text-center g-2 mb-3">
-  <div class="col-3">
+  <div class="col-2">
     <a href="aggiungi_entrata.php" class="text-decoration-none text-white">
       <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
            style="width:50px;height:50px">
@@ -93,7 +93,7 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
       <div>Aggiungi entrata</div>
     </a>
   </div>
-  <div class="col-3">
+  <div class="col-2">
     <a href="aggiungi_uscita.php" class="text-decoration-none text-white">
       <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
            style="width:50px;height:50px">
@@ -102,7 +102,7 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
       <div>Aggiungi uscita</div>
     </a>
   </div>
-  <div class="col-3">
+  <div class="col-2">
     <a href="upload_movimenti.php" class="text-decoration-none text-white">
       <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
            style="width:50px;height:50px">
@@ -111,7 +111,25 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
       <div>Carica file</div>
     </a>
   </div>
-  <div class="col-3">
+  <div class="col-2">
+    <a href="turni.php" class="text-decoration-none text-white">
+      <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
+           style="width:50px;height:50px">
+        <i class="bi bi-calendar fs-4"></i>
+      </div>
+      <div>Turni</div>
+    </a>
+  </div>
+  <div class="col-2">
+    <a href="lista_spesa.php" class="text-decoration-none text-white">
+      <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
+           style="width:50px;height:50px">
+        <i class="bi bi-cart4 fs-4"></i>
+      </div>
+      <div>Lista spesa</div>
+    </a>
+  </div>
+  <div class="col-2">
     <a href="#" class="text-decoration-none text-white" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu">
       <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
            style="width:50px;height:50px">
