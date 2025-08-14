@@ -21,9 +21,20 @@ $stmt = $conn->prepare('SELECT t.data, t.id_tipo, tp.descrizione, tp.colore_bg, 
 $stmt->bind_param('iss', $idFamiglia, $start, $end);
 $stmt->execute();
 $res = $stmt->get_result();
-$out = [];
+$turni = [];
 while ($row = $res->fetch_assoc()) {
-    $out[$row['data']] = $row;
+    $turni[$row['data']] = $row;
 }
 $stmt->close();
-echo json_encode($out);
+
+$evStmt = $conn->prepare('SELECT e.id, e.titolo, e.data_evento FROM eventi e JOIN eventi_eventi2famiglie f ON e.id = f.id_evento WHERE f.id_famiglia = ? AND e.data_evento BETWEEN ? AND ? ORDER BY e.data_evento');
+$evStmt->bind_param('iss', $idFamiglia, $start, $end);
+$evStmt->execute();
+$evRes = $evStmt->get_result();
+$eventi = [];
+while ($row = $evRes->fetch_assoc()) {
+    $eventi[$row['data_evento']][] = ['id' => (int)$row['id'], 'titolo' => $row['titolo']];
+}
+$evStmt->close();
+
+echo json_encode(['turni' => $turni, 'eventi' => $eventi]);
