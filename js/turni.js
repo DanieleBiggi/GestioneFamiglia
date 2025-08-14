@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let dragDates = new Set();
   const monthLabel = document.getElementById('monthLabel');
   const calendarContainer = document.getElementById('calendarContainer');
+  let firstRender = true;
 
   function loadTurni(year, month){
     fetch(`ajax/turni_get.php?year=${year}&month=${month+1}`)
@@ -88,6 +89,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     calendarContainer.appendChild(row);
     monthLabel.textContent = new Intl.DateTimeFormat('it-IT',{month:'long',year:'numeric'}).format(new Date(year,month,1)).toUpperCase();
+    if(firstRender){
+      window.scrollTo(0, document.body.scrollHeight);
+      calendarContainer.scrollTop = calendarContainer.scrollHeight;
+      firstRender = false;
+    }
   }
 
   calendarContainer.addEventListener('click', e=>{
