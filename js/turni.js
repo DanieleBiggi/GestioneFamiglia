@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     row.className='row row-cols-7 g-0';
     for(let i=0;i<start;i++){
       const col=document.createElement('div');
-      col.className='col border bg-secondary bg-opacity-10';
+      col.className='col border bg-secondary p-2 bg-opacity-10';
       row.appendChild(col);
     }
     while(day<=last.getDate()){
@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     while(row.children.length<7){
       const col=document.createElement('div');
-      col.className='col border bg-secondary bg-opacity-10';
+      col.className='col border bg-secondary p-2 bg-opacity-10';
       row.appendChild(col);
     }
     calendarContainer.appendChild(row);
