@@ -6,7 +6,14 @@ if (!has_permission($conn, 'page:invitati_eventi.php', 'view')) { http_response_
 require_once 'includes/render_invitato_evento.php';
 include 'includes/header.php';
 $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
-$stmt = $conn->prepare('SELECT i.id, IFNULL(u.nome,i.nome) AS nome, IFNULL(u.cognome,i.cognome) AS cognome FROM eventi_invitati i JOIN eventi_invitati2famiglie f ON i.id=f.id_invitato LEFT JOIN utenti u ON i.id_utente=u.id AND u.attivo=1 WHERE f.id_famiglia=? AND f.attivo=1 ORDER BY cognome,nome');
+$showInactive = isset($_GET['show_inactive']);
+$sql = 'SELECT i.id, IFNULL(u.nome,i.nome) AS nome, IFNULL(u.cognome,i.cognome) AS cognome '
+  . 'FROM eventi_invitati i JOIN eventi_invitati2famiglie f ON i.id=f.id_invitato '
+  . 'LEFT JOIN utenti u ON i.id_utente=u.id AND u.attivo=1 '
+  . 'WHERE f.id_famiglia=?';
+if (!$showInactive) { $sql .= ' AND f.attivo=1'; }
+$sql .= ' ORDER BY cognome,nome';
+$stmt = $conn->prepare($sql);
 $stmt->bind_param('i', $idFamiglia);
 $stmt->execute();
 $res = $stmt->get_result();
@@ -20,6 +27,10 @@ $canInsert = has_permission($conn, 'table:eventi_invitati', 'insert');
 </div>
 <div class="d-flex mb-3 align-items-center">
   <input type="text" id="search" class="form-control bg-dark text-white border-secondary" placeholder="Cerca">
+  <div class="form-check ms-2">
+    <input class="form-check-input" type="checkbox" id="showInactive" <?php if($showInactive) echo 'checked'; ?>>
+    <label class="form-check-label" for="showInactive">Mostra disattivati</label>
+  </div>
 </div>
 <div id="invitatiList">
 <?php while ($row = $res->fetch_assoc()): ?>

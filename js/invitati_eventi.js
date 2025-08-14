@@ -14,6 +14,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   search.addEventListener('input', filter);
   filter();
+  const showInactive = document.getElementById('showInactive');
+  showInactive?.addEventListener('change', () => {
+    const params = new URLSearchParams(window.location.search);
+    if (showInactive.checked) {
+      params.set('show_inactive', '1');
+    } else {
+      params.delete('show_inactive');
+    }
+    window.location.search = params.toString();
+  });
   const form = document.getElementById('invitatoForm');
   form?.addEventListener('submit', function(e){
     e.preventDefault();
