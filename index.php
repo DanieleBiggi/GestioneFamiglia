@@ -84,7 +84,7 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
   </div>
 </div>
 <div class="row text-center g-2 mb-3">
-  <div class="col-2">
+  <div class="col-3">
     <a href="aggiungi_entrata.php" class="text-decoration-none text-white">
       <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
            style="width:50px;height:50px">
@@ -93,7 +93,7 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
       <div>Aggiungi entrata</div>
     </a>
   </div>
-  <div class="col-2">
+  <div class="col-3">
     <a href="aggiungi_uscita.php" class="text-decoration-none text-white">
       <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
            style="width:50px;height:50px">
@@ -102,7 +102,7 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
       <div>Aggiungi uscita</div>
     </a>
   </div>
-  <div class="col-2">
+  <div class="col-3">
     <a href="upload_movimenti.php" class="text-decoration-none text-white">
       <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
            style="width:50px;height:50px">
@@ -111,16 +111,7 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
       <div>Carica file</div>
     </a>
   </div>
-  <div class="col-2">
-    <a href="turni.php" class="text-decoration-none text-white">
-      <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
-           style="width:50px;height:50px">
-        <i class="bi bi-calendar fs-4"></i>
-      </div>
-      <div>Turni</div>
-    </a>
-  </div>
-  <div class="col-2">
+  <div class="col-3">
     <a href="#" class="text-decoration-none text-white" data-bs-toggle="modal" data-bs-target="#altroModal">
       <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
            style="width:50px;height:50px">
@@ -144,28 +135,44 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
       <div class="modal-body">
         <div class="d-grid gap-2">
           <?php if (has_permission($conn, 'page:mezzi.php', 'view')): ?>
-          <a href="mezzi.php" class="btn btn-outline-light w-100 text-start">Mezzi</a>
+          <a href="mezzi.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
+            <i class="bi bi-truck me-2"></i>Mezzi
+          </a>
           <?php endif; ?>
           <?php if (has_permission($conn, 'page:eventi.php', 'view')): ?>
-          <a href="eventi.php" class="btn btn-outline-light w-100 text-start">Eventi</a>
+          <a href="eventi.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
+            <i class="bi bi-calendar-event me-2"></i>Eventi
+          </a>
           <?php endif; ?>
           <?php if (has_permission($conn, 'page:turni.php', 'view')): ?>
-          <a href="turni.php" class="btn btn-outline-light w-100 text-start">Turni</a>
+          <a href="turni.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
+            <i class="bi bi-calendar-week me-2"></i>Turni
+          </a>
           <?php endif; ?>
           <?php if (has_permission($conn, 'page:lista_spesa.php', 'view')): ?>
-          <a href="lista_spesa.php" class="btn btn-outline-light w-100 text-start">Lista spesa</a>
+          <a href="lista_spesa.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
+            <i class="bi bi-cart me-2"></i>Lista spesa
+          </a>
           <?php endif; ?>
           <?php if (has_permission($conn, 'page:storia.php', 'view')): ?>
-          <a href="storia.php" class="btn btn-outline-light w-100 text-start">Storia</a>
+          <a href="storia.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
+            <i class="bi bi-clock-history me-2"></i>Storia
+          </a>
           <?php endif; ?>
           <?php if (has_permission($conn, 'page:password.php', 'view')): ?>
-          <a href="password.php" class="btn btn-outline-light w-100 text-start">Siti e password</a>
+          <a href="password.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
+            <i class="bi bi-shield-lock me-2"></i>Siti e password
+          </a>
           <?php endif; ?>
           <?php if (has_permission($conn, 'page:budget.php', 'view')): ?>
-          <a href="budget.php" class="btn btn-outline-light w-100 text-start">Budget</a>
+          <a href="budget.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
+            <i class="bi bi-wallet2 me-2"></i>Budget
+          </a>
           <?php endif; ?>
           <?php if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1 && has_permission($conn, 'page:etichette_lista.php', 'view')): ?>
-          <a href="etichette_lista.php" class="btn btn-outline-light w-100 text-start">Etichette</a>
+          <a href="etichette_lista.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
+            <i class="bi bi-tags me-2"></i>Etichette
+          </a>
           <?php endif; ?>
         </div>
       </div>
