@@ -17,7 +17,7 @@ if (!$date || !$idFamiglia) {
     exit;
 }
 if ($idTipo) {
-    $stmt = $conn->prepare('INSERT INTO turni_calendario (id_famiglia, data, id_tipo) VALUES (?,?,?) ON DUPLICATE KEY UPDATE id_tipo = VALUES(id_tipo)');
+    $stmt = $conn->prepare('INSERT INTO turni_calendario (id_famiglia, data, id_tipo) VALUES (?,?,?)');
     $stmt->bind_param('isi', $idFamiglia, $date, $idTipo);
     $success = $stmt->execute();
     $stmt->close();

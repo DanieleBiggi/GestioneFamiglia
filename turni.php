@@ -11,6 +11,9 @@ $tipi = $tipiRes ? $tipiRes->fetch_all(MYSQLI_ASSOC) : [];
 ?>
 <style>
   #calendarContainer .col {height: 100px; min-width:0; overflow:hidden;}
+  #calendarContainer .day-cell {display:flex; flex-direction:column; padding:0;}
+  #calendarContainer .turni-container {flex:1; display:flex; flex-direction:column;}
+  #calendarContainer .turno {flex:1; display:flex; align-items:center; justify-content:center; font-size:.8rem;}
   #pillContainer .pill.active {outline:2px solid #fff;}
   #calendarContainer .event-link {font-size: .8rem; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;}
   #calendarContainer .day-cell.multi-selected {outline:2px solid #0d6efd;}
