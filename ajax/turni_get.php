@@ -1,0 +1,29 @@
+<?php
+header('Content-Type: application/json');
+include '../includes/session_check.php';
+include '../includes/db.php';
+include '../includes/permissions.php';
+if (!has_permission($conn, 'page:turni.php', 'view')) {
+    http_response_code(403);
+    echo json_encode([]);
+    exit;
+}
+$idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
+$year = (int)($_GET['year'] ?? 0);
+$month = (int)($_GET['month'] ?? 0);
+if (!$year || !$month || !$idFamiglia) {
+    echo json_encode([]);
+    exit;
+}
+$start = sprintf('%04d-%02d-01', $year, $month);
+$end = date('Y-m-t', strtotime($start));
+$stmt = $conn->prepare('SELECT t.data, t.id_tipo, tp.descrizione, tp.colore_bg, tp.colore_testo FROM turni_calendario t JOIN turni_tipi tp ON t.id_tipo = tp.id WHERE t.id_famiglia = ? AND t.data BETWEEN ? AND ?');
+$stmt->bind_param('iss', $idFamiglia, $start, $end);
+$stmt->execute();
+$res = $stmt->get_result();
+$out = [];
+while ($row = $res->fetch_assoc()) {
+    $out[$row['data']] = $row;
+}
+$stmt->close();
+echo json_encode($out);
