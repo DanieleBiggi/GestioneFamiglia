@@ -30,3 +30,18 @@ Il file `includes/db_config.php` è già incluso in `.gitignore` per evitare che
 
 L'applicazione include una copia leggera di [PHPMailer](https://github.com/PHPMailer/PHPMailer) per l'invio di email. Le componenti relative a DSN, OAuth e POP3 sono state rimosse perché non utilizzate.
 
+## Sincronizzazione Google Calendar
+
+Per abilitare il pulsante **GOOGLE** nella pagina dei turni è necessario configurare le credenziali per le API di Google Calendar.
+
+1. Installare la libreria client:
+   ```bash
+   composer require google/apiclient:^2.0
+   ```
+2. Creare su [Google Cloud Console](https://console.cloud.google.com/) delle credenziali OAuth 2.0 o un account di servizio e scaricare il file JSON.
+3. Salvare il file delle credenziali in `config/google_credentials.json` e il token di accesso in `config/google_token.json` (entrambi **non versionati**).
+4. Il token deve includere l'ambito `https://www.googleapis.com/auth/calendar`. Se il token scade verrà aggiornato automaticamente.
+5. (Opzionale) impostare la variabile d'ambiente `GOOGLE_CALENDAR_ID` con l'ID del calendario da utilizzare; in assenza viene usato il calendario `primary`.
+
+Una volta completata la configurazione, il pulsante **GOOGLE** su `turni.php` sincronizzerà sul calendario gli eventi e i turni del mese visualizzato.
+
