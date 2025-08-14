@@ -69,8 +69,8 @@ try {
         exit;
     }
     $service = new Google_Service_Calendar($client);
-    $calendarIdTurni = getenv('GOOGLE_CALENDAR_ID') ?: 'primary';
-    $calendarIdEventi = getenv('GOOGLE_CALENDAR_ID') ?: 'primary';
+    $calendarIdTurni = '405f4721b468b439755b6aad55d6b40e5c235f8511db6a29b95dc7f96ff329f0@group.calendar.google.com';
+    $calendarIdEventi = '29f6c24acdde6722ed7eb92a5eff3d15bdc1a46d210def3314c1b05c15ac024f@group.calendar.google.com';
     $timeZone = date_default_timezone_get();
     foreach ($turni as $date => $items) {
         foreach ($items as $t) {
