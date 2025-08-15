@@ -45,7 +45,7 @@ $stmt->close();
 
 // Query eventi
 $evStmt = $conn->prepare(
-  'SELECT e.id, e.titolo, e.data_evento, e.ora_evento, e.google_calendar_eventid
+  'SELECT e.id, e.titolo, e.data_evento, e.ora_evento, e.data_fine, e.ora_fine, e.google_calendar_eventid
    FROM eventi e
    JOIN eventi_eventi2famiglie f ON e.id = f.id_evento
    WHERE f.id_famiglia = ? AND e.data_evento BETWEEN ? AND ?
@@ -161,9 +161,16 @@ try {
             $evtStartTime = $normTime($e['ora_evento'] ?? null);
             if ($evtStartTime) {
                 $start = $date . 'T' . $evtStartTime;
-                $end   = date('Y-m-d\TH:i:s', strtotime($start . ' +1 hour'));
+                
+                if($e['data_fine'] && strtotime($e['data_fine'])>strtotime($e['data_evento']))
+                {
+                    $evtEndTime = $normTime($e['ora_evento'] ?? null);
+                    $end = $e['data_fine'] . 'T' . $evtEndTime;
+                }else{
+                    $end   = date('Y-m-d\TH:i:s', strtotime($start . ' +1 hour')); 
+                }
                 $evStart = ['dateTime' => $start, 'timeZone' => $timeZone];
-                $evEnd   = ['dateTime' => $end,   'timeZone' => $timeZone];
+                $evEnd   = ['dateTime' => $end,   'timeZone' => $timeZone];   
             } else {
                 $evStart = ['date' => $date];
                 $evEnd   = ['date' => $endAllDay($date)];
@@ -198,6 +205,7 @@ try {
             $gcId = $gEvent->getId();
             $summary = $gEvent->getSummary();
             $startObj = $gEvent->getStart();
+            $endObj = $gEvent->getEnd();
             if ($startObj->getDateTime()) {
                 $dt = new DateTime($startObj->getDateTime());
                 $date = $dt->format('Y-m-d');
@@ -206,11 +214,19 @@ try {
                 $date = $startObj->getDate();
                 $time = null;
             }
+            if ($endObj->getDateTime()) {
+                $dt = new DateTime($endObj->getDateTime());
+                $data_fine = $dt->format('Y-m-d');
+                $ora_fine = $dt->format('H:i');
+            } else {
+                $data_fine = null;
+                $ora_fine = null;
+            }
 
             if (isset($eventiByGcId[$gcId])) {
                 $dbId = $eventiByGcId[$gcId];
-                $upd = $conn->prepare('UPDATE eventi SET titolo=?, data_evento=?, ora_evento=? WHERE id=?');
-                $upd->bind_param('sssi', $summary, $date, $time, $dbId);
+                $upd = $conn->prepare('UPDATE eventi SET titolo=?, data_evento=?, ora_evento=?,data_fine=?, ora_fine=? WHERE id=?');
+                $upd->bind_param('sssssi', $summary, $date, $time, $data_fine, $ora_fine, $dbId);
                 $upd->execute();
                 $upd->close();
             } else {
