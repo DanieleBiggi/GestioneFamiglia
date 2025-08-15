@@ -2,9 +2,12 @@
 function render_salvadanaio(array $row) {
     $search = strtolower(($row['nome_salvadanaio'] ?? '') . ' ' . ($row['importo_attuale'] ?? '') . ' ' . ($row['data_aggiornamento_manuale'] ?? ''));
     $searchAttr = htmlspecialchars($search, ENT_QUOTES);
+    $scadenza = $row['data_scadenza'] ?? null;
+    $scaduto = $scadenza !== null && $scadenza !== '' && $scadenza <= date('Y-m-d');
     $url = 'salvadanaio_dettaglio.php?id=' . (int)($row['id_salvadanaio'] ?? 0);
     echo '<div class="salvadanaio-card movement d-flex justify-content-between align-items-start text-white text-decoration-none"'
         . ' data-search="' . $searchAttr . '"'
+        . ' data-scaduto="' . ($scaduto ? '1' : '0') . '"'
         . ' onclick="window.location.href=\'' . $url . '\'">';
     echo '  <div class="flex-grow-1">';
     echo '    <div class="fw-semibold">' . htmlspecialchars($row['nome_salvadanaio'] ?? '') . '</div>';

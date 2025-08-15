@@ -1,6 +1,17 @@
 // JavaScript for eventi_dettaglio.php
 
 document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.select-search').forEach(wrapper => {
+    const input = wrapper.querySelector('input');
+    const select = wrapper.querySelector('select');
+    if (!input || !select) return;
+    input.addEventListener('input', () => {
+      const val = input.value.toLowerCase();
+      Array.from(select.options).forEach(opt => {
+        opt.hidden = !opt.text.toLowerCase().includes(val);
+      });
+    });
+  });
   document.getElementById('toggleLuoghi')?.addEventListener('click', function(){
     document.querySelectorAll('#luoghiList .extra-row').forEach(el=>el.classList.toggle('d-none'));
     this.textContent = this.textContent === 'Mostra tutti' ? 'Mostra meno' : 'Mostra tutti';
