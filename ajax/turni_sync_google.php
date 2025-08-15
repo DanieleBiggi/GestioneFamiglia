@@ -157,32 +157,39 @@ try {
     // Insert DB eventi without calendar id into Google Calendar
     foreach ($eventiDb as $e) {
         if (empty($e['google_calendar_eventid'])) {
-            $date = $e['data_evento'];
+            $date        = $e['data_evento'];
             $evtStartTime = $normTime($e['ora_evento'] ?? null);
+            $evtEndTime   = $normTime($e['ora_fine']   ?? null);
+            $endDate      = $e['data_fine'] ?: $date;
+    
             if ($evtStartTime) {
                 $start = $date . 'T' . $evtStartTime;
-                
-                if($e['data_fine'] && strtotime($e['data_fine'])>strtotime($e['data_evento']))
-                {
-                    $evtEndTime = $normTime($e['ora_evento'] ?? null);
-                    $end = $e['data_fine'] . 'T' . $evtEndTime;
-                }else{
-                    $end   = date('Y-m-d\TH:i:s', strtotime($start . ' +1 hour')); 
+    
+                if ($evtEndTime) {
+                    $end     = $endDate . 'T' . $evtEndTime;
+                    $evStart = ['dateTime' => $start, 'timeZone' => $timeZone];
+                    $evEnd   = ['dateTime' => $end,   'timeZone' => $timeZone];
+                } elseif ($e['data_fine'] && $endDate !== $date) {
+                    // multi-day event without end time -> all-day
+                    $evStart = ['date' => $date];
+                    $evEnd   = ['date' => $endAllDay($endDate)];
+                } else {
+                    $end     = date('Y-m-d\TH:i:s', strtotime($start . ' +1 hour'));
+                    $evStart = ['dateTime' => $start, 'timeZone' => $timeZone];
+                    $evEnd   = ['dateTime' => $end,   'timeZone' => $timeZone];
                 }
-                $evStart = ['dateTime' => $start, 'timeZone' => $timeZone];
-                $evEnd   = ['dateTime' => $end,   'timeZone' => $timeZone];   
             } else {
                 $evStart = ['date' => $date];
-                $evEnd   = ['date' => $endAllDay($date)];
+                $evEnd   = ['date' => $endAllDay($endDate)];
             }
-
+    
             $eventData = [
                 'summary' => $e['titolo'],
                 'start'   => $evStart,
                 'end'     => $evEnd,
                 'extendedProperties' => ['private' => ['source' => 'gestione-famiglia', 'type' => 'evento']]
             ];
-
+    
             $created = $service->events->insert($calendarIdEventi, new Google_Service_Calendar_Event($eventData));
             $gcId = $created->getId();
             $upd = $conn->prepare('UPDATE eventi SET google_calendar_eventid=? WHERE id=?');
@@ -219,7 +226,8 @@ try {
                 $data_fine = $dt->format('Y-m-d');
                 $ora_fine = $dt->format('H:i');
             } else {
-                $data_fine = null;
+                // Google all-day events use exclusive end date
+                $data_fine = date('Y-m-d', strtotime($endObj->getDate() . ' -1 day'));
                 $ora_fine = null;
             }
 
@@ -230,8 +238,8 @@ try {
                 $upd->execute();
                 $upd->close();
             } else {
-                $ins = $conn->prepare('INSERT INTO eventi (titolo, data_evento, ora_evento, google_calendar_eventid) VALUES (?,?,?,?)');
-                $ins->bind_param('ssss', $summary, $date, $time, $gcId);
+                $ins = $conn->prepare('INSERT INTO eventi (titolo, data_evento, ora_evento, data_fine, ora_fine, google_calendar_eventid) VALUES (?,?,?,?,?,?)');
+                $ins->bind_param('ssssss', $summary, $date, $time, $data_fine, $ora_fine, $gcId);
                 $ins->execute();
                 $newId = $ins->insert_id;
                 $ins->close();
