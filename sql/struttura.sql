@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 89.46.111.63:3306
--- Creato il: Ago 12, 2025 alle 16:30
+-- Creato il: Ago 15, 2025 alle 07:07
 -- Versione del server: 5.6.51-91.0-log
 -- Versione PHP: 8.0.7
 
@@ -605,8 +605,8 @@ CREATE TABLE `lista_spesa` (
   `id` int(11) NOT NULL,
   `id_famiglia` int(11) NOT NULL,
   `nome` varchar(255) NOT NULL,
-  `quantita` varchar(100) DEFAULT NULL,
-  `note` varchar(255) DEFAULT NULL,
+  `quantita` varchar(100) NOT NULL,
+  `note` varchar(255) NOT NULL,
   `checked` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -944,6 +944,37 @@ CREATE TABLE `time_dimension` (
   `weekend_flag` char(1) DEFAULT 'f',
   `event` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `turni_calendario`
+--
+
+CREATE TABLE `turni_calendario` (
+  `id` int(11) NOT NULL,
+  `id_famiglia` int(11) NOT NULL,
+  `data` date NOT NULL,
+  `ora_inizio` time NOT NULL,
+  `ora_fine` time NOT NULL,
+  `id_tipo` int(11) NOT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `turni_tipi`
+--
+
+CREATE TABLE `turni_tipi` (
+  `id` int(11) NOT NULL,
+  `descrizione` varchar(100) NOT NULL,
+  `ora_inizio` time NOT NULL,
+  `ora_fine` time NOT NULL,
+  `colore_bg` varchar(7) NOT NULL,
+  `colore_testo` varchar(7) NOT NULL DEFAULT '#000000',
+  `attivo` tinyint(1) NOT NULL DEFAULT '1'
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -1502,6 +1533,19 @@ ALTER TABLE `time_dimension`
   ADD KEY `time_dimension_idx2` (`day`,`month`);
 
 --
+-- Indici per le tabelle `turni_calendario`
+--
+ALTER TABLE `turni_calendario`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `id_tipo` (`id_tipo`);
+
+--
+-- Indici per le tabelle `turni_tipi`
+--
+ALTER TABLE `turni_tipi`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indici per le tabelle `unita_misura`
 --
 ALTER TABLE `unita_misura`
@@ -1912,6 +1956,18 @@ ALTER TABLE `session`
 -- AUTO_INCREMENT per la tabella `temi`
 --
 ALTER TABLE `temi`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `turni_calendario`
+--
+ALTER TABLE `turni_calendario`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `turni_tipi`
+--
+ALTER TABLE `turni_tipi`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
