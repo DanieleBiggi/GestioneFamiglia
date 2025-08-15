@@ -82,6 +82,8 @@ $resDisp = $stmtDisp->get_result();
 while ($row = $resDisp->fetch_assoc()) { $invitatiDisponibili[] = $row; }
 $stmtDisp->close();
 
+$showAddRule = !empty($evento['creator_email']) && (!empty($evento['id_tipo_evento']) || count($invitati) > 0);
+
 // Cibo collegato all'evento
 $cibi = [];
 $stmtCibo = $conn->prepare("SELECT e2c.id_e2c, c.piatto, c.um, e2c.quantita FROM eventi_eventi2cibo e2c JOIN eventi_cibo c ON e2c.id_cibo = c.id WHERE e2c.id_evento = ? ORDER BY c.piatto");
@@ -129,11 +131,16 @@ include 'includes/header.php';
 ?>
 <div class="container text-white">
   <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
-  <div class="d-flex align-items-center mb-3">
-    <h4 class="mb-0 me-2" id="eventoTitolo"><?= htmlspecialchars($evento['titolo'] ?? '') ?></h4>
-    <?php if ($canUpdate): ?>
-      <i class="bi bi-pencil-square" id="editEventoBtn" style="cursor:pointer"></i>
-    <?php endif; ?>
+  <div class="d-flex align-items-center mb-3 justify-content-between">
+    <h4 class="mb-0" id="eventoTitolo"><?= htmlspecialchars($evento['titolo'] ?? '') ?></h4>
+    <div>
+      <?php if ($showAddRule): ?>
+        <i class="bi bi-star me-2" id="addRuleBtn" data-id="<?= $id ?>" style="cursor:pointer"></i>
+      <?php endif; ?>
+      <?php if ($canUpdate): ?>
+        <i class="bi bi-pencil-square" id="editEventoBtn" style="cursor:pointer"></i>
+      <?php endif; ?>
+    </div>
   </div>
   <?php if ($periodo !== ''): ?>
     <div class="mb-3"><?= htmlspecialchars($periodo) ?></div>

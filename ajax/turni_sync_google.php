@@ -286,14 +286,14 @@ try {
 
             if (isset($eventiByGcId[$gcId])) {
                 $dbId = $eventiByGcId[$gcId];
-                $upd = $conn->prepare('UPDATE eventi SET titolo=?, data_evento=?, ora_evento=?,data_fine=?, ora_fine=?, descrizione=?, id_tipo_evento=IFNULL(?, id_tipo_evento) WHERE id=?');
-                $upd->bind_param('ssssssii', $summary, $date, $time, $data_fine, $ora_fine, $description, $idTipoEvento, $dbId);
+                $upd = $conn->prepare('UPDATE eventi SET titolo=?, data_evento=?, ora_evento=?,data_fine=?, ora_fine=?, descrizione=?, id_tipo_evento=IFNULL(?, id_tipo_evento), creator_email=? WHERE id=?');
+                $upd->bind_param('ssssssisi', $summary, $date, $time, $data_fine, $ora_fine, $description, $idTipoEvento, $creatorEmail, $dbId);
                 $upd->execute();
                 $upd->close();
                 $eventId = $dbId;
             } else {
-                $ins = $conn->prepare('INSERT INTO eventi (titolo, data_evento, ora_evento, data_fine, ora_fine, descrizione, id_tipo_evento, google_calendar_eventid) VALUES (?,?,?,?,?,?,?,?)');
-                $ins->bind_param('ssssssis', $summary, $date, $time, $data_fine, $ora_fine, $description, $idTipoEvento, $gcId);
+                $ins = $conn->prepare('INSERT INTO eventi (titolo, data_evento, ora_evento, data_fine, ora_fine, descrizione, id_tipo_evento, google_calendar_eventid, creator_email) VALUES (?,?,?,?,?,?,?,?,?)');
+                $ins->bind_param('ssssssiss', $summary, $date, $time, $data_fine, $ora_fine, $description, $idTipoEvento, $gcId, $creatorEmail);
                 $ins->execute();
                 $newId = $ins->insert_id;
                 $ins->close();

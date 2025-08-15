@@ -375,7 +375,8 @@ CREATE TABLE `eventi` (
   `id_tipo_evento` int(11) DEFAULT NULL,
   `icon` varchar(50) DEFAULT NULL,
   `note` mediumtext,
-  `google_calendar_eventid` varchar(255) DEFAULT NULL
+  `google_calendar_eventid` varchar(255) DEFAULT NULL,
+  `creator_email` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
