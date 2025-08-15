@@ -45,6 +45,9 @@ $needSync = !empty($unsyncedMonths);
     </div>
   </div>
   <div class="flex-grow-1 overflow-auto" id="calendarContainer"></div>
+  <?php if ($needSync): ?>
+<div class="alert alert-warning text-center m-0">Alcuni turni non sono sincronizzati con Google Calendar. Mesi non sincronizzati: <?= htmlspecialchars(implode(', ', $unsyncedMonths)) ?>.</div>
+<?php endif; ?>
   <div id="bottomBar" class="bg-dark text-white p-2 position-sticky bottom-0">
     <div id="stateA" class="d-flex justify-content-around">
       <button class="btn btn-outline-light flex-fill mx-1" id="btnSingolo">SINGOLA</button>
@@ -124,7 +127,4 @@ $needSync = !empty($unsyncedMonths);
   const turniTipi = <?= json_encode($tipi) ?>;
 </script>
 <script src="js/turni.js"></script>
-<?php if ($needSync): ?>
-<div class="alert alert-warning text-center m-0">Alcuni turni non sono sincronizzati con Google Calendar. Mesi non sincronizzati: <?= htmlspecialchars(implode(', ', $unsyncedMonths)) ?>.</div>
-<?php endif; ?>
 <?php include 'includes/footer.php'; ?>
