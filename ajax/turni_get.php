@@ -17,12 +17,36 @@ if (!$year || !$month || !$idFamiglia) {
 }
 $start = sprintf('%04d-%02d-01', $year, $month);
 $end = date('Y-m-t', strtotime($start));
-$stmt = $conn->prepare('SELECT t.id, t.data, t.id_tipo, t.ora_inizio, t.ora_fine, tp.descrizione, tp.colore_bg, tp.colore_testo FROM turni_calendario t JOIN turni_tipi tp ON t.id_tipo = tp.id WHERE t.id_famiglia = ? AND t.data BETWEEN ? AND ? ORDER BY t.data');
+$stmt = $conn->prepare('SELECT t.id, t.data, t.id_tipo,
+    IF(t.ora_inizio = "00:00:00", tp.ora_inizio, t.ora_inizio) AS ora_inizio,
+    IF(t.ora_fine = "00:00:00", tp.ora_fine, t.ora_fine) AS ora_fine,
+    t.id_utenti_bambini, t.note,
+    tp.descrizione, tp.colore_bg, tp.colore_testo
+    FROM turni_calendario t JOIN turni_tipi tp ON t.id_tipo = tp.id
+    WHERE t.id_famiglia = ? AND t.data BETWEEN ? AND ? ORDER BY t.data');
 $stmt->bind_param('iss', $idFamiglia, $start, $end);
 $stmt->execute();
 $res = $stmt->get_result();
+$userMap = [];
+$uRes = $conn->query("SELECT u.id, COALESCE(NULLIF(u.soprannome,''), CONCAT(u.nome,' ',u.cognome)) AS nome FROM utenti u JOIN utenti2famiglie uf ON u.id = uf.id_utente WHERE uf.id_famiglia = $idFamiglia");
+if($uRes){
+    while($u = $uRes->fetch_assoc()){
+        $userMap[$u['id']] = $u['nome'];
+    }
+}
 $turni = [];
 while ($row = $res->fetch_assoc()) {
+    $ids = array_filter(array_map('trim', explode(',', $row['id_utenti_bambini'] ?? '')));
+    $iniziali = [];
+    foreach($ids as $id){
+        if(isset($userMap[$id])){
+            $parts = preg_split('/\s+/', $userMap[$id]);
+            $ini = '';
+            foreach($parts as $p){ $ini .= mb_substr($p,0,1); }
+            $iniziali[] = strtoupper($ini);
+        }
+    }
+    $row['iniziali_bambini'] = implode('', $iniziali);
     $turni[$row['data']][] = $row;
 }
 $stmt->close();

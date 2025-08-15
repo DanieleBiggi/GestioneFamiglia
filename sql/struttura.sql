@@ -959,7 +959,9 @@ CREATE TABLE `turni_calendario` (
   `ora_inizio` time NOT NULL,
   `ora_fine` time NOT NULL,
   `id_tipo` int(11) NOT NULL,
-  `google_calendar_eventid` varchar(255) DEFAULT NULL
+  `google_calendar_eventid` varchar(255) DEFAULT NULL,
+  `id_utenti_bambini` varchar(255) DEFAULT NULL,
+  `note` text DEFAULT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------

@@ -14,6 +14,8 @@ $date = $data['date'] ?? null;
 $idTipo = isset($data['id_tipo']) ? (int)$data['id_tipo'] : null;
 $oraInizio = $data['ora_inizio'] ?? null;
 $oraFine = $data['ora_fine'] ?? null;
+$idBambini = $data['id_utenti_bambini'] ?? '';
+$note = $data['note'] ?? '';
 $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 
 if ($id > 0) {
@@ -21,8 +23,8 @@ if ($id > 0) {
         echo json_encode(['success' => false]);
         exit;
     }
-    $stmt = $conn->prepare('UPDATE turni_calendario SET id_tipo = ?, ora_inizio = ?, ora_fine = ? WHERE id = ? AND id_famiglia = ?');
-    $stmt->bind_param('sssii', $idTipo, $oraInizio, $oraFine, $id, $idFamiglia);
+    $stmt = $conn->prepare('UPDATE turni_calendario SET id_tipo = ?, ora_inizio = ?, ora_fine = ?, id_utenti_bambini = ?, note = ? WHERE id = ? AND id_famiglia = ?');
+    $stmt->bind_param('issssii', $idTipo, $oraInizio, $oraFine, $idBambini, $note, $id, $idFamiglia);
     $success = $stmt->execute();
     $stmt->close();
 } else {

@@ -8,14 +8,17 @@ include 'includes/header.php';
 $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 $tipiRes = $conn->query("SELECT id, descrizione, colore_bg, colore_testo FROM turni_tipi WHERE attivo = 1 ORDER BY descrizione");
 $tipi = $tipiRes ? $tipiRes->fetch_all(MYSQLI_ASSOC) : [];
+$bambiniRes = $conn->query("SELECT u.id, COALESCE(NULLIF(u.soprannome,''), CONCAT(u.nome,' ',u.cognome)) AS nome FROM utenti u JOIN utenti2famiglie uf ON u.id = uf.id_utente WHERE uf.id_famiglia = $idFamiglia ORDER BY nome");
+$bambini = $bambiniRes ? $bambiniRes->fetch_all(MYSQLI_ASSOC) : [];
 ?>
 <style>
   #calendarContainer .col {height: 100px; min-width:0; overflow:hidden;}
   #calendarContainer .day-cell {display:flex; flex-direction:column; padding:0;}
   #calendarContainer .turni-container {flex:1; display:flex; flex-direction:column;}
-  #calendarContainer .turno {flex:1; display:flex; align-items:center; justify-content:center; font-size:.8rem;}
+  #calendarContainer .turno {flex:1; display:flex; align-items:center; justify-content:center; font-size:.8rem; position:relative; overflow:hidden;}
+  #calendarContainer .turno.event a {color:inherit; text-decoration:none; width:100%; display:block; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;}
+  #calendarContainer .turno .bambini {position:absolute; bottom:0; right:0; font-size:.6rem; padding:0 2px;}
   #pillContainer .pill.active {outline:2px solid #fff;}
-  #calendarContainer .event-link {font-size: .8rem; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;}
   #calendarContainer .day-cell.multi-selected {outline:2px solid #0d6efd;}
 </style>
 <div id="shifter" class="d-flex flex-column min-vh-100 p-0">
@@ -79,6 +82,21 @@ $tipi = $tipiRes ? $tipiRes->fetch_all(MYSQLI_ASSOC) : [];
           <div class="mb-3">
             <label for="turnoOraFine" class="form-label">Ora fine</label>
             <input type="time" class="form-control bg-dark text-white border-secondary" id="turnoOraFine" name="ora_fine" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Bambini</label>
+            <div id="turnoBambini">
+              <?php foreach ($bambini as $b): ?>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="bambino<?= (int)$b['id'] ?>" value="<?= (int)$b['id'] ?>">
+                <label class="form-check-label" for="bambino<?= (int)$b['id'] ?>"><?= htmlspecialchars($b['nome']) ?></label>
+              </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="turnoNote" class="form-label">Note</label>
+            <textarea class="form-control bg-dark text-white border-secondary" id="turnoNote" name="note"></textarea>
           </div>
         </form>
       </div>

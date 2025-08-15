@@ -71,18 +71,27 @@ document.addEventListener('DOMContentLoaded', () => {
           turno.dataset.id_tipo = t.id_tipo;
           turno.dataset.ora_inizio = t.ora_inizio;
           turno.dataset.ora_fine = t.ora_fine;
+          turno.dataset.bambini = t.id_utenti_bambini || '';
+          turno.dataset.note = t.note || '';
+          if(t.iniziali_bambini){
+            const b=document.createElement('div');
+            b.className='bambini';
+            b.textContent=t.iniziali_bambini;
+            turno.appendChild(b);
+          }
+          turniContainer.appendChild(turno);
+        });
+      }
+      if(eventi[dateStr]){
+        eventi[dateStr].forEach(ev=>{
+          const turno=document.createElement('div');
+          turno.className='turno event';
+          turno.style.background=ev.colore || '#6c757d';
+          turno.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}" class="text-white text-decoration-none">${ev.titolo}</a>`;
           turniContainer.appendChild(turno);
         });
       }
       col.appendChild(turniContainer);
-      if(eventi[dateStr]){
-        const evWrap=document.createElement('div');
-        eventi[dateStr].forEach(ev=>{
-          const bg = ev.colore || '#6c757d';
-          evWrap.insertAdjacentHTML('beforeend', `<div class="event-link text-truncate" style="background:${bg}"><a href="eventi_dettaglio.php?id=${ev.id}" class="text-white text-decoration-none">${ev.titolo}</a></div>`);
-        });
-        col.appendChild(evWrap);
-      }
       const t=new Date();
       if(year===t.getFullYear() && month===t.getMonth() && day===t.getDate()){
         col.classList.add('border-primary');
@@ -112,13 +121,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('turnoTipo').value = el.dataset.id_tipo;
     document.getElementById('turnoOraInizio').value = el.dataset.ora_inizio;
     document.getElementById('turnoOraFine').value = el.dataset.ora_fine;
+    const bambini = el.dataset.bambini ? el.dataset.bambini.split(',') : [];
+    document.querySelectorAll('#turnoBambini input[type="checkbox"]').forEach(cb=>{
+      cb.checked = bambini.includes(cb.value);
+    });
+    document.getElementById('turnoNote').value = el.dataset.note || '';
     editModal.show();
   }
 
   calendarContainer.addEventListener('click', e=>{
     if(e.target.closest('a')) return;
     const turnoEl = e.target.closest('.turno');
-    if(!multiMode && selectedType===null && turnoEl){
+    if(!multiMode && selectedType===null && turnoEl && !turnoEl.classList.contains('event')){
       openEditModal(turnoEl);
       return;
     }
@@ -161,7 +175,9 @@ document.addEventListener('DOMContentLoaded', () => {
         id: document.getElementById('turnoId').value,
         id_tipo: document.getElementById('turnoTipo').value,
         ora_inizio: document.getElementById('turnoOraInizio').value,
-        ora_fine: document.getElementById('turnoOraFine').value
+        ora_fine: document.getElementById('turnoOraFine').value,
+        id_utenti_bambini: Array.from(document.querySelectorAll('#turnoBambini input:checked')).map(cb=>cb.value).join(','),
+        note: document.getElementById('turnoNote').value
       };
       fetch('ajax/turni_update.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
         .then(r=>r.json())
