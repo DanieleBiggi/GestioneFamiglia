@@ -12,11 +12,17 @@ function int_or_null($val) {
 }
 
 $id_e2se = (int)($_POST['id_e2se'] ?? 0);
+
 $id_evento      = int_or_null($_POST['id_evento'] ?? null);
 $id_salvadanaio = int_or_null($_POST['id_salvadanaio'] ?? null);
 $id_etichetta   = int_or_null($_POST['id_etichetta'] ?? null);
 
-if(!$id_e2se || !$id_salvadanaio || !$id_etichetta || !$id_evento){
+if (
+    !$id_e2se || 
+    (
+        empty($id_salvadanaio) + empty($id_etichetta) + empty($id_evento) > 1
+    )
+) {
     echo json_encode(['success' => false]);
     exit;
 }
