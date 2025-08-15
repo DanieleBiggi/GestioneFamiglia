@@ -16,8 +16,12 @@ $res = $stmt->get_result();
   <a href="salvadanaio_dettaglio.php" class="btn btn-outline-light btn-sm">Aggiungi nuovo</a>
   <?php endif; ?>
 </div>
-<div class="mb-3">
-  <input type="text" id="search" class="form-control bg-dark text-white border-secondary" placeholder="Cerca">
+<div class="mb-3 d-flex align-items-center">
+  <input type="text" id="search" class="form-control bg-dark text-white border-secondary me-3" placeholder="Cerca">
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" id="showExpired">
+    <label class="form-check-label" for="showExpired">Mostra scaduti</label>
+  </div>
 </div>
 <div id="salvadanaiList">
 <?php while ($row = $res->fetch_assoc()): ?>

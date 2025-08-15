@@ -110,14 +110,20 @@ while ($row = $resSE->fetch_assoc()) { $salvEt[] = $row; }
 $stmtSE->close();
 
 // Salvadanai disponibili
-$salvadanaiDisponibili = [];
-$resSalv = $conn->query('SELECT id_salvadanaio, nome_salvadanaio FROM salvadanai ORDER BY nome_salvadanaio');
-$salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
+$salvadanaiTutti = [];
+$resSalvAll = $conn->query('SELECT id_salvadanaio, nome_salvadanaio FROM salvadanai ORDER BY nome_salvadanaio');
+$salvadanaiTutti = $resSalvAll ? $resSalvAll->fetch_all(MYSQLI_ASSOC) : [];
+$salvadanaiAttivi = [];
+$resSalvAttivi = $conn->query('SELECT id_salvadanaio, nome_salvadanaio FROM salvadanai WHERE data_scadenza IS NULL OR data_scadenza > CURDATE() ORDER BY nome_salvadanaio');
+$salvadanaiAttivi = $resSalvAttivi ? $resSalvAttivi->fetch_all(MYSQLI_ASSOC) : [];
 
 // Etichette disponibili
-$etichetteDisponibili = [];
-$resEt = $conn->query('SELECT id_etichetta, descrizione FROM bilancio_etichette ORDER BY descrizione');
-$etichetteDisponibili = $resEt ? $resEt->fetch_all(MYSQLI_ASSOC) : [];
+$etichetteTutte = [];
+$resEtAll = $conn->query('SELECT id_etichetta, descrizione FROM bilancio_etichette ORDER BY descrizione');
+$etichetteTutte = $resEtAll ? $resEtAll->fetch_all(MYSQLI_ASSOC) : [];
+$etichetteAttive = [];
+$resEtAttive = $conn->query('SELECT id_etichetta, descrizione FROM bilancio_etichette WHERE attivo = 1 ORDER BY descrizione');
+$etichetteAttive = $resEtAttive ? $resEtAttive->fetch_all(MYSQLI_ASSOC) : [];
 
 include 'includes/header.php';
 ?>
@@ -192,7 +198,28 @@ include 'includes/header.php';
 
   <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
     <div class="d-flex align-items-center">
-      <h5 class="mb-0 me-3">Salvadanai &amp; Etichette</h5>
+      <h5 class="mb-0 me-3">Cibo</h5>
+    </div>
+    <button type="button" class="btn btn-outline-light btn-sm" id="addCiboBtn">Aggiungi cibo</button>
+  </div>
+  <ul class="list-group list-group-flush bg-dark" id="ciboList">
+    <?php foreach ($cibi as $idx => $row): ?>
+      <li class="list-group-item bg-dark text-white <?= $idx >= 3 ? 'd-none extra-row' : '' ?> cibo-row"
+          data-id="<?= (int)$row['id_e2c'] ?>"
+          data-piatto="<?= htmlspecialchars($row['piatto'], ENT_QUOTES) ?>"
+          data-quantita="<?= htmlspecialchars($row['quantita'] ?? '', ENT_QUOTES) ?>">
+        <?= htmlspecialchars($row['piatto']) ?><?php if ($row['quantita'] !== null) echo ' - ' . htmlspecialchars($row['quantita']) . ' ' . htmlspecialchars($row['um']); ?>
+      </li>
+    <?php endforeach; ?>
+  </ul>
+  <?php if (count($cibi) > 3): ?>
+    <div class="text-center mt-3">
+      <button id="toggleCibo" class="btn btn-outline-light btn-sm">Mostra tutti</button>
+    </div>
+  <?php endif; ?>
+  <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+    <div class="d-flex align-items-center">
+      <h5 class="mb-0 me-3">Finanze</h5>
     </div>
     <button type="button" class="btn btn-outline-light btn-sm" id="addSeBtn">Aggiungi</button>
   </div>
@@ -219,28 +246,6 @@ include 'includes/header.php';
   <?php if (count($salvEt) > 3): ?>
     <div class="text-center mt-3">
       <button id="toggleSe" class="btn btn-outline-light btn-sm">Mostra tutti</button>
-    </div>
-  <?php endif; ?>
-
-  <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
-    <div class="d-flex align-items-center">
-      <h5 class="mb-0 me-3">Cibo</h5>
-    </div>
-    <button type="button" class="btn btn-outline-light btn-sm" id="addCiboBtn">Aggiungi cibo</button>
-  </div>
-  <ul class="list-group list-group-flush bg-dark" id="ciboList">
-    <?php foreach ($cibi as $idx => $row): ?>
-      <li class="list-group-item bg-dark text-white <?= $idx >= 3 ? 'd-none extra-row' : '' ?> cibo-row"
-          data-id="<?= (int)$row['id_e2c'] ?>"
-          data-piatto="<?= htmlspecialchars($row['piatto'], ENT_QUOTES) ?>"
-          data-quantita="<?= htmlspecialchars($row['quantita'] ?? '', ENT_QUOTES) ?>">
-        <?= htmlspecialchars($row['piatto']) ?><?php if ($row['quantita'] !== null) echo ' - ' . htmlspecialchars($row['quantita']) . ' ' . htmlspecialchars($row['um']); ?>
-      </li>
-    <?php endforeach; ?>
-  </ul>
-  <?php if (count($cibi) > 3): ?>
-    <div class="text-center mt-3">
-      <button id="toggleCibo" class="btn btn-outline-light btn-sm">Mostra tutti</button>
     </div>
   <?php endif; ?>
 </div>
@@ -462,18 +467,20 @@ include 'includes/header.php';
       </div>
       <div class="modal-body">
         <input type="hidden" name="id_e2se" id="id_e2se">
-        <div class="mb-3">
+        <div class="mb-3 select-search">
           <label class="form-label">Salvadanaio</label>
+          <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Cerca">
           <select name="id_salvadanaio" id="seSalvadanaio" class="form-select bg-secondary text-white">
-            <?php foreach ($salvadanaiDisponibili as $s): ?>
+            <?php foreach ($salvadanaiTutti as $s): ?>
               <option value="<?= (int)$s['id_salvadanaio'] ?>"><?= htmlspecialchars($s['nome_salvadanaio']) ?></option>
             <?php endforeach; ?>
           </select>
         </div>
-        <div class="mb-3">
+        <div class="mb-3 select-search">
           <label class="form-label">Etichetta</label>
+          <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Cerca">
           <select name="id_etichetta" id="seEtichetta" class="form-select bg-secondary text-white">
-            <?php foreach ($etichetteDisponibili as $et): ?>
+            <?php foreach ($etichetteTutte as $et): ?>
               <option value="<?= (int)$et['id_etichetta'] ?>"><?= htmlspecialchars($et['descrizione']) ?></option>
             <?php endforeach; ?>
           </select>
@@ -497,18 +504,20 @@ include 'includes/header.php';
       </div>
       <div class="modal-body">
         <input type="hidden" name="id_evento" value="<?= (int)$id ?>">
-        <div class="mb-3">
+        <div class="mb-3 select-search">
           <label class="form-label">Salvadanaio</label>
+          <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Cerca">
           <select name="id_salvadanaio" class="form-select bg-secondary text-white">
-            <?php foreach ($salvadanaiDisponibili as $s): ?>
+            <?php foreach ($salvadanaiAttivi as $s): ?>
               <option value="<?= (int)$s['id_salvadanaio'] ?>"><?= htmlspecialchars($s['nome_salvadanaio']) ?></option>
             <?php endforeach; ?>
           </select>
         </div>
-        <div class="mb-3">
+        <div class="mb-3 select-search">
           <label class="form-label">Etichetta</label>
+          <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Cerca">
           <select name="id_etichetta" class="form-select bg-secondary text-white">
-            <?php foreach ($etichetteDisponibili as $et): ?>
+            <?php foreach ($etichetteAttive as $et): ?>
               <option value="<?= (int)$et['id_etichetta'] ?>"><?= htmlspecialchars($et['descrizione']) ?></option>
             <?php endforeach; ?>
           </select>

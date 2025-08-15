@@ -932,7 +932,8 @@ CREATE TABLE `salvadanai` (
   `id_salvadanaio` int(11) NOT NULL,
   `nome_salvadanaio` varchar(250) DEFAULT NULL,
   `importo_attuale` decimal(10,2) NOT NULL DEFAULT '0.00',
-  `data_aggiornamento_manuale` datetime DEFAULT NULL
+  `data_aggiornamento_manuale` datetime DEFAULT NULL,
+  `data_scadenza` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
