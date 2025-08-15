@@ -10,12 +10,17 @@ $tipiRes = $conn->query("SELECT id, descrizione, colore_bg, colore_testo FROM tu
 $tipi = $tipiRes ? $tipiRes->fetch_all(MYSQLI_ASSOC) : [];
 $bambiniRes = $conn->query("SELECT u.id, COALESCE(NULLIF(u.soprannome,''), CONCAT(u.nome,' ',u.cognome)) AS nome FROM utenti u JOIN utenti2famiglie uf ON u.id = uf.id_utente WHERE uf.id_famiglia = $idFamiglia ORDER BY nome");
 $bambini = $bambiniRes ? $bambiniRes->fetch_all(MYSQLI_ASSOC) : [];
-$syncRes = $conn->query("SELECT COUNT(*) AS cnt FROM turni_calendario WHERE id_famiglia = $idFamiglia AND (data_ultima_sincronizzazione IS NULL OR aggiornato_il > data_ultima_sincronizzazione)");
-$needSync = $syncRes ? ($syncRes->fetch_assoc()['cnt'] > 0) : false;
+$syncRes = $conn->query("SELECT DISTINCT DATE_FORMAT(data, '%Y-%m') AS ym FROM turni_calendario WHERE id_famiglia = $idFamiglia AND (data_ultima_sincronizzazione IS NULL OR aggiornato_il > data_ultima_sincronizzazione) ORDER BY ym");
+$unsyncedMonths = [];
+if ($syncRes) {
+    setlocale(LC_TIME, 'it_IT.UTF-8');
+    while ($row = $syncRes->fetch_assoc()) {
+        $timestamp = strtotime($row['ym'] . '-01');
+        $unsyncedMonths[] = ucfirst(strftime('%B %Y', $timestamp));
+    }
+}
+$needSync = !empty($unsyncedMonths);
 ?>
-<?php if ($needSync): ?>
-<div class="alert alert-warning text-center m-0">Alcuni turni non sono sincronizzati con Google Calendar.</div>
-<?php endif; ?>
 <style>
   #calendarContainer .col {height: 100px; min-width:0; overflow:hidden;}
   #calendarContainer .day-cell {display:flex; flex-direction:column; padding:0; padding-top:20px;}
@@ -119,4 +124,7 @@ $needSync = $syncRes ? ($syncRes->fetch_assoc()['cnt'] > 0) : false;
   const turniTipi = <?= json_encode($tipi) ?>;
 </script>
 <script src="js/turni.js"></script>
+<?php if ($needSync): ?>
+<div class="alert alert-warning text-center m-0">Alcuni turni non sono sincronizzati con Google Calendar. Mesi non sincronizzati: <?= htmlspecialchars(implode(', ', $unsyncedMonths)) ?>.</div>
+<?php endif; ?>
 <?php include 'includes/footer.php'; ?>
