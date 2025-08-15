@@ -528,6 +528,31 @@ CREATE TABLE `eventi_tipi_eventi` (
 
 -- --------------------------------------------------------
 
+-- 
+-- Struttura della tabella `eventi_google_rules`
+--
+
+CREATE TABLE `eventi_google_rules` (
+  `id` int(11) NOT NULL,
+  `creator_email` varchar(255) DEFAULT NULL,
+  `description_keyword` varchar(100) DEFAULT NULL,
+  `id_tipo_evento` int(11) DEFAULT NULL,
+  `attiva` int(11) NOT NULL DEFAULT '1'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `eventi_google_rules_invitati`
+--
+
+CREATE TABLE `eventi_google_rules_invitati` (
+  `id_rule` int(11) NOT NULL,
+  `id_invitato` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
 --
 -- Struttura della tabella `famiglie`
 --
@@ -1348,6 +1373,19 @@ ALTER TABLE `eventi_tipi_eventi`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indici per le tabelle `eventi_google_rules`
+--
+ALTER TABLE `eventi_google_rules`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indici per le tabelle `eventi_google_rules_invitati`
+--
+ALTER TABLE `eventi_google_rules_invitati`
+  ADD PRIMARY KEY (`id_rule`,`id_invitato`),
+  ADD KEY `idx_egri_id_invitato` (`id_invitato`);
+
+--
 -- Indici per le tabelle `famiglie`
 --
 ALTER TABLE `famiglie`
@@ -1804,6 +1842,12 @@ ALTER TABLE `eventi_luogo`
 -- AUTO_INCREMENT per la tabella `eventi_tipi_eventi`
 --
 ALTER TABLE `eventi_tipi_eventi`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `eventi_google_rules`
+--
+ALTER TABLE `eventi_google_rules`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
