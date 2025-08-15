@@ -369,6 +369,8 @@ CREATE TABLE `eventi` (
   `titolo` varchar(100) DEFAULT NULL,
   `data_evento` date DEFAULT NULL,
   `ora_evento` varchar(10) DEFAULT NULL,
+  `data_fine` date DEFAULT NULL,
+  `ora_fine` varchar(10) DEFAULT NULL,
   `descrizione` varchar(100) DEFAULT NULL,
   `id_tipo_evento` int(11) DEFAULT NULL,
   `icon` varchar(50) DEFAULT NULL,
