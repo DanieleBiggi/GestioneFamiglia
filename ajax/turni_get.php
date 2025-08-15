@@ -17,7 +17,7 @@ if (!$year || !$month || !$idFamiglia) {
 }
 $start = sprintf('%04d-%02d-01', $year, $month);
 $end = date('Y-m-t', strtotime($start));
-$stmt = $conn->prepare('SELECT t.data, t.id_tipo, tp.descrizione, tp.colore_bg, tp.colore_testo FROM turni_calendario t JOIN turni_tipi tp ON t.id_tipo = tp.id WHERE t.id_famiglia = ? AND t.data BETWEEN ? AND ? ORDER BY t.data');
+$stmt = $conn->prepare('SELECT t.id, t.data, t.id_tipo, t.ora_inizio, t.ora_fine, tp.descrizione, tp.colore_bg, tp.colore_testo FROM turni_calendario t JOIN turni_tipi tp ON t.id_tipo = tp.id WHERE t.id_famiglia = ? AND t.data BETWEEN ? AND ? ORDER BY t.data');
 $stmt->bind_param('iss', $idFamiglia, $start, $end);
 $stmt->execute();
 $res = $stmt->get_result();

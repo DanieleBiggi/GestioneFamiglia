@@ -50,6 +50,45 @@ $tipi = $tipiRes ? $tipiRes->fetch_all(MYSQLI_ASSOC) : [];
     </div>
   </div>
 </div>
+<div class="modal fade" id="turnoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-header">
+        <h5 class="modal-title">Dettaglio turno</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="turnoForm">
+          <input type="hidden" id="turnoId" name="id">
+          <div class="mb-3">
+            <label class="form-label">Data</label>
+            <div id="turnoDate" class="form-control bg-dark text-white border-secondary" readonly></div>
+          </div>
+          <div class="mb-3">
+            <label for="turnoTipo" class="form-label">Tipo</label>
+            <select class="form-select bg-dark text-white border-secondary" id="turnoTipo" name="id_tipo" required>
+              <?php foreach ($tipi as $t): ?>
+              <option value="<?= (int)$t['id'] ?>"><?= htmlspecialchars($t['descrizione']) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="turnoOraInizio" class="form-label">Ora inizio</label>
+            <input type="time" class="form-control bg-dark text-white border-secondary" id="turnoOraInizio" name="ora_inizio" required>
+          </div>
+          <div class="mb-3">
+            <label for="turnoOraFine" class="form-label">Ora fine</label>
+            <input type="time" class="form-control bg-dark text-white border-secondary" id="turnoOraFine" name="ora_fine" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+        <button type="button" class="btn btn-primary" id="saveTurno">Salva</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script>
   const turniTipi = <?= json_encode($tipi) ?>;
 </script>
