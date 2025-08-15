@@ -13,6 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('#ciboList .extra-row').forEach(el=>el.classList.toggle('d-none'));
     this.textContent = this.textContent === 'Mostra tutti' ? 'Mostra meno' : 'Mostra tutti';
   });
+  document.getElementById('toggleSe')?.addEventListener('click', function(){
+    document.querySelectorAll('#seList .extra-row').forEach(el=>el.classList.toggle('d-none'));
+    this.textContent = this.textContent === 'Mostra tutti' ? 'Mostra meno' : 'Mostra tutti';
+  });
 
   // apertura modal modifica invitato
   document.querySelectorAll('#invitatiList .inv-row').forEach(li => {
@@ -58,6 +62,20 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
   });
 
+  document.getElementById('addSeBtn')?.addEventListener('click', () => {
+    const form = document.getElementById('addSeForm');
+    form.reset();
+    new bootstrap.Modal(document.getElementById('addSeModal')).show();
+  });
+
+  document.getElementById('addSeForm')?.addEventListener('submit', function(e){
+    e.preventDefault();
+    const fd = new FormData(this);
+    fetch('ajax/add_e2se.php', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+  });
+
   document.getElementById('addLuogoBtn')?.addEventListener('click', () => {
     const form = document.getElementById('addLuogoForm');
     form.reset();
@@ -82,6 +100,35 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     const fd = new FormData(this);
     fetch('ajax/add_e2c.php', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+  });
+
+  // apertura modal modifica salvadanaio/etichetta
+  document.querySelectorAll('#seList .se-row').forEach(li => {
+    li.addEventListener('click', () => {
+      const form = document.getElementById('seForm');
+      form.id_e2se.value = li.dataset.id;
+      form.id_salvadanaio.value = li.dataset.idSalvadanaio;
+      form.id_etichetta.value = li.dataset.idEtichetta;
+      new bootstrap.Modal(document.getElementById('seModal')).show();
+    });
+  });
+
+  document.getElementById('seForm')?.addEventListener('submit', function(e){
+    e.preventDefault();
+    const fd = new FormData(this);
+    fetch('ajax/update_e2se.php', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+  });
+
+  document.getElementById('deleteSeBtn')?.addEventListener('click', function(){
+    const id = document.getElementById('seForm')?.id_e2se.value;
+    if(!id || !confirm('Eliminare questo collegamento?')) return;
+    const fd = new FormData();
+    fd.append('id_e2se', id);
+    fetch('ajax/delete_e2se.php', {method:'POST', body:fd})
       .then(r=>r.json())
       .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
   });

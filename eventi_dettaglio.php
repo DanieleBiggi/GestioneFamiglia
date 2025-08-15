@@ -100,6 +100,25 @@ $resCd = $stmtCd->get_result();
 while ($row = $resCd->fetch_assoc()) { $ciboDisponibile[] = $row; }
 $stmtCd->close();
 
+// Salvadanai ed etichette collegati all'evento
+$salvEt = [];
+$stmtSE = $conn->prepare("SELECT e2se.id_e2se, s.nome_salvadanaio, b.descrizione AS etichetta, e2se.id_salvadanaio, e2se.id_etichetta FROM eventi_eventi2salvadanai_etichette e2se JOIN salvadanai s ON e2se.id_salvadanaio = s.id_salvadanaio JOIN bilancio_etichette b ON e2se.id_etichetta = b.id_etichetta WHERE e2se.id_evento = ? ORDER BY s.nome_salvadanaio, b.descrizione");
+$stmtSE->bind_param('i', $id);
+$stmtSE->execute();
+$resSE = $stmtSE->get_result();
+while ($row = $resSE->fetch_assoc()) { $salvEt[] = $row; }
+$stmtSE->close();
+
+// Salvadanai disponibili
+$salvadanaiDisponibili = [];
+$resSalv = $conn->query('SELECT id_salvadanaio, nome_salvadanaio FROM salvadanai ORDER BY nome_salvadanaio');
+$salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
+
+// Etichette disponibili
+$etichetteDisponibili = [];
+$resEt = $conn->query('SELECT id_etichetta, descrizione FROM bilancio_etichette ORDER BY descrizione');
+$etichetteDisponibili = $resEt ? $resEt->fetch_all(MYSQLI_ASSOC) : [];
+
 include 'includes/header.php';
 ?>
 <div class="container text-white">
@@ -168,6 +187,38 @@ include 'includes/header.php';
   <?php if (count($invitati) > 3): ?>
     <div class="text-center mt-3">
       <button id="toggleInvitati" class="btn btn-outline-light btn-sm">Mostra tutti</button>
+    </div>
+  <?php endif; ?>
+
+  <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+    <div class="d-flex align-items-center">
+      <h5 class="mb-0 me-3">Salvadanai &amp; Etichette</h5>
+    </div>
+    <button type="button" class="btn btn-outline-light btn-sm" id="addSeBtn">Aggiungi</button>
+  </div>
+  <ul class="list-group list-group-flush bg-dark" id="seList">
+    <?php foreach ($salvEt as $idx => $row): ?>
+      <li class="list-group-item bg-dark text-white <?= $idx >= 3 ? 'd-none extra-row' : '' ?> se-row"
+          data-id="<?= (int)$row['id_e2se'] ?>"
+          data-id-salvadanaio="<?= (int)$row['id_salvadanaio'] ?>"
+          data-id-etichetta="<?= (int)$row['id_etichetta'] ?>">
+        <?= htmlspecialchars($row['nome_salvadanaio']) ?> - <?= htmlspecialchars($row['etichetta']) ?>
+        <?php
+          $stmtBud = $conn->prepare('SELECT descrizione, importo FROM budget WHERE id_famiglia = ? AND id_salvadanaio = ?');
+          $stmtBud->bind_param('ii', $famiglia, $row['id_salvadanaio']);
+          $stmtBud->execute();
+          $resBud = $stmtBud->get_result();
+          while ($b = $resBud->fetch_assoc()) {
+            echo '<div class="small text-secondary">'.htmlspecialchars($b['descrizione']).': '.number_format((float)$b['importo'],2,',','.').' &euro;</div>';
+          }
+          $stmtBud->close();
+        ?>
+      </li>
+    <?php endforeach; ?>
+  </ul>
+  <?php if (count($salvEt) > 3): ?>
+    <div class="text-center mt-3">
+      <button id="toggleSe" class="btn btn-outline-light btn-sm">Mostra tutti</button>
     </div>
   <?php endif; ?>
 
@@ -401,6 +452,75 @@ include 'includes/header.php';
 </div>
 </div>
 
+<!-- Modal modifica salvadanaio/etichetta -->
+<div class="modal fade" id="seModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="seForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Salvadanaio &amp; Etichetta</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="id_e2se" id="id_e2se">
+        <div class="mb-3">
+          <label class="form-label">Salvadanaio</label>
+          <select name="id_salvadanaio" id="seSalvadanaio" class="form-select bg-secondary text-white">
+            <?php foreach ($salvadanaiDisponibili as $s): ?>
+              <option value="<?= (int)$s['id_salvadanaio'] ?>"><?= htmlspecialchars($s['nome_salvadanaio']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Etichetta</label>
+          <select name="id_etichetta" id="seEtichetta" class="form-select bg-secondary text-white">
+            <?php foreach ($etichetteDisponibili as $et): ?>
+              <option value="<?= (int)$et['id_etichetta'] ?>"><?= htmlspecialchars($et['descrizione']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger me-auto" id="deleteSeBtn">Elimina</button>
+        <button type="submit" class="btn btn-primary">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal aggiungi salvadanaio/etichetta -->
+<div class="modal fade" id="addSeModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="addSeForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Aggiungi salvadanaio/etichetta</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="id_evento" value="<?= (int)$id ?>">
+        <div class="mb-3">
+          <label class="form-label">Salvadanaio</label>
+          <select name="id_salvadanaio" class="form-select bg-secondary text-white">
+            <?php foreach ($salvadanaiDisponibili as $s): ?>
+              <option value="<?= (int)$s['id_salvadanaio'] ?>"><?= htmlspecialchars($s['nome_salvadanaio']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Etichetta</label>
+          <select name="id_etichetta" class="form-select bg-secondary text-white">
+            <?php foreach ($etichetteDisponibili as $et): ?>
+              <option value="<?= (int)$et['id_etichetta'] ?>"><?= htmlspecialchars($et['descrizione']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary w-100">Aggiungi</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Modal modifica cibo -->
 <div class="modal fade" id="ciboModal" tabindex="-1">
   <div class="modal-dialog">
@@ -468,10 +588,12 @@ include 'includes/header.php';
 <style>
 #luoghiList .list-group-item,
 #invitatiList .list-group-item,
-#ciboList .list-group-item { padding: 0.25rem 0.5rem; }
+#ciboList .list-group-item,
+#seList .list-group-item { padding: 0.25rem 0.5rem; }
 #luoghiList .luogo-row { cursor: pointer; }
 #invitatiList .inv-row { cursor: pointer; }
 #ciboList .cibo-row { cursor: pointer; }
+#seList .se-row { cursor: pointer; }
 </style>
 <script src="js/eventi_dettaglio.js"></script>
 <?php include 'includes/footer.php'; ?>

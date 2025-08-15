@@ -477,6 +477,19 @@ CREATE TABLE `eventi_eventi2luogo` (
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `eventi_eventi2salvadanai_etichette`
+--
+
+CREATE TABLE `eventi_eventi2salvadanai_etichette` (
+  `id_e2se` int(11) NOT NULL,
+  `id_evento` int(11) NOT NULL,
+  `id_salvadanaio` int(11) NOT NULL,
+  `id_etichetta` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `eventi_invitati`
 --
 
@@ -1324,6 +1337,15 @@ ALTER TABLE `eventi_eventi2luogo`
   ADD PRIMARY KEY (`id_e2l`);
 
 --
+-- Indici per le tabelle `eventi_eventi2salvadanai_etichette`
+--
+ALTER TABLE `eventi_eventi2salvadanai_etichette`
+  ADD PRIMARY KEY (`id_e2se`),
+  ADD KEY `idx_e2se_id_evento` (`id_evento`),
+  ADD KEY `idx_e2se_id_salvadanaio` (`id_salvadanaio`),
+  ADD KEY `idx_e2se_id_etichetta` (`id_etichetta`);
+
+--
 -- Indici per le tabelle `eventi_invitati`
 --
 ALTER TABLE `eventi_invitati`
@@ -1783,6 +1805,12 @@ ALTER TABLE `eventi_eventi2luogo`
   MODIFY `id_e2l` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT per la tabella `eventi_eventi2salvadanai_etichette`
+--
+ALTER TABLE `eventi_eventi2salvadanai_etichette`
+  MODIFY `id_e2se` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT per la tabella `eventi_invitati`
 --
 ALTER TABLE `eventi_invitati`
@@ -2084,6 +2112,14 @@ ALTER TABLE `budget`
 ALTER TABLE `eventi_eventi2invitati`
   ADD CONSTRAINT `fk_eventi2invitati_evento` FOREIGN KEY (`id_evento`) REFERENCES `eventi` (`id`),
   ADD CONSTRAINT `fk_eventi2invitati_invitato` FOREIGN KEY (`id_invitato`) REFERENCES `eventi_invitati` (`id`);
+
+--
+-- Limiti per la tabella `eventi_eventi2salvadanai_etichette`
+--
+ALTER TABLE `eventi_eventi2salvadanai_etichette`
+  ADD CONSTRAINT `fk_e2se_evento` FOREIGN KEY (`id_evento`) REFERENCES `eventi` (`id`),
+  ADD CONSTRAINT `fk_e2se_salvadanaio` FOREIGN KEY (`id_salvadanaio`) REFERENCES `salvadanai` (`id_salvadanaio`),
+  ADD CONSTRAINT `fk_e2se_etichetta` FOREIGN KEY (`id_etichetta`) REFERENCES `bilancio_etichette` (`id_etichetta`);
 
 --
 -- Limiti per la tabella `gestione_account_password`
