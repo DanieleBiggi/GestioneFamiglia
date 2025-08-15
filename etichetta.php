@@ -277,10 +277,14 @@ $salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
 
   <div class=" gap-4 mb-4 flex-wrap">
     <?php  $ar_totali_utenti = []; $ar_totali_gruppi = [];
-    if ($movimenti->num_rows > 0): ?>
-      <?php while ($mov = $movimenti->fetch_assoc()): ?>
-        <?php
+    if ($movimenti->num_rows > 0):
+        $count = 0;
+        $totalMov = $movimenti->num_rows;
+        while ($mov = $movimenti->fetch_assoc()):
+            $count++;
+            ob_start();
             $per_ar_totali = render_movimento_etichetta($mov,$etichettaInfo['id_etichetta']);
+            $movHtml = ob_get_clean();
             if(isset($per_ar_totali['id_utente'])){
                 foreach($per_ar_totali['id_utente'] as $id_utente=>$p){
                     @$ar_totali_utenti[$id_utente]['entrate'] += $p['entrate'];
@@ -297,9 +301,16 @@ $salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
                     }
                 }
             }
-        ?>
-      <?php endwhile; ?>
-    <?php else: ?>
+            if($count > 3){
+                echo '<div class="extra-movimento d-none">' . $movHtml . '</div>';
+            }else{
+                echo $movHtml;
+            }
+        endwhile;
+        if($totalMov > 3): ?>
+            <div class="text-center mt-3"><a href="#" id="showAllMovimenti" class="text-white">Mostra tutti</a></div>
+        <?php endif;
+    else: ?>
       <p class="text-center text-muted">Nessun movimento per questa etichetta.</p>
     <?php endif; ?>
   
@@ -375,6 +386,12 @@ $salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
       fetch('ajax/add_e2se.php', {method:'POST', body:fd})
         .then(r=>r.json())
         .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+    });
+
+    document.getElementById('showAllMovimenti')?.addEventListener('click', function(e){
+      e.preventDefault();
+      document.querySelectorAll('.extra-movimento').forEach(el => el.classList.remove('d-none'));
+      this.parentElement.remove();
     });
 
     function deleteSe(btn){
