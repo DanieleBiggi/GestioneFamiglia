@@ -202,4 +202,20 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(r=>r.json())
       .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
   });
+
+  document.getElementById('addRuleBtn')?.addEventListener('click', function(){
+    if(!confirm('Salvare regola per questo evento?')) return;
+    const fd = new FormData();
+    fd.append('id_evento', this.dataset.id);
+    fetch('ajax/add_evento_google_rule.php', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(res=>{
+        if(res.success){
+          alert('Regola salvata');
+          this.classList.replace('bi-star','bi-star-fill');
+        } else {
+          alert(res.error||'Errore');
+        }
+      });
+  });
 });
