@@ -372,7 +372,8 @@ CREATE TABLE `eventi` (
   `descrizione` varchar(100) DEFAULT NULL,
   `id_tipo_evento` int(11) DEFAULT NULL,
   `icon` varchar(50) DEFAULT NULL,
-  `note` mediumtext
+  `note` mediumtext,
+  `google_calendar_eventid` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -957,7 +958,8 @@ CREATE TABLE `turni_calendario` (
   `data` date NOT NULL,
   `ora_inizio` time NOT NULL,
   `ora_fine` time NOT NULL,
-  `id_tipo` int(11) NOT NULL
+  `id_tipo` int(11) NOT NULL,
+  `google_calendar_eventid` varchar(255) DEFAULT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -1274,7 +1276,8 @@ ALTER TABLE `dispositivi_riconosciuti`
 --
 ALTER TABLE `eventi`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `id` (`id`);
+  ADD UNIQUE KEY `id` (`id`),
+  ADD UNIQUE KEY `google_calendar_eventid` (`google_calendar_eventid`);
 
 --
 -- Indici per le tabelle `eventi_cibo`
@@ -1537,6 +1540,7 @@ ALTER TABLE `time_dimension`
 --
 ALTER TABLE `turni_calendario`
   ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `google_calendar_eventid` (`google_calendar_eventid`),
   ADD KEY `id_tipo` (`id_tipo`);
 
 --

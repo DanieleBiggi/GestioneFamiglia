@@ -22,9 +22,9 @@ $month++; // convert to 1-based
 $periodStart = sprintf('%04d-%02d-01', $year, $month);
 $periodEnd   = date('Y-m-t', strtotime($periodStart));
 
-// Query turni  (nomi colonne corretti + alias coerenti)
+// Query turni
 $stmt = $conn->prepare(
-  'SELECT t.id, t.data, t.id_tipo, t.ora_inizio, t.ora_fine,
+  'SELECT t.id, t.data, t.id_tipo, t.ora_inizio, t.ora_fine, t.google_calendar_eventid,
           tp.descrizione, tp.colore_bg, tp.colore_testo,
           tp.ora_inizio AS tp_ora_inizio, tp.ora_fine AS tp_ora_fine
    FROM turni_calendario t
@@ -39,29 +39,28 @@ $stmt->execute();
 $res = $stmt->get_result();
 $turni = [];
 while ($row = $res->fetch_assoc()) {
-    $turni[$row['data']][] = $row;
+    $turni[] = $row;
 }
 $stmt->close();
+
 // Query eventi
 $evStmt = $conn->prepare(
-  'SELECT e.id, e.titolo, e.data_evento, e.ora_evento, te.colore
+  'SELECT e.id, e.titolo, e.data_evento, e.ora_evento, e.google_calendar_eventid
    FROM eventi e
    JOIN eventi_eventi2famiglie f ON e.id = f.id_evento
-   LEFT JOIN eventi_tipi_eventi te ON e.id_tipo_evento = te.id
    WHERE f.id_famiglia = ? AND e.data_evento BETWEEN ? AND ?
    ORDER BY e.data_evento'
 );
 $evStmt->bind_param('iss', $idFamiglia, $periodStart, $periodEnd);
 $evStmt->execute();
 $evRes = $evStmt->get_result();
-$eventi = [];
+$eventiDb = [];
+$eventiByGcId = [];
 while ($row = $evRes->fetch_assoc()) {
-    $eventi[$row['data_evento']][] = [
-        'id' => (int)$row['id'],
-        'titolo' => $row['titolo'],
-        'colore' => $row['colore'],
-        'ora_evento' => $row['ora_evento']
-    ];
+    $eventiDb[] = $row;
+    if (!empty($row['google_calendar_eventid'])) {
+        $eventiByGcId[$row['google_calendar_eventid']] = $row['id'];
+    }
 }
 $evStmt->close();
 // Google Calendar integration
@@ -108,89 +107,128 @@ try {
         return date('Y-m-d', strtotime($date . ' +1 day'));
     };
     
-    $makeEventId = function(string $prefix, $raw) {
-        // 1) base: prefisso + valore grezzo
-        $id = strtolower($prefix . '-' . (string)$raw);
-        // 2) tieni solo [a-z0-9_-]
-        $id = preg_replace('/[^a-z0-9_-]+/', '-', $id);
-        // 3) trim dei trattini ripetuti / agli estremi
-        $id = trim(preg_replace('/-+/', '-', $id), '-');
-        // 4) lunghezza minima 5
-        if (strlen($id) < 5) $id = str_pad($id, 5, 'x');
-        return $id;
-    };
-    
-    $upsert = function(Google_Service_Calendar $svc, string $calId, string $eventId, array $eventData) {
-      if ($eventId === '' || $eventId === null) {
-        throw new Exception('eventId vuoto nel upsert');
-      }
-      try {
-        // esiste?
-        $svc->events->get($calId, $eventId);
-        // aggiorna
-        $svc->events->patch($calId, $eventId, new Google_Service_Calendar_Event($eventData));
-      } catch (Google_Service_Exception $e) {
-        if ($e->getCode() !== 404) {
-          error_log("Google GET error for eventId=$eventId: ".$e->getMessage());
-          throw $e;
+    // Sync turni: DB -> Google Calendar
+    foreach ($turni as $t) {
+        $date = $t['data'];
+        // orari dal turno, fallback al tipo
+        $startTime = $normTime($t['ora_inizio'] ?? null) ?: $normTime($t['tp_ora_inizio'] ?? null);
+        $endTime   = $normTime($t['ora_fine']   ?? null) ?: $normTime($t['tp_ora_fine']   ?? null);
+
+        if ($startTime && $endTime) {
+            $evStart = ['dateTime' => $date . 'T' . $startTime, 'timeZone' => $timeZone];
+            $evEnd   = ['dateTime' => $date . 'T' . $endTime,   'timeZone' => $timeZone];
+        } else {
+            $evStart = ['date' => $date];
+            $evEnd   = ['date' => $endAllDay($date)];
         }
-        // inserisci con ID esplicito
-        $eventData['id'] = $eventId;
-        $svc->events->insert($calId, new Google_Service_Calendar_Event($eventData));
-      }
-    };
 
+        $eventData = [
+            'summary' => $t['descrizione'],
+            'start'   => $evStart,
+            'end'     => $evEnd,
+        ];
 
-    
-    foreach ($turni as $date => $items) {
-        foreach ($items as $t) {
-            // orari dal turno, fallback al tipo
-            $startTime = $normTime($t['ora_inizio'] ?? null) ?: $normTime($t['tp_ora_inizio'] ?? null);
-            $endTime   = $normTime($t['ora_fine']   ?? null) ?: $normTime($t['tp_ora_fine']   ?? null);
-    
-            if ($startTime && $endTime) {
-                $evStart = ['dateTime' => $date . 'T' . $startTime, 'timeZone' => $timeZone];
-                $evEnd   = ['dateTime' => $date . 'T' . $endTime,   'timeZone' => $timeZone];
-            } else {
-                // all-day corretto
-                $evStart = ['date' => $date];
-                $evEnd   = ['date' => $endAllDay($date)];
+        if (!empty($t['google_calendar_eventid'])) {
+            try {
+                $service->events->patch($calendarIdTurni, $t['google_calendar_eventid'], new Google_Service_Calendar_Event($eventData));
+            } catch (Google_Service_Exception $e) {
+                if ($e->getCode() != 404) throw $e;
+                $created = $service->events->insert($calendarIdTurni, new Google_Service_Calendar_Event($eventData));
+                $newId = $created->getId();
+                $upd = $conn->prepare('UPDATE turni_calendario SET google_calendar_eventid=? WHERE id=?');
+                $upd->bind_param('si', $newId, $t['id']);
+                $upd->execute();
+                $upd->close();
             }
-    
-            $eventData = [
-                'summary' => $t['descrizione'],
-                'start'   => $evStart,
-                'end'     => $evEnd,
-            ];
-    
-            $eventId = $makeEventId('turno', $t['id']);
-            $upsert($service, $calendarIdTurni, $eventId, $eventData);
+        } else {
+            $created = $service->events->insert($calendarIdTurni, new Google_Service_Calendar_Event($eventData));
+            $newId = $created->getId();
+            $upd = $conn->prepare('UPDATE turni_calendario SET google_calendar_eventid=? WHERE id=?');
+            $upd->bind_param('si', $newId, $t['id']);
+            $upd->execute();
+            $upd->close();
         }
     }
 
-    foreach ($eventi as $date => $items) {
-      foreach ($items as $e) {
-        $evtStartTime = $normTime($e['ora_evento'] ?? null);
-        if ($evtStartTime) {
-          $start = $date.'T'.$evtStartTime;
-          $end   = date('Y-m-d\TH:i:s', strtotime($start.' +1 hour'));
-          $evStart = ['dateTime'=>$start, 'timeZone'=>$timeZone];
-          $evEnd   = ['dateTime'=>$end,   'timeZone'=>$timeZone];
-        } else {
-          $evStart = ['date'=>$date];
-          $evEnd   = ['date'=>$endAllDay($date)];
+    // Insert DB eventi without calendar id into Google Calendar
+    foreach ($eventiDb as $e) {
+        if (empty($e['google_calendar_eventid'])) {
+            $date = $e['data_evento'];
+            $evtStartTime = $normTime($e['ora_evento'] ?? null);
+            if ($evtStartTime) {
+                $start = $date . 'T' . $evtStartTime;
+                $end   = date('Y-m-d\TH:i:s', strtotime($start . ' +1 hour'));
+                $evStart = ['dateTime' => $start, 'timeZone' => $timeZone];
+                $evEnd   = ['dateTime' => $end,   'timeZone' => $timeZone];
+            } else {
+                $evStart = ['date' => $date];
+                $evEnd   = ['date' => $endAllDay($date)];
+            }
+
+            $eventData = [
+                'summary' => $e['titolo'],
+                'start'   => $evStart,
+                'end'     => $evEnd,
+                'extendedProperties' => ['private' => ['source' => 'gestione-famiglia', 'type' => 'evento']]
+            ];
+
+            $created = $service->events->insert($calendarIdEventi, new Google_Service_Calendar_Event($eventData));
+            $gcId = $created->getId();
+            $upd = $conn->prepare('UPDATE eventi SET google_calendar_eventid=? WHERE id=?');
+            $upd->bind_param('si', $gcId, $e['id']);
+            $upd->execute();
+            $upd->close();
+            $eventiByGcId[$gcId] = $e['id'];
         }
-    
-        $eventData = [
-          'summary'=>$e['titolo'],
-          'start'=>$evStart,
-          'end'=>$evEnd,
-          'extendedProperties' => ['private' => ['source'=>'gestione-famiglia','type'=>'evento']]
-        ];
-    
-        $eventId = $makeEventId('evento', $e['id']);
-        $upsert($service, $calendarIdEventi, $eventId, $eventData);
-      }
+    }
+
+    // Fetch Google Calendar events and sync to DB
+    $params = [
+        'singleEvents' => true,
+        'timeMin' => $periodStart . 'T00:00:00Z',
+        'timeMax' => $periodEnd . 'T23:59:59Z'
+    ];
+    $gEvents = $service->events->listEvents($calendarIdEventi, $params);
+    while (true) {
+        foreach ($gEvents->getItems() as $gEvent) {
+            $gcId = $gEvent->getId();
+            $summary = $gEvent->getSummary();
+            $startObj = $gEvent->getStart();
+            if ($startObj->getDateTime()) {
+                $dt = new DateTime($startObj->getDateTime());
+                $date = $dt->format('Y-m-d');
+                $time = $dt->format('H:i');
+            } else {
+                $date = $startObj->getDate();
+                $time = null;
+            }
+
+            if (isset($eventiByGcId[$gcId])) {
+                $dbId = $eventiByGcId[$gcId];
+                $upd = $conn->prepare('UPDATE eventi SET titolo=?, data_evento=?, ora_evento=? WHERE id=?');
+                $upd->bind_param('sssi', $summary, $date, $time, $dbId);
+                $upd->execute();
+                $upd->close();
+            } else {
+                $ins = $conn->prepare('INSERT INTO eventi (titolo, data_evento, ora_evento, google_calendar_eventid) VALUES (?,?,?,?)');
+                $ins->bind_param('ssss', $summary, $date, $time, $gcId);
+                $ins->execute();
+                $newId = $ins->insert_id;
+                $ins->close();
+
+                $link = $conn->prepare('INSERT INTO eventi_eventi2famiglie (id_evento, id_famiglia) VALUES (?,?)');
+                $link->bind_param('ii', $newId, $idFamiglia);
+                $link->execute();
+                $link->close();
+            }
+        }
+        $pageToken = $gEvents->getNextPageToken();
+        if ($pageToken) {
+            $params['pageToken'] = $pageToken;
+            $gEvents = $service->events->listEvents($calendarIdEventi, $params);
+        } else {
+            break;
+        }
     }
 
 
