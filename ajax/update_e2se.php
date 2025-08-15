@@ -4,11 +4,22 @@ include '../includes/session_check.php';
 include '../includes/db.php';
 
 $id_e2se = (int)($_POST['id_e2se'] ?? 0);
-$id_salvadanaio = (int)($_POST['id_salvadanaio'] ?? 0);
-$id_etichetta = (int)($_POST['id_etichetta'] ?? 0);
-$id_evento = (int)($_POST['id_evento'] ?? 0);
 
-if(!$id_e2se || !$id_salvadanaio || !$id_etichetta || !$id_evento){
+// helper to allow null values
+function int_or_null($val){
+    $val = trim($val ?? '');
+    if (is_numeric($val) && (int)$val > 0) {
+        return (int)$val;
+    }
+    return null;
+}
+
+$id_salvadanaio = int_or_null($_POST['id_salvadanaio'] ?? null);
+$id_etichetta   = int_or_null($_POST['id_etichetta'] ?? null);
+$id_evento      = int_or_null($_POST['id_evento'] ?? null);
+
+// id_e2se and id_evento are mandatory, at least one between salvadanaio and etichetta
+if(!$id_e2se || $id_evento === null || ($id_salvadanaio === null && $id_etichetta === null)){
     echo json_encode(['success' => false]);
     exit;
 }

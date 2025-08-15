@@ -104,7 +104,7 @@ $stmtCd->close();
 
 // Salvadanai ed etichette collegati all'evento
 $salvEt = [];
-$stmtSE = $conn->prepare("SELECT e2se.id_e2se, s.nome_salvadanaio, b.descrizione AS etichetta, e2se.id_salvadanaio, e2se.id_etichetta FROM eventi_eventi2salvadanai_etichette e2se JOIN salvadanai s ON e2se.id_salvadanaio = s.id_salvadanaio JOIN bilancio_etichette b ON e2se.id_etichetta = b.id_etichetta WHERE e2se.id_evento = ? ORDER BY s.nome_salvadanaio, b.descrizione");
+$stmtSE = $conn->prepare("SELECT e2se.id_e2se, s.nome_salvadanaio, b.descrizione AS etichetta, e2se.id_salvadanaio, e2se.id_etichetta FROM eventi_eventi2salvadanai_etichette e2se LEFT JOIN salvadanai s ON e2se.id_salvadanaio = s.id_salvadanaio LEFT JOIN bilancio_etichette b ON e2se.id_etichetta = b.id_etichetta WHERE e2se.id_evento = ? ORDER BY s.nome_salvadanaio, b.descrizione");
 $stmtSE->bind_param('i', $id);
 $stmtSE->execute();
 $resSE = $stmtSE->get_result();
@@ -234,18 +234,25 @@ include 'includes/header.php';
     <?php foreach ($salvEt as $idx => $row): ?>
       <li class="list-group-item bg-dark text-white <?= $idx >= 3 ? 'd-none extra-row' : '' ?> se-row"
           data-id="<?= (int)$row['id_e2se'] ?>"
-          data-id-salvadanaio="<?= (int)$row['id_salvadanaio'] ?>"
-          data-id-etichetta="<?= (int)$row['id_etichetta'] ?>">
-        <?= htmlspecialchars($row['nome_salvadanaio']) ?> - <?= htmlspecialchars($row['etichetta']) ?>
+          data-id-salvadanaio="<?= (int)($row['id_salvadanaio'] ?? 0) ?>"
+          data-id-etichetta="<?= (int)($row['id_etichetta'] ?? 0) ?>">
         <?php
-          $stmtBud = $conn->prepare('SELECT descrizione, importo FROM budget WHERE id_famiglia = ? AND id_salvadanaio = ?');
-          $stmtBud->bind_param('ii', $famiglia, $row['id_salvadanaio']);
-          $stmtBud->execute();
-          $resBud = $stmtBud->get_result();
-          while ($b = $resBud->fetch_assoc()) {
-            echo '<div class="small text-secondary">'.htmlspecialchars($b['descrizione']).': '.number_format((float)$b['importo'],2,',','.').' &euro;</div>';
+          $nomeSal = $row['nome_salvadanaio'] ?? '';
+          $nomeEt  = $row['etichetta'] ?? '';
+          echo htmlspecialchars($nomeSal);
+          if($nomeSal && $nomeEt) echo ' - ';
+          echo htmlspecialchars($nomeEt);
+
+          if(!empty($row['id_salvadanaio'])){
+            $stmtBud = $conn->prepare('SELECT descrizione, importo FROM budget WHERE id_famiglia = ? AND id_salvadanaio = ?');
+            $stmtBud->bind_param('ii', $famiglia, $row['id_salvadanaio']);
+            $stmtBud->execute();
+            $resBud = $stmtBud->get_result();
+            while ($b = $resBud->fetch_assoc()) {
+              echo '<div class="small text-secondary">'.htmlspecialchars($b['descrizione']).': '.number_format((float)$b['importo'],2,',','.').' &euro;</div>';
+            }
+            $stmtBud->close();
           }
-          $stmtBud->close();
         ?>
       </li>
     <?php endforeach; ?>
