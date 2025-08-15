@@ -467,6 +467,7 @@ include 'includes/header.php';
       </div>
       <div class="modal-body">
         <input type="hidden" name="id_e2se" id="id_e2se">
+        <input type="hidden" name="id_evento" value="<?= (int)$id ?>">
         <div class="mb-3 select-search">
           <label class="form-label">Salvadanaio</label>
           <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Cerca">
