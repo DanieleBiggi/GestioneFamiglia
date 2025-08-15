@@ -271,7 +271,7 @@ $conn->set_charset('utf8mb4'); // IMPORTANTISSIMO
             <?php if (isset($tableLinks['userlevels'])): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=userlevels">User Levels</a></li>
             <?php endif; ?>
-            <?php if (has_permission($conn, 'page:invitati_eventi.php', 'view') || has_permission($conn, 'page:invitati_cibo.php', 'view') || has_permission($conn, 'page:eventi_tipi.php', 'view')): ?>
+            <?php if (has_permission($conn, 'page:invitati_eventi.php', 'view') || has_permission($conn, 'page:invitati_cibo.php', 'view') || has_permission($conn, 'page:eventi_tipi.php', 'view') || has_permission($conn, 'page:eventi_google_rules.php', 'view')): ?>
             <li><hr class="dropdown-divider"></li>
             <li><h6 class="dropdown-header">Eventi</h6></li>
             <?php if (has_permission($conn, 'page:eventi_tipi.php', 'view')): ?>
@@ -282,6 +282,9 @@ $conn->set_charset('utf8mb4'); // IMPORTANTISSIMO
             <?php endif; ?>
             <?php if (has_permission($conn, 'page:invitati_cibo.php', 'view')): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/invitati_cibo.php">Cibo</a></li>
+            <?php endif; ?>
+            <?php if (has_permission($conn, 'page:eventi_google_rules.php', 'view')): ?>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/eventi_google_rules.php">Regole Google Eventi</a></li>
             <?php endif; ?>
             <?php endif; ?>
             <?php if (has_permission($conn, 'page:turni_tipi.php', 'view')): ?>
