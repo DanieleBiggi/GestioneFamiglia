@@ -16,6 +16,8 @@ CREATE TABLE turni_calendario (
     google_calendar_eventid VARCHAR(255) DEFAULT NULL,
     id_utenti_bambini VARCHAR(255) DEFAULT NULL,
     note TEXT DEFAULT NULL,
+    aggiornato_il DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    data_ultima_sincronizzazione DATETIME DEFAULT NULL,
     UNIQUE KEY uniq_turno (id_famiglia, data),
     FOREIGN KEY (id_famiglia) REFERENCES famiglie(id_famiglia),
     FOREIGN KEY (id_tipo) REFERENCES turni_tipi(id)
