@@ -5,7 +5,7 @@ include 'includes/header.php';
 
 $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 
-$stmt = $conn->prepare("SELECT id, descrizione, colore_bg, colore_testo, attivo FROM turni_tipi ORDER BY descrizione");
+$stmt = $conn->prepare("SELECT id, descrizione, ora_inizio, ora_fine, colore_bg, colore_testo, attivo FROM turni_tipi ORDER BY descrizione");
 $stmt->execute();
 $res = $stmt->get_result();
 ?>
@@ -35,6 +35,8 @@ $res = $stmt->get_result();
     <tr class="type-row <?php echo $class; ?>"
         data-id="<?php echo (int)$row['id']; ?>"
         data-descrizione="<?php echo htmlspecialchars($row['descrizione'], ENT_QUOTES); ?>"
+        data-ora_inizio="<?php echo htmlspecialchars($row['ora_inizio']); ?>"
+        data-ora_fine="<?php echo htmlspecialchars($row['ora_fine']); ?>"
         data-colore_bg="<?php echo $coloreBg; ?>"
         data-colore_testo="<?php echo $coloreTesto; ?>"
         data-attivo="<?php echo $attivo ? 1 : 0; ?>"
@@ -66,6 +68,14 @@ $res = $stmt->get_result();
           <div class="mb-3">
             <label for="descrizione" class="form-label">Descrizione</label>
             <input type="text" class="form-control bg-dark text-white border-secondary" name="descrizione" id="descrizione" required>
+          </div>
+          <div class="mb-3">
+            <label for="ora_inizio" class="form-label">Ora inizio</label>
+            <input type="time" class="form-control bg-dark text-white border-secondary" name="ora_inizio" id="ora_inizio" required>
+          </div>
+          <div class="mb-3">
+            <label for="ora_fine" class="form-label">Ora fine</label>
+            <input type="time" class="form-control bg-dark text-white border-secondary" name="ora_fine" id="ora_fine" required>
           </div>
           <div class="mb-3">
             <label for="colore_bg" class="form-label">Colore sfondo</label>

@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let dragDates = new Set();
   const monthLabel = document.getElementById('monthLabel');
   const calendarContainer = document.getElementById('calendarContainer');
+  const editModalEl = document.getElementById('turnoModal');
+  const editModal = editModalEl ? new bootstrap.Modal(editModalEl) : null;
+  const editForm = document.getElementById('turnoForm');
   let firstRender = true;
 
   function loadTurni(year, month){
@@ -63,6 +66,11 @@ document.addEventListener('DOMContentLoaded', () => {
           turno.textContent=t.descrizione;
           turno.style.background=t.colore_bg;
           turno.style.color=t.colore_testo;
+          turno.dataset.id = t.id;
+          turno.dataset.date = dateStr;
+          turno.dataset.id_tipo = t.id_tipo;
+          turno.dataset.ora_inizio = t.ora_inizio;
+          turno.dataset.ora_fine = t.ora_fine;
           turniContainer.appendChild(turno);
         });
       }
@@ -96,8 +104,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function openEditModal(el){
+    if(!editModal) return;
+    editForm.reset();
+    document.getElementById('turnoId').value = el.dataset.id;
+    document.getElementById('turnoDate').textContent = el.dataset.date;
+    document.getElementById('turnoTipo').value = el.dataset.id_tipo;
+    document.getElementById('turnoOraInizio').value = el.dataset.ora_inizio;
+    document.getElementById('turnoOraFine').value = el.dataset.ora_fine;
+    editModal.show();
+  }
+
   calendarContainer.addEventListener('click', e=>{
     if(e.target.closest('a')) return;
+    const turnoEl = e.target.closest('.turno');
+    if(!multiMode && selectedType===null && turnoEl){
+      openEditModal(turnoEl);
+      return;
+    }
     if(multiMode) return;
     const cell=e.target.closest('.day-cell');
     if(!cell || selectedType===null) return;
@@ -130,6 +154,20 @@ document.addEventListener('DOMContentLoaded', () => {
       selectedType=e.target.dataset.type;
     }
   });
+
+  if(editModalEl){
+    document.getElementById('saveTurno').addEventListener('click', ()=>{
+      const payload = {
+        id: document.getElementById('turnoId').value,
+        id_tipo: document.getElementById('turnoTipo').value,
+        ora_inizio: document.getElementById('turnoOraInizio').value,
+        ora_fine: document.getElementById('turnoOraFine').value
+      };
+      fetch('ajax/turni_update.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+        .then(r=>r.json())
+        .then(res=>{ if(res.success){ editModal.hide(); loadTurni(current.getFullYear(), current.getMonth()); }});
+    });
+  }
 
   function handleSelection(cell){
     const date = cell.dataset.date;

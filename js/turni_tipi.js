@@ -25,12 +25,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (row) {
       document.getElementById('typeId').value = row.dataset.id;
       document.getElementById('descrizione').value = row.dataset.descrizione;
+      document.getElementById('ora_inizio').value = row.dataset.ora_inizio;
+      document.getElementById('ora_fine').value = row.dataset.ora_fine;
       document.getElementById('colore_bg').value = row.dataset.colore_bg;
       document.getElementById('colore_testo').value = row.dataset.colore_testo;
       document.getElementById('attivo').checked = row.dataset.attivo === '1';
     } else {
       form.reset();
       document.getElementById('typeId').value = '';
+      document.getElementById('ora_inizio').value = '';
+      document.getElementById('ora_fine').value = '';
       document.getElementById('colore_bg').value = '#ffffff';
       document.getElementById('colore_testo').value = '#000000';
       document.getElementById('attivo').checked = true;
