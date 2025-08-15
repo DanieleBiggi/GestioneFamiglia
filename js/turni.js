@@ -14,11 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function loadTurni(year, month){
     fetch(`ajax/turni_get.php?year=${year}&month=${month+1}`)
       .then(r=>r.json())
-      .then(data=>renderCalendar(year, month, data.turni || {}, data.eventi || {}));
+      .then(data=>renderCalendar(year, month, data.turni || {}, data.eventi || []));
   }
 
   function renderCalendar(year, month, turni, eventi){
     calendarContainer.innerHTML = '';
+    const dateCells = {};
     const headers = ['LUN','MAR','MER','GIO','VEN','SAB','DOM'];
     const headerRow = document.createElement('div');
     headerRow.className = 'row row-cols-7 g-0 text-center fw-bold';
@@ -36,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const start = (first.getDay()+6)%7; // monday=0
     let day=1;
     let row = document.createElement('div');
-    row.className='row row-cols-7 g-0';
+    row.className='row row-cols-7 g-0 position-relative week-row';
     for(let i=0;i<start;i++){
       const col=document.createElement('div');
       col.className='col border bg-secondary bg-opacity-10';
@@ -46,12 +47,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if(row.children.length===7){
         calendarContainer.appendChild(row);
         row=document.createElement('div');
-        row.className='row row-cols-7 g-0';
+        row.className='row row-cols-7 g-0 position-relative week-row';
       }
       const col=document.createElement('div');
       col.className='col border position-relative day-cell';
       const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const colIndex=row.children.length;
       col.dataset.date=dateStr;
+      col.dataset.index=colIndex;
       const dateLabel=document.createElement('div');
       dateLabel.className='small text-start p-1';
       dateLabel.textContent=day;
@@ -82,16 +85,8 @@ document.addEventListener('DOMContentLoaded', () => {
           turniContainer.appendChild(turno);
         });
       }
-      if(eventi[dateStr]){
-        eventi[dateStr].forEach(ev=>{
-          const turno=document.createElement('div');
-          turno.className='turno event';
-          turno.style.background=ev.colore || '#6c757d';
-          turno.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}" class="text-white text-decoration-none">${ev.titolo}</a>`;
-          turniContainer.appendChild(turno);
-        });
-      }
       col.appendChild(turniContainer);
+      dateCells[dateStr]={cell:col,row:row,index:colIndex};
       const t=new Date();
       if(year===t.getFullYear() && month===t.getMonth() && day===t.getDate()){
         col.classList.add('border-primary');
@@ -105,6 +100,41 @@ document.addEventListener('DOMContentLoaded', () => {
       row.appendChild(col);
     }
     calendarContainer.appendChild(row);
+    eventi.forEach(ev=>{
+      const start=new Date(ev.data_evento);
+      const end=ev.data_fine?new Date(ev.data_fine):start;
+      if(!ev.data_fine || ev.data_fine===ev.data_evento){
+        const info=dateCells[ev.data_evento];
+        if(info){
+          const turno=document.createElement('div');
+          turno.className='turno event';
+          turno.style.background=ev.colore || '#6c757d';
+          turno.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}" class="text-white text-decoration-none">${ev.titolo}</a>`;
+          info.cell.querySelector('.turni-container').appendChild(turno);
+        }
+        return;
+      }
+      let segStart=new Date(start);
+      while(segStart<=end){
+        const segStartStr=segStart.toISOString().slice(0,10);
+        const info=dateCells[segStartStr];
+        if(!info){ segStart.setDate(segStart.getDate()+1); continue; }
+        const rowEl=info.row;
+        const startIdx=info.index;
+        const max=new Date(segStart);
+        max.setDate(segStart.getDate()+(6-startIdx));
+        const segEnd=end<max?end:max;
+        const spanDays=Math.round((segEnd-segStart)/86400000)+1;
+        const bar=document.createElement('div');
+        bar.className='multi-event';
+        bar.style.background=ev.colore || '#6c757d';
+        bar.style.left=(startIdx/7*100)+'%';
+        bar.style.width=(spanDays/7*100)+'%';
+        bar.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}">${ev.titolo}</a>`;
+        rowEl.appendChild(bar);
+        segStart.setDate(segEnd.getDate()+1);
+      }
+    });
     monthLabel.textContent = new Intl.DateTimeFormat('it-IT',{month:'long',year:'numeric'}).format(new Date(year,month,1)).toUpperCase();
     if(firstRender){
       window.scrollTo(0, document.body.scrollHeight);

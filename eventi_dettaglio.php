@@ -34,6 +34,13 @@ $stmtFam->close();
 $allFamRes = $conn->query('SELECT id_famiglia, nome_famiglia FROM famiglie ORDER BY nome_famiglia');
 $allFamiglie = $allFamRes ? $allFamRes->fetch_all(MYSQLI_ASSOC) : [];
 
+$periodo = '';
+if (!empty($evento['data_evento']) || !empty($evento['ora_evento'])) {
+    $start = trim(($evento['data_evento'] ?? '') . ' ' . ($evento['ora_evento'] ?? ''));
+    $endPart = trim(($evento['data_fine'] ?? '') . ' ' . ($evento['ora_fine'] ?? ''));
+    $periodo = $endPart && $endPart !== $start ? $start . ' - ' . $endPart : $start;
+}
+
 // Invitati già collegati all'evento con stato e note
 $invitati = [];
 $stmtInv = $conn->prepare("SELECT e2i.id_e2i, i.nome, i.cognome, e2i.partecipa, e2i.forse, e2i.assente, e2i.note FROM eventi_eventi2invitati e2i JOIN eventi_invitati i ON e2i.id_invitato = i.id WHERE e2i.id_evento = ? ORDER BY i.cognome, i.nome");
@@ -81,8 +88,8 @@ include 'includes/header.php';
       <i class="bi bi-pencil-square" id="editEventoBtn" style="cursor:pointer"></i>
     <?php endif; ?>
   </div>
-  <?php if (!empty($evento['data_evento']) || !empty($evento['ora_evento'])): ?>
-    <div class="mb-3"><?= htmlspecialchars(trim(($evento['data_evento'] ?? '') . ' ' . ($evento['ora_evento'] ?? ''))) ?></div>
+  <?php if ($periodo !== ''): ?>
+    <div class="mb-3"><?= htmlspecialchars($periodo) ?></div>
   <?php endif; ?>
   <?php if (!empty($evento['descrizione'])): ?>
     <p><?= nl2br(htmlspecialchars($evento['descrizione'])) ?></p>
@@ -169,6 +176,14 @@ include 'includes/header.php';
         <div class="mb-3">
           <label class="form-label">Ora</label>
           <input type="time" name="ora_evento" class="form-control bg-secondary text-white" value="<?= htmlspecialchars($evento['ora_evento'] ?? '') ?>">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Data fine</label>
+          <input type="date" name="data_fine" class="form-control bg-secondary text-white" value="<?= htmlspecialchars($evento['data_fine'] ?? '') ?>">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Ora fine</label>
+          <input type="time" name="ora_fine" class="form-control bg-secondary text-white" value="<?= htmlspecialchars($evento['ora_fine'] ?? '') ?>">
         </div>
         <div class="mb-3">
           <label class="form-label">Tipo evento</label>

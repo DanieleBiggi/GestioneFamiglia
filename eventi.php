@@ -56,6 +56,14 @@ $famigliaDefault = $_SESSION['id_famiglia_gestione'] ?? 0;
           <input type="time" name="ora_evento" class="form-control bg-secondary text-white">
         </div>
         <div class="mb-3">
+          <label class="form-label">Data fine</label>
+          <input type="date" name="data_fine" class="form-control bg-secondary text-white">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Ora fine</label>
+          <input type="time" name="ora_fine" class="form-control bg-secondary text-white">
+        </div>
+        <div class="mb-3">
           <label class="form-label">Tipo evento</label>
           <select name="id_tipo_evento" class="form-select bg-secondary text-white">
             <option value="">-- nessuno --</option>

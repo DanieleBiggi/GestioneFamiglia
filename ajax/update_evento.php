@@ -15,6 +15,10 @@ $titolo = trim($_POST['titolo'] ?? '');
 $descrizione = trim($_POST['descrizione'] ?? '');
 $data_evento = $_POST['data_evento'] ?? null;
 $ora_evento = $_POST['ora_evento'] ?? null;
+$data_fine = $_POST['data_fine'] ?? null;
+if ($data_fine === '') { $data_fine = null; }
+$ora_fine = $_POST['ora_fine'] ?? null;
+if ($ora_fine === '') { $ora_fine = null; }
 $id_tipo_evento = (int)($_POST['id_tipo_evento'] ?? 0);
 if ($id_tipo_evento === 0) { $id_tipo_evento = null; }
 $famiglie = $_POST['famiglie'] ?? [];
@@ -25,8 +29,8 @@ if (!$id) {
     exit;
 }
 
-$stmt = $conn->prepare('UPDATE eventi SET titolo = ?, descrizione = ?, data_evento = ?, ora_evento = ?, id_tipo_evento = ? WHERE id = ?');
-$stmt->bind_param('ssssii', $titolo, $descrizione, $data_evento, $ora_evento, $id_tipo_evento, $id);
+$stmt = $conn->prepare('UPDATE eventi SET titolo = ?, descrizione = ?, data_evento = ?, ora_evento = ?, data_fine = ?, ora_fine = ?, id_tipo_evento = ? WHERE id = ?');
+$stmt->bind_param('ssssssii', $titolo, $descrizione, $data_evento, $ora_evento, $data_fine, $ora_fine, $id_tipo_evento, $id);
 $success = $stmt->execute();
 $stmt->close();
 
