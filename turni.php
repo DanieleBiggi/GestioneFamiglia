@@ -10,7 +10,12 @@ $tipiRes = $conn->query("SELECT id, descrizione, colore_bg, colore_testo FROM tu
 $tipi = $tipiRes ? $tipiRes->fetch_all(MYSQLI_ASSOC) : [];
 $bambiniRes = $conn->query("SELECT u.id, COALESCE(NULLIF(u.soprannome,''), CONCAT(u.nome,' ',u.cognome)) AS nome FROM utenti u JOIN utenti2famiglie uf ON u.id = uf.id_utente WHERE uf.id_famiglia = $idFamiglia ORDER BY nome");
 $bambini = $bambiniRes ? $bambiniRes->fetch_all(MYSQLI_ASSOC) : [];
+$syncRes = $conn->query("SELECT COUNT(*) AS cnt FROM turni_calendario WHERE id_famiglia = $idFamiglia AND (data_ultima_sincronizzazione IS NULL OR aggiornato_il > data_ultima_sincronizzazione)");
+$needSync = $syncRes ? ($syncRes->fetch_assoc()['cnt'] > 0) : false;
 ?>
+<?php if ($needSync): ?>
+<div class="alert alert-warning text-center m-0">Alcuni turni non sono sincronizzati con Google Calendar.</div>
+<?php endif; ?>
 <style>
   #calendarContainer .col {height: 100px; min-width:0; overflow:hidden;}
   #calendarContainer .day-cell {display:flex; flex-direction:column; padding:0;}

@@ -131,11 +131,15 @@ try {
         if (!empty($t['google_calendar_eventid'])) {
             try {
                 $service->events->patch($calendarIdTurni, $t['google_calendar_eventid'], new Google_Service_Calendar_Event($eventData));
+                $upd = $conn->prepare('UPDATE turni_calendario SET data_ultima_sincronizzazione=NOW() WHERE id=?');
+                $upd->bind_param('i', $t['id']);
+                $upd->execute();
+                $upd->close();
             } catch (Google_Service_Exception $e) {
                 if ($e->getCode() != 404) throw $e;
                 $created = $service->events->insert($calendarIdTurni, new Google_Service_Calendar_Event($eventData));
                 $newId = $created->getId();
-                $upd = $conn->prepare('UPDATE turni_calendario SET google_calendar_eventid=? WHERE id=?');
+                $upd = $conn->prepare('UPDATE turni_calendario SET google_calendar_eventid=?, data_ultima_sincronizzazione=NOW() WHERE id=?');
                 $upd->bind_param('si', $newId, $t['id']);
                 $upd->execute();
                 $upd->close();
@@ -143,7 +147,7 @@ try {
         } else {
             $created = $service->events->insert($calendarIdTurni, new Google_Service_Calendar_Event($eventData));
             $newId = $created->getId();
-            $upd = $conn->prepare('UPDATE turni_calendario SET google_calendar_eventid=? WHERE id=?');
+            $upd = $conn->prepare('UPDATE turni_calendario SET google_calendar_eventid=?, data_ultima_sincronizzazione=NOW() WHERE id=?');
             $upd->bind_param('si', $newId, $t['id']);
             $upd->execute();
             $upd->close();

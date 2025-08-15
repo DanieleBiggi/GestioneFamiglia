@@ -961,7 +961,9 @@ CREATE TABLE `turni_calendario` (
   `id_tipo` int(11) NOT NULL,
   `google_calendar_eventid` varchar(255) DEFAULT NULL,
   `id_utenti_bambini` varchar(255) DEFAULT NULL,
-  `note` text DEFAULT NULL
+  `note` text DEFAULT NULL,
+  `aggiornato_il` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `data_ultima_sincronizzazione` datetime DEFAULT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
