@@ -236,7 +236,7 @@ $conn->set_charset('utf8mb4'); // IMPORTANTISSIMO
       <li class="mb-3">
         <div class="dropdown w-100">
           <button class="btn btn-outline-light w-100 text-start dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="bi bi-table me-2 text-white"></i> Tabelle
+            <i class="bi bi-gear me-2 text-white"></i> Configurazione
           </button>
           <ul class="dropdown-menu dropdown-menu-dark w-100">
             <li><h6 class="dropdown-header">Bilancio</h6></li>
@@ -271,9 +271,12 @@ $conn->set_charset('utf8mb4'); // IMPORTANTISSIMO
             <?php if (isset($tableLinks['userlevels'])): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=userlevels">User Levels</a></li>
             <?php endif; ?>
-            <?php if (has_permission($conn, 'page:invitati_eventi.php', 'view') || has_permission($conn, 'page:invitati_cibo.php', 'view')): ?>
+            <?php if (has_permission($conn, 'page:invitati_eventi.php', 'view') || has_permission($conn, 'page:invitati_cibo.php', 'view') || has_permission($conn, 'page:eventi_tipi.php', 'view')): ?>
             <li><hr class="dropdown-divider"></li>
             <li><h6 class="dropdown-header">Eventi</h6></li>
+            <?php if (has_permission($conn, 'page:eventi_tipi.php', 'view')): ?>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/eventi_tipi.php">Tipi eventi</a></li>
+            <?php endif; ?>
             <?php if (has_permission($conn, 'page:invitati_eventi.php', 'view')): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/invitati_eventi.php">Invitati</a></li>
             <?php endif; ?>
