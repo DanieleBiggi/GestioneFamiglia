@@ -63,6 +63,28 @@ while ($row = $evRes->fetch_assoc()) {
     }
 }
 $evStmt->close();
+
+// Carica le regole per gli eventi Google
+$rules = [];
+$ruleRes = $conn->query('SELECT id, creator_email, description_keyword, id_tipo_evento FROM eventi_google_rules WHERE attiva=1');
+if ($ruleRes) {
+    while ($r = $ruleRes->fetch_assoc()) {
+        $r['invitati'] = [];
+        $rules[$r['id']] = $r;
+    }
+    $ruleRes->close();
+    if ($rules) {
+        $invRes = $conn->query('SELECT id_rule, id_invitato FROM eventi_google_rules_invitati');
+        if ($invRes) {
+            while ($ir = $invRes->fetch_assoc()) {
+                if (isset($rules[$ir['id_rule']])) {
+                    $rules[$ir['id_rule']]['invitati'][] = (int)$ir['id_invitato'];
+                }
+            }
+            $invRes->close();
+        }
+    }
+}
 // Google Calendar integration
 require_once __DIR__ . '/../vendor/autoload.php';
 $credentialsFile = __DIR__ . '/../config/google_credentials.json';
@@ -224,6 +246,26 @@ try {
             $summary = $gEvent->getSummary();
             $startObj = $gEvent->getStart();
             $endObj = $gEvent->getEnd();
+            $creatorEmail = '';
+            $creatorObj = $gEvent->getCreator();
+            if ($creatorObj) { $creatorEmail = $creatorObj->getEmail(); }
+            $description = $gEvent->getDescription();
+            $textMatch = trim(($summary ?? '') . ' ' . ($description ?? ''));
+
+            $matchedRules = [];
+            foreach ($rules as $rule) {
+                if (!empty($rule['creator_email']) && strcasecmp($rule['creator_email'], $creatorEmail) !== 0) {
+                    continue;
+                }
+                if (!empty($rule['description_keyword']) && stripos($textMatch, $rule['description_keyword']) === false) {
+                    continue;
+                }
+                $matchedRules[] = $rule;
+            }
+            $idTipoEvento = null;
+            foreach ($matchedRules as $rule) {
+                if (!empty($rule['id_tipo_evento'])) { $idTipoEvento = (int)$rule['id_tipo_evento']; break; }
+            }
             if ($startObj->getDateTime()) {
                 $dt = new DateTime($startObj->getDateTime());
                 $date = $dt->format('Y-m-d');
@@ -244,13 +286,14 @@ try {
 
             if (isset($eventiByGcId[$gcId])) {
                 $dbId = $eventiByGcId[$gcId];
-                $upd = $conn->prepare('UPDATE eventi SET titolo=?, data_evento=?, ora_evento=?,data_fine=?, ora_fine=? WHERE id=?');
-                $upd->bind_param('sssssi', $summary, $date, $time, $data_fine, $ora_fine, $dbId);
+                $upd = $conn->prepare('UPDATE eventi SET titolo=?, data_evento=?, ora_evento=?,data_fine=?, ora_fine=?, descrizione=?, id_tipo_evento=IFNULL(?, id_tipo_evento) WHERE id=?');
+                $upd->bind_param('ssssssii', $summary, $date, $time, $data_fine, $ora_fine, $description, $idTipoEvento, $dbId);
                 $upd->execute();
                 $upd->close();
+                $eventId = $dbId;
             } else {
-                $ins = $conn->prepare('INSERT INTO eventi (titolo, data_evento, ora_evento, data_fine, ora_fine, google_calendar_eventid) VALUES (?,?,?,?,?,?)');
-                $ins->bind_param('ssssss', $summary, $date, $time, $data_fine, $ora_fine, $gcId);
+                $ins = $conn->prepare('INSERT INTO eventi (titolo, data_evento, ora_evento, data_fine, ora_fine, descrizione, id_tipo_evento, google_calendar_eventid) VALUES (?,?,?,?,?,?,?,?)');
+                $ins->bind_param('ssssssis', $summary, $date, $time, $data_fine, $ora_fine, $description, $idTipoEvento, $gcId);
                 $ins->execute();
                 $newId = $ins->insert_id;
                 $ins->close();
@@ -259,6 +302,25 @@ try {
                 $link->bind_param('ii', $newId, $idFamiglia);
                 $link->execute();
                 $link->close();
+                $eventId = $newId;
+            }
+
+            if (!empty($matchedRules) && isset($eventId)) {
+                foreach ($matchedRules as $rule) {
+                    foreach ($rule['invitati'] as $idInv) {
+                        $chk = $conn->prepare('SELECT 1 FROM eventi_eventi2invitati WHERE id_evento=? AND id_invitato=?');
+                        $chk->bind_param('ii', $eventId, $idInv);
+                        $chk->execute();
+                        $exists = $chk->get_result()->num_rows > 0;
+                        $chk->close();
+                        if (!$exists) {
+                            $insInv = $conn->prepare('INSERT INTO eventi_eventi2invitati (id_evento, id_invitato) VALUES (?,?)');
+                            $insInv->bind_param('ii', $eventId, $idInv);
+                            $insInv->execute();
+                            $insInv->close();
+                        }
+                    }
+                }
             }
         }
         $pageToken = $gEvents->getNextPageToken();
