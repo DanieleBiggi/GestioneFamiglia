@@ -472,6 +472,7 @@ include 'includes/header.php';
           <label class="form-label">Salvadanaio</label>
           <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Cerca">
           <select name="id_salvadanaio" id="seSalvadanaio" class="form-select bg-secondary text-white">
+            <option value=""></option>
             <?php foreach ($salvadanaiTutti as $s): ?>
               <option value="<?= (int)$s['id_salvadanaio'] ?>"><?= htmlspecialchars($s['nome_salvadanaio']) ?></option>
             <?php endforeach; ?>
@@ -481,6 +482,7 @@ include 'includes/header.php';
           <label class="form-label">Etichetta</label>
           <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Cerca">
           <select name="id_etichetta" id="seEtichetta" class="form-select bg-secondary text-white">
+            <option value=""></option>
             <?php foreach ($etichetteTutte as $et): ?>
               <option value="<?= (int)$et['id_etichetta'] ?>"><?= htmlspecialchars($et['descrizione']) ?></option>
             <?php endforeach; ?>
@@ -509,6 +511,7 @@ include 'includes/header.php';
           <label class="form-label">Salvadanaio</label>
           <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Cerca">
           <select name="id_salvadanaio" class="form-select bg-secondary text-white">
+            <option value=""></option>
             <?php foreach ($salvadanaiAttivi as $s): ?>
               <option value="<?= (int)$s['id_salvadanaio'] ?>"><?= htmlspecialchars($s['nome_salvadanaio']) ?></option>
             <?php endforeach; ?>
@@ -518,6 +521,7 @@ include 'includes/header.php';
           <label class="form-label">Etichetta</label>
           <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Cerca">
           <select name="id_etichetta" class="form-select bg-secondary text-white">
+            <option value=""></option>
             <?php foreach ($etichetteAttive as $et): ?>
               <option value="<?= (int)$et['id_etichetta'] ?>"><?= htmlspecialchars($et['descrizione']) ?></option>
             <?php endforeach; ?>
