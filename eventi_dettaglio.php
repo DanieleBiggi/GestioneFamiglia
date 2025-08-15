@@ -41,6 +41,28 @@ if (!empty($evento['data_evento']) || !empty($evento['ora_evento'])) {
     $periodo = $endPart && $endPart !== $start ? $start . ' - ' . $endPart : $start;
 }
 
+// Luoghi collegati all'evento
+$luoghi = [];
+$stmtLuogo = $conn->prepare("SELECT e2l.id_e2l, l.indirizzo FROM eventi_eventi2luogo e2l JOIN eventi_luogo l ON e2l.id_luogo = l.id WHERE e2l.id_evento = ? ORDER BY l.indirizzo");
+$stmtLuogo->bind_param('i', $id);
+$stmtLuogo->execute();
+$resLuogo = $stmtLuogo->get_result();
+while ($row = $resLuogo->fetch_assoc()) { $luoghi[] = $row; }
+$stmtLuogo->close();
+
+// Luoghi disponibili per l'aggiunta
+$luoghiDisponibili = [];
+$stmtLuogoDisp = $conn->prepare('SELECT id, indirizzo FROM eventi_luogo WHERE id NOT IN (SELECT id_luogo FROM eventi_eventi2luogo WHERE id_evento = ?) ORDER BY indirizzo');
+$stmtLuogoDisp->bind_param('i', $id);
+$stmtLuogoDisp->execute();
+$resLuogoDisp = $stmtLuogoDisp->get_result();
+while ($row = $resLuogoDisp->fetch_assoc()) { $luoghiDisponibili[] = $row; }
+$stmtLuogoDisp->close();
+
+// Tutti i luoghi (per datalist di modifica)
+$allLuoghiRes = $conn->query('SELECT id, indirizzo FROM eventi_luogo ORDER BY indirizzo');
+$allLuoghi = $allLuoghiRes ? $allLuoghiRes->fetch_all(MYSQLI_ASSOC) : [];
+
 // Invitati già collegati all'evento con stato e note
 $invitati = [];
 $stmtInv = $conn->prepare("SELECT e2i.id_e2i, i.nome, i.cognome, e2i.partecipa, e2i.forse, e2i.assente, e2i.note FROM eventi_eventi2invitati e2i JOIN eventi_invitati i ON e2i.id_invitato = i.id WHERE e2i.id_evento = ? ORDER BY i.cognome, i.nome");
@@ -93,6 +115,27 @@ include 'includes/header.php';
   <?php endif; ?>
   <?php if (!empty($evento['descrizione'])): ?>
     <p><?= nl2br(htmlspecialchars($evento['descrizione'])) ?></p>
+  <?php endif; ?>
+
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="d-flex align-items-center">
+      <h5 class="mb-0 me-3">Luoghi</h5>
+    </div>
+    <button type="button" class="btn btn-outline-light btn-sm" id="addLuogoBtn">Aggiungi luogo</button>
+  </div>
+  <ul class="list-group list-group-flush bg-dark" id="luoghiList">
+    <?php foreach ($luoghi as $idx => $row): ?>
+      <li class="list-group-item bg-dark text-white <?= $idx >= 3 ? 'd-none extra-row' : '' ?> luogo-row"
+          data-id="<?= (int)$row['id_e2l'] ?>"
+          data-luogo="<?= htmlspecialchars($row['indirizzo'], ENT_QUOTES) ?>">
+        <?= htmlspecialchars($row['indirizzo']) ?>
+      </li>
+    <?php endforeach; ?>
+  </ul>
+  <?php if (count($luoghi) > 3): ?>
+    <div class="text-center mt-3">
+      <button id="toggleLuoghi" class="btn btn-outline-light btn-sm">Mostra tutti</button>
+    </div>
   <?php endif; ?>
 
   <div class="d-flex justify-content-between align-items-center mb-2">
@@ -211,6 +254,63 @@ include 'includes/header.php';
   </div>
 </div>
 <?php endif; ?>
+
+<!-- Modal modifica luogo -->
+<div class="modal fade" id="luogoModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="luogoForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Luogo</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="id_e2l" id="id_e2l">
+        <div class="mb-3">
+          <label class="form-label">Luogo</label>
+          <input type="text" name="luogo" id="luogoNome" list="luoghiOptionsEdit" class="form-control bg-secondary text-white">
+          <datalist id="luoghiOptionsEdit">
+            <?php foreach ($allLuoghi as $l): ?>
+              <option value="<?= htmlspecialchars($l['indirizzo']) ?>"></option>
+            <?php endforeach; ?>
+          </datalist>
+          <div class="form-text text-white-50">Inizia a digitare e seleziona un luogo dai suggerimenti</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger me-auto" id="deleteLuogoBtn">Elimina</button>
+        <button type="submit" class="btn btn-primary">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal aggiungi luogo -->
+<div class="modal fade" id="addLuogoModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="addLuogoForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Aggiungi luogo</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="id_evento" value="<?= (int)$id ?>">
+        <div class="mb-3">
+          <label class="form-label">Luogo</label>
+          <input type="text" name="luogo" list="luoghiOptions" class="form-control bg-secondary text-white">
+          <datalist id="luoghiOptions">
+            <?php foreach ($luoghiDisponibili as $l): ?>
+              <option value="<?= htmlspecialchars($l['indirizzo']) ?>"></option>
+            <?php endforeach; ?>
+          </datalist>
+          <div class="form-text text-white-50">Inizia a digitare e seleziona un luogo dai suggerimenti</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary w-100">Aggiungi</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <!-- Modal modifica invitato -->
 <div class="modal fade" id="invitatoModal" tabindex="-1">
@@ -366,8 +466,10 @@ include 'includes/header.php';
 </div>
 
 <style>
+#luoghiList .list-group-item,
 #invitatiList .list-group-item,
 #ciboList .list-group-item { padding: 0.25rem 0.5rem; }
+#luoghiList .luogo-row { cursor: pointer; }
 #invitatiList .inv-row { cursor: pointer; }
 #ciboList .cibo-row { cursor: pointer; }
 </style>
