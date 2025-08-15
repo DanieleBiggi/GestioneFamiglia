@@ -115,17 +115,21 @@ if ($id > 0): ?>
       <div class="modal-body">
         <input type="hidden" name="id_e2se" id="id_e2se">
         <input type="hidden" name="id_salvadanaio" value="<?= (int)$id ?>">
-        <div class="mb-3">
+        <div class="mb-3 select-search">
           <label class="form-label">Evento</label>
+          <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Cerca">
           <select name="id_evento" id="seEvento" class="form-select bg-secondary text-white">
+            <option value=""></option>
             <?php foreach ($eventiDisponibili as $ev): ?>
               <option value="<?= (int)$ev['id'] ?>"><?= htmlspecialchars($ev['titolo']) ?></option>
             <?php endforeach; ?>
           </select>
         </div>
-        <div class="mb-3">
+        <div class="mb-3 select-search">
           <label class="form-label">Etichetta</label>
+          <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Cerca">
           <select name="id_etichetta" id="seEtichetta" class="form-select bg-secondary text-white">
+            <option value=""></option>
             <?php foreach ($etichetteDisponibili as $et): ?>
               <option value="<?= (int)$et['id_etichetta'] ?>"><?= htmlspecialchars($et['descrizione']) ?></option>
             <?php endforeach; ?>
@@ -149,17 +153,21 @@ if ($id > 0): ?>
       </div>
       <div class="modal-body">
         <input type="hidden" name="id_salvadanaio" value="<?= (int)$id ?>">
-        <div class="mb-3">
+        <div class="mb-3 select-search">
           <label class="form-label">Evento</label>
+          <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Cerca">
           <select name="id_evento" class="form-select bg-secondary text-white">
+            <option value=""></option>
             <?php foreach ($eventiDisponibili as $ev): ?>
               <option value="<?= (int)$ev['id'] ?>"><?= htmlspecialchars($ev['titolo']) ?></option>
             <?php endforeach; ?>
           </select>
         </div>
-        <div class="mb-3">
+        <div class="mb-3 select-search">
           <label class="form-label">Etichetta</label>
+          <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Cerca">
           <select name="id_etichetta" class="form-select bg-secondary text-white">
+            <option value=""></option>
             <?php foreach ($etichetteDisponibili as $et): ?>
               <option value="<?= (int)$et['id_etichetta'] ?>"><?= htmlspecialchars($et['descrizione']) ?></option>
             <?php endforeach; ?>

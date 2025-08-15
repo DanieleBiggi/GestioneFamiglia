@@ -350,17 +350,21 @@ $salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
           </div>
           <div class="modal-body">
             <input type="hidden" name="id_etichetta" value="<?= (int)$etichettaInfo['id_etichetta'] ?>">
-            <div class="mb-3">
+            <div class="mb-3 select-search">
               <label class="form-label">Evento</label>
+              <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Cerca">
               <select name="id_evento" class="form-select bg-secondary text-white">
+                <option value=""></option>
                 <?php foreach ($eventiDisponibili as $e): ?>
                   <option value="<?= (int)$e['id'] ?>"><?= htmlspecialchars($e['titolo']) ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
-            <div class="mb-3">
+            <div class="mb-3 select-search">
               <label class="form-label">Salvadanaio</label>
+              <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Cerca">
               <select name="id_salvadanaio" class="form-select bg-secondary text-white">
+                <option value=""></option>
                 <?php foreach ($salvadanaiDisponibili as $s): ?>
                   <option value="<?= (int)$s['id_salvadanaio'] ?>"><?= htmlspecialchars($s['nome_salvadanaio']) ?></option>
                 <?php endforeach; ?>
@@ -643,11 +647,13 @@ $salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
         </thead>
         <tbody>
           <?php foreach ($gruppi as $g): ?>
+            <?php $entrate = $g['entrate'] ?? 0; ?>
+            <?php $uscite = $g['uscite'] ?? 0; ?>
             <tr>
               <!--<td><?= htmlspecialchars($g['categoria']) ?></td>-->
               <td><?= htmlspecialchars($g['gruppo'] ?? $g['id_gruppo_transazione']) ?></td>
-              <td class="text-end text-nowrap"><?= ($g['entrate'] > 0 ? '+' : '') . number_format($g['entrate'], 2, ',', '.') ?> €</td>
-              <td class="text-end text-nowrap"><?= number_format($g['uscite'], 2, ',', '.') ?> €</td>
+              <td class="text-end text-nowrap"><?= ($entrate > 0 ? '+' : '') . number_format($entrate, 2, ',', '.') ?> €</td>
+              <td class="text-end text-nowrap"><?= number_format($uscite, 2, ',', '.') ?> €</td>
             </tr>
           <?php endforeach; ?>
             <tr>
