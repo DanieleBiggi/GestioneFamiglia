@@ -72,6 +72,7 @@ if (!file_exists($credentialsFile)) {
     exit;
 }
 try {
+    /*
     $client = new Google_Client();
     $client->setAuthConfig($credentialsFile);
     $client->addScope(Google_Service_Calendar::CALENDAR);
@@ -87,6 +88,16 @@ try {
         echo json_encode(['success' => false, 'message' => 'Token Google mancante']);
         exit;
     }
+    */
+    $serviceAccountJson = __DIR__ . '/../config/service-account.json'; // fuori webroot
+    //$calendarId = 'TUO_CALENDAR_ID'; // es. 'tuaemail@gmail.com' oppure l'ID del secondario
+    
+    $client = new Google_Client();
+    $client->setApplicationName('Calendar SA');
+    $client->setScopes([Google_Service_Calendar::CALENDAR]); // o CALENDAR_READONLY
+    $client->setAuthConfig($serviceAccountJson);
+    // NON impostare ->setSubject() (serve solo con delega di dominio Workspace)
+
     $service = new Google_Service_Calendar($client);
     $calendarIdTurni = '405f4721b468b439755b6aad55d6b40e5c235f8511db6a29b95dc7f96ff329f0@group.calendar.google.com';
     $calendarIdEventi = '29f6c24acdde6722ed7eb92a5eff3d15bdc1a46d210def3314c1b05c15ac024f@group.calendar.google.com';
