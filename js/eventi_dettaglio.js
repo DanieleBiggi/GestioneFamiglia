@@ -1,6 +1,10 @@
 // JavaScript for eventi_dettaglio.php
 
 document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('toggleLuoghi')?.addEventListener('click', function(){
+    document.querySelectorAll('#luoghiList .extra-row').forEach(el=>el.classList.toggle('d-none'));
+    this.textContent = this.textContent === 'Mostra tutti' ? 'Mostra meno' : 'Mostra tutti';
+  });
   document.getElementById('toggleInvitati')?.addEventListener('click', function(){
     document.querySelectorAll('#invitatiList .extra-row').forEach(el=>el.classList.toggle('d-none'));
     this.textContent = this.textContent === 'Mostra tutti' ? 'Mostra meno' : 'Mostra tutti';
@@ -54,6 +58,20 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
   });
 
+  document.getElementById('addLuogoBtn')?.addEventListener('click', () => {
+    const form = document.getElementById('addLuogoForm');
+    form.reset();
+    new bootstrap.Modal(document.getElementById('addLuogoModal')).show();
+  });
+
+  document.getElementById('addLuogoForm')?.addEventListener('submit', function(e){
+    e.preventDefault();
+    const fd = new FormData(this);
+    fetch('ajax/add_e2l.php', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+  });
+
   document.getElementById('addCiboBtn')?.addEventListener('click', () => {
     const form = document.getElementById('addCiboForm');
     form.reset();
@@ -83,6 +101,34 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     const fd = new FormData(this);
     fetch('ajax/update_e2c.php', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+  });
+
+  // apertura modal modifica luogo
+  document.querySelectorAll('#luoghiList .luogo-row').forEach(li => {
+    li.addEventListener('click', () => {
+      const form = document.getElementById('luogoForm');
+      form.id_e2l.value = li.dataset.id;
+      form.luogo.value = li.dataset.luogo;
+      new bootstrap.Modal(document.getElementById('luogoModal')).show();
+    });
+  });
+
+  document.getElementById('luogoForm')?.addEventListener('submit', function(e){
+    e.preventDefault();
+    const fd = new FormData(this);
+    fetch('ajax/update_e2l.php', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+  });
+
+  document.getElementById('deleteLuogoBtn')?.addEventListener('click', function(){
+    const id = document.getElementById('luogoForm')?.id_e2l.value;
+    if(!id || !confirm('Eliminare questo luogo dall\'evento?')) return;
+    const fd = new FormData();
+    fd.append('id_e2l', id);
+    fetch('ajax/delete_e2l.php', {method:'POST', body:fd})
       .then(r=>r.json())
       .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
   });
