@@ -211,102 +211,29 @@ function tipo_label($t) {
     ][$t] ?? $t;
 }
 
-// Dettaglio per utente
-$importoExpr = "(CASE WHEN v.id_utente_operazione = u2o.id_utente THEN -(CASE WHEN IFNULL(u2o.importo_utente, 0) <> 0 THEN u2o.importo_utente WHEN v.importo_etichetta <> 0 THEN (v.importo * u2o.quote) ELSE (v.importo_totale_operazione - (v.importo * u2o.quote)) END) ELSE (CASE WHEN IFNULL(u2o.importo_utente, 0) <> 0 THEN u2o.importo_utente ELSE (v.importo * u2o.quote) END) END)";
-$sqlUsr = "SELECT u.id, CONCAT(u.nome,' ',u.cognome) AS utente,
-                   SUM(CASE WHEN $importoExpr >= 0 THEN $importoExpr ELSE 0 END) AS entrate,
-                   SUM(CASE WHEN $importoExpr < 0 THEN $importoExpr ELSE 0 END) AS uscite
-            FROM bilancio_utenti2operazioni_etichettate u2o
-            JOIN v_bilancio_etichette2operazioni_a_testa v ON u2o.id_e2o = v.id_e2o
-            JOIN bilancio_etichette2operazioni e2o ON e2o.id_e2o = u2o.id_e2o
-            JOIN utenti u ON u.id = u2o.id_utente
-            WHERE e2o.id_etichetta = ?";
-if ($mese !== '') {
-    $sqlUsr .= " AND DATE_FORMAT(v.data_operazione,'%Y-%m')=?";
-}
-$sqlUsr .= " GROUP BY u.id, utente ORDER BY utente";
-$stmtUsr = $conn->prepare($sqlUsr);
-if ($mese !== '') {
-    $stmtUsr->bind_param('ss', $etichettaInfo['id_etichetta'], $mese);
-} else {
-    $stmtUsr->bind_param('s', $etichettaInfo['id_etichetta']);
-}
-$stmtUsr->execute();
-$resUsr = $stmtUsr->get_result();
-$utentiDett = [];
-while ($u = $resUsr->fetch_assoc()) {
-    $utentiDett[] = $u;
-}
-$stmtUsr->close();
+// Finanze collegate all'etichetta
+$finanze = [];
+$stmtSe = $conn->prepare("SELECT e2se.id_e2se, e.id AS id_evento, e.titolo, s.id_salvadanaio, s.nome_salvadanaio
+                          FROM eventi_eventi2salvadanai_etichette e2se
+                          JOIN eventi e ON e.id = e2se.id_evento
+                          JOIN salvadanai s ON s.id_salvadanaio = e2se.id_salvadanaio
+                          WHERE e2se.id_etichetta = ?
+                          ORDER BY e.titolo, s.nome_salvadanaio");
+$stmtSe->bind_param('i', $etichettaInfo['id_etichetta']);
+$stmtSe->execute();
+$resSe = $stmtSe->get_result();
+while ($row = $resSe->fetch_assoc()) { $finanze[] = $row; }
+$stmtSe->close();
 
-// Dettaglio per gruppo
-$sqlGrp = "SELECT m.id_gruppo_transazione, g.descrizione AS gruppo, g.tipo_gruppo,
-                  COALESCE(c.descrizione_categoria, 'Nessuna categoria') AS categoria,
-                  SUM(CASE WHEN m.amount>=0 THEN m.amount ELSE 0 END) AS entrate,
-                  SUM(CASE WHEN m.amount<0 THEN m.amount ELSE 0 END) AS uscite
-           FROM (
-                SELECT id_gruppo_transazione, amount, bm.started_date as data_operazione, 
-                           (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
-                              FROM bilancio_etichette2operazioni eo
-                              JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                             WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut') AS etichette
-                    FROM movimenti_revolut bm
-                UNION ALL
-                SELECT be.id_gruppo_transazione, be.importo AS amount, be.data_operazione,
-                       (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
-                          FROM bilancio_etichette2operazioni eo
-                          JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                         WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette
-                FROM bilancio_entrate be
-                UNION ALL
-                SELECT bu.id_gruppo_transazione, -bu.importo AS amount, bu.data_operazione,
-                       (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
-                          FROM bilancio_etichette2operazioni eo
-                          JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                         WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette
-                FROM bilancio_uscite bu
-           ) m
-           LEFT JOIN bilancio_gruppi_transazione g ON m.id_gruppo_transazione = g.id_gruppo_transazione
-           LEFT JOIN bilancio_gruppi_categorie c ON g.id_categoria = c.id_categoria
-           WHERE FIND_IN_SET(?, m.etichette)";
-if ($mese !== '') {
-    $sqlGrp .= " AND DATE_FORMAT(m.data_operazione,'%Y-%m')=?";
-}
-if ($categoria !== '') {
-    if ($categoria === '0') {
-        $sqlGrp .= " AND g.id_categoria IS NULL";
-    } else {
-        $sqlGrp .= " AND g.id_categoria = ?";
-    }
-}
-$sqlGrp .= " GROUP BY m.id_gruppo_transazione, g.descrizione, g.tipo_gruppo, categoria ORDER BY categoria, g.descrizione";
+// Eventi disponibili
+$eventiDisponibili = [];
+$resEv = $conn->query('SELECT id, titolo FROM eventi ORDER BY titolo');
+$eventiDisponibili = $resEv ? $resEv->fetch_all(MYSQLI_ASSOC) : [];
 
-if ($mese !== '' && $categoria !== '' && $categoria !== '0') {
-    $stmtGrp = $conn->prepare($sqlGrp);
-    $stmtGrp->bind_param('ssi', $etichettaInfo['id_etichetta'], $mese, $categoria);
-} elseif ($mese !== '' && $categoria === '0') {
-    $stmtGrp = $conn->prepare($sqlGrp);
-    $stmtGrp->bind_param('ss', $etichettaInfo['id_etichetta'], $mese);
-} elseif ($mese !== '' && $categoria === '') {
-    $stmtGrp = $conn->prepare($sqlGrp);
-    $stmtGrp->bind_param('ss', $etichettaInfo['id_etichetta'], $mese);
-} elseif ($mese === '' && $categoria !== '' && $categoria !== '0') {
-    $stmtGrp = $conn->prepare($sqlGrp);
-    $stmtGrp->bind_param('si', $etichettaInfo['id_etichetta'], $categoria);
-} else {
-    $stmtGrp = $conn->prepare($sqlGrp);
-    $stmtGrp->bind_param('s', $etichettaInfo['id_etichetta']);
-}
-
-$stmtGrp->execute();
-$resGrp = $stmtGrp->get_result();
-$gruppi = [];
-while ($r = $resGrp->fetch_assoc()) {
-    $r['categoria'] = $r['categoria'] ?? 'Nessuna categoria';
-    $r['tipo_label'] = tipo_label($r['tipo_gruppo']);
-    $gruppi[] = $r;
-}
-$stmtGrp->close();
+// Salvadanai disponibili
+$salvadanaiDisponibili = [];
+$resSalv = $conn->query('SELECT id_salvadanaio, nome_salvadanaio FROM salvadanai ORDER BY nome_salvadanaio');
+$salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
 ?>
 
 <div class="text-white">
@@ -349,21 +276,27 @@ $stmtGrp->close();
   </form>
 
   <div class=" gap-4 mb-4 flex-wrap">
-    <?php  $ar_totali = [];
+    <?php  $ar_totali_utenti = []; $ar_totali_gruppi = [];
     if ($movimenti->num_rows > 0): ?>
       <?php while ($mov = $movimenti->fetch_assoc()): ?>
-        <?php 
-        //$ar_totali['id_utente'][$u['id_utente']]['entrate']
-            $per_ar_totali = render_movimento_etichetta($mov,$etichettaInfo['id_etichetta']); 
-            if(isset($per_ar_totali['id_utente']))
-            foreach($per_ar_totali['id_utente'] as $id_utente=>$p)
-            {
-                //print_r($p);
-                @$ar_totali[$id_utente]['entrate'] += $p['entrate'];
-                @$ar_totali[$id_utente]['uscite'] += $p['uscite'];
-                @$ar_totali[$id_utente]['utente'] = $p['utente'];
+        <?php
+            $per_ar_totali = render_movimento_etichetta($mov,$etichettaInfo['id_etichetta']);
+            if(isset($per_ar_totali['id_utente'])){
+                foreach($per_ar_totali['id_utente'] as $id_utente=>$p){
+                    @$ar_totali_utenti[$id_utente]['entrate'] += $p['entrate'];
+                    @$ar_totali_utenti[$id_utente]['uscite'] += $p['uscite'];
+                    @$ar_totali_utenti[$id_utente]['utente'] = $p['utente'];
+                }
             }
-            
+            if(isset($per_ar_totali['id_gruppo_transazione'])){
+                foreach($per_ar_totali['id_gruppo_transazione'] as $id_g=>$imp){
+                    if($imp>0){
+                        @$ar_totali_gruppi[$id_g]['entrate'] += $imp;
+                    }else{
+                        @$ar_totali_gruppi[$id_g]['uscite'] += $imp;
+                    }
+                }
+            }
         ?>
       <?php endwhile; ?>
     <?php else: ?>
@@ -396,7 +329,63 @@ $stmtGrp->close();
       </div>
     </div>
 
+    <!-- Modal aggiungi finanza -->
+    <div class="modal fade" id="addSeModal" tabindex="-1">
+      <div class="modal-dialog">
+        <form class="modal-content bg-dark text-white" id="addSeForm">
+          <div class="modal-header">
+            <h5 class="modal-title">Aggiungi finanza</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" name="id_etichetta" value="<?= (int)$etichettaInfo['id_etichetta'] ?>">
+            <div class="mb-3">
+              <label class="form-label">Evento</label>
+              <select name="id_evento" class="form-select bg-secondary text-white">
+                <?php foreach ($eventiDisponibili as $e): ?>
+                  <option value="<?= (int)$e['id'] ?>"><?= htmlspecialchars($e['titolo']) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Salvadanaio</label>
+              <select name="id_salvadanaio" class="form-select bg-secondary text-white">
+                <?php foreach ($salvadanaiDisponibili as $s): ?>
+                  <option value="<?= (int)$s['id_salvadanaio'] ?>"><?= htmlspecialchars($s['nome_salvadanaio']) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary w-100">Aggiungi</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <script>
+    document.getElementById('addSeBtn')?.addEventListener('click', () => {
+      document.getElementById('addSeForm').reset();
+      new bootstrap.Modal(document.getElementById('addSeModal')).show();
+    });
+
+    document.getElementById('addSeForm')?.addEventListener('submit', function(e){
+      e.preventDefault();
+      const fd = new FormData(this);
+      fetch('ajax/add_e2se.php', {method:'POST', body:fd})
+        .then(r=>r.json())
+        .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+    });
+
+    function deleteSe(btn){
+      if(!confirm('Eliminare questo collegamento?')) return;
+      const fd = new FormData();
+      fd.append('id_e2se', btn.dataset.id);
+      fetch('ajax/delete_e2se.php', {method:'POST', body:fd})
+        .then(r=>r.json())
+        .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+    }
+
     let currentIdE2o = null;
     const listaUtenti = <?= json_encode($listaUtenti, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
 
@@ -525,9 +514,59 @@ $stmtGrp->close();
       document.getElementById('settleBtn').classList.toggle('d-none');
     }
     </script>
-    <?php 
-    $utentiDett = $ar_totali;
-    if (!empty($utentiDett)): ?>
+    <?php
+    $utentiDett = $ar_totali_utenti;
+
+    $gruppi = [];
+    if (!empty($ar_totali_gruppi)) {
+        $ids = array_keys($ar_totali_gruppi);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $types = str_repeat('i', count($ids));
+        $sqlG = "SELECT g.id_gruppo_transazione, g.descrizione, g.tipo_gruppo, g.id_categoria, c.descrizione_categoria
+                 FROM bilancio_gruppi_transazione g
+                 LEFT JOIN bilancio_gruppi_categorie c ON g.id_categoria = c.id_categoria
+                 WHERE g.id_gruppo_transazione IN ($placeholders)";
+        $stmtG = $conn->prepare($sqlG);
+        $stmtG->bind_param($types, ...$ids);
+        $stmtG->execute();
+        $resG = $stmtG->get_result();
+        while ($row = $resG->fetch_assoc()) {
+            $idg = $row['id_gruppo_transazione'];
+            if ($categoria !== '') {
+                if ($categoria === '0' && $row['id_categoria'] !== null) continue;
+                if ($categoria !== '0' && (string)$row['id_categoria'] !== $categoria) continue;
+            }
+            $data = $ar_totali_gruppi[$idg];
+            $data['gruppo'] = $row['descrizione'];
+            $data['tipo_label'] = tipo_label($row['tipo_gruppo']);
+            $data['categoria'] = $row['descrizione_categoria'] ?? 'Nessuna categoria';
+            $gruppi[] = $data;
+        }
+        $stmtG->close();
+        usort($gruppi, function($a, $b){ return strcmp($a['gruppo'], $b['gruppo']); });
+    }
+    ?>
+
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+      <div class="d-flex align-items-center">
+        <h5 class="mb-0 me-3">Finanze</h5>
+      </div>
+      <button type="button" class="btn btn-outline-light btn-sm" id="addSeBtn">Aggiungi</button>
+    </div>
+    <?php if (!empty($finanze)): ?>
+    <ul class="list-group list-group-flush bg-dark" id="seList">
+      <?php foreach ($finanze as $row): ?>
+        <li class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center">
+          <span><?= htmlspecialchars($row['titolo']) ?> - <?= htmlspecialchars($row['nome_salvadanaio']) ?></span>
+          <button type="button" class="btn btn-sm btn-danger" data-id="<?= (int)$row['id_e2se'] ?>" onclick="deleteSe(this)">&times;</button>
+        </li>
+      <?php endforeach; ?>
+    </ul>
+    <?php else: ?>
+      <p class="text-muted">Nessun collegamento finanza.</p>
+    <?php endif; ?>
+
+    <?php if (!empty($utentiDett)): ?>
       <h5 class="mt-4">Dettaglio per utente</h5>
       <div class="table-responsive">
         <table class="table table-dark table-striped align-middle table-sm">
@@ -605,7 +644,7 @@ $stmtGrp->close();
     </div>
   <?php endif; ?>
 </div>
-
+</div>
 
 <!-- Modal modifica etichetta-movimento -->
 <div class="modal fade" id="editE2oModal" tabindex="-1">
