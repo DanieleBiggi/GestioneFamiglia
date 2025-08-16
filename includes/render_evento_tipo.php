@@ -5,7 +5,7 @@ function render_evento_tipo(array $row) {
     if (!$isActive) {
         $classes .= ' inactive';
     }
-    $search = strtolower(($row['tipo_evento'] ?? '') . ' ' . ($row['colore'] ?? ''));
+    $search = strtolower(($row['tipo_evento'] ?? '') . ' ' . ($row['colore'] ?? '') . ' ' . ($row['colore_testo'] ?? ''));
     $searchAttr = htmlspecialchars($search, ENT_QUOTES);
     $url = 'evento_tipo_dettaglio.php?id=' . (int)($row['id'] ?? 0);
     echo '<div class="' . $classes . '" data-search="' . $searchAttr . '" onclick="window.location.href=\'' . $url . '\'">';
@@ -13,8 +13,9 @@ function render_evento_tipo(array $row) {
     echo '    <div class="fw-semibold">' . htmlspecialchars($row['tipo_evento'] ?? '') . '</div>';
     echo '  </div>';
     echo '  <div class="ms-2 d-flex align-items-center">';
-    $color = htmlspecialchars($row['colore'] ?? '#000000');
-    echo '    <span class="rounded me-2" style="width:20px;height:20px;background:' . $color . ';border:1px solid #fff;"></span>';
+    $bg = htmlspecialchars($row['colore'] ?? '#000000');
+    $txt = htmlspecialchars($row['colore_testo'] ?? '#ffffff');
+    echo '    <span class="badge me-2" style="background:' . $bg . ';color:' . $txt . '">Aa</span>';
     echo $isActive ? '    <i class="bi bi-check-circle-fill text-success"></i>' : '    <i class="bi bi-x-circle-fill text-danger"></i>';
     echo '  </div>';
     echo '</div>';

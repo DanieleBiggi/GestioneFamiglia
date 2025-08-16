@@ -23,8 +23,9 @@ function render_evento(array $row): void {
     }
     echo '  </div>';
     if (!empty($row['tipo_evento'])) {
-        $color = htmlspecialchars($row['colore'] ?? '#71843f', ENT_QUOTES);
-        echo '  <span class="badge ms-2" style="background-color: ' . $color . '">' . htmlspecialchars($row['tipo_evento']) . '</span>';
+        $bg = htmlspecialchars($row['colore'] ?? '#71843f', ENT_QUOTES);
+        $txt = htmlspecialchars($row['colore_testo'] ?? '#ffffff', ENT_QUOTES);
+        echo '  <span class="badge ms-2" style="background-color: ' . $bg . ';color:' . $txt . '">' . htmlspecialchars($row['tipo_evento']) . '</span>';
     }
     echo '</div>';
 }

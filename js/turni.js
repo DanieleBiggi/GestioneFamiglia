@@ -109,7 +109,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const turno=document.createElement('div');
           turno.className='turno event';
           turno.style.background=ev.colore || '#6c757d';
-          turno.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}" class="text-white text-decoration-none">${ev.titolo}</a>`;
+          const tCol=ev.colore_testo||'#ffffff';
+          turno.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}" class="text-decoration-none" style="color:${tCol}">${ev.titolo}</a>`;
           info.cell.querySelector('.turni-container').appendChild(turno);
         }
         return;
@@ -128,9 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const bar=document.createElement('div');
         bar.className='multi-event';
         bar.style.background=ev.colore || '#6c757d';
+        const tCol=ev.colore_testo||'#ffffff';
         bar.style.left=(startIdx/7*100)+'%';
         bar.style.width=(spanDays/7*100)+'%';
-        bar.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}">${ev.titolo}</a>`;
+        bar.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}" style="color:${tCol}">${ev.titolo}</a>`;
         rowEl.appendChild(bar);
         segStart.setDate(segEnd.getDate()+1);
       }

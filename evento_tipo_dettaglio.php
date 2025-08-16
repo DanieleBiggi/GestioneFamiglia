@@ -10,6 +10,7 @@ $data = [
     'id' => 0,
     'tipo_evento' => '',
     'colore' => '#71843f',
+    'colore_testo' => '#ffffff',
     'attivo' => 1
 ];
 if ($id > 0) {
@@ -39,15 +40,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $tipo = $_POST['tipo_evento'] ?? '';
     $colore = $_POST['colore'] ?? '';
+    $coloreTesto = $_POST['colore_testo'] ?? '';
     $attivo = isset($_POST['attivo']) ? 1 : 0;
     if ($id > 0) {
-        $stmt = $conn->prepare('UPDATE eventi_tipi_eventi SET tipo_evento=?, colore=?, attivo=? WHERE id=?');
-        $stmt->bind_param('ssii', $tipo, $colore, $attivo, $id);
+        $stmt = $conn->prepare('UPDATE eventi_tipi_eventi SET tipo_evento=?, colore=?, colore_testo=?, attivo=? WHERE id=?');
+        $stmt->bind_param('sssii', $tipo, $colore, $coloreTesto, $attivo, $id);
         $stmt->execute();
         $stmt->close();
     } else {
-        $stmt = $conn->prepare('INSERT INTO eventi_tipi_eventi (tipo_evento, colore, attivo) VALUES (?,?,?)');
-        $stmt->bind_param('ssi', $tipo, $colore, $attivo);
+        $stmt = $conn->prepare('INSERT INTO eventi_tipi_eventi (tipo_evento, colore, colore_testo, attivo) VALUES (?,?,?,?)');
+        $stmt->bind_param('sssi', $tipo, $colore, $coloreTesto, $attivo);
         $stmt->execute();
         $stmt->close();
     }
@@ -65,8 +67,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <input type="text" name="tipo_evento" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['tipo_evento']) ?>" required>
   </div>
   <div class="mb-3">
-    <label class="form-label">Colore</label>
+    <label class="form-label">Colore sfondo</label>
     <input type="color" name="colore" class="form-control form-control-color" value="<?= htmlspecialchars($data['colore']) ?>" title="Scegli colore">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Colore testo</label>
+    <input type="color" name="colore_testo" class="form-control form-control-color" value="<?= htmlspecialchars($data['colore_testo']) ?>" title="Scegli colore">
   </div>
   <div class="form-check form-switch mb-3">
     <input class="form-check-input" type="checkbox" id="attivo" name="attivo" <?= ($data['attivo'] ?? 1) ? 'checked' : '' ?>>
