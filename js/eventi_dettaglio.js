@@ -223,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(res=>{ if(res.success) window.location.href = 'eventi.php'; else alert(res.error||'Errore'); });
     });
 
-    document.getElementById('addRuleBtn')?.addEventListener('click', function(){
+  document.getElementById('addRuleBtn')?.addEventListener('click', function(){
       if(!confirm('Salvare regola per questo evento?')) return;
       const fd = new FormData();
       fd.append('id_evento', this.dataset.id);
@@ -237,5 +237,18 @@ document.addEventListener('DOMContentLoaded', () => {
           alert(res.error||'Errore');
         }
       });
+  });
+
+  document.querySelectorAll('.toggle-finanze').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const escludi = btn.dataset.escludi === '1' ? 0 : 1;
+      const fd = new FormData();
+      fd.append('id_e2o', id);
+      fd.append('escludi', escludi);
+      fetch('ajax/toggle_e2o_finanze.php', {method:'POST', body:fd})
+        .then(r=>r.json())
+        .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+    });
   });
 });

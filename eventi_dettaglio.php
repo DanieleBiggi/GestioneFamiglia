@@ -287,16 +287,29 @@ include 'includes/header.php';
                echo '<a href="etichetta.php?id_etichetta='.(int)$row['id_etichetta'].'" class="text-white">'.htmlspecialchars($row['etichetta'] ?? '').'</a>';
              ?>
             <?php
-              $stmtMov = $conn->prepare("SELECT COALESCE(e2o.importo, CASE WHEN e2o.tabella_operazione='bilancio_entrate' THEN be.importo WHEN e2o.tabella_operazione='bilancio_uscite' THEN -bu.importo WHEN e2o.tabella_operazione='movimenti_revolut' THEN mr.amount ELSE 0 END) AS importo, COALESCE(e2o.descrizione_extra, CASE WHEN e2o.tabella_operazione='bilancio_entrate' THEN COALESCE(NULLIF(be.descrizione_extra,''), be.descrizione_operazione) WHEN e2o.tabella_operazione='bilancio_uscite' THEN COALESCE(NULLIF(bu.descrizione_extra,''), bu.descrizione_operazione) WHEN e2o.tabella_operazione='movimenti_revolut' THEN COALESCE(NULLIF(mr.descrizione_extra,''), mr.description) ELSE '' END) AS descrizione FROM bilancio_etichette2operazioni e2o LEFT JOIN bilancio_entrate be ON e2o.tabella_operazione='bilancio_entrate' AND e2o.id_tabella=be.id_entrata LEFT JOIN bilancio_uscite bu ON e2o.tabella_operazione='bilancio_uscite' AND e2o.id_tabella=bu.id_uscita LEFT JOIN movimenti_revolut mr ON e2o.tabella_operazione='movimenti_revolut' AND e2o.id_tabella=mr.id_movimento_revolut WHERE e2o.id_etichetta=?");
+              $stmtMov = $conn->prepare("SELECT e2o.id_e2o, e2o.escludi_da_finanze_evento,
+                COALESCE(e2o.importo, CASE WHEN e2o.tabella_operazione='bilancio_entrate' THEN be.importo WHEN e2o.tabella_operazione='bilancio_uscite' THEN -bu.importo WHEN e2o.tabella_operazione='movimenti_revolut' THEN mr.amount ELSE 0 END) AS importo,
+                COALESCE(e2o.descrizione_extra, CASE WHEN e2o.tabella_operazione='bilancio_entrate' THEN COALESCE(NULLIF(be.descrizione_extra,''), be.descrizione_operazione) WHEN e2o.tabella_operazione='bilancio_uscite' THEN COALESCE(NULLIF(bu.descrizione_extra,''), bu.descrizione_operazione) WHEN e2o.tabella_operazione='movimenti_revolut' THEN COALESCE(NULLIF(mr.descrizione_extra,''), mr.description) ELSE '' END) AS descrizione
+                FROM bilancio_etichette2operazioni e2o
+                LEFT JOIN bilancio_entrate be ON e2o.tabella_operazione='bilancio_entrate' AND e2o.id_tabella=be.id_entrata
+                LEFT JOIN bilancio_uscite bu ON e2o.tabella_operazione='bilancio_uscite' AND e2o.id_tabella=bu.id_uscita
+                LEFT JOIN movimenti_revolut mr ON e2o.tabella_operazione='movimenti_revolut' AND e2o.id_tabella=mr.id_movimento_revolut
+                WHERE e2o.id_etichetta=?");
               $stmtMov->bind_param('i', $row['id_etichetta']);
               $stmtMov->execute();
               $resMov = $stmtMov->get_result();
               $totale = 0;
               while ($m = $resMov->fetch_assoc()) {
-                  $totale += $m['importo']; ?>
-                  <div class="small text-secondary">
+                  if (!(int)$m['escludi_da_finanze_evento']) {
+                      $totale += $m['importo'];
+                  }
+                  ?>
+                  <div class="small text-secondary d-flex align-items-center<?= (int)$m['escludi_da_finanze_evento'] ? ' text-decoration-line-through' : '' ?>">
                     <span class="importo me-2"><?= number_format((float)$m['importo'],2,',','.') ?> &euro;</span>
-                    <span class="descrizione"><?= htmlspecialchars($m['descrizione'] ?? '') ?></span>
+                    <span class="descrizione flex-grow-1"><?= htmlspecialchars($m['descrizione'] ?? '') ?></span>
+                    <button class="btn btn-sm btn-outline-light toggle-finanze" data-id="<?= (int)$m['id_e2o'] ?>" data-escludi="<?= (int)$m['escludi_da_finanze_evento'] ?>">
+                      <?= (int)$m['escludi_da_finanze_evento'] ? 'Mostra' : 'Nascondi' ?>
+                    </button>
                   </div>
               <?php }
               ?>

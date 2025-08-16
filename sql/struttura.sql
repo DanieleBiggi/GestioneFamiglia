@@ -150,7 +150,8 @@ CREATE TABLE `bilancio_etichette2operazioni` (
   `descrizione_extra` varchar(250) DEFAULT NULL,
   `importo` decimal(11,2) DEFAULT NULL,
   `dividere_rimborsare` varchar(20) NOT NULL DEFAULT 'dividere',
-  `allegato` varchar(100) DEFAULT NULL
+  `allegato` varchar(100) DEFAULT NULL,
+  `escludi_da_finanze_evento` int(11) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------

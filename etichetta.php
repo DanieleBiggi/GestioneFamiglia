@@ -57,21 +57,21 @@ $sqlM = "SELECT DATE_FORMAT(data_operazione,'%Y-%m') AS ym, DATE_FORMAT(data_ope
                    (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                     WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut') AS etichette
+                     WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut' AND eo.escludi_da_finanze_evento = 0) AS etichette
             FROM movimenti_revolut bm
             UNION ALL
             SELECT be.data_operazione,
                    (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                     WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette
+                     WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate' AND eo.escludi_da_finanze_evento = 0) AS etichette
             FROM bilancio_entrate be
             UNION ALL
             SELECT bu.data_operazione,
                    (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                     WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette
+                     WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite' AND eo.escludi_da_finanze_evento = 0) AS etichette
             FROM bilancio_uscite bu
           ) t
           WHERE FIND_IN_SET(?, etichette)
@@ -90,25 +90,25 @@ if ($mese !== '') {
     $sqlTot = "SELECT SUM(CASE WHEN amount>=0 THEN amount ELSE 0 END) AS entrate,
                         SUM(CASE WHEN amount<0 THEN amount ELSE 0 END) AS uscite
                  FROM (
-                    SELECT amount, bm.started_date as data_operazione, 
+                    SELECT amount, bm.started_date as data_operazione,
                            (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                               FROM bilancio_etichette2operazioni eo
                               JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                             WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut') AS etichette
+                             WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut' AND eo.escludi_da_finanze_evento = 0) AS etichette
                     FROM movimenti_revolut bm
                     UNION ALL
                     SELECT importo AS amount, data_operazione,
                            (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                               FROM bilancio_etichette2operazioni eo
                               JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                             WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette
+                             WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate' AND eo.escludi_da_finanze_evento = 0) AS etichette
                     FROM bilancio_entrate be
                     UNION ALL
                     SELECT -importo AS amount, data_operazione,
                            (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                               FROM bilancio_etichette2operazioni eo
                               JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                             WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette
+                             WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite' AND eo.escludi_da_finanze_evento = 0) AS etichette
                     FROM bilancio_uscite bu
                  ) t
                  WHERE FIND_IN_SET(?, etichette) AND DATE_FORMAT(data_operazione,'%Y-%m')=?";
@@ -118,25 +118,25 @@ if ($mese !== '') {
     $sqlTot = "SELECT SUM(CASE WHEN amount>=0 THEN amount ELSE 0 END) AS entrate,
                         SUM(CASE WHEN amount<0 THEN amount ELSE 0 END) AS uscite
                  FROM (
-                    SELECT amount, bm.started_date as data_operazione, 
+                    SELECT amount, bm.started_date as data_operazione,
                            (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                               FROM bilancio_etichette2operazioni eo
                               JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                             WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut') AS etichette
+                             WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut' AND eo.escludi_da_finanze_evento = 0) AS etichette
                     FROM movimenti_revolut bm
                     UNION ALL
                     SELECT importo AS amount, data_operazione,
                            (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                               FROM bilancio_etichette2operazioni eo
                               JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                             WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette
+                             WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate' AND eo.escludi_da_finanze_evento = 0) AS etichette
                     FROM bilancio_entrate be
                     UNION ALL
                     SELECT -importo AS amount, data_operazione,
                            (SELECT GROUP_CONCAT(e.id_etichetta SEPARATOR ',')
                               FROM bilancio_etichette2operazioni eo
                               JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                             WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette
+                             WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite' AND eo.escludi_da_finanze_evento = 0) AS etichette
                     FROM bilancio_uscite bu
                  ) t
                  WHERE FIND_IN_SET(?, etichette)";
@@ -156,7 +156,7 @@ $stmtTot->close();
                          (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
                             FROM bilancio_etichette2operazioni eo
                             JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                           WHERE eo.id_tabella = v.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut') AS etichette,
+                           WHERE eo.id_tabella = v.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut' AND eo.escludi_da_finanze_evento = 0) AS etichette,
                          id_gruppo_transazione, 'revolut' AS source, 'movimenti_revolut' AS tabella
                   FROM v_movimenti_revolut v
                   UNION ALL
@@ -165,7 +165,7 @@ $stmtTot->close();
                          (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
                             FROM bilancio_etichette2operazioni eo
                             JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                           WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette,
+                           WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate' AND eo.escludi_da_finanze_evento = 0) AS etichette,
                          be.id_gruppo_transazione, 'ca' AS source, 'bilancio_entrate' AS tabella
                   FROM bilancio_entrate be
                   UNION ALL
@@ -174,11 +174,11 @@ $stmtTot->close();
                          (SELECT GROUP_CONCAT(e.descrizione SEPARATOR ',')
                             FROM bilancio_etichette2operazioni eo
                             JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                           WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette,
+                           WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite' AND eo.escludi_da_finanze_evento = 0) AS etichette,
                          bu.id_gruppo_transazione, 'ca' AS source, 'bilancio_uscite' AS tabella
                   FROM bilancio_uscite bu
              ) m
-             JOIN bilancio_etichette2operazioni e2o ON e2o.id_tabella = m.id AND e2o.tabella_operazione = m.tabella
+             JOIN bilancio_etichette2operazioni e2o ON e2o.id_tabella = m.id AND e2o.tabella_operazione = m.tabella AND e2o.escludi_da_finanze_evento = 0
              JOIN bilancio_etichette e ON e.id_etichetta = e2o.id_etichetta
              WHERE e.id_etichetta = ?";
   if ($mese !== '') {
