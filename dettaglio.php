@@ -199,7 +199,7 @@ include 'includes/header.php';
       <span>Descrizione Extra</span>
       <div class="ms-auto d-flex align-items-center">
         <span class="text-end"><?= htmlspecialchars($movimento['descrizione_extra']) ?></span>
-        <i class="bi bi-pencil ms-2" onclick="openModal('descrizione_extra', '<?= htmlspecialchars($movimento['descrizione_extra'], ENT_QUOTES) ?>')"></i>
+        <i class="bi bi-pencil ms-2" onclick="openModal('descrizione_extra', <?= htmlspecialchars(json_encode($movimento['descrizione_extra'] ?? ''), ENT_QUOTES) ?>)"></i>
       </div>
     </li>
 
@@ -208,7 +208,7 @@ include 'includes/header.php';
       <span>Note</span>
       <div class="ms-auto d-flex align-items-center">
         <span class="text-end"><?= htmlspecialchars($movimento['note']) ?></span>
-        <i class="bi bi-pencil ms-2" onclick="openModal('note', '<?= htmlspecialchars($movimento['note'], ENT_QUOTES) ?>')"></i>
+        <i class="bi bi-pencil ms-2" onclick="openModal('note', <?= htmlspecialchars(json_encode($movimento['note'] ?? ''), ENT_QUOTES) ?>)"></i>
       </div>
     </li>
 
