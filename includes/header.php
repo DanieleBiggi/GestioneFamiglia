@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/Gestionale25/includes/theme.php">
   <link rel="stylesheet" href="/Gestionale25/assets/style.css">
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="manifest" href="/Gestionale25/manifest.webmanifest">
 </head>
 <body>
 <?php 
