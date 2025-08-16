@@ -18,7 +18,12 @@ function render_turno_tipo(array $row) {
     echo '<div class="' . $classes . '" data-search="' . $searchAttr . '" onclick="window.location.href=\'' . $url . '\'">';
     echo '  <div class="flex-grow-1">';
     echo '    <div class="fw-semibold">' . htmlspecialchars($row['descrizione'] ?? '') . '</div>';
-    echo '    <div class="small">' . htmlspecialchars(($row['ora_inizio'] ?? '') . ' - ' . ($row['ora_fine'] ?? '')) . '</div>';
+    $start = $row['ora_inizio'] ?? '';
+    $end = $row['ora_fine'] ?? '';
+    $timeText = trim($start . ' - ' . $end, ' -');
+    if ($timeText !== '') {
+        echo '    <div class="small">' . htmlspecialchars($timeText) . '</div>';
+    }
     echo '  </div>';
     echo '  <div class="ms-2 d-flex align-items-center">';
     $bg = htmlspecialchars($row['colore_bg'] ?? '#000000');

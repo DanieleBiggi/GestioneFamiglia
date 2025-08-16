@@ -1018,8 +1018,8 @@ CREATE TABLE `turni_calendario` (
 CREATE TABLE `turni_tipi` (
   `id` int(11) NOT NULL,
   `descrizione` varchar(100) NOT NULL,
-  `ora_inizio` time NOT NULL,
-  `ora_fine` time NOT NULL,
+  `ora_inizio` time DEFAULT NULL,
+  `ora_fine` time DEFAULT NULL,
   `colore_bg` varchar(7) NOT NULL,
   `colore_testo` varchar(7) NOT NULL DEFAULT '#000000',
   `attivo` tinyint(1) NOT NULL DEFAULT '1'
