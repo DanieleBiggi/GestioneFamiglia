@@ -23,15 +23,17 @@ $needSync = !empty($unsyncedMonths);
 ?>
 <style>
   #calendarContainer .col {height: 100px; min-width:0; overflow:hidden;}
-  #calendarContainer .day-cell {display:flex; flex-direction:column; padding:0; padding-top:20px;}
-  #calendarContainer .turni-container {flex:1; display:flex; flex-direction:column;}
+  #calendarContainer .day-cell {display:flex; flex-direction:column; padding:0;}
+  #calendarContainer .date-label {position:absolute; top:0; left:0; z-index:2; font-size:.8rem; padding:2px;}
+  #calendarContainer .turni-container {flex:1; display:flex; flex-direction:column; margin-top:20px;}
+  #calendarContainer .week-row.multi-events .turni-container {margin-top:40px;}
   #calendarContainer .turno {flex:1; display:flex; align-items:center; justify-content:center; font-size:.8rem; position:relative; overflow:hidden;}
   #calendarContainer .turno.event a {color:inherit; text-decoration:none; width:100%; display:block; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;}
   #calendarContainer .turno .bambini {position:absolute; bottom:0; right:0; font-size:.6rem; padding:0 2px;}
   #pillContainer .pill.active {outline:2px solid #fff;}
   #calendarContainer .day-cell.multi-selected {outline:2px solid #0d6efd;}
   #calendarContainer .week-row {position:relative;}
-  #calendarContainer .multi-event {position:absolute; top:0; height:20px; display:flex; align-items:center; justify-content:center; font-size:.8rem; overflow:hidden; border-radius:4px;}
+  #calendarContainer .multi-event {position:absolute; top:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:.8rem; overflow:hidden; border-radius:4px;}
   #calendarContainer .multi-event a {color:inherit; text-decoration:none; width:100%; display:block; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;}
 </style>
 <div id="shifter" class="d-flex flex-column min-vh-100 p-0">

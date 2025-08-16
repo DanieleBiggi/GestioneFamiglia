@@ -23,7 +23,8 @@ $stmt = $conn->prepare('SELECT t.id, t.data, t.id_tipo,
     t.id_utenti_bambini, t.note,
     tp.descrizione, tp.colore_bg, tp.colore_testo
     FROM turni_calendario t JOIN turni_tipi tp ON t.id_tipo = tp.id
-    WHERE t.id_famiglia = ? AND t.data BETWEEN ? AND ? ORDER BY t.data');
+    WHERE t.id_famiglia = ? AND t.data BETWEEN ? AND ?
+    ORDER BY t.data, IF(t.ora_inizio = "00:00:00", tp.ora_inizio, t.ora_inizio)');
 $stmt->bind_param('iss', $idFamiglia, $start, $end);
 $stmt->execute();
 $res = $stmt->get_result();
