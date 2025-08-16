@@ -20,6 +20,15 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderCalendar(year, month, turni, eventi){
     calendarContainer.innerHTML = '';
     const dateCells = {};
+    const singleEvents = {};
+    const multiEvents = [];
+    eventi.forEach(ev=>{
+      if(!ev.data_fine || ev.data_fine===ev.data_evento){
+        (singleEvents[ev.data_evento] = singleEvents[ev.data_evento] || []).push(ev);
+      }else{
+        multiEvents.push(ev);
+      }
+    });
     const headers = ['LUN','MAR','MER','GIO','VEN','SAB','DOM'];
     const headerRow = document.createElement('div');
     headerRow.className = 'row row-cols-7 g-0 text-center fw-bold';
@@ -56,12 +65,14 @@ document.addEventListener('DOMContentLoaded', () => {
       col.dataset.date=dateStr;
       col.dataset.index=colIndex;
       const dateLabel=document.createElement('div');
-      dateLabel.className='small text-start p-1';
+      dateLabel.className='date-label small';
       dateLabel.textContent=day;
       col.appendChild(dateLabel);
       const info=turni[dateStr];
+      const dayEvents=singleEvents[dateStr]||[];
       const turniContainer=document.createElement('div');
       turniContainer.className='turni-container';
+      const items=[];
       if(info){
         info.forEach(t=>{
           const turno=document.createElement('div');
@@ -82,9 +93,18 @@ document.addEventListener('DOMContentLoaded', () => {
             b.textContent=t.iniziali_bambini;
             turno.appendChild(b);
           }
-          turniContainer.appendChild(turno);
+          items.push({time:t.ora_inizio, el:turno});
         });
       }
+      dayEvents.forEach(ev=>{
+        const evento=document.createElement('div');
+        evento.className='turno event';
+        evento.style.background=ev.colore || '#6c757d';
+        evento.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}" class="text-white text-decoration-none">${ev.titolo}</a>`;
+        items.push({time:ev.data_evento.slice(11,19), el:evento});
+      });
+      items.sort((a,b)=>a.time.localeCompare(b.time));
+      items.forEach(it=>turniContainer.appendChild(it.el));
       col.appendChild(turniContainer);
       dateCells[dateStr]={cell:col,row:row,index:colIndex};
       const t=new Date();
@@ -100,20 +120,9 @@ document.addEventListener('DOMContentLoaded', () => {
       row.appendChild(col);
     }
     calendarContainer.appendChild(row);
-    eventi.forEach(ev=>{
+    multiEvents.forEach(ev=>{
       const start=new Date(ev.data_evento);
       const end=ev.data_fine?new Date(ev.data_fine):start;
-      if(!ev.data_fine || ev.data_fine===ev.data_evento){
-        const info=dateCells[ev.data_evento];
-        if(info){
-          const turno=document.createElement('div');
-          turno.className='turno event';
-          turno.style.background=ev.colore || '#6c757d';
-          turno.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}" class="text-white text-decoration-none">${ev.titolo}</a>`;
-          info.cell.querySelector('.turni-container').appendChild(turno);
-        }
-        return;
-      }
       let segStart=new Date(start);
       while(segStart<=end){
         const segStartStr=segStart.toISOString().slice(0,10);
@@ -132,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
         bar.style.width=(spanDays/7*100)+'%';
         bar.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}">${ev.titolo}</a>`;
         rowEl.appendChild(bar);
+        rowEl.classList.add('multi-events');
         segStart.setDate(segEnd.getDate()+1);
       }
     });
