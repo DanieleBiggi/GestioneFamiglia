@@ -5,12 +5,13 @@ require_once 'includes/permissions.php';
 if (!has_permission($conn, 'page:turni_tipi.php', 'view')) { http_response_code(403); exit('Accesso negato'); }
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$allowedColors = ['#a4bdfc', '#7ae7bf', '#dbadff', '#ff887c', '#fbd75b', '#ffb878', '#46d6db', '#e1e1e1', '#5484ed', '#51b749'];
 $data = [
     'id' => 0,
     'descrizione' => '',
     'ora_inizio' => '',
     'ora_fine' => '',
-    'colore_bg' => '#ffffff',
+    'colore_bg' => $allowedColors[0],
     'colore_testo' => '#000000',
     'attivo' => 1
 ];
@@ -44,6 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $oraInizio = $_POST['ora_inizio'] ?? '';
     $oraFine = $_POST['ora_fine'] ?? '';
     $coloreBg = $_POST['colore_bg'] ?? '';
+    if (!in_array($coloreBg, $allowedColors, true)) {
+        $coloreBg = $allowedColors[0];
+    }
     $coloreTesto = $_POST['colore_testo'] ?? '';
     $attivo = isset($_POST['attivo']) ? 1 : 0;
     if ($id > 0) {
@@ -82,7 +86,11 @@ include 'includes/header.php';
   </div>
   <div class="mb-3">
     <label class="form-label">Colore sfondo</label>
-    <input type="color" name="colore_bg" class="form-control form-control-color" value="<?= htmlspecialchars($data['colore_bg']) ?>" title="Scegli colore">
+    <select name="colore_bg" class="form-select">
+      <?php foreach ($allowedColors as $color): ?>
+        <option value="<?= $color ?>" style="background-color: <?= $color ?>; color: #000;" <?= $data['colore_bg'] === $color ? 'selected' : '' ?>><?= $color ?></option>
+      <?php endforeach; ?>
+    </select>
   </div>
   <div class="mb-3">
     <label class="form-label">Colore testo</label>
