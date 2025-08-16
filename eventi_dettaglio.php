@@ -111,6 +111,24 @@ $resSE = $stmtSE->get_result();
 while ($row = $resSE->fetch_assoc()) { $salvEt[] = $row; }
 $stmtSE->close();
 
+// Calcolo importi e totale finanze
+$finanze = [];
+$totaleFinanze = 0.0;
+foreach ($salvEt as $row) {
+    $importo = 0.0;
+    if (!empty($row['id_salvadanaio'])) {
+        $stmtBud = $conn->prepare('SELECT SUM(importo) AS totale FROM budget WHERE id_famiglia = ? AND id_salvadanaio = ?');
+        $stmtBud->bind_param('ii', $famiglia, $row['id_salvadanaio']);
+        $stmtBud->execute();
+        $resBud = $stmtBud->get_result();
+        $importo = (float)($resBud->fetch_assoc()['totale'] ?? 0);
+        $stmtBud->close();
+    }
+    $totaleFinanze += $importo;
+    $row['importo'] = $importo;
+    $finanze[] = $row;
+}
+
 // Salvadanai disponibili
 $salvadanaiTutti = [];
 $resSalvAll = $conn->query('SELECT id_salvadanaio, nome_salvadanaio FROM salvadanai ORDER BY nome_salvadanaio');
@@ -230,34 +248,30 @@ include 'includes/header.php';
     </div>
     <button type="button" class="btn btn-outline-light btn-sm" id="addSeBtn">Aggiungi</button>
   </div>
+  <div class="text-end fw-bold mb-2">Totale <?= number_format($totaleFinanze,2,',','.') ?> &euro;</div>
   <ul class="list-group list-group-flush bg-dark" id="seList">
-    <?php foreach ($salvEt as $idx => $row): ?>
+    <?php foreach ($finanze as $idx => $row): ?>
       <li class="list-group-item bg-dark text-white <?= $idx >= 3 ? 'd-none extra-row' : '' ?> se-row"
           data-id="<?= (int)$row['id_e2se'] ?>"
           data-id-salvadanaio="<?= (int)($row['id_salvadanaio'] ?? 0) ?>"
           data-id-etichetta="<?= (int)($row['id_etichetta'] ?? 0) ?>">
-        <?php
-          $nomeSal = $row['nome_salvadanaio'] ?? '';
-          $nomeEt  = $row['etichetta'] ?? '';
-          echo htmlspecialchars($nomeSal);
-          if($nomeSal && $nomeEt) echo ' - ';
-          echo htmlspecialchars($nomeEt);
-
-          if(!empty($row['id_salvadanaio'])){
-            $stmtBud = $conn->prepare('SELECT descrizione, importo FROM budget WHERE id_famiglia = ? AND id_salvadanaio = ?');
-            $stmtBud->bind_param('ii', $famiglia, $row['id_salvadanaio']);
-            $stmtBud->execute();
-            $resBud = $stmtBud->get_result();
-            while ($b = $resBud->fetch_assoc()) {
-              echo '<div class="small text-secondary">'.htmlspecialchars($b['descrizione']).': '.number_format((float)$b['importo'],2,',','.').' &euro;</div>';
+        <span class="importo me-2"><?= number_format((float)$row['importo'],2,',','.') ?> &euro;</span>
+        <span class="descrizione">
+          <?php
+            $parts = [];
+            if(!empty($row['id_salvadanaio'])){
+              $parts[] = '<a href="budget_anno.php?id_salvadanaio='.(int)$row['id_salvadanaio'].'" class="text-white">'.htmlspecialchars($row['nome_salvadanaio'] ?? '').'</a>';
             }
-            $stmtBud->close();
-          }
-        ?>
+            if(!empty($row['id_etichetta'])){
+              $parts[] = '<a href="etichetta.php?id_etichetta='.(int)$row['id_etichetta'].'" class="text-white">'.htmlspecialchars($row['etichetta'] ?? '').'</a>';
+            }
+            echo implode(' - ', $parts);
+          ?>
+        </span>
       </li>
     <?php endforeach; ?>
   </ul>
-    <?php if (count($salvEt) > 3): ?>
+    <?php if (count($finanze) > 3): ?>
       <div class="text-center mt-3">
         <button id="toggleSe" class="btn btn-outline-light btn-sm">Mostra tutti</button>
       </div>
@@ -636,6 +650,7 @@ include 'includes/header.php';
 #invitatiList .list-group-item,
 #ciboList .list-group-item,
 #seList .list-group-item { padding: 0.25rem 0.5rem; }
+#seList .importo { min-width: 80px; text-align: right; display: inline-block; }
 #luoghiList .luogo-row { cursor: pointer; }
 #invitatiList .inv-row { cursor: pointer; }
 #ciboList .cibo-row { cursor: pointer; }
