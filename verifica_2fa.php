@@ -1,9 +1,12 @@
 <?php
 session_start();
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 include 'includes/db.php';
 
 if (!isset($_SESSION['2fa_user_id'])) {
-    header('Location: login.php');
+    header('Location: /Gestionale25/login.php');
     exit;
 }
 
@@ -43,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $themeStmt->close();
 
         unset($_SESSION['2fa_user_id'], $_SESSION['2fa_user_nome'], $_SESSION['2fa_attempts'], $_SESSION['2fa_id_famiglia_gestione']);
-        header('Location: setup_passcode.php');
+        header('Location: /Gestionale25/setup_passcode.php');
         exit;
     } else {
         if ($_SESSION['2fa_attempts'] >= 5) {
@@ -77,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <button type="submit" class="btn btn-primary">Verifica</button>
       </form>
       <?php else: ?>
-        <a href="login.php" class="btn btn-primary">Torna al login</a>
+        <a href="/Gestionale25/login.php" class="btn btn-primary">Torna al login</a>
       <?php endif; ?>
     </div>
   </div>

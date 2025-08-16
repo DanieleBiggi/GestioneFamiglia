@@ -10,7 +10,15 @@
   <link rel="stylesheet" href="/Gestionale25/includes/theme.php">
   <link rel="stylesheet" href="/Gestionale25/assets/style.css">
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
-  <link rel="manifest" href="/Gestionale25/manifest.webmanifest">
+  <link rel="manifest" href="/Gestionale25/manifest.json">
+  <script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/Gestionale25/service-worker.js?ver=v3-2024-08-16', { scope: '/Gestionale25/' })
+      .catch(console.error);
+  });
+}
+  </script>
 </head>
 <body>
 <?php 

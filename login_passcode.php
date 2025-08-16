@@ -1,9 +1,12 @@
 <?php
 session_start();
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 include 'includes/db.php';
 
 if (!isset($_COOKIE['device_token'])) {
-    header('Location: login.php?scelta_login=1');
+    header('Location: /Gestionale25/login.php?scelta_login=1');
     exit;
 }
 
@@ -13,12 +16,12 @@ $stmt->bind_param('s', $token);
 $stmt->execute();
 $res = $stmt->get_result();
 if ($res->num_rows !== 1) {
-    header('Location: login.php?scelta_login=1');
+    header('Location: /Gestionale25/login.php?scelta_login=1');
     exit;
 }
 $device = $res->fetch_assoc();
 if (($device['user_agent'] ?? '') !== ($_SERVER['HTTP_USER_AGENT'] ?? '')) {
-    header('Location: login.php?scelta_login=1');
+    header('Location: /Gestionale25/login.php?scelta_login=1');
     exit;
 }
 
@@ -72,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $upd = $conn->prepare('UPDATE dispositivi_riconosciuti SET scadenza = ? WHERE token_dispositivo = ?');
                 $upd->bind_param('ss', $newExp, $token);
                 $upd->execute();
-                header('Location: index.php');
+                header('Location: /Gestionale25/index.php');
                 exit;
             } else {
                 $attempts = (int)$user['passcode_attempts'] + 1;
@@ -102,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="card bg-dark text-white p-4">
       <h4 class="mb-3">Login rapido</h4>
       <?php if ($error): ?>
-        <div class="alert alert-danger"><?= $error ?> <a href="login.php?scelta_login" class="alert-link">Login classico</a></div>
+        <div class="alert alert-danger"><?= $error ?> <a href="/Gestionale25/login.php?scelta_login=1" class="alert-link">Login classico</a></div>
       <?php else: ?>
       <form method="POST" action="login_passcode.php">
         <div class="mb-3">
@@ -111,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <button type="submit" class="btn btn-primary">Accedi</button>
       </form><br>
-        <a href="login.php?scelta_login" class="btn btn-link text-light">Login con utente e password</a>
+        <a href="/Gestionale25/login.php?scelta_login=1" class="btn btn-link text-light">Login con utente e password</a>
       <?php endif; ?>
     </div>
   </div>
