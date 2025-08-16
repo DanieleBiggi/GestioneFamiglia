@@ -11,6 +11,12 @@ $tipi = $tipiRes ? $tipiRes->fetch_all(MYSQLI_ASSOC) : [];
 $bambiniRes = $conn->query("SELECT u.id, COALESCE(NULLIF(u.soprannome,''), CONCAT(u.nome,' ',u.cognome)) AS nome FROM utenti u JOIN utenti2famiglie uf ON u.id = uf.id_utente WHERE uf.id_famiglia = $idFamiglia ORDER BY nome");
 $bambini = $bambiniRes ? $bambiniRes->fetch_all(MYSQLI_ASSOC) : [];
 $syncRes = $conn->query("SELECT DISTINCT DATE_FORMAT(data, '%Y-%m') AS ym FROM turni_calendario WHERE id_famiglia = $idFamiglia AND (data_ultima_sincronizzazione IS NULL OR aggiornato_il > data_ultima_sincronizzazione) ORDER BY ym");
+$canInsertEvento = has_permission($conn, 'table:eventi', 'insert');
+$eventTipiRes = $conn->query('SELECT id, tipo_evento FROM eventi_tipi_eventi ORDER BY tipo_evento');
+$eventTipi = $eventTipiRes ? $eventTipiRes->fetch_all(MYSQLI_ASSOC) : [];
+$famRes = $conn->query('SELECT id_famiglia, nome_famiglia FROM famiglie ORDER BY nome_famiglia');
+$famiglie = $famRes ? $famRes->fetch_all(MYSQLI_ASSOC) : [];
+$famigliaDefault = $idFamiglia;
 $unsyncedMonths = [];
 if ($syncRes) {
     setlocale(LC_TIME, 'it_IT.UTF-8');
@@ -122,11 +128,73 @@ $needSync = !empty($unsyncedMonths);
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
         <button type="button" class="btn btn-primary" id="saveTurno">Salva</button>
       </div>
-    </div>
+</div>
+</div>
+</div>
+<?php if ($canInsertEvento): ?>
+<div class="modal fade" id="eventoModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="eventoForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Nuovo evento</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Titolo</label>
+          <input type="text" name="titolo" class="form-control bg-secondary text-white" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Descrizione</label>
+          <textarea name="descrizione" class="form-control bg-secondary text-white"></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Data</label>
+          <input type="date" name="data_evento" class="form-control bg-secondary text-white">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Ora</label>
+          <input type="time" name="ora_evento" class="form-control bg-secondary text-white">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Data fine</label>
+          <input type="date" name="data_fine" class="form-control bg-secondary text-white">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Ora fine</label>
+          <input type="time" name="ora_fine" class="form-control bg-secondary text-white">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Tipo evento</label>
+          <select name="id_tipo_evento" class="form-select bg-secondary text-white">
+            <option value="">-- nessuno --</option>
+            <?php foreach ($eventTipi as $tipo): ?>
+              <option value="<?= (int)$tipo['id'] ?>"><?= htmlspecialchars($tipo['tipo_evento']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Famiglie</label>
+          <?php foreach ($famiglie as $fam): ?>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="famiglie[]" id="fam<?= (int)$fam['id_famiglia'] ?>" value="<?= (int)$fam['id_famiglia'] ?>" <?= $fam['id_famiglia'] == $famigliaDefault ? 'checked' : '' ?>>
+              <label class="form-check-label" for="fam<?= (int)$fam['id_famiglia'] ?>"><?= htmlspecialchars($fam['nome_famiglia']) ?></label>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary w-100">Salva</button>
+      </div>
+    </form>
   </div>
 </div>
+<?php endif; ?>
 <script>
   const turniTipi = <?= json_encode($tipi) ?>;
 </script>
 <script src="js/turni.js"></script>
+<?php if ($canInsertEvento): ?>
+<script src="js/eventi.js"></script>
+<?php endif; ?>
 <?php include 'includes/footer.php'; ?>

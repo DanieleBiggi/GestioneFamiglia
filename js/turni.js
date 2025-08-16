@@ -185,12 +185,16 @@ document.addEventListener('DOMContentLoaded', () => {
   calendarContainer.addEventListener('click', e=>{
     if(e.target.closest('a')) return;
     const turnoEl = e.target.closest('.turno');
-    if(!multiMode && selectedType===null && turnoEl && !turnoEl.classList.contains('event')){
-      openEditModal(turnoEl);
+    const cell = e.target.closest('.day-cell');
+    if(!multiMode && selectedType===null){
+      if(turnoEl && !turnoEl.classList.contains('event')){
+        openEditModal(turnoEl);
+      }else if(cell && !turnoEl && typeof openEventoModal === 'function'){
+        openEventoModal(cell.dataset.date);
+      }
       return;
     }
     if(multiMode) return;
-    const cell=e.target.closest('.day-cell');
     if(!cell || selectedType===null) return;
     const date=cell.dataset.date;
     const payload = selectedType==='delete' ? {date} : {date,id_tipo:selectedType};
