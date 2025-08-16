@@ -330,6 +330,19 @@ try {
 
                 if (isset($eventiByGcId[$gcId])) {
                     $dbId = $eventiByGcId[$gcId];
+
+                    // If the event already has a type set, do not override it
+                    $tipoStmt = $conn->prepare('SELECT id_tipo_evento FROM eventi WHERE id=?');
+                    if ($tipoStmt) {
+                        $tipoStmt->bind_param('i', $dbId);
+                        $tipoStmt->execute();
+                        $tipoRes = $tipoStmt->get_result();
+                        if ($tipoRes && ($tipoRow = $tipoRes->fetch_assoc()) && $tipoRow['id_tipo_evento'] !== null) {
+                            $idTipoEvento = null;
+                        }
+                        $tipoStmt->close();
+                    }
+
                     $upd = $conn->prepare('UPDATE eventi SET titolo=?, data_evento=?, ora_evento=?,data_fine=?, ora_fine=?, descrizione=?, id_tipo_evento=IFNULL(?, id_tipo_evento), creator_email=? WHERE id=?');
                     $upd->bind_param('ssssssisi', $summary, $date, $time, $data_fine, $ora_fine, $description, $idTipoEvento, $creatorEmail, $dbId);
                     $upd->execute();
