@@ -24,8 +24,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('#ciboList .extra-row').forEach(el=>el.classList.toggle('d-none'));
     this.textContent = this.textContent === 'Mostra tutti' ? 'Mostra meno' : 'Mostra tutti';
   });
-  document.getElementById('toggleSe')?.addEventListener('click', function(){
-    document.querySelectorAll('#seList .extra-row').forEach(el=>el.classList.toggle('d-none'));
+  document.getElementById('toggleSalv')?.addEventListener('click', function(){
+    document.querySelectorAll('#salvList .extra-row').forEach(el=>el.classList.toggle('d-none'));
+    this.textContent = this.textContent === 'Mostra tutti' ? 'Mostra meno' : 'Mostra tutti';
+  });
+  document.getElementById('toggleEt')?.addEventListener('click', function(){
+    document.querySelectorAll('#etList .extra-row').forEach(el=>el.classList.toggle('d-none'));
     this.textContent = this.textContent === 'Mostra tutti' ? 'Mostra meno' : 'Mostra tutti';
   });
 
@@ -116,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // apertura modal modifica salvadanaio/etichetta
-  document.querySelectorAll('#seList .se-row').forEach(li => {
+  document.querySelectorAll('#salvList .se-row, #etList .se-row').forEach(li => {
     li.addEventListener('click', () => {
       const form = document.getElementById('seForm');
       form.id_e2se.value = li.dataset.id;

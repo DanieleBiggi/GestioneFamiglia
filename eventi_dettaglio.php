@@ -102,14 +102,23 @@ $resCd = $stmtCd->get_result();
 while ($row = $resCd->fetch_assoc()) { $ciboDisponibile[] = $row; }
 $stmtCd->close();
 
-// Salvadanai ed etichette collegati all'evento
-$salvEt = [];
-$stmtSE = $conn->prepare("SELECT e2se.id_e2se, s.nome_salvadanaio, b.descrizione AS etichetta, e2se.id_salvadanaio, e2se.id_etichetta FROM eventi_eventi2salvadanai_etichette e2se LEFT JOIN salvadanai s ON e2se.id_salvadanaio = s.id_salvadanaio LEFT JOIN bilancio_etichette b ON e2se.id_etichetta = b.id_etichetta WHERE e2se.id_evento = ? ORDER BY s.nome_salvadanaio, b.descrizione");
-$stmtSE->bind_param('i', $id);
-$stmtSE->execute();
-$resSE = $stmtSE->get_result();
-while ($row = $resSE->fetch_assoc()) { $salvEt[] = $row; }
-$stmtSE->close();
+// Salvadanaio collegati all'evento
+$salvadanaiEvento = [];
+$stmtSal = $conn->prepare("SELECT e2se.id_e2se, s.nome_salvadanaio, e2se.id_salvadanaio FROM eventi_eventi2salvadanai_etichette e2se LEFT JOIN salvadanai s ON e2se.id_salvadanaio = s.id_salvadanaio WHERE e2se.id_evento = ? AND e2se.id_salvadanaio IS NOT NULL ORDER BY s.nome_salvadanaio");
+$stmtSal->bind_param('i', $id);
+$stmtSal->execute();
+$resSal = $stmtSal->get_result();
+while ($row = $resSal->fetch_assoc()) { $salvadanaiEvento[] = $row; }
+$stmtSal->close();
+
+// Etichette collegate all'evento
+$etichetteEvento = [];
+$stmtEt = $conn->prepare("SELECT e2se.id_e2se, b.descrizione AS etichetta, e2se.id_etichetta FROM eventi_eventi2salvadanai_etichette e2se LEFT JOIN bilancio_etichette b ON e2se.id_etichetta = b.id_etichetta WHERE e2se.id_evento = ? AND e2se.id_etichetta IS NOT NULL ORDER BY b.descrizione");
+$stmtEt->bind_param('i', $id);
+$stmtEt->execute();
+$resEt = $stmtEt->get_result();
+while ($row = $resEt->fetch_assoc()) { $etichetteEvento[] = $row; }
+$stmtEt->close();
 
 // Salvadanai disponibili
 $salvadanaiTutti = [];
@@ -230,60 +239,81 @@ include 'includes/header.php';
     </div>
     <button type="button" class="btn btn-outline-light btn-sm" id="addSeBtn">Aggiungi</button>
   </div>
-  <ul class="list-group list-group-flush bg-dark" id="seList">
-    <?php foreach ($salvEt as $idx => $row): ?>
-      <li class="list-group-item bg-dark text-white <?= $idx >= 3 ? 'd-none extra-row' : '' ?> se-row"
-          data-id="<?= (int)$row['id_e2se'] ?>"
-          data-id-salvadanaio="<?= (int)($row['id_salvadanaio'] ?? 0) ?>"
-          data-id-etichetta="<?= (int)($row['id_etichetta'] ?? 0) ?>">
-           
-        <?php
-          $nomeSal = $row['nome_salvadanaio'] ?? '';
-          $nomeEt  = $row['etichetta'] ?? '';
-          echo '<a href="budget_anno.php?id_salvadanaio='.(int)$row['id_salvadanaio'].'" class="text-white">'.htmlspecialchars($nomeSal).'</a>';
-          if($nomeSal && $nomeEt) echo ' - ';
-          echo htmlspecialchars($nomeEt);
-
-          if(!empty($row['id_salvadanaio'])){
-            $stmtBud = $conn->prepare('SELECT descrizione, importo FROM budget WHERE id_famiglia = ? AND id_salvadanaio = ?');
-            $stmtBud->bind_param('ii', $famiglia, $row['id_salvadanaio']);
-            $stmtBud->execute();
-            $resBud = $stmtBud->get_result();
-            $totale = 0;
-            while ($b = $resBud->fetch_assoc()) {
-                $totale += $b['importo'];
-              //echo '<div class="small text-secondary">'.htmlspecialchars($b['descrizione']).': '.number_format((float)$b['importo'],2,',','.').' &euro;</div>';
+  <div class="row" id="finanzeLists">
+    <div class="col-lg-6">
+      <ul class="list-group list-group-flush bg-dark" id="salvList">
+        <?php foreach ($salvadanaiEvento as $idx => $row): ?>
+          <li class="list-group-item bg-dark text-white <?= $idx >= 3 ? 'd-none extra-row' : '' ?> se-row"
+              data-id="<?= (int)$row['id_e2se'] ?>"
+              data-id-salvadanaio="<?= (int)$row['id_salvadanaio'] ?>"
+              data-id-etichetta="0">
+            <?php
+              echo '<a href="budget_anno.php?id_salvadanaio='.(int)$row['id_salvadanaio'].'" class="text-white">'.htmlspecialchars($row['nome_salvadanaio'] ?? '').'</a>';
+              $stmtBud = $conn->prepare('SELECT descrizione, importo FROM budget WHERE id_famiglia = ? AND id_salvadanaio = ?');
+              $stmtBud->bind_param('ii', $famiglia, $row['id_salvadanaio']);
+              $stmtBud->execute();
+              $resBud = $stmtBud->get_result();
+              $totale = 0;
+              while ($b = $resBud->fetch_assoc()) {
+                  $totale += $b['importo']; ?>
+                  <div class="small text-secondary">
+                    <span class="importo me-2"><?= number_format((float)$b['importo'],2,',','.') ?> &euro;</span>
+                    <span class="descrizione"><?= htmlspecialchars($b['descrizione'] ?? '') ?></span>
+                  </div>
+              <?php }
               ?>
               <div class="small text-secondary">
-              <span class="importo me-2"><?= number_format((float)$b['importo'],2,',','.') ?> &euro;</span>
-                <span class="descrizione">
-                  <?php
-                	echo htmlspecialchars($b['descrizione'] ?? '');
-                  ?>
-                </span>
-                </div>
-              <?php
-            }
-            ?>
-            <div class="small text-secondary">
-              <span class="importo me-2"><b><?= number_format((float)$totale,2,',','.') ?> &euro;</b></span>
-                <span class="descrizione">
-                  Totale
-                </span>
-            </div>
+                <span class="importo me-2"><b><?= number_format((float)$totale,2,',','.') ?> &euro;</b></span>
+                <span class="descrizione">Totale</span>
+              </div>
+              <?php $stmtBud->close(); ?>
+          </li>
+        <?php endforeach; ?>
+      </ul>
+      <?php if (count($salvadanaiEvento) > 3): ?>
+        <div class="text-center mt-3">
+          <button id="toggleSalv" class="btn btn-outline-light btn-sm">Mostra tutti</button>
+        </div>
+      <?php endif; ?>
+    </div>
+    <div class="col-lg-6 mt-4 mt-lg-0">
+      <ul class="list-group list-group-flush bg-dark" id="etList">
+        <?php foreach ($etichetteEvento as $idx => $row): ?>
+          <li class="list-group-item bg-dark text-white <?= $idx >= 3 ? 'd-none extra-row' : '' ?> se-row"
+              data-id="<?= (int)$row['id_e2se'] ?>"
+              data-id-salvadanaio="0"
+              data-id-etichetta="<?= (int)$row['id_etichetta'] ?>">
+            <?= htmlspecialchars($row['etichetta'] ?? '') ?>
             <?php
-            $stmtBud->close();
-          }
-        ?>
-      </li>
-    <?php endforeach; ?>
-  </ul>
-    <?php if (count($salvEt) > 3): ?>
-      <div class="text-center mt-3">
-        <button id="toggleSe" class="btn btn-outline-light btn-sm">Mostra tutti</button>
-      </div>
-    <?php endif; ?>
-    <button type="button" class="btn btn-danger w-100 mt-4" id="deleteEventoBtn" data-id="<?= (int)$id ?>">Elimina</button>
+              $stmtMov = $conn->prepare("SELECT COALESCE(e2o.importo, CASE WHEN e2o.tabella_operazione='bilancio_entrate' THEN be.importo WHEN e2o.tabella_operazione='bilancio_uscite' THEN -bu.importo WHEN e2o.tabella_operazione='movimenti_revolut' THEN mr.amount ELSE 0 END) AS importo, COALESCE(e2o.descrizione_extra, CASE WHEN e2o.tabella_operazione='bilancio_entrate' THEN COALESCE(NULLIF(be.descrizione_extra,''), be.descrizione_operazione) WHEN e2o.tabella_operazione='bilancio_uscite' THEN COALESCE(NULLIF(bu.descrizione_extra,''), bu.descrizione_operazione) WHEN e2o.tabella_operazione='movimenti_revolut' THEN COALESCE(NULLIF(mr.descrizione_extra,''), mr.description) ELSE '' END) AS descrizione FROM bilancio_etichette2operazioni e2o LEFT JOIN bilancio_entrate be ON e2o.tabella_operazione='bilancio_entrate' AND e2o.id_tabella=be.id_entrata LEFT JOIN bilancio_uscite bu ON e2o.tabella_operazione='bilancio_uscite' AND e2o.id_tabella=bu.id_uscita LEFT JOIN movimenti_revolut mr ON e2o.tabella_operazione='movimenti_revolut' AND e2o.id_tabella=mr.id_movimento_revolut WHERE e2o.id_etichetta=?");
+              $stmtMov->bind_param('i', $row['id_etichetta']);
+              $stmtMov->execute();
+              $resMov = $stmtMov->get_result();
+              $totale = 0;
+              while ($m = $resMov->fetch_assoc()) {
+                  $totale += $m['importo']; ?>
+                  <div class="small text-secondary">
+                    <span class="importo me-2"><?= number_format((float)$m['importo'],2,',','.') ?> &euro;</span>
+                    <span class="descrizione"><?= htmlspecialchars($m['descrizione'] ?? '') ?></span>
+                  </div>
+              <?php }
+              ?>
+              <div class="small text-secondary">
+                <span class="importo me-2"><b><?= number_format((float)$totale,2,',','.') ?> &euro;</b></span>
+                <span class="descrizione">Totale</span>
+              </div>
+              <?php $stmtMov->close(); ?>
+          </li>
+        <?php endforeach; ?>
+      </ul>
+      <?php if (count($etichetteEvento) > 3): ?>
+        <div class="text-center mt-3">
+          <button id="toggleEt" class="btn btn-outline-light btn-sm">Mostra tutti</button>
+        </div>
+      <?php endif; ?>
+    </div>
+  </div>
+  <button type="button" class="btn btn-danger w-100 mt-4" id="deleteEventoBtn" data-id="<?= (int)$id ?>">Elimina</button>
   </div>
 
   <?php if ($canUpdate): ?>
@@ -656,12 +686,13 @@ include 'includes/header.php';
 #luoghiList .list-group-item,
 #invitatiList .list-group-item,
 #ciboList .list-group-item,
-#seList .list-group-item { padding: 0.25rem 0.5rem; }
-#seList .importo { min-width: 80px; text-align: right; display: inline-block; }
+#salvList .list-group-item,
+#etList .list-group-item { padding: 0.25rem 0.5rem; }
+#salvList .importo, #etList .importo { min-width: 80px; text-align: right; display: inline-block; }
 #luoghiList .luogo-row { cursor: pointer; }
 #invitatiList .inv-row { cursor: pointer; }
 #ciboList .cibo-row { cursor: pointer; }
-#seList .se-row { cursor: pointer; }
+#salvList .se-row, #etList .se-row { cursor: pointer; }
 </style>
 <script src="js/eventi_dettaglio.js"></script>
 <?php include 'includes/footer.php'; ?>
