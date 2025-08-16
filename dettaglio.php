@@ -96,9 +96,11 @@ $movimento['categoria_descrizione'] = sanitize_string($movimento['categoria_desc
 
 // Etichette disponibili
 $etichette = [];
-$res = $conn->query("SELECT id_etichetta, descrizione, attivo FROM bilancio_etichette ORDER BY attivo DESC, descrizione ASC");
+$res = $conn->query("SELECT id_etichetta, descrizione, attivo, anno, mese FROM bilancio_etichette ORDER BY attivo DESC, descrizione ASC");
 while ($row = $res->fetch_assoc()) {
   $row['attivo'] = (int)$row['attivo'];
+  $row['anno'] = $row['anno'] !== null ? (int)$row['anno'] : null;
+  $row['mese'] = $row['mese'] !== null ? (int)$row['mese'] : null;
   $etichette[] = $row;
 }
 
@@ -491,12 +493,20 @@ function renderEtichetteList() {
   list.innerHTML = '';
   for (let e of etichette) {
     if (!mostraVecchie && e.attivo != 1) continue;
-    if (filtroEtichette && !e.descrizione.toLowerCase().includes(filtroEtichette)) continue;
+    let extra = '';
+    if (e.anno !== null && e.anno !== undefined) {
+      extra += e.anno;
+    }
+    if (e.mese !== null && e.mese !== undefined) {
+      extra += (extra ? '-' : '') + String(e.mese).padStart(2, '0');
+    }
+    const fullLabel = extra ? `${e.descrizione} (${extra})` : e.descrizione;
+    if (filtroEtichette && !fullLabel.toLowerCase().includes(filtroEtichette)) continue;
     const div = document.createElement('div');
     div.className = 'col form-check';
     div.innerHTML = `
       <input class="form-check-input" type="checkbox" id="et_${e.id_etichetta}" value="${e.id_etichetta}" ${selected.has(String(e.id_etichetta)) ? 'checked' : ''}>
-      <label class="form-check-label" for="et_${e.id_etichetta}">${e.descrizione}</label>
+      <label class="form-check-label" for="et_${e.id_etichetta}">${fullLabel}</label>
     `;
     list.appendChild(div);
   }
