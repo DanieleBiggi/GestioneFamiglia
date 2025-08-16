@@ -379,23 +379,25 @@ $salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
     </div>
 
     <script>
-    document.getElementById('addSeBtn')?.addEventListener('click', () => {
-      document.getElementById('addSeForm').reset();
-      new bootstrap.Modal(document.getElementById('addSeModal')).show();
-    });
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('addSeBtn')?.addEventListener('click', () => {
+        document.getElementById('addSeForm').reset();
+        new bootstrap.Modal(document.getElementById('addSeModal')).show();
+      });
 
-    document.getElementById('addSeForm')?.addEventListener('submit', function(e){
-      e.preventDefault();
-      const fd = new FormData(this);
-      fetch('ajax/add_e2se.php', {method:'POST', body:fd})
-        .then(r=>r.json())
-        .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
-    });
+      document.getElementById('addSeForm')?.addEventListener('submit', function(e){
+        e.preventDefault();
+        const fd = new FormData(this);
+        fetch('ajax/add_e2se.php', {method:'POST', body:fd})
+          .then(r=>r.json())
+          .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+      });
 
-    document.getElementById('showAllMovimenti')?.addEventListener('click', function(e){
-      e.preventDefault();
-      document.querySelectorAll('.extra-movimento').forEach(el => el.classList.remove('d-none'));
-      this.parentElement.remove();
+      document.getElementById('showAllMovimenti')?.addEventListener('click', function(e){
+        e.preventDefault();
+        document.querySelectorAll('.extra-movimento').forEach(el => el.classList.remove('d-none'));
+        this.parentElement.remove();
+      });
     });
 
     function deleteSe(btn){
