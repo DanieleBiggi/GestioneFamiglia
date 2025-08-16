@@ -38,7 +38,7 @@ return [
     ],
     'utenti' => [
         'primary_key' => 'id',
-        'columns' => ['id','username','nome','cognome','soprannome','email','id_famiglia_attuale','id_famiglia_gestione','id_tema','attivo']
+        'columns' => ['id','username','nome','cognome','soprannome','email','id_famiglia_attuale','id_famiglia_gestione','id_tema','attivo','disponibile_per_soso']
     ],
     'utenti2famiglie' => [
         'primary_key' => 'id_u2f',

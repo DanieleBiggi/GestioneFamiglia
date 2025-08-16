@@ -10,7 +10,7 @@ $table = 'utenti';
 $columns = $config[$table]['columns'];
 $primaryKey = $config[$table]['primary_key'];
 $displayColumns = array_values(array_filter($columns, fn($c) => $c !== $primaryKey));
-$booleanColumns = ['attivo'];
+$booleanColumns = ['attivo','disponibile_per_soso'];
 $lookups = [];
 foreach ($displayColumns as $col) {
     if (isset($foreignMap[$col])) {
