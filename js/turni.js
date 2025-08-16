@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const editModalEl = document.getElementById('turnoModal');
   const editModal = editModalEl ? new bootstrap.Modal(editModalEl) : null;
   const editForm = document.getElementById('turnoForm');
+  const loadingModalEl = document.getElementById('loadingModal');
+  const loadingModal = loadingModalEl ? new bootstrap.Modal(loadingModalEl) : null;
   let firstRender = true;
 
   function loadTurni(year, month){
@@ -278,6 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('nextMonth').addEventListener('click', ()=>{current.setMonth(current.getMonth()+1);loadTurni(current.getFullYear(),current.getMonth());});
 
   document.getElementById('btnGoogle').addEventListener('click', ()=>{
+    loadingModal && loadingModal.show();
     fetch('ajax/turni_sync_google.php',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -285,7 +288,8 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .then(r=>r.json())
     .then(res=>alert(res.message||'Operazione completata'))
-    .catch(()=>alert('Errore durante la sincronizzazione'));
+    .catch(()=>alert('Errore durante la sincronizzazione'))
+    .finally(()=>{ loadingModal && loadingModal.hide(); });
   });
 
   loadTurni(current.getFullYear(), current.getMonth());

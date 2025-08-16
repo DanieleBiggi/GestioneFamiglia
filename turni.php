@@ -187,9 +187,21 @@ $needSync = !empty($unsyncedMonths);
         <button type="submit" class="btn btn-primary w-100">Salva</button>
       </div>
     </form>
-  </div>
+</div>
 </div>
 <?php endif; ?>
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-body text-center">
+        <div class="spinner-border text-light" role="status">
+          <span class="visually-hidden">Caricamento...</span>
+        </div>
+        <div class="mt-2">Sincronizzazione in corso...</div>
+      </div>
+    </div>
+  </div>
+</div>
 <script>
   const turniTipi = <?= json_encode($tipi) ?>;
 </script>
