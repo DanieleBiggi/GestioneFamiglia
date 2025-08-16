@@ -17,6 +17,9 @@ if (!$theme) {
 }
 $rgb = sscanf($theme['text_color'], "#%02x%02x%02x");
 $textRgb = implode(',', $rgb);
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 header('Content-Type: text/css');
 ?>
 :root {
