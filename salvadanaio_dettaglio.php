@@ -67,7 +67,7 @@ if ($id > 0) {
     $resEv = $conn->query('SELECT id, titolo FROM eventi ORDER BY titolo');
     $eventiDisponibili = $resEv ? $resEv->fetch_all(MYSQLI_ASSOC) : [];
 
-    $resEt = $conn->query('SELECT id_etichetta, descrizione FROM bilancio_etichette ORDER BY descrizione');
+    $resEt = $conn->query('SELECT id_etichetta, descrizione, anno, mese FROM bilancio_etichette ORDER BY anno DESC, mese DESC, descrizione');
     $etichetteDisponibili = $resEt ? $resEt->fetch_all(MYSQLI_ASSOC) : [];
 
     $stmtBud = $conn->prepare('SELECT * FROM budget WHERE id_salvadanaio = ? ORDER BY data_inizio');
@@ -169,9 +169,15 @@ if ($id > 0): ?>
           <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Cerca">
           <select name="id_etichetta" id="seEtichetta" class="form-select bg-secondary text-white">
             <option value=""></option>
-            <?php foreach ($etichetteDisponibili as $et): ?>
-              <option value="<?= (int)$et['id_etichetta'] ?>"><?= htmlspecialchars($et['descrizione']) ?></option>
-            <?php endforeach; ?>
+              <?php foreach ($etichetteDisponibili as $et): ?>
+                <?php
+                  $label = $et['descrizione'];
+                  if ($et['anno'] !== null && $et['mese'] !== null) {
+                    $label .= ' (' . $et['anno'] . '-' . str_pad($et['mese'], 2, '0', STR_PAD_LEFT) . ')';
+                  }
+                ?>
+                <option value="<?= (int)$et['id_etichetta'] ?>"><?= htmlspecialchars($label) ?></option>
+              <?php endforeach; ?>
           </select>
         </div>
       </div>
@@ -207,9 +213,15 @@ if ($id > 0): ?>
           <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Cerca">
           <select name="id_etichetta" class="form-select bg-secondary text-white">
             <option value=""></option>
-            <?php foreach ($etichetteDisponibili as $et): ?>
-              <option value="<?= (int)$et['id_etichetta'] ?>"><?= htmlspecialchars($et['descrizione']) ?></option>
-            <?php endforeach; ?>
+              <?php foreach ($etichetteDisponibili as $et): ?>
+                <?php
+                  $label = $et['descrizione'];
+                  if ($et['anno'] !== null && $et['mese'] !== null) {
+                    $label .= ' (' . $et['anno'] . '-' . str_pad($et['mese'], 2, '0', STR_PAD_LEFT) . ')';
+                  }
+                ?>
+                <option value="<?= (int)$et['id_etichetta'] ?>"><?= htmlspecialchars($label) ?></option>
+              <?php endforeach; ?>
           </select>
         </div>
       </div>
