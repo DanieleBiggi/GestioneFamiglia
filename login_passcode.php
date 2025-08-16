@@ -3,7 +3,7 @@ session_start();
 include 'includes/db.php';
 
 if (!isset($_COOKIE['device_token'])) {
-    header('Location: login.php');
+    header('Location: login.php?scelta_login=1');
     exit;
 }
 
@@ -13,12 +13,12 @@ $stmt->bind_param('s', $token);
 $stmt->execute();
 $res = $stmt->get_result();
 if ($res->num_rows !== 1) {
-    header('Location: login.php');
+    header('Location: login.php?scelta_login=1');
     exit;
 }
 $device = $res->fetch_assoc();
 if (($device['user_agent'] ?? '') !== ($_SERVER['HTTP_USER_AGENT'] ?? '')) {
-    header('Location: login.php');
+    header('Location: login.php?scelta_login=1');
     exit;
 }
 
