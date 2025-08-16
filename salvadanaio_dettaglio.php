@@ -57,7 +57,7 @@ if ($id > 0) {
     }
     $stmt->close();
 
-    $stmtFin = $conn->prepare('SELECT e2se.id_e2se, e2se.id_evento, e2se.id_etichetta, e.titolo, b.descrizione AS etichetta FROM eventi_eventi2salvadanai_etichette e2se LEFT JOIN eventi e ON e2se.id_evento = e.id LEFT JOIN bilancio_etichette b ON e2se.id_etichetta = b.id_etichetta WHERE e2se.id_salvadanaio = ? ORDER BY e.titolo, b.descrizione');
+    $stmtFin = $conn->prepare('SELECT e2se.id_e2se, e2se.id_evento, e2se.id_etichetta, e.titolo, e.data_evento, e.data_fine, b.descrizione AS etichetta, b.anno, b.mese FROM eventi_eventi2salvadanai_etichette e2se LEFT JOIN eventi e ON e2se.id_evento = e.id LEFT JOIN bilancio_etichette b ON e2se.id_etichetta = b.id_etichetta WHERE e2se.id_salvadanaio = ? ORDER BY e.titolo, b.descrizione');
     $stmtFin->bind_param('i', $id);
     $stmtFin->execute();
     $resFin = $stmtFin->get_result();
@@ -101,8 +101,39 @@ if ($id > 0): ?>
           <?= $row['id_etichetta'] ? 'data-id-etichetta="' . (int)$row['id_etichetta'] . '"' : '' ?>>
         <?php
           $parts = [];
-          if (!empty($row['titolo'])) { $parts[] = htmlspecialchars($row['titolo']); }
-          if (!empty($row['etichetta'])) { $parts[] = htmlspecialchars($row['etichetta']); }
+          if (!empty($row['titolo'])) {
+              $eventText = htmlspecialchars($row['titolo']);
+              $dates = '';
+              if (!empty($row['data_evento'])) {
+                  $start = date('d/m/Y', strtotime($row['data_evento']));
+                  $end = '';
+                  if (!empty($row['data_fine']) && $row['data_fine'] !== $row['data_evento']) {
+                      $end = date('d/m/Y', strtotime($row['data_fine']));
+                  }
+                  $dates = $end ? "$start - $end" : $start;
+              }
+              $link = '<a href="eventi_dettaglio.php?id=' . (int)$row['id_evento'] . '" class="text-white">' . $eventText . '</a>';
+              if ($dates !== '') { $link .= ' (' . htmlspecialchars($dates) . ')'; }
+              $parts[] = $link;
+          }
+          if (!empty($row['etichetta'])) {
+              $label = htmlspecialchars($row['etichetta']);
+              $ym = '';
+              if (!empty($row['anno']) || !empty($row['mese'])) {
+                  $anno = $row['anno'] ?? null;
+                  $mese = $row['mese'] ?? null;
+                  if ($anno && $mese) {
+                      $ym = sprintf('%04d-%02d', $anno, $mese);
+                  } elseif ($anno) {
+                      $ym = sprintf('%04d', $anno);
+                  } else {
+                      $ym = sprintf('%02d', $mese);
+                  }
+              }
+              $labelLink = '<a href="etichetta.php?id_etichetta=' . (int)$row['id_etichetta'] . '" class="text-white">' . $label . '</a>';
+              if ($ym !== '') { $labelLink .= ' (' . htmlspecialchars($ym) . ')'; }
+              $parts[] = $labelLink;
+          }
           echo implode(' - ', $parts);
         ?>
       </li>
