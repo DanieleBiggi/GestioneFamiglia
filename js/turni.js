@@ -100,7 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const evento=document.createElement('div');
         evento.className='turno event';
         evento.style.background=ev.colore || '#6c757d';
-        evento.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}" class="text-white text-decoration-none">${ev.titolo}</a>`;
+        evento.style.color=ev.colore_testo || '#ffffff';
+        evento.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}" class="text-decoration-none">${ev.titolo}</a>`;
         items.push({time:ev.data_evento.slice(11,19), el:evento});
       });
       items.sort((a,b)=>a.time.localeCompare(b.time));
@@ -129,6 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const turno=document.createElement('div');
           turno.className='turno event';
           turno.style.background=ev.colore || '#6c757d';
+          turno.style.color=ev.colore_testo;
           const tCol=ev.colore_testo||'#ffffff';
           turno.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}" class="text-decoration-none" style="color:${tCol}">${ev.titolo}</a>`;
           info.cell.querySelector('.turni-container').appendChild(turno);
@@ -185,16 +187,12 @@ document.addEventListener('DOMContentLoaded', () => {
   calendarContainer.addEventListener('click', e=>{
     if(e.target.closest('a')) return;
     const turnoEl = e.target.closest('.turno');
-    const cell = e.target.closest('.day-cell');
-    if(!multiMode && selectedType===null){
-      if(turnoEl && !turnoEl.classList.contains('event')){
-        openEditModal(turnoEl);
-      }else if(cell && !turnoEl && typeof openEventoModal === 'function'){
-        openEventoModal(cell.dataset.date);
-      }
+    if(!multiMode && selectedType===null && turnoEl && !turnoEl.classList.contains('event')){
+      openEditModal(turnoEl);
       return;
     }
     if(multiMode) return;
+    const cell=e.target.closest('.day-cell');
     if(!cell || selectedType===null) return;
     const date=cell.dataset.date;
     const payload = selectedType==='delete' ? {date} : {date,id_tipo:selectedType};
