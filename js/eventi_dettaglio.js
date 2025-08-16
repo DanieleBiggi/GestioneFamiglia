@@ -195,18 +195,34 @@ document.addEventListener('DOMContentLoaded', () => {
     new bootstrap.Modal(document.getElementById('eventoModal')).show();
   });
 
-  document.getElementById('eventoForm')?.addEventListener('submit', function(e){
-    e.preventDefault();
-    const fd = new FormData(this);
-    fetch('ajax/update_evento.php', {method:'POST', body:fd})
-      .then(r=>r.json())
-      .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
-  });
+    document.getElementById('eventoForm')?.addEventListener('submit', function(e){
+      e.preventDefault();
+      const fd = new FormData(this);
+      fetch('ajax/update_evento.php', {method:'POST', body:fd})
+        .then(r=>r.json())
+        .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+    });
 
-  document.getElementById('addRuleBtn')?.addEventListener('click', function(){
-    if(!confirm('Salvare regola per questo evento?')) return;
-    const fd = new FormData();
-    fd.append('id_evento', this.dataset.id);
+    const deleteEventoBtn = document.getElementById('deleteEventoBtn');
+    const deleteEventoModalEl = document.getElementById('deleteEventoModal');
+    const confirmDeleteEventoBtn = document.getElementById('confirmDeleteEventoBtn');
+    let deleteEventoModal;
+    deleteEventoBtn?.addEventListener('click', () => {
+      if(!deleteEventoModal) deleteEventoModal = new bootstrap.Modal(deleteEventoModalEl);
+      deleteEventoModal.show();
+    });
+    confirmDeleteEventoBtn?.addEventListener('click', () => {
+      const fd = new FormData();
+      fd.append('id', deleteEventoBtn.dataset.id);
+      fetch('ajax/delete_evento.php', {method:'POST', body:fd})
+        .then(r=>r.json())
+        .then(res=>{ if(res.success) window.location.href = 'eventi.php'; else alert(res.error||'Errore'); });
+    });
+
+    document.getElementById('addRuleBtn')?.addEventListener('click', function(){
+      if(!confirm('Salvare regola per questo evento?')) return;
+      const fd = new FormData();
+      fd.append('id_evento', this.dataset.id);
     fetch('ajax/add_evento_google_rule.php', {method:'POST', body:fd})
       .then(r=>r.json())
       .then(res=>{
