@@ -26,10 +26,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-function openEventoModal(){
+function openEventoModal(date){
   const form = document.getElementById('eventoForm');
   if(form){
     form.reset();
+    if(date){
+      form.querySelector('[name="data_evento"]').value = date;
+    }
     new bootstrap.Modal(document.getElementById('eventoModal')).show();
   }
 }
