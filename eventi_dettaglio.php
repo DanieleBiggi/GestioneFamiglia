@@ -248,7 +248,7 @@ include 'includes/header.php';
               data-id-salvadanaio="<?= (int)$row['id_salvadanaio'] ?>"
               data-id-etichetta="0">
             <?php
-              echo '<a href="budget_anno.php?id_salvadanaio='.(int)$row['id_salvadanaio'].'" class="text-white">'.htmlspecialchars($row['nome_salvadanaio'] ?? '').'</a>';
+              echo '<a href="budget_anno.php?id_salvadanaio='.(int)$row['id_salvadanaio'].'&scadenza_da=&scadenza_a=" class="text-white">'.htmlspecialchars($row['nome_salvadanaio'] ?? '').'</a>';
               $stmtBud = $conn->prepare('SELECT descrizione, importo FROM budget WHERE id_famiglia = ? AND id_salvadanaio = ?');
               $stmtBud->bind_param('ii', $famiglia, $row['id_salvadanaio']);
               $stmtBud->execute();
@@ -283,7 +283,9 @@ include 'includes/header.php';
               data-id="<?= (int)$row['id_e2se'] ?>"
               data-id-salvadanaio="0"
               data-id-etichetta="<?= (int)$row['id_etichetta'] ?>">
-            <?= htmlspecialchars($row['etichetta'] ?? '') ?>
+              <?php
+               echo '<a href="etichetta.php?id_etichetta='.(int)$row['id_etichetta'].'" class="text-white">'.htmlspecialchars($row['etichetta'] ?? '').'</a>';
+             ?>
             <?php
               $stmtMov = $conn->prepare("SELECT COALESCE(e2o.importo, CASE WHEN e2o.tabella_operazione='bilancio_entrate' THEN be.importo WHEN e2o.tabella_operazione='bilancio_uscite' THEN -bu.importo WHEN e2o.tabella_operazione='movimenti_revolut' THEN mr.amount ELSE 0 END) AS importo, COALESCE(e2o.descrizione_extra, CASE WHEN e2o.tabella_operazione='bilancio_entrate' THEN COALESCE(NULLIF(be.descrizione_extra,''), be.descrizione_operazione) WHEN e2o.tabella_operazione='bilancio_uscite' THEN COALESCE(NULLIF(bu.descrizione_extra,''), bu.descrizione_operazione) WHEN e2o.tabella_operazione='movimenti_revolut' THEN COALESCE(NULLIF(mr.descrizione_extra,''), mr.description) ELSE '' END) AS descrizione FROM bilancio_etichette2operazioni e2o LEFT JOIN bilancio_entrate be ON e2o.tabella_operazione='bilancio_entrate' AND e2o.id_tabella=be.id_entrata LEFT JOIN bilancio_uscite bu ON e2o.tabella_operazione='bilancio_uscite' AND e2o.id_tabella=bu.id_uscita LEFT JOIN movimenti_revolut mr ON e2o.tabella_operazione='movimenti_revolut' AND e2o.id_tabella=mr.id_movimento_revolut WHERE e2o.id_etichetta=?");
               $stmtMov->bind_param('i', $row['id_etichetta']);
