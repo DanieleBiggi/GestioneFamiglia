@@ -195,7 +195,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if(multiMode) return;
     const cell=e.target.closest('.day-cell');
-    if(!cell || selectedType===null) return;
+    if(!cell) return;
+    if(selectedType===null){
+      if(typeof openEventoModal==='function'){
+        openEventoModal(cell.dataset.date);
+      }
+      return;
+    }
     const date=cell.dataset.date;
     const payload = selectedType==='delete' ? {date} : {date,id_tipo:selectedType};
     fetch('ajax/turni_update.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
