@@ -1028,6 +1028,22 @@ CREATE TABLE `turni_tipi` (
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `turni_sync_google_log`
+--
+
+CREATE TABLE `turni_sync_google_log` (
+  `id` int(11) NOT NULL,
+  `id_turno` int(11) DEFAULT NULL,
+  `id_evento` int(11) DEFAULT NULL,
+  `azione` varchar(50) NOT NULL,
+  `esito` enum('success','error') NOT NULL,
+  `messaggio` text,
+  `data_creazione` datetime DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `unita_misura`
 --
 
@@ -1619,6 +1635,14 @@ ALTER TABLE `turni_tipi`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indici per le tabelle `turni_sync_google_log`
+--
+ALTER TABLE `turni_sync_google_log`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `id_turno` (`id_turno`),
+  ADD KEY `id_evento` (`id_evento`);
+
+--
 -- Indici per le tabelle `unita_misura`
 --
 ALTER TABLE `unita_misura`
@@ -2053,6 +2077,12 @@ ALTER TABLE `turni_calendario`
 -- AUTO_INCREMENT per la tabella `turni_tipi`
 --
 ALTER TABLE `turni_tipi`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `turni_sync_google_log`
+--
+ALTER TABLE `turni_sync_google_log`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
