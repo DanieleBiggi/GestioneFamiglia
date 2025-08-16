@@ -257,15 +257,16 @@ include 'includes/header.php';
       </li>
     <?php endforeach; ?>
   </ul>
-  <?php if (count($salvEt) > 3): ?>
-    <div class="text-center mt-3">
-      <button id="toggleSe" class="btn btn-outline-light btn-sm">Mostra tutti</button>
-    </div>
-  <?php endif; ?>
-</div>
+    <?php if (count($salvEt) > 3): ?>
+      <div class="text-center mt-3">
+        <button id="toggleSe" class="btn btn-outline-light btn-sm">Mostra tutti</button>
+      </div>
+    <?php endif; ?>
+    <button type="button" class="btn btn-danger w-100 mt-4" id="deleteEventoBtn" data-id="<?= (int)$id ?>">Elimina</button>
+  </div>
 
-<?php if ($canUpdate): ?>
-<div class="modal fade" id="eventoModal" tabindex="-1">
+  <?php if ($canUpdate): ?>
+  <div class="modal fade" id="eventoModal" tabindex="-1">
   <div class="modal-dialog">
     <form class="modal-content bg-dark text-white" id="eventoForm">
       <div class="modal-header">
@@ -610,6 +611,23 @@ include 'includes/header.php';
         <button type="submit" class="btn btn-primary w-100">Aggiungi</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Modal elimina evento -->
+<div class="modal fade" id="deleteEventoModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-header">
+        <h5 class="modal-title">Conferma eliminazione</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">Sei sicuro di voler eliminare questo evento?</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteEventoBtn">Elimina</button>
+      </div>
+    </div>
   </div>
 </div>
 
