@@ -32,8 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
     li.addEventListener('click', () => {
       const form = document.getElementById('seForm');
       form.id_e2se.value = li.dataset.id;
-      form.id_evento.value = li.dataset.idEvento;
-      form.id_etichetta.value = li.dataset.idEtichetta;
+      form.id_evento.value = li.dataset.idEvento || '';
+      form.id_etichetta.value = li.dataset.idEtichetta || '';
       new bootstrap.Modal(document.getElementById('seModal')).show();
     });
   });
