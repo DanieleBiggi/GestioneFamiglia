@@ -55,4 +55,60 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(r=>r.json())
       .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
   });
+
+  const addBudgetBtn = document.getElementById('addBudgetBtn');
+  const budgetModalEl = document.getElementById('budgetModal');
+  const budgetForm = document.getElementById('budgetForm');
+  const budgetId = document.getElementById('budgetId');
+  const budgetDescrizione = document.getElementById('budgetDescrizione');
+  const budgetTipologia = document.getElementById('budgetTipologia');
+  const budgetTipologiaSpesa = document.getElementById('budgetTipologiaSpesa');
+  const budgetImporto = document.getElementById('budgetImporto');
+  const budgetDataInizio = document.getElementById('budgetDataInizio');
+  const budgetDataFine = document.getElementById('budgetDataFine');
+  const deleteBudgetBtn = document.getElementById('deleteBudget');
+  const budgetItems = Array.from(document.querySelectorAll('.budget-item'));
+  const budgetModal = (typeof bootstrap !== 'undefined' && budgetModalEl) ? new bootstrap.Modal(budgetModalEl) : null;
+
+  addBudgetBtn?.addEventListener('click', () => {
+    budgetForm?.reset();
+    if (budgetId) budgetId.value = '';
+    deleteBudgetBtn?.classList.add('d-none');
+    budgetModal?.show();
+  });
+
+  budgetItems.forEach(item => {
+    item.addEventListener('click', () => {
+      budgetForm?.reset();
+      if (budgetId) budgetId.value = item.dataset.id || '';
+      if (budgetDescrizione) budgetDescrizione.value = item.dataset.descrizione || '';
+      if (budgetTipologia) budgetTipologia.value = item.dataset.tipologia || '';
+      if (budgetTipologiaSpesa) budgetTipologiaSpesa.value = item.dataset.tipologiaSpesa || '';
+      if (budgetImporto) budgetImporto.value = item.dataset.importo || '';
+      if (budgetDataInizio) budgetDataInizio.value = item.dataset.inizio || '';
+      if (budgetDataFine) budgetDataFine.value = item.dataset.fine || '';
+      deleteBudgetBtn?.classList.remove('d-none');
+      budgetModal?.show();
+    });
+  });
+
+  budgetForm?.addEventListener('submit', e => {
+    e.preventDefault();
+    const fd = new FormData(budgetForm);
+    fd.append('action', 'save');
+    fetch('ajax/budget_manage.php', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+  });
+
+  deleteBudgetBtn?.addEventListener('click', () => {
+    const id = budgetId?.value;
+    if(!id || !confirm('Eliminare questo budget?')) return;
+    const fd = new FormData();
+    fd.append('id', id);
+    fd.append('action', 'delete');
+    fetch('ajax/budget_manage.php', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+  });
 });

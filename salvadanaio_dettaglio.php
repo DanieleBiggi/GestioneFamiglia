@@ -2,7 +2,19 @@
 <?php
 include 'includes/db.php';
 require_once 'includes/permissions.php';
+require_once 'includes/render_budget.php';
 if (!has_permission($conn, 'page:salvadanai.php', 'view')) { http_response_code(403); exit('Accesso negato'); }
+
+function getEnumValues(mysqli $conn, string $table, string $field): array {
+    $values = [];
+    $result = $conn->query("SHOW COLUMNS FROM {$table} LIKE '{$field}'");
+    if ($result && $row = $result->fetch_assoc()) {
+        if (preg_match("/^enum\\('(.*)'\\)$/", $row['Type'], $m)) {
+            $values = explode("','", $m[1]);
+        }
+    }
+    return $values;
+}
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -26,6 +38,9 @@ $data = [
 $finanze = [];
 $eventiDisponibili = [];
 $etichetteDisponibili = [];
+$budgets = [];
+$tipologie = [];
+$tipologieSpesa = [];
 
 if ($id > 0) {
     $stmt = $conn->prepare('SELECT * FROM salvadanai WHERE id_salvadanaio = ?');
@@ -54,6 +69,16 @@ if ($id > 0) {
 
     $resEt = $conn->query('SELECT id_etichetta, descrizione FROM bilancio_etichette ORDER BY descrizione');
     $etichetteDisponibili = $resEt ? $resEt->fetch_all(MYSQLI_ASSOC) : [];
+
+    $stmtBud = $conn->prepare('SELECT * FROM budget WHERE id_salvadanaio = ? ORDER BY data_inizio');
+    $stmtBud->bind_param('i', $id);
+    $stmtBud->execute();
+    $resBud = $stmtBud->get_result();
+    while ($rowBud = $resBud->fetch_assoc()) { $budgets[] = $rowBud; }
+    $stmtBud->close();
+
+    $tipologie = getEnumValues($conn, 'budget', 'tipologia');
+    $tipologieSpesa = getEnumValues($conn, 'budget', 'tipologia_spesa');
 }
 
 include 'includes/header.php';
@@ -78,6 +103,15 @@ if ($id > 0): ?>
       </li>
     <?php endforeach; ?>
   </ul>
+  <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+    <h5 class="mb-0">Budget</h5>
+    <button type="button" class="btn btn-outline-light btn-sm" id="addBudgetBtn">Aggiungi</button>
+  </div>
+  <div id="budgetList" class="list-group">
+    <?php foreach ($budgets as $row): ?>
+      <?php render_budget($row); ?>
+    <?php endforeach; ?>
+  </div>
 </div>
 
 <div class="modal fade" id="salvadanaioModal" tabindex="-1">
@@ -176,6 +210,59 @@ if ($id > 0): ?>
       </div>
       <div class="modal-footer">
         <button type="submit" class="btn btn-primary w-100">Aggiungi</button>
+      </div>
+    </form>
+</div>
+</div>
+
+<div class="modal fade" id="budgetModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="budgetForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Nuovo budget</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="id" id="budgetId">
+        <input type="hidden" name="id_salvadanaio" id="budgetSalvadanaio" value="<?= (int)$id ?>">
+        <div class="mb-3">
+          <label class="form-label">Descrizione</label>
+          <input type="text" name="descrizione" id="budgetDescrizione" class="form-control bg-secondary text-white" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Tipologia</label>
+          <select name="tipologia" id="budgetTipologia" class="form-select bg-secondary text-white">
+            <option value=""></option>
+            <?php foreach ($tipologie as $t): ?>
+              <option value="<?= htmlspecialchars($t) ?>"><?= ucfirst($t) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Tipologia spesa</label>
+          <select name="tipologia_spesa" id="budgetTipologiaSpesa" class="form-select bg-secondary text-white">
+            <option value=""></option>
+            <?php foreach ($tipologieSpesa as $ts): ?>
+              <option value="<?= htmlspecialchars($ts) ?>"><?= ucfirst(str_replace('_',' ', $ts)) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Importo</label>
+          <input type="number" step="0.01" name="importo" id="budgetImporto" class="form-control bg-secondary text-white" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Data inizio</label>
+          <input type="date" name="data_inizio" id="budgetDataInizio" class="form-control bg-secondary text-white">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Data fine</label>
+          <input type="date" name="data_scadenza" id="budgetDataFine" class="form-control bg-secondary text-white">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger me-auto" id="deleteBudget">Elimina</button>
+        <button type="submit" class="btn btn-primary">Salva</button>
       </div>
     </form>
   </div>
