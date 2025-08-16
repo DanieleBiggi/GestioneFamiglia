@@ -1,0 +1,12 @@
+# Forza HTTPS + www
+RewriteEngine On
+RewriteCond %{HTTPS} !=on [OR]
+RewriteCond %{HTTP_HOST} !^www\.gestionefamiglia\.it$ [NC]
+RewriteRule ^ https://www.gestionefamiglia.it%{REQUEST_URI} [L,R=301,NE]
+
+# Base
+RewriteBase /Gestionale25/
+
+# Entry point (apri /Gestionale25/ -> login.php)
+DirectoryIndex login.php
+RewriteRule ^$ login.php [L]

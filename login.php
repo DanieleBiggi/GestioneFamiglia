@@ -1,5 +1,8 @@
 <?php
 session_start();
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 require_once __DIR__ . '/libs/PHPMailer/PHPMailer.php';
 require_once __DIR__ . '/libs/PHPMailer/Exception.php';
 require_once __DIR__ . '/libs/PHPMailer/SMTP.php';
@@ -19,7 +22,7 @@ if (isset($_COOKIE['device_token'])) {
         $row = $res->fetch_assoc();
         // && ($row['ip'] ?? '') === ($_SERVER['REMOTE_ADDR'] ?? '')
         if (!isset($_GET['scelta_login']) && ($row['user_agent'] ?? '') === ($_SERVER['HTTP_USER_AGENT'] ?? '')) {
-            header('Location: login_passcode.php');
+            header('Location: /Gestionale25/login_passcode.php?from=login');
             exit;
         }
     }
@@ -90,7 +93,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION['2fa_user_id'] = $user['id'];
                 $_SESSION['2fa_user_nome'] = $user['nome'];
                 $_SESSION['2fa_attempts'] = 0;
-                header("Location: verifica_2fa.php");
+                header('Location: /Gestionale25/verifica_2fa.php');
                 exit;
             } catch (Exception $e) {
                 $error = "Errore nell'invio del codice.";
