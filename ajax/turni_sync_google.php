@@ -22,6 +22,13 @@ $month++; // convert to 1-based
 $periodStart = sprintf('%04d-%02d-01', $year, $month);
 $periodEnd   = date('Y-m-t', strtotime($periodStart));
 
+function log_sync(mysqli $conn, ?int $idTurno, ?int $idEvento, string $azione, string $esito, string $messaggio = ''): void {
+    $stmt = $conn->prepare('INSERT INTO turni_sync_google_log (id_turno, id_evento, azione, esito, messaggio) VALUES (?,?,?,?,?)');
+    $stmt->bind_param('iisss', $idTurno, $idEvento, $azione, $esito, $messaggio);
+    $stmt->execute();
+    $stmt->close();
+}
+
 // Query turni
 $stmt = $conn->prepare(
   'SELECT t.id, t.data, t.id_tipo, t.ora_inizio, t.ora_fine, t.google_calendar_eventid,
@@ -162,39 +169,48 @@ try {
     
     // Sync turni: DB -> Google Calendar
     foreach ($turni as $t) {
-        $date = $t['data'];
-        // orari dal turno, fallback al tipo
-        $startTime = $normTime($t['ora_inizio'] ?? null) ?: $normTime($t['tp_ora_inizio'] ?? null);
-        $endTime   = $normTime($t['ora_fine']   ?? null) ?: $normTime($t['tp_ora_fine']   ?? null);
+        try {
+            $date = $t['data'];
+            // orari dal turno, fallback al tipo
+            $startTime = $normTime($t['ora_inizio'] ?? null) ?: $normTime($t['tp_ora_inizio'] ?? null);
+            $endTime   = $normTime($t['ora_fine']   ?? null) ?: $normTime($t['tp_ora_fine']   ?? null);
 
-        if ($startTime && $endTime) {
-            $evStart = ['dateTime' => $date . 'T' . $startTime, 'timeZone' => $timeZone];
-            $evEnd   = ['dateTime' => $date . 'T' . $endTime,   'timeZone' => $timeZone];
-        } else {
-            $evStart = ['date' => $date];
-            $evEnd   = ['date' => $endAllDay($date)];
-        }
+            if ($startTime && $endTime) {
+                $evStart = ['dateTime' => $date . 'T' . $startTime, 'timeZone' => $timeZone];
+                $evEnd   = ['dateTime' => $date . 'T' . $endTime,   'timeZone' => $timeZone];
+            } else {
+                $evStart = ['date' => $date];
+                $evEnd   = ['date' => $endAllDay($date)];
+            }
 
-        $eventData = [
-            'summary' => $t['descrizione'],
-            'start'   => $evStart,
-            'end'     => $evEnd,
-        ];
+            $eventData = [
+                'summary' => $t['descrizione'],
+                'start'   => $evStart,
+                'end'     => $evEnd,
+            ];
 
-        $colBg = strtolower($t['colore_bg']);
-        if (isset($colorMap[$colBg])) {
-            $eventData['colorId'] = $colorMap[$colBg];
-        }
+            $colBg = strtolower($t['colore_bg']);
+            if (isset($colorMap[$colBg])) {
+                $eventData['colorId'] = $colorMap[$colBg];
+            }
 
-        if (!empty($t['google_calendar_eventid'])) {
-            try {
-                $service->events->patch($calendarIdTurni, $t['google_calendar_eventid'], new Google_Service_Calendar_Event($eventData));
-                $upd = $conn->prepare('UPDATE turni_calendario SET data_ultima_sincronizzazione=NOW() WHERE id=?');
-                $upd->bind_param('i', $t['id']);
-                $upd->execute();
-                $upd->close();
-            } catch (Google_Service_Exception $e) {
-                if ($e->getCode() != 404) throw $e;
+            if (!empty($t['google_calendar_eventid'])) {
+                try {
+                    $service->events->patch($calendarIdTurni, $t['google_calendar_eventid'], new Google_Service_Calendar_Event($eventData));
+                    $upd = $conn->prepare('UPDATE turni_calendario SET data_ultima_sincronizzazione=NOW() WHERE id=?');
+                    $upd->bind_param('i', $t['id']);
+                    $upd->execute();
+                    $upd->close();
+                } catch (Google_Service_Exception $e) {
+                    if ($e->getCode() != 404) throw $e;
+                    $created = $service->events->insert($calendarIdTurni, new Google_Service_Calendar_Event($eventData));
+                    $newId = $created->getId();
+                    $upd = $conn->prepare('UPDATE turni_calendario SET google_calendar_eventid=?, data_ultima_sincronizzazione=NOW() WHERE id=?');
+                    $upd->bind_param('si', $newId, $t['id']);
+                    $upd->execute();
+                    $upd->close();
+                }
+            } else {
                 $created = $service->events->insert($calendarIdTurni, new Google_Service_Calendar_Event($eventData));
                 $newId = $created->getId();
                 $upd = $conn->prepare('UPDATE turni_calendario SET google_calendar_eventid=?, data_ultima_sincronizzazione=NOW() WHERE id=?');
@@ -202,19 +218,16 @@ try {
                 $upd->execute();
                 $upd->close();
             }
-        } else {
-            $created = $service->events->insert($calendarIdTurni, new Google_Service_Calendar_Event($eventData));
-            $newId = $created->getId();
-            $upd = $conn->prepare('UPDATE turni_calendario SET google_calendar_eventid=?, data_ultima_sincronizzazione=NOW() WHERE id=?');
-            $upd->bind_param('si', $newId, $t['id']);
-            $upd->execute();
-            $upd->close();
+            log_sync($conn, (int)$t['id'], null, 'turno_db_to_google', 'success', '');
+        } catch (Exception $e) {
+            log_sync($conn, (int)$t['id'], null, 'turno_db_to_google', 'error', $e->getMessage());
         }
     }
 
     // Insert DB eventi without calendar id into Google Calendar
     foreach ($eventiDb as $e) {
         if (empty($e['google_calendar_eventid'])) {
+            try {
             $date        = $e['data_evento'];
             $evtStartTime = $normTime($e['ora_evento'] ?? null);
             $evtEndTime   = $normTime($e['ora_fine']   ?? null);
@@ -255,8 +268,12 @@ try {
             $upd->execute();
             $upd->close();
             $eventiByGcId[$gcId] = $e['id'];
+            log_sync($conn, null, (int)$e['id'], 'evento_db_to_google', 'success', '');
+        } catch (Exception $ex) {
+            log_sync($conn, null, (int)$e['id'], 'evento_db_to_google', 'error', $ex->getMessage());
         }
     }
+}
 
     // Fetch Google Calendar events and sync to DB
     $params = [
@@ -268,14 +285,16 @@ try {
     while (true) {
         foreach ($gEvents->getItems() as $gEvent) {
             $gcId = $gEvent->getId();
-            $summary = $gEvent->getSummary();
-            $startObj = $gEvent->getStart();
-            $endObj = $gEvent->getEnd();
-            $creatorEmail = '';
-            $creatorObj = $gEvent->getCreator();
-            if ($creatorObj) { $creatorEmail = $creatorObj->getEmail(); }
-            $description = $gEvent->getDescription();
-            $textMatch = trim(($summary ?? '') . ' ' . ($description ?? ''));
+            $eventId = null;
+            try {
+                $summary = $gEvent->getSummary();
+                $startObj = $gEvent->getStart();
+                $endObj = $gEvent->getEnd();
+                $creatorEmail = '';
+                $creatorObj = $gEvent->getCreator();
+                if ($creatorObj) { $creatorEmail = $creatorObj->getEmail(); }
+                $description = $gEvent->getDescription();
+                $textMatch = trim(($summary ?? '') . ' ' . ($description ?? ''));
 
             $matchedRules = [];
             foreach ($rules as $rule) {
@@ -309,43 +328,49 @@ try {
                 $ora_fine = null;
             }
 
-            if (isset($eventiByGcId[$gcId])) {
-                $dbId = $eventiByGcId[$gcId];
-                $upd = $conn->prepare('UPDATE eventi SET titolo=?, data_evento=?, ora_evento=?,data_fine=?, ora_fine=?, descrizione=?, id_tipo_evento=IFNULL(?, id_tipo_evento), creator_email=? WHERE id=?');
-                $upd->bind_param('ssssssisi', $summary, $date, $time, $data_fine, $ora_fine, $description, $idTipoEvento, $creatorEmail, $dbId);
-                $upd->execute();
-                $upd->close();
-                $eventId = $dbId;
-            } else {
-                $ins = $conn->prepare('INSERT INTO eventi (titolo, data_evento, ora_evento, data_fine, ora_fine, descrizione, id_tipo_evento, google_calendar_eventid, creator_email) VALUES (?,?,?,?,?,?,?,?,?)');
-                $ins->bind_param('ssssssiss', $summary, $date, $time, $data_fine, $ora_fine, $description, $idTipoEvento, $gcId, $creatorEmail);
-                $ins->execute();
-                $newId = $ins->insert_id;
-                $ins->close();
+                if (isset($eventiByGcId[$gcId])) {
+                    $dbId = $eventiByGcId[$gcId];
+                    $upd = $conn->prepare('UPDATE eventi SET titolo=?, data_evento=?, ora_evento=?,data_fine=?, ora_fine=?, descrizione=?, id_tipo_evento=IFNULL(?, id_tipo_evento), creator_email=? WHERE id=?');
+                    $upd->bind_param('ssssssisi', $summary, $date, $time, $data_fine, $ora_fine, $description, $idTipoEvento, $creatorEmail, $dbId);
+                    $upd->execute();
+                    $upd->close();
+                    $eventId = $dbId;
+                } else {
+                    $ins = $conn->prepare('INSERT INTO eventi (titolo, data_evento, ora_evento, data_fine, ora_fine, descrizione, id_tipo_evento, google_calendar_eventid, creator_email) VALUES (?,?,?,?,?,?,?,?,?)');
+                    $ins->bind_param('ssssssiss', $summary, $date, $time, $data_fine, $ora_fine, $description, $idTipoEvento, $gcId, $creatorEmail);
+                    $ins->execute();
+                    $newId = $ins->insert_id;
+                    $ins->close();
 
-                $link = $conn->prepare('INSERT INTO eventi_eventi2famiglie (id_evento, id_famiglia) VALUES (?,?)');
-                $link->bind_param('ii', $newId, $idFamiglia);
-                $link->execute();
-                $link->close();
-                $eventId = $newId;
-            }
+                    $link = $conn->prepare('INSERT INTO eventi_eventi2famiglie (id_evento, id_famiglia) VALUES (?,?)');
+                    $link->bind_param('ii', $newId, $idFamiglia);
+                    $link->execute();
+                    $link->close();
+                    $eventId = $newId;
+                }
 
-            if (!empty($matchedRules) && isset($eventId)) {
-                foreach ($matchedRules as $rule) {
-                    foreach ($rule['invitati'] as $idInv) {
-                        $chk = $conn->prepare('SELECT 1 FROM eventi_eventi2invitati WHERE id_evento=? AND id_invitato=?');
-                        $chk->bind_param('ii', $eventId, $idInv);
-                        $chk->execute();
-                        $exists = $chk->get_result()->num_rows > 0;
-                        $chk->close();
-                        if (!$exists) {
-                            $insInv = $conn->prepare('INSERT INTO eventi_eventi2invitati (id_evento, id_invitato) VALUES (?,?)');
-                            $insInv->bind_param('ii', $eventId, $idInv);
-                            $insInv->execute();
-                            $insInv->close();
+                if (!empty($matchedRules) && isset($eventId)) {
+                    foreach ($matchedRules as $rule) {
+                        foreach ($rule['invitati'] as $idInv) {
+                            $chk = $conn->prepare('SELECT 1 FROM eventi_eventi2invitati WHERE id_evento=? AND id_invitato=?');
+                            $chk->bind_param('ii', $eventId, $idInv);
+                            $chk->execute();
+                            $exists = $chk->get_result()->num_rows > 0;
+                            $chk->close();
+                            if (!$exists) {
+                                $insInv = $conn->prepare('INSERT INTO eventi_eventi2invitati (id_evento, id_invitato) VALUES (?,?)');
+                                $insInv->bind_param('ii', $eventId, $idInv);
+                                $insInv->execute();
+                                $insInv->close();
+                            }
                         }
                     }
                 }
+
+                log_sync($conn, null, $eventId, 'evento_google_to_db', 'success', '');
+            } catch (Exception $e) {
+                $refId = $eventId ?? ($eventiByGcId[$gcId] ?? null);
+                log_sync($conn, null, $refId, 'evento_google_to_db', 'error', $e->getMessage());
             }
         }
         $pageToken = $gEvents->getNextPageToken();
@@ -360,5 +385,6 @@ try {
 
     echo json_encode(['success' => true, 'message' => 'Sincronizzazione completata']);
 } catch (Exception $e) {
+    log_sync($conn, null, null, 'general', 'error', $e->getMessage());
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

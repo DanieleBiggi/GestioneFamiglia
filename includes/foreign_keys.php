@@ -39,6 +39,16 @@ return [
         'table' => 'userlevels',
         'key'   => 'userlevelid',
         'label' => 'userlevelname'
+    ],
+    'id_turno' => [
+        'table' => 'turni_calendario',
+        'key'   => 'id',
+        'label' => 'data'
+    ],
+    'id_evento' => [
+        'table' => 'eventi',
+        'key'   => 'id',
+        'label' => 'titolo'
     ]
 ];
 ?>

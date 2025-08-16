@@ -47,6 +47,10 @@ return [
     'utenti2ip' => [
         'primary_key' => 'id_u2i',
         'columns' => ['id_u2i','id_utente','ip_address']
+    ],
+    'turni_sync_google_log' => [
+        'primary_key' => 'id',
+        'columns' => ['id','id_turno','id_evento','azione','esito','messaggio','data_creazione']
     ]
 ];
 ?>
