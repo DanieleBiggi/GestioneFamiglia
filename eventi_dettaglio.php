@@ -120,6 +120,14 @@ $resEt = $stmtEt->get_result();
 while ($row = $resEt->fetch_assoc()) { $etichetteEvento[] = $row; }
 $stmtEt->close();
 
+$hasHidden = false;
+$etichetteIds = array_column($etichetteEvento, 'id_etichetta');
+if ($etichetteIds) {
+    $ids = implode(',', array_map('intval', $etichetteIds));
+    $resHidden = $conn->query("SELECT 1 FROM bilancio_etichette2operazioni WHERE id_etichetta IN ($ids) AND escludi_da_finanze_evento = 1 LIMIT 1");
+    $hasHidden = $resHidden && $resHidden->num_rows > 0;
+}
+
 // Salvadanai disponibili
 $salvadanaiTutti = [];
 $resSalvAll = $conn->query('SELECT id_salvadanaio, nome_salvadanaio FROM salvadanai ORDER BY nome_salvadanaio');
@@ -237,7 +245,12 @@ include 'includes/header.php';
     <div class="d-flex align-items-center">
       <h5 class="mb-0 me-3">Finanze</h5>
     </div>
-    <button type="button" class="btn btn-outline-light btn-sm" id="addSeBtn">Aggiungi</button>
+    <div class="d-flex align-items-center">
+      <button type="button" class="btn btn-outline-light btn-sm" id="addSeBtn">Aggiungi</button>
+      <?php if ($hasHidden): ?>
+        <button type="button" class="btn btn-outline-light btn-sm ms-2" id="toggleHiddenFinBtn">Mostra nascoste</button>
+      <?php endif; ?>
+    </div>
   </div>
   <div class="row" id="finanzeLists">
     <div class="col-lg-6">
@@ -304,12 +317,10 @@ include 'includes/header.php';
                       $totale += $m['importo'];
                   }
                   ?>
-                  <div class="small text-secondary d-flex align-items-center<?= (int)$m['escludi_da_finanze_evento'] ? ' text-decoration-line-through' : '' ?>">
+                  <div class="small text-secondary d-flex align-items-center<?= (int)$m['escludi_da_finanze_evento'] ? ' fin-hidden d-none text-decoration-line-through' : '' ?>">
                     <span class="importo me-2"><?= number_format((float)$m['importo'],2,',','.') ?> &euro;</span>
                     <span class="descrizione flex-grow-1"><?= htmlspecialchars($m['descrizione'] ?? '') ?></span>
-                    <button class="btn btn-sm btn-outline-light toggle-finanze" data-id="<?= (int)$m['id_e2o'] ?>" data-escludi="<?= (int)$m['escludi_da_finanze_evento'] ?>">
-                      <?= (int)$m['escludi_da_finanze_evento'] ? 'Mostra' : 'Nascondi' ?>
-                    </button>
+                    <i class="bi <?= (int)$m['escludi_da_finanze_evento'] ? 'bi-eye-slash' : 'bi-eye' ?> toggle-finanze ms-2" data-id="<?= (int)$m['id_e2o'] ?>" data-escludi="<?= (int)$m['escludi_da_finanze_evento'] ?>" style="cursor:pointer"></i>
                   </div>
               <?php }
               ?>

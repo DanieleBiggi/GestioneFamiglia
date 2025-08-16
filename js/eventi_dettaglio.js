@@ -83,6 +83,11 @@ document.addEventListener('DOMContentLoaded', () => {
     new bootstrap.Modal(document.getElementById('addSeModal')).show();
   });
 
+  document.getElementById('toggleHiddenFinBtn')?.addEventListener('click', function(){
+    document.querySelectorAll('.fin-hidden').forEach(el=>el.classList.toggle('d-none'));
+    this.textContent = this.textContent === 'Mostra nascoste' ? 'Nascondi nascoste' : 'Mostra nascoste';
+  });
+
   document.getElementById('addSeForm')?.addEventListener('submit', function(e){
     e.preventDefault();
     const fd = new FormData(this);
