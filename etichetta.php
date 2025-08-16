@@ -213,7 +213,8 @@ function tipo_label($t) {
 
 // Finanze collegate all'etichetta
 $finanze = [];
-$stmtSe = $conn->prepare("SELECT e2se.id_e2se, e.id AS id_evento, e.titolo, s.id_salvadanaio, s.nome_salvadanaio
+$stmtSe = $conn->prepare("SELECT e2se.id_e2se, e.id AS id_evento, e.titolo, e.data_evento, e.data_fine,
+                                 s.id_salvadanaio, s.nome_salvadanaio
                           FROM eventi_eventi2salvadanai_etichette e2se
                           JOIN eventi e ON e.id = e2se.id_evento
                           JOIN salvadanai s ON s.id_salvadanaio = e2se.id_salvadanaio
@@ -579,8 +580,25 @@ $salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
     <?php if (!empty($finanze)): ?>
     <ul class="list-group list-group-flush bg-dark" id="seList">
       <?php foreach ($finanze as $row): ?>
+        <?php
+          $periodoEvento = '';
+          if (!empty($row['data_evento'])) {
+              $periodoEvento = date('d/m/Y', strtotime($row['data_evento']));
+              if (!empty($row['data_fine']) && $row['data_fine'] !== $row['data_evento']) {
+                  $periodoEvento .= ' - ' . date('d/m/Y', strtotime($row['data_fine']));
+              }
+          }
+        ?>
         <li class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center">
-          <span><?= htmlspecialchars($row['titolo']) ?> - <?= htmlspecialchars($row['nome_salvadanaio']) ?></span>
+          <span>
+            <a href="eventi_dettaglio.php?id=<?= (int)$row['id_evento'] ?>" class="text-white text-decoration-none">
+              <?= htmlspecialchars($row['titolo']) ?><?= $periodoEvento ? ' (' . $periodoEvento . ')' : '' ?>
+            </a>
+            -
+            <a href="salvadanaio_dettaglio.php?id=<?= (int)$row['id_salvadanaio'] ?>" class="text-white text-decoration-none">
+              <?= htmlspecialchars($row['nome_salvadanaio']) ?>
+            </a>
+          </span>
           <button type="button" class="btn btn-sm btn-danger" data-id="<?= (int)$row['id_e2se'] ?>" onclick="deleteSe(this)">&times;</button>
         </li>
       <?php endforeach; ?>
