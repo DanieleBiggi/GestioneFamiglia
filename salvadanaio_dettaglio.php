@@ -57,7 +57,7 @@ if ($id > 0) {
     }
     $stmt->close();
 
-    $stmtFin = $conn->prepare('SELECT e2se.id_e2se, e2se.id_evento, e2se.id_etichetta, e.titolo, b.descrizione AS etichetta FROM eventi_eventi2salvadanai_etichette e2se JOIN eventi e ON e2se.id_evento = e.id JOIN bilancio_etichette b ON e2se.id_etichetta = b.id_etichetta WHERE e2se.id_salvadanaio = ? ORDER BY e.titolo, b.descrizione');
+    $stmtFin = $conn->prepare('SELECT e2se.id_e2se, e2se.id_evento, e2se.id_etichetta, e.titolo, b.descrizione AS etichetta FROM eventi_eventi2salvadanai_etichette e2se LEFT JOIN eventi e ON e2se.id_evento = e.id LEFT JOIN bilancio_etichette b ON e2se.id_etichetta = b.id_etichetta WHERE e2se.id_salvadanaio = ? ORDER BY e.titolo, b.descrizione');
     $stmtFin->bind_param('i', $id);
     $stmtFin->execute();
     $resFin = $stmtFin->get_result();
@@ -97,9 +97,14 @@ if ($id > 0): ?>
     <?php foreach ($finanze as $row): ?>
       <li class="list-group-item bg-dark text-white se-row"
           data-id="<?= (int)$row['id_e2se'] ?>"
-          data-id-evento="<?= (int)$row['id_evento'] ?>"
-          data-id-etichetta="<?= (int)$row['id_etichetta'] ?>">
-        <?= htmlspecialchars($row['titolo']) ?> - <?= htmlspecialchars($row['etichetta']) ?>
+          <?= $row['id_evento'] ? 'data-id-evento="' . (int)$row['id_evento'] . '"' : '' ?>
+          <?= $row['id_etichetta'] ? 'data-id-etichetta="' . (int)$row['id_etichetta'] . '"' : '' ?>>
+        <?php
+          $parts = [];
+          if (!empty($row['titolo'])) { $parts[] = htmlspecialchars($row['titolo']); }
+          if (!empty($row['etichetta'])) { $parts[] = htmlspecialchars($row['etichetta']); }
+          echo implode(' - ', $parts);
+        ?>
       </li>
     <?php endforeach; ?>
   </ul>
