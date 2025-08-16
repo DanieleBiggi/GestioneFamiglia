@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   const search = document.getElementById('search');
+  if (search) {
   const cards = Array.from(document.querySelectorAll('.event-card'));
   function filter() {
     const q = search.value.trim().toLowerCase();
@@ -13,8 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-  search.addEventListener('input', filter);
-  filter();
+    
+      search.addEventListener('input', filter);
+    
+    filter();
+    }
 
   const form = document.getElementById('eventoForm');
   form?.addEventListener('submit', function(e){
