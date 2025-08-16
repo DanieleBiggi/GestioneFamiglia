@@ -12,12 +12,13 @@
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
   <link rel="manifest" href="/Gestionale25/manifest.json">
   <script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/Gestionale25/service-worker.js?ver=v4-2025-08-16', { scope: '/Gestionale25/' })
-      .catch(console.error);
-  });
-}
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker
+        .register('/Gestionale25/service-worker.js?ver=network', { scope: '/Gestionale25/' })
+        .catch(console.error);
+    });
+  }
   </script>
 </head>
 <body>
