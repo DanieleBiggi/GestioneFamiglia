@@ -63,7 +63,7 @@ include 'includes/header.php';
   <a href="javascript:history.back()" class="btn btn-outline-light mb-3">&larr; Indietro</a>
   <h4 class="mb-4"><?= $id > 0 ? 'Modifica tipo evento' : 'Nuovo tipo evento' ?></h4>
 </div>
-<form method="post" class="bg-dark text-white p-3 rounded">
+<form id="eventoTipoForm" method="post" class="bg-dark text-white p-3 rounded">
   <div class="mb-3">
     <label class="form-label">Tipo evento</label>
     <input type="text" name="tipo_evento" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['tipo_evento']) ?>" required>
@@ -83,11 +83,31 @@ include 'includes/header.php';
   <?php if ($id > 0): ?>
     <input type="hidden" name="id" value="<?= (int)$data['id'] ?>">
   <?php endif; ?>
-  <div class="d-flex">
-    <?php if ($id > 0): ?>
-    <button type="submit" name="delete" value="1" class="btn btn-danger me-auto">Elimina</button>
-    <?php endif; ?>
-    <button type="submit" class="btn btn-primary ms-auto">Salva</button>
+    <div class="d-flex">
+      <?php if ($id > 0): ?>
+      <button type="button" class="btn btn-danger me-auto" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal">Elimina</button>
+      <?php endif; ?>
+      <button type="submit" class="btn btn-primary ms-auto">Salva</button>
+    </div>
+  </form>
+
+  <!-- Modal conferma eliminazione -->
+  <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content bg-dark text-white">
+        <div class="modal-header border-secondary">
+          <h5 class="modal-title" id="confirmDeleteLabel">Conferma eliminazione</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+        </div>
+        <div class="modal-body">
+          Sei sicuro di voler eliminare questo tipo di evento?
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+          <button type="submit" form="eventoTipoForm" name="delete" value="1" class="btn btn-danger">Elimina</button>
+        </div>
+      </div>
+    </div>
   </div>
-</form>
-<?php include 'includes/footer.php'; ?>
+
+  <?php include 'includes/footer.php'; ?>
