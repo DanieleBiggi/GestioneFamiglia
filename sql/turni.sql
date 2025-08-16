@@ -1,6 +1,8 @@
 CREATE TABLE turni_tipi (
     id INT AUTO_INCREMENT PRIMARY KEY,
     descrizione VARCHAR(100) NOT NULL,
+    ora_inizio TIME DEFAULT NULL,
+    ora_fine TIME DEFAULT NULL,
     colore_bg VARCHAR(7) NOT NULL,
     colore_testo VARCHAR(7) NOT NULL DEFAULT '#000000',
     attivo TINYINT(1) NOT NULL DEFAULT 1

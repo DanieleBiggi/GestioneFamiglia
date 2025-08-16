@@ -42,8 +42,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     $descrizione = $_POST['descrizione'] ?? '';
-    $oraInizio = $_POST['ora_inizio'] ?? '';
-    $oraFine = $_POST['ora_fine'] ?? '';
+    $oraInizio = trim($_POST['ora_inizio'] ?? '');
+    $oraInizio = $oraInizio !== '' ? $oraInizio : null;
+    $oraFine = trim($_POST['ora_fine'] ?? '');
+    $oraFine = $oraFine !== '' ? $oraFine : null;
     $coloreBg = $_POST['colore_bg'] ?? '';
     if (!in_array($coloreBg, $allowedColors, true)) {
         $coloreBg = $allowedColors[0];
@@ -78,11 +80,11 @@ include 'includes/header.php';
   </div>
   <div class="mb-3">
     <label class="form-label">Ora inizio</label>
-    <input type="time" name="ora_inizio" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['ora_inizio']) ?>" required>
+    <input type="time" name="ora_inizio" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['ora_inizio'] ?? '') ?>">
   </div>
   <div class="mb-3">
     <label class="form-label">Ora fine</label>
-    <input type="time" name="ora_fine" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['ora_fine']) ?>" required>
+    <input type="time" name="ora_fine" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['ora_fine'] ?? '') ?>">
   </div>
   <div class="mb-3">
     <label class="form-label">Colore sfondo</label>
