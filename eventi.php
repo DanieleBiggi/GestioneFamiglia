@@ -6,7 +6,7 @@ if (!has_permission($conn, 'page:eventi.php', 'view')) { http_response_code(403)
 require_once 'includes/render_evento.php';
 include 'includes/header.php';
 
-$stmt = $conn->prepare("SELECT e.*, t.tipo_evento, t.colore FROM eventi e LEFT JOIN eventi_tipi_eventi t ON e.id_tipo_evento = t.id ORDER BY e.data_evento DESC, e.ora_evento DESC");
+$stmt = $conn->prepare("SELECT e.*, t.tipo_evento, t.colore, t.colore_testo FROM eventi e LEFT JOIN eventi_tipi_eventi t ON e.id_tipo_evento = t.id ORDER BY e.data_evento DESC, e.ora_evento DESC");
 $stmt->execute();
 $res = $stmt->get_result();
 $canInsert = has_permission($conn, 'table:eventi', 'insert');

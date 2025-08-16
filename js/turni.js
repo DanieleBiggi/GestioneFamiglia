@@ -123,6 +123,18 @@ document.addEventListener('DOMContentLoaded', () => {
     multiEvents.forEach(ev=>{
       const start=new Date(ev.data_evento);
       const end=ev.data_fine?new Date(ev.data_fine):start;
+      if(!ev.data_fine || ev.data_fine===ev.data_evento){
+        const info=dateCells[ev.data_evento];
+        if(info){
+          const turno=document.createElement('div');
+          turno.className='turno event';
+          turno.style.background=ev.colore || '#6c757d';
+          const tCol=ev.colore_testo||'#ffffff';
+          turno.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}" class="text-decoration-none" style="color:${tCol}">${ev.titolo}</a>`;
+          info.cell.querySelector('.turni-container').appendChild(turno);
+        }
+        return;
+      }
       let segStart=new Date(start);
       while(segStart<=end){
         const segStartStr=segStart.toISOString().slice(0,10);
@@ -137,9 +149,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const bar=document.createElement('div');
         bar.className='multi-event';
         bar.style.background=ev.colore || '#6c757d';
+        const tCol=ev.colore_testo||'#ffffff';
         bar.style.left=(startIdx/7*100)+'%';
         bar.style.width=(spanDays/7*100)+'%';
-        bar.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}">${ev.titolo}</a>`;
+        bar.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}" style="color:${tCol}">${ev.titolo}</a>`;
         rowEl.appendChild(bar);
         rowEl.classList.add('multi-events');
         segStart.setDate(segEnd.getDate()+1);

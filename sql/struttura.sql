@@ -537,6 +537,7 @@ CREATE TABLE `eventi_tipi_eventi` (
   `id` int(11) NOT NULL,
   `tipo_evento` varchar(100) NOT NULL,
   `colore` varchar(10) NOT NULL DEFAULT '#71843f',
+  `colore_testo` varchar(7) NOT NULL DEFAULT '#ffffff',
   `attivo` int(11) NOT NULL DEFAULT '1'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

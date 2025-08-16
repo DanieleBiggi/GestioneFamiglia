@@ -6,7 +6,7 @@ if (!has_permission($conn, 'page:eventi.php', 'view')) { http_response_code(403)
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-$stmt = $conn->prepare("SELECT e.*, t.tipo_evento, t.colore FROM eventi e LEFT JOIN eventi_tipi_eventi t ON e.id_tipo_evento = t.id WHERE e.id = ?");
+$stmt = $conn->prepare("SELECT e.*, t.tipo_evento, t.colore, t.colore_testo FROM eventi e LEFT JOIN eventi_tipi_eventi t ON e.id_tipo_evento = t.id WHERE e.id = ?");
 $stmt->bind_param('i', $id);
 $stmt->execute();
 $res = $stmt->get_result();
