@@ -1,4 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.select-search').forEach(wrapper => {
+    const input = wrapper.querySelector('input');
+    const select = wrapper.querySelector('select');
+    if (!input || !select) return;
+    input.addEventListener('input', () => {
+      const val = input.value.toLowerCase();
+      Array.from(select.options).forEach(opt => {
+        opt.hidden = !opt.text.toLowerCase().includes(val);
+      });
+    });
+  });
+
   document.getElementById('editSalvadanaioBtn')?.addEventListener('click', () => {
     const form = document.getElementById('salvadanaioForm');
     form.nome_salvadanaio.value = salvadanaioData.nome_salvadanaio || '';
