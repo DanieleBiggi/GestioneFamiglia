@@ -22,9 +22,9 @@ $month++; // convert to 1-based
 $periodStart = sprintf('%04d-%02d-01', $year, $month);
 $periodEnd   = date('Y-m-t', strtotime($periodStart));
 
-function log_sync(mysqli $conn, ?int $idTurno, ?int $idEvento, string $azione, string $esito, string $messaggio = ''): void {
-    $stmt = $conn->prepare('INSERT INTO turni_sync_google_log (id_turno, id_evento, azione, esito, messaggio) VALUES (?,?,?,?,?)');
-    $stmt->bind_param('iisss', $idTurno, $idEvento, $azione, $esito, $messaggio);
+function log_sync(mysqli $conn, ?int $idTurno, ?int $idEvento, string $azione, string $esito, string $messaggio = '', ?string $dati_evento = null): void {
+    $stmt = $conn->prepare('INSERT INTO turni_sync_google_log (id_turno, id_evento, azione, esito, messaggio, dati_evento) VALUES (?,?,?,?,?,?)');
+    $stmt->bind_param('iissss', $idTurno, $idEvento, $azione, $esito, $messaggio, $dati_evento);
     $stmt->execute();
     $stmt->close();
 }
@@ -194,6 +194,8 @@ try {
                 $eventData['colorId'] = $colorMap[$colBg];
             }
 
+            $payload = json_encode($eventData, JSON_UNESCAPED_UNICODE);
+
             if (!empty($t['google_calendar_eventid'])) {
                 try {
                     $service->events->patch($calendarIdTurni, $t['google_calendar_eventid'], new Google_Service_Calendar_Event($eventData));
@@ -218,9 +220,9 @@ try {
                 $upd->execute();
                 $upd->close();
             }
-            log_sync($conn, (int)$t['id'], null, 'turno_db_to_google', 'success', '');
+            log_sync($conn, (int)$t['id'], null, 'turno_db_to_google', 'success', '', $payload);
         } catch (Exception $e) {
-            log_sync($conn, (int)$t['id'], null, 'turno_db_to_google', 'error', $e->getMessage());
+            log_sync($conn, (int)$t['id'], null, 'turno_db_to_google', 'error', $e->getMessage(), $payload);
         }
     }
 
@@ -260,7 +262,9 @@ try {
                 'end'     => $evEnd,
                 'extendedProperties' => ['private' => ['source' => 'gestione-famiglia', 'type' => 'evento']]
             ];
-    
+
+            $payload = json_encode($eventData, JSON_UNESCAPED_UNICODE);
+
             $created = $service->events->insert($calendarIdEventi, new Google_Service_Calendar_Event($eventData));
             $gcId = $created->getId();
             $upd = $conn->prepare('UPDATE eventi SET google_calendar_eventid=? WHERE id=?');
@@ -268,9 +272,9 @@ try {
             $upd->execute();
             $upd->close();
             $eventiByGcId[$gcId] = $e['id'];
-            log_sync($conn, null, (int)$e['id'], 'evento_db_to_google', 'success', '');
+            log_sync($conn, null, (int)$e['id'], 'evento_db_to_google', 'success', '', $payload);
         } catch (Exception $ex) {
-            log_sync($conn, null, (int)$e['id'], 'evento_db_to_google', 'error', $ex->getMessage());
+            log_sync($conn, null, (int)$e['id'], 'evento_db_to_google', 'error', $ex->getMessage(), $payload);
         }
     }
 }
@@ -367,10 +371,10 @@ try {
                     }
                 }
 
-                log_sync($conn, null, $eventId, 'evento_google_to_db', 'success', '');
+                log_sync($conn, null, $eventId, 'evento_google_to_db', 'success', '', null);
             } catch (Exception $e) {
                 $refId = $eventId ?? ($eventiByGcId[$gcId] ?? null);
-                log_sync($conn, null, $refId, 'evento_google_to_db', 'error', $e->getMessage());
+                log_sync($conn, null, $refId, 'evento_google_to_db', 'error', $e->getMessage(), null);
             }
         }
         $pageToken = $gEvents->getNextPageToken();
@@ -385,6 +389,6 @@ try {
 
     echo json_encode(['success' => true, 'message' => 'Sincronizzazione completata']);
 } catch (Exception $e) {
-    log_sync($conn, null, null, 'general', 'error', $e->getMessage());
+    log_sync($conn, null, null, 'general', 'error', $e->getMessage(), null);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

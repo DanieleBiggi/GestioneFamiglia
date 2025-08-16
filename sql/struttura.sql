@@ -1038,6 +1038,7 @@ CREATE TABLE `turni_sync_google_log` (
   `azione` varchar(50) NOT NULL,
   `esito` enum('success','error') NOT NULL,
   `messaggio` text,
+  `dati_evento` text,
   `data_creazione` datetime DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

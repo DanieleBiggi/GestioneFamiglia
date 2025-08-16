@@ -5,6 +5,7 @@ CREATE TABLE turni_sync_google_log (
     azione VARCHAR(50) NOT NULL,
     esito ENUM('success','error') NOT NULL,
     messaggio TEXT,
+    dati_evento TEXT,
     data_creazione DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_turno (id_turno),
     INDEX idx_evento (id_evento)
