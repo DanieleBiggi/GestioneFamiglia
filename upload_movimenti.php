@@ -258,9 +258,42 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
             "<a class='btn btn-primary btn-sm ml-2' href='index.php'>Torna alla lista</a>";
     }
 } else {
+    $idUtenteSession = $_SESSION['utente_id'];
+
+    $stmt = $conn->prepare(
+        "SELECT MAX(data_operazione) AS max_data FROM (
+            SELECT data_operazione FROM bilancio_entrate WHERE id_utente = ? AND mezzo = 'banca'
+            UNION ALL
+            SELECT data_operazione FROM bilancio_uscite WHERE id_utente = ? AND mezzo = 'banca'
+        ) AS t"
+    );
+    $stmt->bind_param('ii', $idUtenteSession, $idUtenteSession);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $max_data_banca = $row['max_data'];
+    $stmt->close();
+
+    $stmt = $conn->prepare(
+        "SELECT MAX(m.started_date) AS max_date
+         FROM movimenti_revolut m
+         JOIN bilancio_gruppi_transazione g ON m.id_gruppo_transazione = g.id_gruppo_transazione
+         WHERE g.id_utente = ?"
+    );
+    $stmt->bind_param('i', $idUtenteSession);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $max_started_revolut = $row['max_date'];
+    $stmt->close();
+
+    $max_data_banca_fmt = $max_data_banca ? date('d/m/Y', strtotime($max_data_banca)) : '-';
+    $max_started_revolut_fmt = $max_started_revolut ? date('d/m/Y', strtotime($max_started_revolut)) : '-';
 ?>
 <div class="container text-white">
   <h4 class="mb-4">Carica movimenti</h4>
+  <div class="alert alert-info">
+    Ultima operazione banca: <?= $max_data_banca_fmt ?><br>
+    Ultimo movimento Revolut: <?= $max_started_revolut_fmt ?>
+  </div>
   <form method="post" enctype="multipart/form-data">
     <div class="mb-3">
       <input type="file" name="fileToUpload" class="form-control bg-dark text-white">
