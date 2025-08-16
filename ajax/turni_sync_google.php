@@ -123,10 +123,22 @@ try {
     $service = new Google_Service_Calendar($client);
     $calendarIdTurni = '405f4721b468b439755b6aad55d6b40e5c235f8511db6a29b95dc7f96ff329f0@group.calendar.google.com';
     $calendarIdEventi = '29f6c24acdde6722ed7eb92a5eff3d15bdc1a46d210def3314c1b05c15ac024f@group.calendar.google.com';
-    
+
     // Timezone fisso
     $timeZone = 'Europe/Rome';
-    
+
+    // Mappa tra codice colore e colorId di Google Calendar
+    $colorMap = [];
+    try {
+        $gColors = $service->colors->get();
+        $eventColors = $gColors->getEvent();
+        foreach ($eventColors as $id => $c) {
+            $colorMap[strtolower($c->getBackground())] = $id;
+        }
+    } catch (Exception $e) {
+        // in caso di errore la mappa resterà vuota e gli eventi useranno il colore di default
+    }
+
     // Helper: normalizza "HH:MM" -> "HH:MM:00"
     // Ritorna null se l'orario è vuoto o impostato a mezzanotte,
     // così da poter usare il fallback sugli orari del tipo turno.
@@ -168,6 +180,11 @@ try {
             'start'   => $evStart,
             'end'     => $evEnd,
         ];
+
+        $colBg = strtolower($t['colore_bg']);
+        if (isset($colorMap[$colBg])) {
+            $eventData['colorId'] = $colorMap[$colBg];
+        }
 
         if (!empty($t['google_calendar_eventid'])) {
             try {
