@@ -301,7 +301,7 @@ include 'includes/header.php';
              ?>
             <?php
               $stmtMov = $conn->prepare("SELECT e2o.id_e2o, e2o.escludi_da_finanze_evento,
-                COALESCE(e2o.importo, CASE WHEN e2o.tabella_operazione='bilancio_entrate' THEN be.importo WHEN e2o.tabella_operazione='bilancio_uscite' THEN -bu.importo WHEN e2o.tabella_operazione='movimenti_revolut' THEN mr.amount ELSE 0 END) AS importo,
+                COALESCE(e2o.importo, CASE WHEN e2o.tabella_operazione='bilancio_entrate' THEN be.importo WHEN e2o.tabella_operazione='bilancio_uscite' THEN bu.importo WHEN e2o.tabella_operazione='movimenti_revolut' THEN mr.amount ELSE 0 END) AS importo,
                 COALESCE(e2o.descrizione_extra, CASE WHEN e2o.tabella_operazione='bilancio_entrate' THEN COALESCE(NULLIF(be.descrizione_extra,''), be.descrizione_operazione) WHEN e2o.tabella_operazione='bilancio_uscite' THEN COALESCE(NULLIF(bu.descrizione_extra,''), bu.descrizione_operazione) WHEN e2o.tabella_operazione='movimenti_revolut' THEN COALESCE(NULLIF(mr.descrizione_extra,''), mr.description) ELSE '' END) AS descrizione
                 FROM bilancio_etichette2operazioni e2o
                 LEFT JOIN bilancio_entrate be ON e2o.tabella_operazione='bilancio_entrate' AND e2o.id_tabella=be.id_entrata
