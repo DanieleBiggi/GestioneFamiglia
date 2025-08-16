@@ -262,8 +262,8 @@ include 'includes/header.php';
               data-id-etichetta="0">
             <?php
               echo '<a href="budget_anno.php?id_salvadanaio='.(int)$row['id_salvadanaio'].'&scadenza_da=&scadenza_a=" class="text-white">'.htmlspecialchars($row['nome_salvadanaio'] ?? '').'</a>';
-              $stmtBud = $conn->prepare('SELECT descrizione, importo FROM budget WHERE id_famiglia = ? AND id_salvadanaio = ?');
-              $stmtBud->bind_param('ii', $famiglia, $row['id_salvadanaio']);
+              $stmtBud = $conn->prepare('SELECT descrizione, importo FROM budget WHERE id_famiglia = ? AND id_salvadanaio = ? AND YEAR(data_scadenza) = YEAR(?)');
+              $stmtBud->bind_param('iis', $famiglia, $row['id_salvadanaio'], $evento['data_evento']);
               $stmtBud->execute();
               $resBud = $stmtBud->get_result();
               $totale = 0;
