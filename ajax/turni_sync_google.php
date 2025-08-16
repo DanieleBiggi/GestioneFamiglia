@@ -128,10 +128,18 @@ try {
     $timeZone = 'Europe/Rome';
     
     // Helper: normalizza "HH:MM" -> "HH:MM:00"
+    // Ritorna null se l'orario è vuoto o impostato a mezzanotte,
+    // così da poter usare il fallback sugli orari del tipo turno.
     $normTime = function($t) {
-        if (!$t) return null;
-        if (preg_match('/^\d{2}:\d{2}$/', $t)) return $t . ':00';
-        if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $t)) return $t;
+        if (!$t || $t === '00:00' || $t === '00:00:00') {
+            return null;
+        }
+        if (preg_match('/^\\d{2}:\\d{2}$/', $t)) {
+            return $t . ':00';
+        }
+        if (preg_match('/^\\d{2}:\\d{2}:\\d{2}$/', $t)) {
+            return $t;
+        }
         return null; // formato non valido
     };
     
