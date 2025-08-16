@@ -14,7 +14,7 @@
   <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/Gestionale25/service-worker.js?ver=v3-2024-08-16', { scope: '/Gestionale25/' })
+    navigator.serviceWorker.register('/Gestionale25/service-worker.js?ver=v4-2025-08-16', { scope: '/Gestionale25/' })
       .catch(console.error);
   });
 }
