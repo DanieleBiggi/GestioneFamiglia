@@ -50,7 +50,7 @@ return [
     ],
     'turni_sync_google_log' => [
         'primary_key' => 'id',
-        'columns' => ['id','id_turno','id_evento','azione','esito','messaggio','data_creazione']
+        'columns' => ['id','id_turno','id_evento','azione','esito','messaggio','dati_evento','data_creazione']
     ]
 ];
 ?>
