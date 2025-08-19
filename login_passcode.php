@@ -154,6 +154,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     });
     document.getElementById('backspace').addEventListener('click', removeDigit);
     document.getElementById('fingerprint').addEventListener('click', () => loginWebAuthn());
+    document.addEventListener('keydown', (e) => {
+      if (e.key >= '0' && e.key <= '9') {
+        addDigit(e.key);
+      } else if (e.key === 'Backspace') {
+        removeDigit();
+      }
+    });
   </script>
   <?php endif; ?>
 </div>
