@@ -3,7 +3,51 @@ include 'includes/session_check.php';
 include 'includes/db.php';
 include 'includes/header.php';
 
-if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
+if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
+    $ids = $_POST['selected'] ?? [];
+    $idGruppo = $_POST['id_gruppo_transazione'] !== '' ? $_POST['id_gruppo_transazione'] : null;
+    $descrizioneExtra = $_POST['descrizione_extra'] ?? null;
+
+    foreach ($ids as $token) {
+        list($tipo, $id) = explode('-', $token);
+        if ($tipo === 'entrate') {
+            $tabella = 'bilancio_entrate';
+            $colId  = 'id_entrata';
+            $stmtUpd = $conn->prepare("UPDATE $tabella SET id_gruppo_transazione = ?, descrizione_extra = ? WHERE $colId = ? AND id_utente = ?");
+            $stmtUpd->bind_param('isii', $idGruppo, $descrizioneExtra, $id, $_SESSION['utente_id']);
+        } elseif ($tipo === 'uscite') {
+            $tabella = 'bilancio_uscite';
+            $colId  = 'id_uscita';
+            $stmtUpd = $conn->prepare("UPDATE $tabella SET id_gruppo_transazione = ?, descrizione_extra = ? WHERE $colId = ? AND id_utente = ?");
+            $stmtUpd->bind_param('isii', $idGruppo, $descrizioneExtra, $id, $_SESSION['utente_id']);
+        } elseif ($tipo === 'revolut') {
+            $tabella = 'movimenti_revolut';
+            $colId  = 'id_movimento_revolut';
+            $stmtUpd = $conn->prepare("UPDATE $tabella SET id_gruppo_transazione = ?, descrizione_extra = ? WHERE $colId = ?");
+            $stmtUpd->bind_param('isi', $idGruppo, $descrizioneExtra, $id);
+        } else {
+            continue;
+        }
+        $stmtUpd->execute();
+        $stmtUpd->close();
+    }
+
+    echo "<div class='alert alert-success'>Movimenti aggiornati</div>";
+} elseif (isset($_POST['action']) && $_POST['action'] === 'add_descrizione') {
+    $descrizione = $_POST['descrizione'] ?? '';
+    $idGruppo    = $_POST['new_id_gruppo_transazione'] !== '' ? $_POST['new_id_gruppo_transazione'] : null;
+    $idMetodo    = $_POST['id_metodo_pagamento'] !== '' ? $_POST['id_metodo_pagamento'] : null;
+    $idEtichetta = $_POST['id_etichetta'] !== '' ? $_POST['id_etichetta'] : null;
+    $descrExtra  = $_POST['descrizione_extra'] ?? null;
+    $conto       = $_POST['conto'] ?? 'credit';
+
+    $stmtIns = $conn->prepare("INSERT INTO bilancio_descrizione2id (id_utente, descrizione, id_gruppo_transazione, id_metodo_pagamento, id_etichetta, descrizione_extra, conto) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmtIns->bind_param('isiiiss', $_SESSION['utente_id'], $descrizione, $idGruppo, $idMetodo, $idEtichetta, $descrExtra, $conto);
+    $stmtIns->execute();
+    $stmtIns->close();
+
+    echo "<div class='alert alert-success'>Descrizione salvata</div>";
+} elseif ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
     $file = $_FILES['fileToUpload']['tmp_name'];
     $handle = fopen($file, "r");
 
@@ -304,6 +348,46 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
     $max_started_revolut = $row['max_date'];
     $stmt->close();
 
+    // Precarica gruppi e metodi di pagamento
+    $stmt = $conn->prepare("SELECT id_gruppo_transazione, descrizione FROM bilancio_gruppi_transazione WHERE id_utente = ? ORDER BY descrizione");
+    $stmt->bind_param('i', $idUtenteSession);
+    $stmt->execute();
+    $gruppi = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    $stmt = $conn->prepare("SELECT id_metodo_pagamento, descrizione_metodo_pagamento FROM bilancio_metodo_pagamento WHERE attivo = 1 ORDER BY descrizione_metodo_pagamento");
+    $stmt->execute();
+    $metodi = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    // Movimenti recenti
+    $movimenti = [];
+    if ($max_started_revolut && (!$max_data_banca || strtotime($max_started_revolut) > strtotime($max_data_banca))) {
+        $stmt = $conn->prepare(
+            "SELECT id_movimento_revolut AS id, 'revolut' AS tipo, description AS descrizione, id_gruppo_transazione, descrizione_extra\n"
+            . " FROM movimenti_revolut m\n"
+            . " LEFT JOIN bilancio_gruppi_transazione g ON m.id_gruppo_transazione = g.id_gruppo_transazione\n"
+            . " WHERE g.id_utente = ? OR m.id_gruppo_transazione IS NULL\n"
+            . " ORDER BY started_date DESC LIMIT 50"
+        );
+        $stmt->bind_param('i', $idUtenteSession);
+        $stmt->execute();
+        $movimenti = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+    } else {
+        $stmt = $conn->prepare("SELECT id_entrata AS id, 'entrate' AS tipo, descrizione_operazione AS descrizione, id_gruppo_transazione, descrizione_extra FROM bilancio_entrate WHERE id_utente = ? ORDER BY data_operazione DESC LIMIT 50");
+        $stmt->bind_param('i', $idUtenteSession);
+        $stmt->execute();
+        $movimenti = array_merge($movimenti, $stmt->get_result()->fetch_all(MYSQLI_ASSOC));
+        $stmt->close();
+
+        $stmt = $conn->prepare("SELECT id_uscita AS id, 'uscite' AS tipo, descrizione_operazione AS descrizione, id_gruppo_transazione, descrizione_extra FROM bilancio_uscite WHERE id_utente = ? ORDER BY data_operazione DESC LIMIT 50");
+        $stmt->bind_param('i', $idUtenteSession);
+        $stmt->execute();
+        $movimenti = array_merge($movimenti, $stmt->get_result()->fetch_all(MYSQLI_ASSOC));
+        $stmt->close();
+    }
+
     $max_data_banca_fmt = $max_data_banca ? date('d/m/Y', strtotime($max_data_banca)) : '-';
     $max_started_revolut_fmt = $max_started_revolut ? date('d/m/Y', strtotime($max_started_revolut)) : '-';
 ?>
@@ -313,11 +397,90 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
     Ultima operazione Credit Agricole: <?= $max_data_banca_fmt ?><br>
     Ultimo movimento Revolut: <?= $max_started_revolut_fmt ?>
   </div>
-  <form method="post" enctype="multipart/form-data">
+  <form method="post" enctype="multipart/form-data" class="mb-5">
     <div class="mb-3">
       <input type="file" name="fileToUpload" class="form-control bg-dark text-white">
     </div>
     <button type="submit" class="btn btn-outline-light w-100">Carica</button>
+  </form>
+
+  <h5 class="mb-3">Modifica movimenti</h5>
+  <form method="post" class="mb-5">
+    <input type="hidden" name="action" value="update_movimenti">
+    <div class="row g-2 mb-3">
+      <div class="col-md-4">
+        <select name="id_gruppo_transazione" class="form-select bg-dark text-white">
+          <option value="">Seleziona gruppo</option>
+          <?php foreach ($gruppi as $g): ?>
+            <option value="<?= (int)$g['id_gruppo_transazione'] ?>"><?= htmlspecialchars($g['descrizione']) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <input type="text" name="descrizione_extra" class="form-control bg-dark text-white" placeholder="Descrizione extra">
+      </div>
+      <div class="col-md-4">
+        <button type="submit" class="btn btn-primary w-100">Aggiorna selezionati</button>
+      </div>
+    </div>
+    <table class="table table-dark table-striped">
+      <thead>
+        <tr>
+          <th scope="col"></th>
+          <th scope="col">Tipo</th>
+          <th scope="col">Descrizione</th>
+          <th scope="col">Gruppo</th>
+          <th scope="col">Extra</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($movimenti as $m): ?>
+          <tr>
+            <td><input type="checkbox" name="selected[]" value="<?= $m['tipo'] . '-' . $m['id'] ?>"></td>
+            <td><?= htmlspecialchars($m['tipo']) ?></td>
+            <td><?= htmlspecialchars($m['descrizione']) ?></td>
+            <td><?= htmlspecialchars($m['id_gruppo_transazione']) ?></td>
+            <td><?= htmlspecialchars($m['descrizione_extra']) ?></td>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </form>
+
+  <h5 class="mb-3">Nuova descrizione predefinita</h5>
+  <form method="post" class="mb-5">
+    <input type="hidden" name="action" value="add_descrizione">
+    <div class="mb-3">
+      <input type="text" name="descrizione" class="form-control bg-dark text-white" placeholder="Descrizione" required>
+    </div>
+    <div class="mb-3">
+      <select name="new_id_gruppo_transazione" class="form-select bg-dark text-white" required>
+        <option value="">Seleziona gruppo</option>
+        <?php foreach ($gruppi as $g): ?>
+          <option value="<?= (int)$g['id_gruppo_transazione'] ?>"><?= htmlspecialchars($g['descrizione']) ?></option>
+        <?php endforeach; ?>
+      </select>
+    </div>
+    <div class="mb-3">
+      <select name="id_metodo_pagamento" class="form-select bg-dark text-white" required>
+        <?php foreach ($metodi as $m): ?>
+          <option value="<?= (int)$m['id_metodo_pagamento'] ?>"><?= htmlspecialchars($m['descrizione_metodo_pagamento']) ?></option>
+        <?php endforeach; ?>
+      </select>
+    </div>
+    <div class="mb-3">
+      <input type="number" name="id_etichetta" class="form-control bg-dark text-white" placeholder="ID etichetta (opzionale)">
+    </div>
+    <div class="mb-3">
+      <input type="text" name="descrizione_extra" class="form-control bg-dark text-white" placeholder="Descrizione extra (opzionale)">
+    </div>
+    <div class="mb-3">
+      <select name="conto" class="form-select bg-dark text-white">
+        <option value="credit">Credit</option>
+        <option value="revolut">Revolut</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-success w-100">Inserisci</button>
   </form>
 </div>
 <?php
