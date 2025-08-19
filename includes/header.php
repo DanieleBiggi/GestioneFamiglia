@@ -204,7 +204,7 @@ $conn->set_charset('utf8mb4'); // IMPORTANTISSIMO
         </div>
       </li>
       <?php endif; ?>
-      <?php $showSecurity = has_permission($conn, 'page:change_password.php', 'view') || has_permission($conn, 'page:setup_passcode.php', 'view');
+      <?php $showSecurity = has_permission($conn, 'page:change_password.php', 'view') || has_permission($conn, 'page:setup_passcode.php', 'view') || has_permission($conn, 'page:setup_passkey.php', 'view');
       if ($showSecurity): ?>
       <li class="mb-3">
         <div class="dropdown w-100">
@@ -217,6 +217,9 @@ $conn->set_charset('utf8mb4'); // IMPORTANTISSIMO
             <?php endif; ?>
             <?php if (has_permission($conn, 'page:setup_passcode.php', 'view')): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/setup_passcode.php"><i class="bi bi-lock me-2 text-white"></i>Imposta Passcode</a></li>
+            <?php endif; ?>
+            <?php if (has_permission($conn, 'page:setup_passkey.php', 'view')): ?>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/setup_passkey.php"><i class="bi bi-fingerprint me-2 text-white"></i>Crea passkey</a></li>
             <?php endif; ?>
             <li><a class="dropdown-item text-white" href="/Gestionale"><i class="bi bi-arrow-return-left me-2 text-white"></i>Torna al vecchio</a></li>
           </ul>
