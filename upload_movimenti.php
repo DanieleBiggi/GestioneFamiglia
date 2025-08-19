@@ -291,7 +291,7 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
 <div class="container text-white">
   <h4 class="mb-4">Carica movimenti</h4>
   <div class="alert alert-info">
-    Ultima operazione banca: <?= $max_data_banca_fmt ?><br>
+    Ultima operazione Credit Agricole: <?= $max_data_banca_fmt ?><br>
     Ultimo movimento Revolut: <?= $max_started_revolut_fmt ?>
   </div>
   <form method="post" enctype="multipart/form-data">
