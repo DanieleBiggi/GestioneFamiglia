@@ -153,9 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       btn.addEventListener('click', () => addDigit(btn.dataset.number));
     });
     document.getElementById('backspace').addEventListener('click', removeDigit);
-    document.getElementById('fingerprint').addEventListener('click', () => {
-      window.location.href = '/Gestionale25/webauthn_login.php';
-    });
+    document.getElementById('fingerprint').addEventListener('click', loginWebAuthn);
   </script>
   <?php endif; ?>
 </div>
