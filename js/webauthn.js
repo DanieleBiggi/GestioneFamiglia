@@ -28,6 +28,12 @@ async function loginWebAuthn() {
     c.id = Uint8Array.from(atob(c.id), d => d.charCodeAt(0));
     return c;
   });
+  if (!options.allowCredentials.length) {
+    if (confirm('Nessuna passkey presente. Vuoi crearne una adesso?')) {
+      await registerWebAuthn();
+    }
+    return;
+  }
   const cred = await navigator.credentials.get({ publicKey: options });
   const assertion = {
     id: cred.id,
