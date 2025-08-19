@@ -35,10 +35,10 @@ if (!$input) {
     exit;
 }
 
-$credentialId = $input['id'] ?? '';
+$credentialId = $input['rawId'] ?? '';
 $publicKey = $input['response']['attestationObject'] ?? '';
 $stmt = $conn->prepare("INSERT INTO webauthn_credentials (user_id, credential_id, public_key) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE public_key=VALUES(public_key)");
 $stmt->bind_param('iss', $_SESSION['utente_id'], $credentialId, $publicKey);
-$stmt->execute();
+$ok = $stmt->execute();
 
-echo json_encode(['success' => true]);
+echo json_encode(['success' => $ok]);

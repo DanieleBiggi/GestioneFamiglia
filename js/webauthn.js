@@ -1,6 +1,6 @@
 async function registerWebAuthn() {
   try {
-    const resp = await fetch('/Gestionale25/webauthn_register.php');
+    const resp = await fetch('webauthn_register.php');
     if (!resp.ok) {
       alert('Impossibile registrare una passkey. Effettua prima l\'accesso.');
       return;
@@ -18,11 +18,16 @@ async function registerWebAuthn() {
         attestationObject: btoa(String.fromCharCode(...new Uint8Array(cred.response.attestationObject)))
       }
     };
-    await fetch('/Gestionale25/webauthn_register.php', {
+    const save = await fetch('webauthn_register.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(attestation)
     });
+    if (save.ok) {
+      alert('Passkey registrata con successo.');
+    } else {
+      alert('Salvataggio passkey non riuscito.');
+    }
   } catch (err) {
     console.error('Errore nella registrazione WebAuthn', err);
     alert('Registrazione WebAuthn non riuscita.');
@@ -30,7 +35,7 @@ async function registerWebAuthn() {
 }
 
 async function loginWebAuthn() {
-  const resp = await fetch('/Gestionale25/webauthn_login.php');
+  const resp = await fetch('webauthn_login.php');
   if (!resp.ok) {
     console.error('Impossibile ottenere le opzioni di login WebAuthn');
     return;
@@ -59,14 +64,14 @@ async function loginWebAuthn() {
       userHandle: cred.response.userHandle ? btoa(String.fromCharCode(...new Uint8Array(cred.response.userHandle))) : null
     }
   };
-  const verify = await fetch('/Gestionale25/webauthn_login.php', {
+  const verify = await fetch('webauthn_login.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(assertion)
   });
   const result = await verify.json();
   if (result.success) {
-    window.location.href = '/Gestionale25/index.php';
+    window.location.href = 'index.php';
   } else {
     alert('Autenticazione WebAuthn fallita');
   }
