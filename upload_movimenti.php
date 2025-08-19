@@ -19,6 +19,17 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
         $nuove_descrizioni_inserite = 0;
         $inserita = 0;
 
+        // Precarica le descrizioni note per cercare corrispondenze fuzzy
+        $stmtMap = $conn->prepare(
+            "SELECT descrizione, id_gruppo_transazione, id_metodo_pagamento, id_etichetta
+               FROM bilancio_descrizione2id
+              WHERE conto = 'revolut' AND id_utente = ?"
+        );
+        $stmtMap->bind_param('i', $_SESSION['utente_id']);
+        $stmtMap->execute();
+        $descrizioni_mappate = $stmtMap->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmtMap->close();
+
         $stmtInsert = $conn->prepare(
             "INSERT INTO movimenti_revolut (
                 id_gruppo_transazione,
@@ -28,9 +39,10 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
                 started_date,
                 completed_date,
                 description,
+                descrizione_extra,
                 amount,
                 note
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         );
 
         while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -41,6 +53,7 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
             $product        = $data[1];
             $started_date   = $data[2];
             $descrizione    = $data[4];
+            $descrizione_orig = $descrizione;
             $amount         = (float)$data[5];
             $note           = null;
             $nome           = null;
@@ -82,23 +95,18 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
 
             $data_completed = $data[3] !== '' ? $data[3] : null;
 
-            $stmt = $conn->prepare(
-                "SELECT id_d2id, id_utente, id_gruppo_transazione, id_metodo_pagamento, id_etichetta
-                 FROM bilancio_descrizione2id
-                 WHERE conto = 'revolut' AND (? LIKE CONCAT('%', descrizione, '%') OR ? LIKE CONCAT('%', descrizione, '%'))"
-            );
-            $stmt->bind_param('ss', $descrizione, $nome);
-            $stmt->execute();
-            $dati_gruppo = $stmt->get_result()->fetch_assoc();
-            $stmt->close();
-
+            // Ricerca miglior corrispondenza con descrizioni note
+            $dati_gruppo = trova_descrizione_approssimata($descrizione_orig, $descrizioni_mappate);
             if ($dati_gruppo) {
                 $id_gruppo    = $dati_gruppo['id_gruppo_transazione'];
                 $id_etichetta = $dati_gruppo['id_etichetta'];
+                $descrizione  = $dati_gruppo['descrizione'];
             }
 
+            $descrizione_extra = $descrizione_orig;
+
             $stmtInsert->bind_param(
-                'iisssssds',
+                'iissssssds',
                 $id_gruppo,
                 $id_salvadanaio,
                 $type,
@@ -106,6 +114,7 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
                 $started_date,
                 $data_completed,
                 $descrizione,
+                $descrizione_extra,
                 $amount,
                 $note
             );
@@ -152,12 +161,24 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
 
         $tot_righe  = 0;
         $inserita   = 0;
+        $idUtenteSession = $_SESSION['utente_id'];
+
+        // Precarica le descrizioni note per il conto principale
+        $stmtMap = $conn->prepare(
+            "SELECT descrizione, id_gruppo_transazione, id_metodo_pagamento, id_etichetta
+               FROM bilancio_descrizione2id
+              WHERE id_utente = ? AND conto = 'credit'"
+        );
+        $stmtMap->bind_param('i', $idUtenteSession);
+        $stmtMap->execute();
+        $descrizioni_mappate = $stmtMap->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmtMap->close();
 
         $stmtInsertUscite = $conn->prepare(
-            'INSERT INTO bilancio_uscite (id_utente, id_tipologia, id_gruppo_transazione, id_metodo_pagamento, descrizione_operazione, importo, data_operazione) VALUES (?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO bilancio_uscite (id_utente, id_tipologia, id_gruppo_transazione, id_metodo_pagamento, descrizione_operazione, descrizione_extra, importo, data_operazione) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmtInsertEntrate = $conn->prepare(
-            'INSERT INTO bilancio_entrate (id_utente, id_tipologia, id_gruppo_transazione, id_metodo_pagamento, descrizione_operazione, importo, data_operazione) VALUES (?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO bilancio_entrate (id_utente, id_tipologia, id_gruppo_transazione, id_metodo_pagamento, descrizione_operazione, descrizione_extra, importo, data_operazione) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
 
         while (($data = fgetcsv($handle, 1000, ";")) !== false) {
@@ -171,6 +192,7 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
             $data_valuta        = $data[1];
             $causale            = $data[2];
             $descrizione        = $data[3];
+            $descrizione_orig   = $descrizione;
             $importo            = $data[4];
 
             $stmt = $conn->prepare('SELECT id_tipologia FROM bilancio_tipologie WHERE nome_tipologia = ?');
@@ -201,22 +223,18 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
                 $tabella = 'bilancio_entrate';
             }
 
-            $stmt = $conn->prepare(
-                'SELECT * FROM bilancio_descrizione2id WHERE id_utente = ? AND ? LIKE CONCAT("%", descrizione, "%") ORDER BY id_d2id DESC'
-            );
-            $idUtenteSession = $_SESSION['utente_id'];
-            $stmt->bind_param('is', $idUtenteSession, $descrizione);
-            $stmt->execute();
-            $descrizione_gruppo_metodo = $stmt->get_result()->fetch_assoc();
-            $stmt->close();
-
+            // Ricerca della miglior corrispondenza nelle descrizioni note
+            $descrizione_gruppo_metodo = trova_descrizione_approssimata($descrizione_orig, $descrizioni_mappate);
             if ($descrizione_gruppo_metodo) {
               $id_gruppo_transazione    = $descrizione_gruppo_metodo['id_gruppo_transazione'];
               $id_metodo_pagamento      = $descrizione_gruppo_metodo['id_metodo_pagamento'];
               $id_etichetta             = $descrizione_gruppo_metodo['id_etichetta'];
+              $descrizione              = $descrizione_gruppo_metodo['descrizione'];
             } else {
-                echo "<div class='alert alert-warning' >Senza gruppo o metodo:<br>" . $descrizione . "</div>";
+                echo "<div class='alert alert-warning' >Senza gruppo o metodo:<br>" . $descrizione_orig . "</div>";
             }
+
+            $descrizione_extra = $descrizione_orig;
 
             if ($tabella === 'bilancio_uscite') {
                 $stmtIns = $stmtInsertUscite;
@@ -225,12 +243,13 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
             }
 
             $stmtIns->bind_param(
-                'iiiisds',
+                'iiiissds',
                 $idUtenteSession,
                 $id_tipologia,
                 $id_gruppo_transazione,
                 $id_metodo_pagamento,
                 $descrizione,
+                $descrizione_extra,
                 $importo,
                 $data_operazione_db
             );
@@ -304,6 +323,31 @@ if ($_FILES && is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) {
 <?php
 }
 
+
+function trova_descrizione_approssimata($descrizione_importata, $descrizioni_mappate)
+{
+    $descrizione_norm = normalizza_descrizione($descrizione_importata);
+    $migliore = null;
+    $percentuale = 0;
+    foreach ($descrizioni_mappate as $riga) {
+        $target_norm = normalizza_descrizione($riga['descrizione']);
+        if (strpos($descrizione_norm, $target_norm) !== false || strpos($target_norm, $descrizione_norm) !== false) {
+            return $riga;
+        }
+        similar_text($target_norm, $descrizione_norm, $perc);
+        if ($perc > $percentuale) {
+            $percentuale = $perc;
+            $migliore = $riga;
+        }
+    }
+    return $percentuale >= 60 ? $migliore : null;
+}
+
+function normalizza_descrizione($stringa)
+{
+    $stringa = strtolower($stringa);
+    return preg_replace('/[^a-z0-9]/', '', $stringa);
+}
 
 function dividi_operazione_per_etichetta($id_etichetta, $tabella, $id_tabella)
 {
