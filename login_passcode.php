@@ -25,6 +25,14 @@ if (($device['user_agent'] ?? '') !== ($_SERVER['HTTP_USER_AGENT'] ?? '')) {
     exit;
 }
 
+$userName = '';
+$userStmt = $conn->prepare('SELECT nome FROM utenti WHERE id = ? LIMIT 1');
+$userStmt->bind_param('i', $device['id_utente']);
+$userStmt->execute();
+$userRow = $userStmt->get_result()->fetch_assoc();
+$userName = $userRow['nome'] ?? '';
+$userStmt->close();
+
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -100,23 +108,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <?php include 'includes/header.php'; ?>
-<div class="row justify-content-center">
-  <div class="col-md-6">
-    <div class="card bg-dark text-white p-4">
-      <h4 class="mb-3">Login rapido</h4>
-      <?php if ($error): ?>
-        <div class="alert alert-danger"><?= $error ?> <a href="/Gestionale25/login.php?scelta_login=1" class="alert-link">Login classico</a></div>
-      <?php else: ?>
-      <form method="POST" action="login_passcode.php">
-        <div class="mb-3">
-          <label class="form-label">Passcode</label>
-          <input type="password" name="passcode" class="form-control" required pattern="\d{6}" autofocus>
-        </div>
-        <button type="submit" class="btn btn-primary">Accedi</button>
-      </form><br>
-        <a href="/Gestionale25/login.php?scelta_login=1" class="btn btn-link text-light">Login con utente e password</a>
-      <?php endif; ?>
+<div class="d-flex flex-column align-items-center mt-5">
+  <img src="assets/icona.png" alt="Gestione Famiglia" class="mb-3" style="width:80px;">
+  <h4 class="mb-4 text-center">Ciao, <?= htmlspecialchars($userName) ?></h4>
+  <?php if ($error): ?>
+    <div class="alert alert-danger text-center w-75"><?= $error ?> <a href="/Gestionale25/login.php?scelta_login=1" class="alert-link">Login classico</a></div>
+  <?php else: ?>
+  <form id="passcode-form" method="POST" action="login_passcode.php" class="w-100 d-flex flex-column align-items-center">
+    <input type="hidden" id="passcode" name="passcode">
+    <div id="pin-dots" class="d-flex justify-content-center mb-4">
+      <?php for ($i = 0; $i < 6; $i++): ?>
+        <div class="dot"></div>
+      <?php endfor; ?>
     </div>
-  </div>
+    <div class="pin-keypad">
+      <?php for ($i = 1; $i <= 9; $i++): ?>
+        <button type="button" class="pin-key" data-number="<?= $i ?>"><?= $i ?></button>
+      <?php endfor; ?>
+      <button type="button" class="pin-key" id="fingerprint"><i class="bi bi-fingerprint"></i></button>
+      <button type="button" class="pin-key" data-number="0">0</button>
+      <button type="button" class="pin-key" id="backspace"><i class="bi bi-backspace"></i></button>
+    </div>
+  </form>
+  <a href="/Gestionale25/login.php?scelta_login=1" class="btn btn-link text-light mt-3">Login con utente e password</a>
+  <script>
+    const input = document.getElementById('passcode');
+    const dots = document.querySelectorAll('#pin-dots .dot');
+    function addDigit(d){
+      if(input.value.length < 6){
+        input.value += d;
+        dots[input.value.length - 1].classList.add('filled');
+        if(input.value.length === 6){
+          document.getElementById('passcode-form').submit();
+        }
+      }
+    }
+    function removeDigit(){
+      if(input.value.length > 0){
+        dots[input.value.length - 1].classList.remove('filled');
+        input.value = input.value.slice(0, -1);
+      }
+    }
+    document.querySelectorAll('.pin-key[data-number]').forEach(btn => {
+      btn.addEventListener('click', () => addDigit(btn.dataset.number));
+    });
+    document.getElementById('backspace').addEventListener('click', removeDigit);
+    document.getElementById('fingerprint').addEventListener('click', () => {
+      window.location.href = '/Gestionale25/webauthn_login.php';
+    });
+  </script>
+  <?php endif; ?>
 </div>
 <?php include 'includes/footer.php'; ?>
