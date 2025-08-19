@@ -1,3 +1,13 @@
+function base64urlDecode(str) {
+  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  const pad = str.length % 4;
+  if (pad) {
+    str += '='.repeat(4 - pad);
+  }
+  const binary = atob(str);
+  return Uint8Array.from(binary, c => c.charCodeAt(0));
+}
+
 async function registerWebAuthn() {
   try {
     const resp = await fetch('webauthn_register.php');
@@ -6,8 +16,8 @@ async function registerWebAuthn() {
       return;
     }
     const options = await resp.json();
-    options.challenge = Uint8Array.from(atob(options.challenge), c => c.charCodeAt(0));
-    options.user.id = Uint8Array.from(atob(options.user.id), c => c.charCodeAt(0));
+    options.challenge = base64urlDecode(options.challenge);
+    options.user.id = base64urlDecode(options.user.id);
     const cred = await navigator.credentials.create({ publicKey: options });
     const attestation = {
       id: cred.id,
@@ -41,9 +51,9 @@ async function loginWebAuthn() {
     return;
   }
   const options = await resp.json();
-  options.challenge = Uint8Array.from(atob(options.challenge), c => c.charCodeAt(0));
+  options.challenge = base64urlDecode(options.challenge);
   options.allowCredentials = options.allowCredentials.map(c => {
-    c.id = Uint8Array.from(atob(c.id), d => d.charCodeAt(0));
+    c.id = base64urlDecode(c.id);
     return c;
   });
   if (!options.allowCredentials.length) {
