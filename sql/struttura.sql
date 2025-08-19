@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 89.46.111.63:3306
--- Creato il: Ago 15, 2025 alle 07:07
+-- Creato il: Ago 19, 2025 alle 13:22
 -- Versione del server: 5.6.51-91.0-log
 -- Versione PHP: 8.0.7
 
@@ -93,6 +93,7 @@ CREATE TABLE `bilancio_descrizione2id` (
   `id_gruppo_transazione` int(11) NOT NULL,
   `id_metodo_pagamento` int(11) NOT NULL,
   `id_etichetta` int(11) DEFAULT NULL,
+  `descrizione_extra` varchar(250) DEFAULT NULL,
   `conto` varchar(50) DEFAULT 'credit'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -371,12 +372,12 @@ CREATE TABLE `eventi` (
   `data_evento` date DEFAULT NULL,
   `ora_evento` varchar(10) DEFAULT NULL,
   `data_fine` date DEFAULT NULL,
-  `ora_fine` varchar(10) DEFAULT NULL,
+  `ora_fine` time DEFAULT NULL,
   `descrizione` varchar(100) DEFAULT NULL,
   `id_tipo_evento` int(11) DEFAULT NULL,
   `icon` varchar(50) DEFAULT NULL,
   `note` mediumtext,
-  `google_calendar_eventid` varchar(255) DEFAULT NULL,
+  `google_calendar_eventid` varchar(180) DEFAULT NULL,
   `creator_email` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -484,9 +485,34 @@ CREATE TABLE `eventi_eventi2luogo` (
 
 CREATE TABLE `eventi_eventi2salvadanai_etichette` (
   `id_e2se` int(11) NOT NULL,
-  `id_evento` int(11) NOT NULL,
-  `id_salvadanaio` int(11) NOT NULL,
-  `id_etichetta` int(11) NOT NULL
+  `id_evento` int(11) DEFAULT NULL,
+  `id_salvadanaio` int(11) DEFAULT NULL,
+  `id_etichetta` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `eventi_google_rules`
+--
+
+CREATE TABLE `eventi_google_rules` (
+  `id` int(11) NOT NULL,
+  `creator_email` varchar(255) DEFAULT NULL,
+  `description_keyword` varchar(100) DEFAULT NULL,
+  `id_tipo_evento` int(11) DEFAULT NULL,
+  `attiva` int(11) NOT NULL DEFAULT '1'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `eventi_google_rules_invitati`
+--
+
+CREATE TABLE `eventi_google_rules_invitati` (
+  `id_rule` int(11) NOT NULL,
+  `id_invitato` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -540,31 +566,6 @@ CREATE TABLE `eventi_tipi_eventi` (
   `colore` varchar(10) NOT NULL DEFAULT '#71843f',
   `colore_testo` varchar(7) NOT NULL DEFAULT '#ffffff',
   `attivo` int(11) NOT NULL DEFAULT '1'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- --------------------------------------------------------
-
--- 
--- Struttura della tabella `eventi_google_rules`
---
-
-CREATE TABLE `eventi_google_rules` (
-  `id` int(11) NOT NULL,
-  `creator_email` varchar(255) DEFAULT NULL,
-  `description_keyword` varchar(100) DEFAULT NULL,
-  `id_tipo_evento` int(11) DEFAULT NULL,
-  `attiva` int(11) NOT NULL DEFAULT '1'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- --------------------------------------------------------
-
---
--- Struttura della tabella `eventi_google_rules_invitati`
---
-
-CREATE TABLE `eventi_google_rules_invitati` (
-  `id_rule` int(11) NOT NULL,
-  `id_invitato` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -1005,25 +1006,9 @@ CREATE TABLE `turni_calendario` (
   `id_tipo` int(11) NOT NULL,
   `google_calendar_eventid` varchar(255) DEFAULT NULL,
   `id_utenti_bambini` varchar(255) DEFAULT NULL,
-  `note` text DEFAULT NULL,
+  `note` text,
   `aggiornato_il` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `data_ultima_sincronizzazione` datetime DEFAULT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
--- --------------------------------------------------------
-
---
--- Struttura della tabella `turni_tipi`
---
-
-CREATE TABLE `turni_tipi` (
-  `id` int(11) NOT NULL,
-  `descrizione` varchar(100) NOT NULL,
-  `ora_inizio` time DEFAULT NULL,
-  `ora_fine` time DEFAULT NULL,
-  `colore_bg` varchar(7) NOT NULL,
-  `colore_testo` varchar(7) NOT NULL DEFAULT '#000000',
-  `attivo` tinyint(1) NOT NULL DEFAULT '1'
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -1042,6 +1027,22 @@ CREATE TABLE `turni_sync_google_log` (
   `dati_evento` text,
   `data_creazione` datetime DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `turni_tipi`
+--
+
+CREATE TABLE `turni_tipi` (
+  `id` int(11) NOT NULL,
+  `descrizione` varchar(100) NOT NULL,
+  `ora_inizio` time DEFAULT NULL,
+  `ora_fine` time DEFAULT NULL,
+  `colore_bg` varchar(7) NOT NULL,
+  `colore_testo` varchar(7) NOT NULL DEFAULT '#000000',
+  `attivo` tinyint(1) NOT NULL DEFAULT '1'
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -1175,6 +1176,179 @@ CREATE TABLE `utenti2salvadanai` (
   `nascosto` tinyint(1) NOT NULL DEFAULT '0',
   `preferito` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura stand-in per le viste `v_poste_categorie_totali`
+-- (Vedi sotto per la vista effettiva)
+--
+CREATE TABLE `v_poste_categorie_totali` (
+`id_categoria_posta` int(11)
+,`descrizione_categoria` varchar(200)
+,`accredito_tot` decimal(33,2)
+,`addebito_tot` decimal(33,2)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Struttura stand-in per le viste `v_poste_gruppi_totali`
+-- (Vedi sotto per la vista effettiva)
+--
+CREATE TABLE `v_poste_gruppi_totali` (
+`id_gruppo_transazione` int(11)
+,`descrizione` varchar(100)
+,`accredito_tot` decimal(33,2)
+,`addebito_tot` decimal(33,2)
+,`anno` int(4)
+,`mese` int(2)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Struttura stand-in per le viste `v_spese_mensili`
+-- (Vedi sotto per la vista effettiva)
+--
+CREATE TABLE `v_spese_mensili` (
+`id_utente` bigint(11)
+,`descrizione` varchar(100)
+,`attivo` int(11)
+,`id_gruppo_transazione` int(11)
+,`totale_speso` decimal(54,2)
+,`totale_entrato` decimal(54,2)
+,`ultima_operazione` datetime
+,`anno` int(4)
+,`mese` int(2)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `v_turni`
+--
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_turni`  AS SELECT `Sql1203781_2`.`turni`.`id_turno` AS `id_turno`, `Sql1203781_2`.`turni`.`id_famiglia` AS `id_famiglia`, `Sql1203781_2`.`turni`.`id_utente` AS `id_utente`, `Sql1203781_2`.`turni`.`data_turno` AS `data_turno`, (case when (ifnull(`Sql1203781_2`.`turni`.`orario_da`,0) > 0) then `Sql1203781_2`.`turni`.`orario_da` else `Sql1203781_2`.`turni_tipi`.`orario_da` end) AS `orario_da`, (case when (ifnull(`Sql1203781_2`.`turni`.`orario_a`,0) > 0) then `Sql1203781_2`.`turni`.`orario_a` else `Sql1203781_2`.`turni_tipi`.`orario_a` end) AS `orario_a`, (case when (`Sql1203781_2`.`turni_tipi`.`finisce_giorno_dopo` > 0) then (`Sql1203781_2`.`turni`.`data_turno` + interval 1 day) else `Sql1203781_2`.`turni`.`data_turno` end) AS `data_fine`, `Sql1203781_2`.`turni`.`descrizione` AS `descrizione`, `Sql1203781_2`.`turni`.`id_tipo_turno` AS `id_tipo_turno`, `Sql1203781_2`.`turni`.`note` AS `note`, `Sql1203781_2`.`turni`.`ore_straordinari` AS `ore_straordinari`, `Sql1203781_2`.`turni_tipi`.`tipo_turno` AS `tipo_turno`, `Sql1203781_2`.`turni_tipi`.`icon` AS `icon`, `Sql1203781_2`.`turni_tipi`.`colore` AS `colore`, 0 AS `aggiungi_turni_fino_a_fine_mese`, ifnull(`Sql1203781_2`.`turni`.`serve_qualcuno_per_soso`,`Sql1203781_2`.`turni_tipi`.`serve_qualcuno_per_soso`) AS `serve_qualcuno_per_soso`, `Sql1203781_2`.`turni`.`id_utente_per_soso` AS `id_utente_per_soso`, `Sql1203781_2`.`utenti`.`soprannome` AS `utente_per_soso` FROM ((`turni` left join `turni_tipi` on((`Sql1203781_2`.`turni`.`id_tipo_turno` = `Sql1203781_2`.`turni_tipi`.`id_tipo_turno`))) left join `utenti` on((`Sql1203781_2`.`turni`.`id_utente_per_soso` = `Sql1203781_2`.`utenti`.`id`))) ;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura stand-in per le viste `v_utenti2famiglie`
+-- (Vedi sotto per la vista effettiva)
+--
+CREATE TABLE `v_utenti2famiglie` (
+`id_famiglia` int(11)
+,`nome_famiglia` varchar(100)
+,`id` int(11)
+,`nome` varchar(100)
+,`cognome` varchar(100)
+,`email` varchar(100)
+,`id_famiglia_attuale` int(11)
+,`userlevelid` int(11)
+,`admin` int(11)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Struttura stand-in per le viste `v_utenti2famiglie_ricerca`
+-- (Vedi sotto per la vista effettiva)
+--
+CREATE TABLE `v_utenti2famiglie_ricerca` (
+`nome` varchar(100)
+,`cognome` varchar(100)
+,`email` varchar(100)
+,`nome_famiglia` varchar(100)
+,`in_gestione` int(11)
+,`id_utente` int(11)
+,`id_famiglia` int(11)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Struttura stand-in per le viste `v_utenti_ricerca`
+-- (Vedi sotto per la vista effettiva)
+--
+CREATE TABLE `v_utenti_ricerca` (
+`id_utente` int(11)
+,`nome` varchar(100)
+,`cognome` varchar(100)
+,`fullname` varchar(201)
+,`email` varchar(100)
+,`attivo` int(11)
+,`id_famiglia_attuale` int(11)
+,`disponibile_per_soso` int(11)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `webauthn_credentials`
+--
+
+CREATE TABLE `webauthn_credentials` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `credential_id` varchar(250) NOT NULL,
+  `public_key` text NOT NULL,
+  `counter` int(11) DEFAULT '0'
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura per vista `v_poste_categorie_totali`
+--
+DROP TABLE IF EXISTS `v_poste_categorie_totali`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_poste_categorie_totali`  AS SELECT `movimenti_poste_categoria`.`id_categoria_posta` AS `id_categoria_posta`, `movimenti_poste_categoria`.`descrizione_categoria` AS `descrizione_categoria`, sum(`movimenti_poste`.`accredito`) AS `accredito_tot`, sum(`movimenti_poste`.`addebito`) AS `addebito_tot` FROM (`movimenti_poste_categoria` join `movimenti_poste` on((`movimenti_poste_categoria`.`id_categoria_posta` = `movimenti_poste`.`id_categoria_posta`))) GROUP BY `movimenti_poste`.`id_categoria_posta` ;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura per vista `v_poste_gruppi_totali`
+--
+DROP TABLE IF EXISTS `v_poste_gruppi_totali`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_poste_gruppi_totali`  AS SELECT `bilancio_gruppi_transazione`.`id_gruppo_transazione` AS `id_gruppo_transazione`, `bilancio_gruppi_transazione`.`descrizione` AS `descrizione`, sum(`movimenti_poste`.`accredito`) AS `accredito_tot`, sum(`movimenti_poste`.`addebito`) AS `addebito_tot`, year(`movimenti_poste`.`data_contabile`) AS `anno`, month(`movimenti_poste`.`data_contabile`) AS `mese` FROM (`bilancio_gruppi_transazione` join `movimenti_poste` on((`bilancio_gruppi_transazione`.`id_gruppo_transazione` = `movimenti_poste`.`id_gruppo_transazione`))) GROUP BY `movimenti_poste`.`id_gruppo_transazione`, year(`movimenti_poste`.`data_contabile`), month(`movimenti_poste`.`data_contabile`) ;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura per vista `v_spese_mensili`
+--
+DROP TABLE IF EXISTS `v_spese_mensili`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_spese_mensili`  AS SELECT ifnull(`bilancio_uscite`.`id_utente`,`bilancio_entrate`.`id_utente`) AS `id_utente`, `bilancio_gruppi_transazione`.`descrizione` AS `descrizione`, `bilancio_gruppi_transazione`.`attivo` AS `attivo`, `bilancio_gruppi_transazione`.`id_gruppo_transazione` AS `id_gruppo_transazione`, sum(`bilancio_uscite`.`importo`) AS `totale_speso`, sum(`bilancio_entrate`.`importo`) AS `totale_entrato`, max(`bilancio_uscite`.`data_operazione`) AS `ultima_operazione`, year(ifnull(`bilancio_uscite`.`data_operazione`,`bilancio_entrate`.`data_operazione`)) AS `anno`, month(ifnull(`bilancio_uscite`.`data_operazione`,`bilancio_entrate`.`data_operazione`)) AS `mese` FROM ((`bilancio_gruppi_transazione` left join `bilancio_uscite` on((`bilancio_gruppi_transazione`.`id_gruppo_transazione` = `bilancio_uscite`.`id_gruppo_transazione`))) left join `bilancio_entrate` on((`bilancio_gruppi_transazione`.`id_gruppo_transazione` = `bilancio_entrate`.`id_gruppo_transazione`))) GROUP BY ifnull(`bilancio_uscite`.`id_utente`,`bilancio_entrate`.`id_utente`), year(ifnull(`bilancio_uscite`.`data_operazione`,`bilancio_entrate`.`data_operazione`)), month(ifnull(`bilancio_uscite`.`data_operazione`,`bilancio_entrate`.`data_operazione`)), ifnull(`bilancio_uscite`.`id_gruppo_transazione`,`bilancio_entrate`.`id_gruppo_transazione`) ;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura per vista `v_utenti2famiglie`
+--
+DROP TABLE IF EXISTS `v_utenti2famiglie`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_utenti2famiglie`  AS SELECT `utenti2famiglie`.`id_famiglia` AS `id_famiglia`, `famiglie`.`nome_famiglia` AS `nome_famiglia`, `utenti`.`id` AS `id`, `utenti`.`nome` AS `nome`, `utenti`.`cognome` AS `cognome`, `utenti`.`email` AS `email`, `utenti`.`id_famiglia_attuale` AS `id_famiglia_attuale`, `utenti`.`userlevelid` AS `userlevelid`, `utenti`.`admin` AS `admin` FROM ((`utenti` left join `utenti2famiglie` on((`utenti`.`id` = `utenti2famiglie`.`id_utente`))) left join `famiglie` on((`utenti2famiglie`.`id_famiglia` = `famiglie`.`id_famiglia`))) ;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura per vista `v_utenti2famiglie_ricerca`
+--
+DROP TABLE IF EXISTS `v_utenti2famiglie_ricerca`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_utenti2famiglie_ricerca`  AS SELECT `utenti`.`nome` AS `nome`, `utenti`.`cognome` AS `cognome`, `utenti`.`email` AS `email`, `famiglie`.`nome_famiglia` AS `nome_famiglia`, `famiglie`.`in_gestione` AS `in_gestione`, `utenti2famiglie`.`id_utente` AS `id_utente`, `utenti2famiglie`.`id_famiglia` AS `id_famiglia` FROM ((`utenti2famiglie` join `famiglie` on((`utenti2famiglie`.`id_famiglia` = `famiglie`.`id_famiglia`))) join `utenti` on((`utenti2famiglie`.`id_utente` = `utenti`.`id`))) ;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura per vista `v_utenti_ricerca`
+--
+DROP TABLE IF EXISTS `v_utenti_ricerca`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_utenti_ricerca`  AS SELECT `utenti`.`id` AS `id_utente`, `utenti`.`nome` AS `nome`, `utenti`.`cognome` AS `cognome`, concat(`utenti`.`cognome`,' ',`utenti`.`nome`) AS `fullname`, `utenti`.`email` AS `email`, `utenti`.`attivo` AS `attivo`, `utenti`.`id_famiglia_attuale` AS `id_famiglia_attuale`, `utenti`.`disponibile_per_soso` AS `disponibile_per_soso` FROM `utenti` ;
 
 --
 -- Indici per le tabelle scaricate
@@ -1392,6 +1566,19 @@ ALTER TABLE `eventi_eventi2salvadanai_etichette`
   ADD KEY `idx_e2se_id_etichetta` (`id_etichetta`);
 
 --
+-- Indici per le tabelle `eventi_google_rules`
+--
+ALTER TABLE `eventi_google_rules`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indici per le tabelle `eventi_google_rules_invitati`
+--
+ALTER TABLE `eventi_google_rules_invitati`
+  ADD PRIMARY KEY (`id_rule`,`id_invitato`),
+  ADD KEY `idx_egri_id_invitato` (`id_invitato`);
+
+--
 -- Indici per le tabelle `eventi_invitati`
 --
 ALTER TABLE `eventi_invitati`
@@ -1414,19 +1601,6 @@ ALTER TABLE `eventi_luogo`
 --
 ALTER TABLE `eventi_tipi_eventi`
   ADD PRIMARY KEY (`id`);
-
---
--- Indici per le tabelle `eventi_google_rules`
---
-ALTER TABLE `eventi_google_rules`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indici per le tabelle `eventi_google_rules_invitati`
---
-ALTER TABLE `eventi_google_rules_invitati`
-  ADD PRIMARY KEY (`id_rule`,`id_invitato`),
-  ADD KEY `idx_egri_id_invitato` (`id_invitato`);
 
 --
 -- Indici per le tabelle `famiglie`
@@ -1627,22 +1801,21 @@ ALTER TABLE `time_dimension`
 --
 ALTER TABLE `turni_calendario`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `google_calendar_eventid` (`google_calendar_eventid`),
   ADD KEY `id_tipo` (`id_tipo`);
-
---
--- Indici per le tabelle `turni_tipi`
---
-ALTER TABLE `turni_tipi`
-  ADD PRIMARY KEY (`id`);
 
 --
 -- Indici per le tabelle `turni_sync_google_log`
 --
 ALTER TABLE `turni_sync_google_log`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `id_turno` (`id_turno`),
-  ADD KEY `id_evento` (`id_evento`);
+  ADD KEY `idx_turno` (`id_turno`),
+  ADD KEY `idx_evento` (`id_evento`);
+
+--
+-- Indici per le tabelle `turni_tipi`
+--
+ALTER TABLE `turni_tipi`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indici per le tabelle `unita_misura`
@@ -1704,6 +1877,14 @@ ALTER TABLE `utenti2salvadanai`
   ADD PRIMARY KEY (`id_u2s`),
   ADD UNIQUE KEY `uq_u2s` (`id_utente`,`id_salvadanaio`),
   ADD KEY `fk_u2s_salvadanaio` (`id_salvadanaio`);
+
+--
+-- Indici per le tabelle `webauthn_credentials`
+--
+ALTER TABLE `webauthn_credentials`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `credential_id` (`credential_id`),
+  ADD KEY `user_id` (`user_id`);
 
 --
 -- AUTO_INCREMENT per le tabelle scaricate
@@ -1878,6 +2059,12 @@ ALTER TABLE `eventi_eventi2salvadanai_etichette`
   MODIFY `id_e2se` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT per la tabella `eventi_google_rules`
+--
+ALTER TABLE `eventi_google_rules`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT per la tabella `eventi_invitati`
 --
 ALTER TABLE `eventi_invitati`
@@ -1899,12 +2086,6 @@ ALTER TABLE `eventi_luogo`
 -- AUTO_INCREMENT per la tabella `eventi_tipi_eventi`
 --
 ALTER TABLE `eventi_tipi_eventi`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT per la tabella `eventi_google_rules`
---
-ALTER TABLE `eventi_google_rules`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -2076,15 +2257,15 @@ ALTER TABLE `turni_calendario`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT per la tabella `turni_tipi`
---
-ALTER TABLE `turni_tipi`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT per la tabella `turni_sync_google_log`
 --
 ALTER TABLE `turni_sync_google_log`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `turni_tipi`
+--
+ALTER TABLE `turni_tipi`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -2122,6 +2303,12 @@ ALTER TABLE `utenti2menu_smartadmin`
 --
 ALTER TABLE `utenti2salvadanai`
   MODIFY `id_u2s` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `webauthn_credentials`
+--
+ALTER TABLE `webauthn_credentials`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Limiti per le tabelle scaricate
@@ -2196,9 +2383,9 @@ ALTER TABLE `eventi_eventi2invitati`
 -- Limiti per la tabella `eventi_eventi2salvadanai_etichette`
 --
 ALTER TABLE `eventi_eventi2salvadanai_etichette`
+  ADD CONSTRAINT `fk_e2se_etichetta` FOREIGN KEY (`id_etichetta`) REFERENCES `bilancio_etichette` (`id_etichetta`),
   ADD CONSTRAINT `fk_e2se_evento` FOREIGN KEY (`id_evento`) REFERENCES `eventi` (`id`),
-  ADD CONSTRAINT `fk_e2se_salvadanaio` FOREIGN KEY (`id_salvadanaio`) REFERENCES `salvadanai` (`id_salvadanaio`),
-  ADD CONSTRAINT `fk_e2se_etichetta` FOREIGN KEY (`id_etichetta`) REFERENCES `bilancio_etichette` (`id_etichetta`);
+  ADD CONSTRAINT `fk_e2se_salvadanaio` FOREIGN KEY (`id_salvadanaio`) REFERENCES `salvadanai` (`id_salvadanaio`);
 
 --
 -- Limiti per la tabella `gestione_account_password`
