@@ -238,7 +238,6 @@ if ($result && $result->num_rows > 0): ?>
 <?php else: ?>
   <p class="text-center text-muted">Nessun movimento presente.</p>
 <?php endif; 
-/*
 $movimenti_revolut = "";
   if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1)
   {
@@ -275,7 +274,7 @@ $movimenti_revolut = "";
             FROM bilancio_uscite bu
             WHERE bu.id_utente = {$idUtente}
         ) t
-        WHERE id_gruppo_transazione IS NULL
+        WHERE id_gruppo_transazione IS NULL AND data_operazione >= DATE_SUB(CURDATE(), INTERVAL 2 MONTH)
         ORDER BY data_operazione DESC";
 
 $result = $conn->query($sql);
@@ -289,9 +288,8 @@ if ($result && $result->num_rows > 0): ?>
 
   </div>
 <?php else: ?>
-  <p class="text-center text-white">Tutti i movimenti hanno un gruppo.</p>
+  <!--<p class="text-center text-white mt-2">Tutti i movimenti hanno un gruppo.</p>-->
 <?php endif; 
-  */
     ?>
 
  <!-- Modal conferma eliminazione -->
