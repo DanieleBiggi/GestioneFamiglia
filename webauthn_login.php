@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $res = $stmt->get_result();
     $creds = [];
     while ($row = $res->fetch_assoc()) {
-        $creds[] = ['type' => 'public-key', 'id' => base64_encode($row['credential_id'])];
+        $creds[] = ['type' => 'public-key', 'id' => $row['credential_id']];
     }
     echo json_encode([
         'challenge' => base64_encode($challenge),
@@ -53,7 +53,7 @@ if (!isset($_SESSION['webauthn_challenge'], $_SESSION['webauthn_user']) || $_SES
     exit;
 }
 
-$credentialId = $input['id'] ?? '';
+$credentialId = $input['rawId'] ?? '';
 $stmt = $conn->prepare('SELECT public_key FROM webauthn_credentials WHERE user_id = ? AND credential_id = ?');
 $stmt->bind_param('is', $userId, $credentialId);
 $stmt->execute();
