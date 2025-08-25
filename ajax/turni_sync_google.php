@@ -45,8 +45,12 @@ $stmt->bind_param('iss', $idFamiglia, $periodStart, $periodEnd);
 $stmt->execute();
 $res = $stmt->get_result();
 $turni = [];
+$turniGcIds = [];
 while ($row = $res->fetch_assoc()) {
     $turni[] = $row;
+    if (!empty($row['google_calendar_eventid'])) {
+        $turniGcIds[$row['google_calendar_eventid']] = true;
+    }
 }
 $stmt->close();
 
@@ -211,6 +215,7 @@ try {
                     $upd->bind_param('si', $newId, $t['id']);
                     $upd->execute();
                     $upd->close();
+                    $turniGcIds[$newId] = true;
                 }
             } else {
                 $created = $service->events->insert($calendarIdTurni, new Google_Service_Calendar_Event($eventData));
@@ -219,10 +224,39 @@ try {
                 $upd->bind_param('si', $newId, $t['id']);
                 $upd->execute();
                 $upd->close();
+                $turniGcIds[$newId] = true;
             }
             log_sync($conn, (int)$t['id'], null, 'turno_db_to_google', 'success', '', $payload);
         } catch (Exception $e) {
             log_sync($conn, (int)$t['id'], null, 'turno_db_to_google', 'error', $e->getMessage(), $payload);
+        }
+    }
+
+    // Remove Google Calendar events not present in DB turni
+    $params = [
+        'singleEvents' => true,
+        'timeMin' => $periodStart . 'T00:00:00Z',
+        'timeMax' => $periodEnd . 'T23:59:59Z'
+    ];
+    $gEvents = $service->events->listEvents($calendarIdTurni, $params);
+    while (true) {
+        foreach ($gEvents->getItems() as $gEvent) {
+            $gcId = $gEvent->getId();
+            if (!isset($turniGcIds[$gcId])) {
+                try {
+                    $service->events->delete($calendarIdTurni, $gcId);
+                    log_sync($conn, null, null, 'turno_google_delete', 'success', '', json_encode(['id' => $gcId]));
+                } catch (Exception $ex) {
+                    log_sync($conn, null, null, 'turno_google_delete', 'error', $ex->getMessage(), json_encode(['id' => $gcId]));
+                }
+            }
+        }
+        $pageToken = $gEvents->getNextPageToken();
+        if ($pageToken) {
+            $params['pageToken'] = $pageToken;
+            $gEvents = $service->events->listEvents($calendarIdTurni, $params);
+        } else {
+            break;
         }
     }
 
