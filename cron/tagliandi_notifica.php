@@ -43,14 +43,16 @@ foreach ($scadenze as $s) {
         ];
         $mail->setFrom('assistenza@gestionefamiglia.it', 'Gestione Famiglia');
         $mail->addAddress($s['email']);
-        $mail->isHTML(false);
+        $mail->isHTML(true);
         $mail->Subject = 'Tagliando in scadenza';
-        $mail->Body    = sprintf("Il tagliando '%s' per il mezzo '%s' è in scadenza il %s o a %d km.",
+        $template = file_get_contents(__DIR__ . '/../assets/html/codice_verifica.html');
+        $message = sprintf("Il tagliando '%s' per il mezzo '%s' è in scadenza il %s o a %d km.",
             $s['nome_tagliando'],
             $s['nome_mezzo'],
             $s['next_date'],
             $s['next_km']
         );
+        $mail->Body = str_replace(['[content]', '[message]'], ['Tagliando in scadenza', $message], $template);
         $mail->send();
     } catch (Exception $e) {
         // Silenzia eventuali errori di invio
