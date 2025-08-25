@@ -36,9 +36,16 @@ $allFamiglie = $allFamRes ? $allFamRes->fetch_all(MYSQLI_ASSOC) : [];
 
 $periodo = '';
 if (!empty($evento['data_evento']) || !empty($evento['ora_evento'])) {
-    $start = trim(($evento['data_evento'] ?? '') . ' ' . ($evento['ora_evento'] ?? ''));
-    $endPart = trim(($evento['data_fine'] ?? '') . ' ' . ($evento['ora_fine'] ?? ''));
-    $periodo = $endPart && $endPart !== $start ? $start . ' - ' . $endPart : $start;
+    $startDate = $evento['data_evento'] ? date('d/m/Y', strtotime($evento['data_evento'])) : '';
+    $startTime = $evento['ora_evento'] ? date('H:i', strtotime($evento['ora_evento'])) : '';
+    $endDate   = $evento['data_fine'] ? date('d/m/Y', strtotime($evento['data_fine'])) : '';
+    $endTime   = $evento['ora_fine'] ? date('H:i', strtotime($evento['ora_fine'])) : '';
+    if ($endDate && $endDate !== $startDate) {
+        $periodo = trim("$startDate $startTime") . ' - ' . trim("$endDate $endTime");
+    } else {
+        $periodo = trim("$startDate $startTime");
+        if ($endTime) { $periodo .= ' - ' . $endTime; }
+    }
 }
 
 // Luoghi collegati all'evento
@@ -71,6 +78,13 @@ $stmtInv->execute();
 $resInv = $stmtInv->get_result();
 while ($row = $resInv->fetch_assoc()) { $invitati[] = $row; }
 $stmtInv->close();
+$totInvitati = count($invitati);
+$totPartecipa = $totForse = $totAssente = 0;
+foreach ($invitati as $inv) {
+    if (!empty($inv['partecipa'])) $totPartecipa++;
+    if (!empty($inv['forse'])) $totForse++;
+    if (!empty($inv['assente'])) $totAssente++;
+}
 
 // Invitati disponibili per l'aggiunta (solo attivi e collegati alla famiglia)
 $invitatiDisponibili = [];
@@ -193,6 +207,14 @@ include 'includes/header.php';
     </div>
     <button type="button" class="btn btn-outline-light btn-sm" id="addInvitatoBtn">Aggiungi invitato</button>
   </div>
+  <?php if ($totInvitati > 0): ?>
+    <div class="small text-secondary mb-2">
+      Totale: <?= $totInvitati ?>
+      <?php if ($totPartecipa) echo ' · Partecipa: ' . $totPartecipa; ?>
+      <?php if ($totForse) echo ' · Forse: ' . $totForse; ?>
+      <?php if ($totAssente) echo ' · Assente: ' . $totAssente; ?>
+    </div>
+  <?php endif; ?>
   <ul class="list-group list-group-flush bg-dark" id="invitatiList">
     <?php foreach ($invitati as $idx => $row):
       $stato = $row['partecipa'] ? 'partecipa' : ($row['forse'] ? 'forse' : ($row['assente'] ? 'assente' : ''));
@@ -224,15 +246,21 @@ include 'includes/header.php';
     <div class="d-flex align-items-center">
       <h5 class="mb-0 me-3">Cibo</h5>
     </div>
-    <button type="button" class="btn btn-outline-light btn-sm" id="addCiboBtn">Aggiungi cibo</button>
+    <div>
+      <button type="button" class="btn btn-outline-light btn-sm me-2" id="ciboToListaBtn" data-id="<?= (int)$id ?>">Lista spesa</button>
+      <button type="button" class="btn btn-outline-light btn-sm" id="addCiboBtn">Aggiungi cibo</button>
+    </div>
   </div>
   <ul class="list-group list-group-flush bg-dark" id="ciboList">
     <?php foreach ($cibi as $idx => $row): ?>
-      <li class="list-group-item bg-dark text-white <?= $idx >= 3 ? 'd-none extra-row' : '' ?> cibo-row"
+      <li class="list-group-item bg-dark text-white <?= $idx >= 3 ? 'd-none extra-row' : '' ?> cibo-row d-flex align-items-center justify-content-between"
           data-id="<?= (int)$row['id_e2c'] ?>"
           data-piatto="<?= htmlspecialchars($row['piatto'], ENT_QUOTES) ?>"
           data-quantita="<?= htmlspecialchars($row['quantita'] ?? '', ENT_QUOTES) ?>">
-        <?= htmlspecialchars($row['piatto']) ?><?php if ($row['quantita'] !== null) echo ' - ' . htmlspecialchars($row['quantita']) . ' ' . htmlspecialchars($row['um']); ?>
+        <span class="flex-grow-1"><?= htmlspecialchars($row['piatto']) ?></span>
+        <?php if ($row['quantita'] !== null): ?>
+          <span class="quantita ms-2"><?= htmlspecialchars($row['quantita']) . ' ' . htmlspecialchars($row['um']) ?></span>
+        <?php endif; ?>
       </li>
     <?php endforeach; ?>
   </ul>
@@ -395,9 +423,9 @@ include 'includes/header.php';
           <?php endforeach; ?>
         </div>
       </div>
-      <div class="modal-footer">
-        <button type="submit" class="btn btn-primary w-100">Salva</button>
-      </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary w-100">Salva</button>
+        </div>
     </form>
   </div>
 </div>
@@ -653,7 +681,8 @@ include 'includes/header.php';
         </div>
       </div>
       <div class="modal-footer">
-        <button type="submit" class="btn btn-primary w-100">Salva</button>
+        <button type="button" class="btn btn-danger me-auto" id="deleteCiboBtn">Elimina</button>
+        <button type="submit" class="btn btn-primary">Salva</button>
       </div>
     </form>
   </div>
@@ -715,6 +744,7 @@ include 'includes/header.php';
 #salvList .list-group-item,
 #etList .list-group-item { padding: 0.25rem 0.5rem; }
 #salvList .importo, #etList .importo { min-width: 80px; text-align: right; display: inline-block; }
+#ciboList .quantita { min-width: 60px; text-align: right; display: inline-block; }
 #luoghiList .luogo-row { cursor: pointer; }
 #invitatiList .inv-row { cursor: pointer; }
 #ciboList .cibo-row { cursor: pointer; }

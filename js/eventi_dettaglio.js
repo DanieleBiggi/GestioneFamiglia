@@ -124,6 +124,15 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
   });
 
+  document.getElementById('ciboToListaBtn')?.addEventListener('click', function(){
+    if(!confirm('Sostituire la lista della spesa con il cibo di questo evento?')) return;
+    const fd = new FormData();
+    fd.append('id_evento', this.dataset.id);
+    fetch('ajax/cibo_to_lista_spesa.php', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(res=>{ if(res.success) window.location.href = 'lista_spesa.php'; else alert(res.error||'Errore'); });
+  });
+
   // apertura modal modifica salvadanaio/etichetta
   document.querySelectorAll('#salvList .se-row, #etList .se-row').forEach(li => {
     li.addEventListener('click', () => {
@@ -168,6 +177,16 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     const fd = new FormData(this);
     fetch('ajax/update_e2c.php', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+  });
+
+  document.getElementById('deleteCiboBtn')?.addEventListener('click', function(){
+    const id = document.getElementById('ciboForm')?.id_e2c.value;
+    if(!id || !confirm('Eliminare questo cibo dall\'evento?')) return;
+    const fd = new FormData();
+    fd.append('id_e2c', id);
+    fetch('ajax/delete_e2c.php', {method:'POST', body:fd})
       .then(r=>r.json())
       .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
   });
