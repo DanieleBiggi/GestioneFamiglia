@@ -26,7 +26,8 @@ $data = [
     'id_utente' => $idUtente
 ];
 $chilometri = [];
-$tagliandi = [];
+$eventi = [];
+$tipiEventi = [];
 if ($id > 0) {
     $stmt = $conn->prepare("SELECT * FROM mezzi WHERE id_mezzo = ? AND id_famiglia = ?");
     $stmt->bind_param('ii', $id, $idFamiglia);
@@ -51,14 +52,22 @@ if ($id > 0) {
     }
     $stmtKm->close();
 
-    $stmtTag = $conn->prepare("SELECT * FROM mezzi_tagliandi WHERE id_mezzo = ?  ORDER BY massimo_km_tagliando DESC");
-    $stmtTag->bind_param('i', $id);
-    $stmtTag->execute();
-    $resTag = $stmtTag->get_result();
-    while ($row = $resTag->fetch_assoc()) {
-        $tagliandi[] = $row;
+    $stmtEv = $conn->prepare("SELECT me.id_evento, me.data_evento, me.km_evento, me.note, mt.tipo_evento FROM mezzi_eventi me JOIN mezzi_eventi_tipi mt ON mt.id_tipo_evento = me.id_tipo_evento WHERE me.id_mezzo = ? ORDER BY me.data_evento DESC");
+    $stmtEv->bind_param('i', $id);
+    $stmtEv->execute();
+    $resEv = $stmtEv->get_result();
+    while ($row = $resEv->fetch_assoc()) {
+        $eventi[] = $row;
     }
-    $stmtTag->close();
+    $stmtEv->close();
+
+    $stmtTipi = $conn->prepare("SELECT id_tipo_evento, tipo_evento FROM mezzi_eventi_tipi WHERE attivo = 1 ORDER BY tipo_evento");
+    $stmtTipi->execute();
+    $resTipi = $stmtTipi->get_result();
+    while ($row = $resTipi->fetch_assoc()) {
+        $tipiEventi[] = $row;
+    }
+    $stmtTipi->close();
 }
 
 $isOwner = ($data['id_utente'] ?? $idUtente) == $idUtente;
@@ -101,34 +110,29 @@ if ($id > 0): ?>
   </ul>
 
   <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
-    <h5 class="mb-0">Tagliandi</h5>
+    <h5 class="mb-0">Eventi</h5>
     <?php if ($isOwner): ?>
-      <button class="btn btn-outline-light btn-sm" onclick="openTagliandoModal()">Aggiungi</button>
+      <button class="btn btn-outline-light btn-sm" onclick="openEventoModal()">Aggiungi</button>
     <?php endif; ?>
   </div>
-  <div id="tagliandiList">
-    <?php foreach ($tagliandi as $row): ?>
-      <div class="mezzo-card movement d-flex justify-content-between align-items-start text-white text-decoration-none"
-           onclick="window.location.href='mezzo_dettaglio_tagliando.php?id=<?= (int)$row['id_tagliando'] ?>&mezzo=<?= (int)$data['id_mezzo'] ?>'">
+  <div id="eventiList">
+    <?php foreach ($eventi as $row): ?>
+      <div class="mezzo-card movement d-flex justify-content-between align-items-start text-white">
         <div class="flex-grow-1">
-          <div class="fw-semibold"><?= htmlspecialchars($row['nome_tagliando']) ?></div>
-        </div>
-        <div class="flex-grow-1">
-            <?php if (!empty($row['massimo_km_tagliando'])): ?>
-            <div class="small text-end">Massimo km: <?= htmlspecialchars($row['massimo_km_tagliando']) ?></div>
-          <?php endif; ?>
-          <?php if (!empty($row['mesi_da_precedente_tagliando'])): ?>
-            <div class="small text-end">Da precedente tagliando km: <?= htmlspecialchars($row['mesi_da_precedente_tagliando']) ?></div>
+          <div class="fw-semibold"><?= htmlspecialchars($row['tipo_evento']) ?></div>
+          <?php if (!empty($row['note'])): ?>
+            <div class="small"><?= htmlspecialchars($row['note']) ?></div>
           <?php endif; ?>
         </div>
-        <div class="flex-grow-1">
-            <?php if (!empty($row['frequenza_mesi'])): ?>
-            <div class="small text-end">Frequenza mesi: <?= htmlspecialchars($row['frequenza_mesi']) ?></div>
-          <?php endif; ?>
-          <?php if (!empty($row['frequenza_km'])): ?>
-            <div class="small text-end">Frequenza km: <?= htmlspecialchars($row['frequenza_km']) ?></div>
+        <div class="text-end me-2" style="min-width:90px;">
+          <div class="small"><?= date('d/m/Y', strtotime($row['data_evento'])) ?></div>
+          <?php if (!empty($row['km_evento'])): ?>
+            <div class="small"><?= number_format((int)$row['km_evento'], 0, ',', '.') ?> km</div>
           <?php endif; ?>
         </div>
+        <?php if ($isOwner): ?>
+          <button class="btn btn-danger btn-sm ms-2" onclick="deleteEvento(event, <?= (int)$row['id_evento'] ?>)">✕</button>
+        <?php endif; ?>
       </div>
     <?php endforeach; ?>
   </div>
@@ -189,38 +193,34 @@ if ($id > 0): ?>
   </div>
 </div>
 
-<!-- Modal tagliando -->
-<div class="modal fade" id="tagliandoModal" tabindex="-1">
+<!-- Modal evento -->
+<div class="modal fade" id="eventoModal" tabindex="-1">
   <div class="modal-dialog">
-    <form class="modal-content bg-dark text-white" id="tagliandoForm">
+    <form class="modal-content bg-dark text-white" id="eventoForm">
       <div class="modal-header">
-        <h5 class="modal-title">Nuovo tagliando</h5>
+        <h5 class="modal-title">Nuovo evento</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <div class="mb-3">
-          <label class="form-label">Nome tagliando</label>
-          <input type="text" name="nome_tagliando" class="form-control bg-secondary text-white" required>
+          <label class="form-label">Tipo evento</label>
+          <select name="id_tipo_evento" class="form-select bg-secondary text-white">
+            <?php foreach ($tipiEventi as $t): ?>
+              <option value="<?= (int)$t['id_tipo_evento'] ?>"><?= htmlspecialchars($t['tipo_evento']) ?></option>
+            <?php endforeach; ?>
+          </select>
         </div>
         <div class="mb-3">
-          <label class="form-label">Mesi da immatricolazione</label>
-          <input type="number" name="mesi_da_immatricolazione" class="form-control bg-secondary text-white">
+          <label class="form-label">Data</label>
+          <input type="date" name="data_evento" class="form-control bg-secondary text-white" required>
         </div>
         <div class="mb-3">
-          <label class="form-label">Mesi da precedente tagliando</label>
-          <input type="number" name="mesi_da_precedente_tagliando" class="form-control bg-secondary text-white">
+          <label class="form-label">Chilometri</label>
+          <input type="number" name="km_evento" class="form-control bg-secondary text-white">
         </div>
         <div class="mb-3">
-          <label class="form-label">Massimo km tagliando</label>
-          <input type="number" name="massimo_km_tagliando" class="form-control bg-secondary text-white">
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Frequenza mesi</label>
-          <input type="number" name="frequenza_mesi" class="form-control bg-secondary text-white">
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Frequenza km</label>
-          <input type="number" name="frequenza_km" class="form-control bg-secondary text-white">
+          <label class="form-label">Note</label>
+          <input type="text" name="note" class="form-control bg-secondary text-white">
         </div>
       </div>
       <div class="modal-footer">
