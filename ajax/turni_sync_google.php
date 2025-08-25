@@ -137,6 +137,8 @@ try {
 
     // Timezone fisso
     $timeZone = 'Europe/Rome';
+    $timeMin  = (new DateTime($periodStart . ' 00:00:00', new DateTimeZone($timeZone)))->format(DateTime::RFC3339);
+    $timeMax  = (new DateTime($periodEnd   . ' 23:59:59', new DateTimeZone($timeZone)))->format(DateTime::RFC3339);
 
     // Mappa tra codice colore e colorId di Google Calendar
     $colorMap = [];
@@ -235,8 +237,9 @@ try {
     // Remove Google Calendar events not present in DB turni
     $params = [
         'singleEvents' => true,
-        'timeMin' => $periodStart . 'T00:00:00Z',
-        'timeMax' => $periodEnd . 'T23:59:59Z'
+        'timeMin' => $timeMin,
+        'timeMax' => $timeMax,
+        'timeZone' => $timeZone
     ];
     $gEvents = $service->events->listEvents($calendarIdTurni, $params);
     while (true) {
@@ -316,8 +319,9 @@ try {
     // Fetch Google Calendar events and sync to DB
     $params = [
         'singleEvents' => true,
-        'timeMin' => $periodStart . 'T00:00:00Z',
-        'timeMax' => $periodEnd . 'T23:59:59Z'
+        'timeMin' => $timeMin,
+        'timeMax' => $timeMax,
+        'timeZone' => $timeZone
     ];
     $gEvents = $service->events->listEvents($calendarIdEventi, $params);
     while (true) {
