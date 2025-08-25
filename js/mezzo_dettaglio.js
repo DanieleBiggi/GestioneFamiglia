@@ -32,9 +32,15 @@ document.getElementById('chilometroForm')?.addEventListener('submit', function(e
     .then(res=>{ if(res.success) location.reload(); });
 });
 
-function openEventoModal(){
+function openEventoModal(data){
   const form = document.getElementById('eventoForm');
-  form?.reset();
+  if(!form) return;
+  form.reset();
+  form.id_evento.value = data && data.id ? data.id : '';
+  form.id_tipo_evento.value = data && data.id_tipo_evento ? data.id_tipo_evento : form.id_tipo_evento.value;
+  form.data_evento.value = data && data.data_evento ? data.data_evento : '';
+  form.km_evento.value = data && data.km_evento ? data.km_evento : '';
+  form.note.value = data && data.note ? data.note : '';
   new bootstrap.Modal(document.getElementById('eventoModal')).show();
 }
 
@@ -42,7 +48,7 @@ document.getElementById('eventoForm')?.addEventListener('submit', function(e){
   e.preventDefault();
   const fd = new FormData(this);
   fd.append('id_mezzo', mezzoData.id);
-  fetch('ajax/add_mezzo_evento.php', {method:'POST', body:fd})
+  fetch('ajax/update_mezzo_evento.php', {method:'POST', body:fd})
     .then(r=>r.json())
     .then(res=>{ if(res.success) location.reload(); });
 });
@@ -53,6 +59,20 @@ function editChilometro(el){
 
 document.querySelectorAll('#chilometriList li').forEach(li=>{
   li.addEventListener('click', ()=>editChilometro(li));
+});
+
+function editEvento(el){
+  openEventoModal({
+    id: el.dataset.id,
+    id_tipo_evento: el.dataset.tipo,
+    data_evento: el.dataset.data,
+    km_evento: el.dataset.km,
+    note: el.dataset.note
+  });
+}
+
+document.querySelectorAll('#eventiList .mezzo-card').forEach(div=>{
+  div.addEventListener('click', ()=>editEvento(div));
 });
 
 function deleteChilometro(ev, id){

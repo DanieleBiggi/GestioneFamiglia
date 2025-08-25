@@ -52,7 +52,7 @@ if ($id > 0) {
     }
     $stmtKm->close();
 
-    $stmtEv = $conn->prepare("SELECT me.id_evento, me.data_evento, me.km_evento, me.note, mt.tipo_evento FROM mezzi_eventi me JOIN mezzi_eventi_tipi mt ON mt.id_tipo_evento = me.id_tipo_evento WHERE me.id_mezzo = ? ORDER BY me.data_evento DESC");
+    $stmtEv = $conn->prepare("SELECT me.id_evento, me.id_tipo_evento, me.data_evento, me.km_evento, me.note, mt.tipo_evento FROM mezzi_eventi me JOIN mezzi_eventi_tipi mt ON mt.id_tipo_evento = me.id_tipo_evento WHERE me.id_mezzo = ? ORDER BY me.data_evento DESC");
     $stmtEv->bind_param('i', $id);
     $stmtEv->execute();
     $resEv = $stmtEv->get_result();
@@ -117,7 +117,12 @@ if ($id > 0): ?>
   </div>
   <div id="eventiList">
     <?php foreach ($eventi as $row): ?>
-      <div class="mezzo-card movement d-flex justify-content-between align-items-start text-white">
+      <div class="mezzo-card movement d-flex justify-content-between align-items-start text-white"
+           data-id="<?= (int)$row['id_evento'] ?>"
+           data-tipo="<?= (int)$row['id_tipo_evento'] ?>"
+           data-data="<?= htmlspecialchars($row['data_evento']) ?>"
+           data-km="<?= (int)$row['km_evento'] ?>"
+           data-note="<?= htmlspecialchars($row['note'], ENT_QUOTES) ?>">
         <div class="flex-grow-1">
           <div class="fw-semibold"><?= htmlspecialchars($row['tipo_evento']) ?></div>
           <?php if (!empty($row['note'])): ?>
@@ -202,6 +207,7 @@ if ($id > 0): ?>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
+        <input type="hidden" name="id_evento" id="id_evento">
         <div class="mb-3">
           <label class="form-label">Tipo evento</label>
           <select name="id_tipo_evento" class="form-select bg-secondary text-white">
