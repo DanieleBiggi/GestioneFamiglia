@@ -32,17 +32,17 @@ document.getElementById('chilometroForm')?.addEventListener('submit', function(e
     .then(res=>{ if(res.success) location.reload(); });
 });
 
-function openTagliandoModal(){
-  const form = document.getElementById('tagliandoForm');
+function openEventoModal(){
+  const form = document.getElementById('eventoForm');
   form?.reset();
-  new bootstrap.Modal(document.getElementById('tagliandoModal')).show();
+  new bootstrap.Modal(document.getElementById('eventoModal')).show();
 }
 
-document.getElementById('tagliandoForm')?.addEventListener('submit', function(e){
+document.getElementById('eventoForm')?.addEventListener('submit', function(e){
   e.preventDefault();
   const fd = new FormData(this);
   fd.append('id_mezzo', mezzoData.id);
-  fetch('ajax/add_tagliando.php', {method:'POST', body:fd})
+  fetch('ajax/add_mezzo_evento.php', {method:'POST', body:fd})
     .then(r=>r.json())
     .then(res=>{ if(res.success) location.reload(); });
 });
@@ -67,3 +67,11 @@ document.getElementById('toggleChilometri')?.addEventListener('click', function(
   document.querySelectorAll('.extra-row').forEach(el=>el.classList.toggle('d-none'));
   this.textContent = this.textContent === 'Mostra tutti' ? 'Mostra meno' : 'Mostra tutti';
 });
+
+function deleteEvento(ev, id){
+  ev.stopPropagation();
+  if(!confirm('Eliminare questo evento?')) return;
+  fetch('ajax/delete_mezzo_evento.php', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'id_evento='+encodeURIComponent(id)})
+    .then(r=>r.json())
+    .then(res=>{ if(res.success) location.reload(); });
+}

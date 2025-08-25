@@ -736,6 +736,33 @@ CREATE TABLE `mezzi_tagliandi` (
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `mezzi_eventi_tipi`
+--
+
+CREATE TABLE `mezzi_eventi_tipi` (
+  `id_tipo_evento` int(11) NOT NULL,
+  `tipo_evento` varchar(100) NOT NULL,
+  `attivo` int(11) NOT NULL DEFAULT '1'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `mezzi_eventi`
+--
+
+CREATE TABLE `mezzi_eventi` (
+  `id_evento` int(11) NOT NULL,
+  `id_mezzo` int(11) NOT NULL,
+  `id_tipo_evento` int(11) NOT NULL,
+  `data_evento` date NOT NULL,
+  `km_evento` int(11) DEFAULT NULL,
+  `note` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `movimenti2caricamenti`
 --
 
@@ -1681,6 +1708,20 @@ ALTER TABLE `mezzi_tagliandi`
   ADD KEY `fk_tagliandi_utente` (`id_utente`);
 
 --
+-- Indici per le tabelle `mezzi_eventi_tipi`
+--
+ALTER TABLE `mezzi_eventi_tipi`
+  ADD PRIMARY KEY (`id_tipo_evento`);
+
+--
+-- Indici per le tabelle `mezzi_eventi`
+--
+ALTER TABLE `mezzi_eventi`
+  ADD PRIMARY KEY (`id_evento`),
+  ADD KEY `fk_eventi_mezzo` (`id_mezzo`),
+  ADD KEY `fk_eventi_tipo` (`id_tipo_evento`);
+
+--
 -- Indici per le tabelle `movimenti2caricamenti`
 --
 ALTER TABLE `movimenti2caricamenti`
@@ -2155,6 +2196,18 @@ ALTER TABLE `mezzi_tagliandi`
   MODIFY `id_tagliando` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT per la tabella `mezzi_eventi_tipi`
+--
+ALTER TABLE `mezzi_eventi_tipi`
+  MODIFY `id_tipo_evento` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `mezzi_eventi`
+--
+ALTER TABLE `mezzi_eventi`
+  MODIFY `id_evento` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT per la tabella `movimenti2caricamenti`
 --
 ALTER TABLE `movimenti2caricamenti`
@@ -2427,6 +2480,13 @@ ALTER TABLE `mezzi_tagliandi`
   ADD CONSTRAINT `fk_tagliandi_famiglia` FOREIGN KEY (`id_famiglia`) REFERENCES `famiglie` (`id_famiglia`),
   ADD CONSTRAINT `fk_tagliandi_mezzo` FOREIGN KEY (`id_mezzo`) REFERENCES `mezzi` (`id_mezzo`),
   ADD CONSTRAINT `fk_tagliandi_utente` FOREIGN KEY (`id_utente`) REFERENCES `utenti` (`id`);
+
+--
+-- Limiti per la tabella `mezzi_eventi`
+--
+ALTER TABLE `mezzi_eventi`
+  ADD CONSTRAINT `fk_eventi_mezzo` FOREIGN KEY (`id_mezzo`) REFERENCES `mezzi` (`id_mezzo`),
+  ADD CONSTRAINT `fk_eventi_tipo` FOREIGN KEY (`id_tipo_evento`) REFERENCES `mezzi_eventi_tipi` (`id_tipo_evento`);
 
 --
 -- Limiti per la tabella `movimenti_revolut`
