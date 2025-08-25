@@ -1,7 +1,6 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
 include 'includes/db.php';
-include 'includes/header.php';
 
 $idUtente = $_SESSION['utente_id'] ?? ($_SESSION['id_utente'] ?? 0);
 $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
@@ -31,6 +30,7 @@ if ($id > 0) {
     if ($res && $res->num_rows > 0) {
         $data = $res->fetch_assoc();
     } else {
+        include 'includes/header.php';
         echo '<p class="text-danger">Record non trovato.</p>';
         include 'includes/footer.php';
         exit;
@@ -55,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $row = $res->fetch_assoc();
         $stmt->close();
         if (!$row || (int)$row['id_utente'] !== $idUtente) {
+            include 'includes/header.php';
             echo '<p class="text-danger">Operazione non autorizzata.</p>';
             include 'includes/footer.php';
             exit;
@@ -72,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Location: password.php');
     exit;
 }
+include 'includes/header.php';
 ?>
 <div class="container text-white">
   <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
