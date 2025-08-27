@@ -58,23 +58,32 @@ foreach($risultati as $ris)
 	}
 }
 ?>
-<?php
-echo
-"<div id='div_details' style='display:none'>";
-foreach($risultati as $ris)
-{
-	foreach($ris as $chiave => $valore)
-	{
-                if(($chiave!="ANNO" && $chiave!="MESE") || $id != 10)
-		{
-			echo $chiave.": ".$valore."<br>";
-		}
-	}
-	echo "<hr>";
-}
-echo
-"</div>";
-?>
+<button id="toggle_details" type="button" class="btn btn-secondary mb-3">Mostra dettagli</button>
+<div id="div_details" style="display:none">
+<?php foreach($risultati as $ris) {
+        foreach($ris as $chiave => $valore) {
+                if(($chiave!="ANNO" && $chiave!="MESE") || $id != 10) {
+                        echo $chiave.": ".$valore."<br>";
+                }
+        }
+        echo "<hr>";
+} ?>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const btn = document.getElementById('toggle_details');
+    const details = document.getElementById('div_details');
+    btn.addEventListener('click', function () {
+        if (details.style.display === 'none' || details.style.display === '') {
+            details.style.display = 'block';
+            btn.textContent = 'Nascondi dettagli';
+        } else {
+            details.style.display = 'none';
+            btn.textContent = 'Mostra dettagli';
+        }
+    });
+});
+</script>
 </div>
 </div>
 
