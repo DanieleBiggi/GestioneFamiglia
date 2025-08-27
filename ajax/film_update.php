@@ -33,13 +33,14 @@ if (!$detailsJson) {
     exit;
 }
 $movie = json_decode($detailsJson, true);
+$votoMedio = isset($movie['vote_average']) ? (float)$movie['vote_average'] : null;
 
 $conn->begin_transaction();
 try {
     $anno = substr($movie['release_date'] ?? '', 0, 4);
     $poster = isset($movie['poster_path']) && $movie['poster_path'] !== '' ? 'https://image.tmdb.org/t/p/w500' . $movie['poster_path'] : null;
-    $stmtUp = $conn->prepare("UPDATE film SET titolo=?, titolo_originale=?, anno=?, durata=?, trama=?, poster_url=?, lingua_originale=? WHERE id_film=?");
-    $stmtUp->bind_param('sssisssi', $movie['title'], $movie['original_title'], $anno, $movie['runtime'], $movie['overview'], $poster, $movie['original_language'], $idFilm);
+    $stmtUp = $conn->prepare("UPDATE film SET titolo=?, titolo_originale=?, anno=?, durata=?, trama=?, poster_url=?, lingua_originale=?, voto_medio=? WHERE id_film=?");
+    $stmtUp->bind_param('sssisssdi', $movie['title'], $movie['original_title'], $anno, $movie['runtime'], $movie['overview'], $poster, $movie['original_language'], $votoMedio, $idFilm);
     $stmtUp->execute();
     $stmtUp->close();
 
