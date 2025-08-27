@@ -89,7 +89,7 @@ function initUserManager(table, formColumns, primaryKey, lookups, boolCols = [],
                     const chkId = `fam_${f.id_famiglia}`;
                     div.innerHTML = `
                         <div class="form-check">
-                          <input class="form-check-input" type="checkbox" id="${chkId}" value="${f.id_famiglia}" ${f.userlevelid ? 'checked' : ''}>
+                          <input class="form-check-input" type="checkbox" id="${chkId}" value="${f.id_famiglia}" ${f.userlevelid!== null ? 'checked' : ''}>
                           <label class="form-check-label" for="${chkId}">${f.nome_famiglia}</label>
                         </div>
                         <select class="form-select form-select-sm bg-dark text-white border-secondary mt-1" data-family="${f.id_famiglia}">
