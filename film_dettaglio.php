@@ -2,6 +2,7 @@
 <?php
 include 'includes/db.php';
 include 'includes/header.php';
+$apiKey = $config['TMDB_API_KEY'] ?? null;
 
 $idUtente = $_SESSION['utente_id'] ?? 0;
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -103,7 +104,12 @@ $gruppi = $stmtGruppi->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmtGruppi->close();
 ?>
 <div class="container text-white">
-  <a href="film.php" class="btn btn-outline-light mb-3">← Indietro</a>
+  <div class="mb-3 d-flex gap-2">
+    <a href="film.php" class="btn btn-outline-light">← Indietro</a>
+    <?php if ($apiKey && !empty($film['tmdb_id'])): ?>
+    <button type="button" class="btn btn-secondary" id="updateFromApiBtn">Aggiorna da API</button>
+    <?php endif; ?>
+  </div>
   <h4 class="mb-4"><?= htmlspecialchars($film['titolo']) ?></h4>
   <?php if (!empty($film['poster_url'])): ?>
   <img src="<?= htmlspecialchars($film['poster_url']) ?>" alt="" class="mb-3" style="max-width:200px;">
