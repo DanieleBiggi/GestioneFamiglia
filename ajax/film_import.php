@@ -14,7 +14,7 @@ if (!$tmdbId) {
     exit;
 }
 
-$apiKey = getenv('TMDB_API_KEY');
+$apiKey =  $config['TMDB_API_KEY'];
 if (!$apiKey) {
     echo json_encode(['success' => false, 'error' => 'TMDB_API_KEY non configurato']);
     exit;
