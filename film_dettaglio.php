@@ -177,6 +177,9 @@ $generiStr = implode(', ', $filmGeneri);
     <?php if (!empty($film['durata'])): ?>
     <li><strong>Durata:</strong> <?= htmlspecialchars($film['durata']) ?> min</li>
     <?php endif; ?>
+    <?php if (!empty($film['regista'])): ?>
+    <li><strong>Regista:</strong> <?= htmlspecialchars($film['regista']) ?></li>
+    <?php endif; ?>
     <?php if ($generiStr): ?>
     <li><strong>Generi:</strong> <?= htmlspecialchars($generiStr) ?></li>
     <?php endif; ?>
