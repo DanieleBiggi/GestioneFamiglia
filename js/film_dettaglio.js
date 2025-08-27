@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalEl = document.getElementById('commentoModal');
   const deleteBtn = document.getElementById('deleteCommentoBtn');
   const addBtn = document.getElementById('addCommentoBtn');
+  const updateBtn = document.getElementById('updateFromApiBtn');
 
   addBtn?.addEventListener('click', () => {
     form.reset();
@@ -42,5 +43,19 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch('ajax/delete_film_commento.php', {method:'POST', body:fd})
       .then(r=>r.json())
       .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
+  });
+
+  updateBtn?.addEventListener('click', () => {
+    if(!confirm('Aggiornare i dati dal servizio TMDB?')) return;
+    fetch('ajax/film_update.php', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ id_film: FILM_ID })
+    })
+      .then(r => r.json())
+      .then(res => {
+        if(res.success) location.reload();
+        else alert(res.error || 'Errore');
+      });
   });
 });
