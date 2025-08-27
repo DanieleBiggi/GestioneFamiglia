@@ -65,7 +65,7 @@ foreach($risultati as $ris)
 {
 	foreach($ris as $chiave => $valore)
 	{
-		if(($chiave!="ANNO" && $chiave!="MESE") || CurrentPage()->id_dato_remoto->CurrentValue!=10)
+                if(($chiave!="ANNO" && $chiave!="MESE") || $id != 10)
 		{
 			echo $chiave.": ".$valore."<br>";
 		}
