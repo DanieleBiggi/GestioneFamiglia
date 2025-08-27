@@ -102,6 +102,17 @@ $stmtGruppi = $conn->prepare("SELECT id_gruppo, nome FROM film_gruppi ORDER BY n
 $stmtGruppi->execute();
 $gruppi = $stmtGruppi->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmtGruppi->close();
+
+$stmtGeneri = $conn->prepare("SELECT g.nome FROM film2generi f2g JOIN film_generi g ON f2g.id_genere = g.id_genere WHERE f2g.id_film=? ORDER BY g.nome");
+$stmtGeneri->bind_param('i', $id);
+$stmtGeneri->execute();
+$resGeneri = $stmtGeneri->get_result();
+$filmGeneri = [];
+while ($g = $resGeneri->fetch_assoc()) {
+    $filmGeneri[] = $g['nome'];
+}
+$stmtGeneri->close();
+$generiStr = implode(', ', $filmGeneri);
 ?>
 <div class="container text-white">
   <div class="mb-3 d-flex gap-2">
@@ -155,6 +166,33 @@ $stmtGruppi->close();
     </div>
   <?php endwhile; ?>
   </div>
+  <h5 class="mt-4">Dettagli film</h5>
+  <ul class="list-unstyled">
+    <?php if (!empty($film['titolo_originale'])): ?>
+    <li><strong>Titolo originale:</strong> <?= htmlspecialchars($film['titolo_originale']) ?></li>
+    <?php endif; ?>
+    <?php if (!empty($film['anno'])): ?>
+    <li><strong>Anno:</strong> <?= htmlspecialchars($film['anno']) ?></li>
+    <?php endif; ?>
+    <?php if (!empty($film['durata'])): ?>
+    <li><strong>Durata:</strong> <?= htmlspecialchars($film['durata']) ?> min</li>
+    <?php endif; ?>
+    <?php if ($generiStr): ?>
+    <li><strong>Generi:</strong> <?= htmlspecialchars($generiStr) ?></li>
+    <?php endif; ?>
+    <?php if (!empty($film['lingua_originale'])): ?>
+    <li><strong>Lingua originale:</strong> <?= htmlspecialchars($film['lingua_originale']) ?></li>
+    <?php endif; ?>
+    <?php if (!empty($film['voto_medio'])): ?>
+    <li><strong>Voto medio:</strong> <?= htmlspecialchars($film['voto_medio']) ?></li>
+    <?php endif; ?>
+    <?php if (!empty($film['tmdb_id'])): ?>
+    <li><strong>TMDB ID:</strong> <?= (int)$film['tmdb_id'] ?></li>
+    <?php endif; ?>
+    <?php if (!empty($film['trama'])): ?>
+    <li><strong>Trama:</strong> <?= nl2br(htmlspecialchars($film['trama'])) ?></li>
+    <?php endif; ?>
+  </ul>
 </div>
 <div class="modal fade" id="commentoModal" tabindex="-1">
   <div class="modal-dialog">
