@@ -22,26 +22,18 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function importMovie(movie) {
-    const data_visto = prompt('Data visto (YYYY-MM-DD)', '');
-    const voto = prompt('Voto (1-10, es 8.5)', '');
-    const commento = prompt('Commento', '');
     fetch('ajax/film_import.php', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        tmdb_id: movie.id,
-        data_visto,
-        voto,
-        commento
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdb_id: movie.id })
     })
-    .then(r => r.json())
-    .then(res => {
-      if (res.success) {
-        alert('Film importato');
-      } else {
-        alert(res.error || 'Errore');
-      }
-    });
+      .then(r => r.json())
+      .then(res => {
+        if (res.success && res.id_film) {
+          window.location.href = `film_dettaglio.php?id=${res.id_film}`;
+        } else {
+          alert(res.error || 'Errore');
+        }
+      });
   }
 });

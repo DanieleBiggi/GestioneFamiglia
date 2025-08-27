@@ -5,9 +5,9 @@ include '../includes/db.php';
 header('Content-Type: application/json');
 $input = json_decode(file_get_contents('php://input'), true);
 $tmdbId = (int)($input['tmdb_id'] ?? 0);
-$dataVisto = $input['data_visto'] ?: null;
-$voto = $input['voto'] !== '' ? (float)$input['voto'] : null;
-$commento = trim($input['commento'] ?? '');
+$dataVisto = isset($input['data_visto']) && $input['data_visto'] !== '' ? $input['data_visto'] : null;
+$voto = isset($input['voto']) && $input['voto'] !== '' ? (float)$input['voto'] : null;
+$commento = isset($input['commento']) ? trim($input['commento']) : '';
 
 if (!$tmdbId) {
     echo json_encode(['success' => false, 'error' => 'ID mancante']);
