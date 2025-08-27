@@ -134,6 +134,16 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
       </div>
       <div class="modal-body">
         <div class="d-grid gap-2">
+          <?php if (has_permission($conn, 'page:password.php', 'view')): ?>
+          <a href="password.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
+            <i class="bi bi-shield-lock me-2"></i>Siti e password
+          </a>
+          <?php endif; ?>
+          <?php if (has_permission($conn, 'page:budget.php', 'view')): ?>
+          <a href="budget.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
+            <i class="bi bi-wallet2 me-2"></i>Budget
+          </a>
+          <?php endif; ?>
           <?php if (has_permission($conn, 'page:mezzi.php', 'view')): ?>
           <a href="mezzi.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
             <i class="bi bi-truck me-2"></i>Mezzi
@@ -158,17 +168,12 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
           <a href="storia.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
             <i class="bi bi-clock-history me-2"></i>Storia
           </a>
-          <?php endif; ?>
-          <?php if (has_permission($conn, 'page:password.php', 'view')): ?>
-          <a href="password.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
-            <i class="bi bi-shield-lock me-2"></i>Siti e password
+          <?php endif; ?> 
+          <?php if (has_permission($conn, 'page:film.php', 'view')): ?>
+          <a href="film.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
+            <i class="bi bi-film me-2"></i>Film
           </a>
-          <?php endif; ?>
-          <?php if (has_permission($conn, 'page:budget.php', 'view')): ?>
-          <a href="budget.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
-            <i class="bi bi-wallet2 me-2"></i>Budget
-          </a>
-          <?php endif; ?>
+          <?php endif; ?> 
           <?php if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1 && has_permission($conn, 'page:etichette_lista.php', 'view')): ?>
           <a href="etichette_lista.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
             <i class="bi bi-tags me-2"></i>Etichette
