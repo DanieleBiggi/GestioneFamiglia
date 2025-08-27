@@ -26,6 +26,7 @@ if (!$detailsJson) {
     exit;
 }
 $movie = json_decode($detailsJson, true);
+$votoMedio = isset($movie['vote_average']) ? (float)$movie['vote_average'] : null;
 
 $conn->begin_transaction();
 try {
@@ -37,10 +38,10 @@ try {
     if ($row = $res->fetch_assoc()) {
         $idFilm = (int)$row['id_film'];
     } else {
-        $stmtIns = $conn->prepare("INSERT INTO film (tmdb_id, titolo, titolo_originale, anno, durata, trama, poster_url, lingua_originale) VALUES (?,?,?,?,?,?,?,?)");
+        $stmtIns = $conn->prepare("INSERT INTO film (tmdb_id, titolo, titolo_originale, anno, durata, trama, poster_url, lingua_originale, voto_medio) VALUES (?,?,?,?,?,?,?,?,?)");
         $anno = substr($movie['release_date'] ?? '', 0, 4);
         $poster = isset($movie['poster_path']) && $movie['poster_path'] !== '' ? 'https://image.tmdb.org/t/p/w500' . $movie['poster_path'] : null;
-        $stmtIns->bind_param('isssisss', $tmdbId, $movie['title'], $movie['original_title'], $anno, $movie['runtime'], $movie['overview'], $poster, $movie['original_language']);
+        $stmtIns->bind_param('isssisssd', $tmdbId, $movie['title'], $movie['original_title'], $anno, $movie['runtime'], $movie['overview'], $poster, $movie['original_language'], $votoMedio);
         $stmtIns->execute();
         $idFilm = $stmtIns->insert_id;
         $stmtIns->close();
@@ -60,6 +61,11 @@ try {
         }
     }
     $stmt->close();
+    // update vote average even if film already exists
+    $stmtUpd = $conn->prepare("UPDATE film SET voto_medio=? WHERE id_film=?");
+    $stmtUpd->bind_param('di', $votoMedio, $idFilm);
+    $stmtUpd->execute();
+    $stmtUpd->close();
 
     // Insert/Update film_utenti
     $idUtente = $_SESSION['utente_id'];
