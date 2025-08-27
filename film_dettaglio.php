@@ -15,6 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $dataVisto = $_POST['data_visto'] ?: null;
     $voto = $_POST['voto'] !== '' ? (float)$_POST['voto'] : null;
     $commento = trim($_POST['commento'] ?? '');
+    $liste = isset($_POST['liste']) ? array_map('intval', (array)$_POST['liste']) : [];
+    $nuovaLista = trim($_POST['nuova_lista'] ?? '');
     $stmt = $conn->prepare("UPDATE film_utenti SET data_visto=?, voto=? WHERE id_film=? AND id_utente=?");
     $stmt->bind_param('sddi', $dataVisto, $voto, $id, $idUtente);
     $stmt->execute();
@@ -24,6 +26,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmtC->bind_param('iis', $id, $idUtente, $commento);
         $stmtC->execute();
         $stmtC->close();
+    }
+    if ($nuovaLista !== '') {
+        $stmtNL = $conn->prepare("INSERT INTO film_liste (id_utente, nome) VALUES (?, ?)");
+        $stmtNL->bind_param('is', $idUtente, $nuovaLista);
+        $stmtNL->execute();
+        $liste[] = $stmtNL->insert_id;
+        $stmtNL->close();
+    }
+    $stmtDel = $conn->prepare("DELETE fl FROM film2liste fl JOIN film_liste l ON fl.id_lista = l.id_lista WHERE fl.id_film=? AND l.id_utente=?");
+    $stmtDel->bind_param('ii', $id, $idUtente);
+    $stmtDel->execute();
+    $stmtDel->close();
+    if (!empty($liste)) {
+        $stmtIns = $conn->prepare("INSERT INTO film2liste (id_film, id_lista) VALUES (?, ?)");
+        foreach ($liste as $idLista) {
+            $stmtIns->bind_param('ii', $id, $idLista);
+            $stmtIns->execute();
+        }
+        $stmtIns->close();
     }
 }
 
@@ -43,6 +64,22 @@ $stmtC->bind_param('i', $id);
 $stmtC->execute();
 $commenti = $stmtC->get_result();
 $stmtC->close();
+
+$stmtListe = $conn->prepare("SELECT id_lista, nome FROM film_liste WHERE id_utente=? ORDER BY nome");
+$stmtListe->bind_param('i', $idUtente);
+$stmtListe->execute();
+$listeUtente = $stmtListe->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmtListe->close();
+
+$stmtFilmListe = $conn->prepare("SELECT fl.id_lista FROM film2liste fl JOIN film_liste l ON fl.id_lista = l.id_lista WHERE fl.id_film=? AND l.id_utente=?");
+$stmtFilmListe->bind_param('ii', $id, $idUtente);
+$stmtFilmListe->execute();
+$listeFilm = [];
+$resFilmListe = $stmtFilmListe->get_result();
+while ($r = $resFilmListe->fetch_assoc()) {
+    $listeFilm[] = (int)$r['id_lista'];
+}
+$stmtFilmListe->close();
 ?>
 <div class="container text-white">
   <a href="film.php" class="btn btn-outline-light mb-3">← Indietro</a>
@@ -62,6 +99,16 @@ $stmtC->close();
     <div class="mb-3">
       <label class="form-label">Commento</label>
       <textarea name="commento" class="form-control bg-dark text-white border-secondary" rows="3"></textarea>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Liste</label>
+      <?php foreach ($listeUtente as $lista): ?>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="liste[]" value="<?= $lista['id_lista'] ?>" <?= in_array($lista['id_lista'], $listeFilm) ? 'checked' : '' ?>>
+        <label class="form-check-label"><?= htmlspecialchars($lista['nome']) ?></label>
+      </div>
+      <?php endforeach; ?>
+      <input type="text" name="nuova_lista" class="form-control bg-dark text-white border-secondary mt-2" placeholder="Nuova lista">
     </div>
     <button type="submit" class="btn btn-primary w-100">Salva</button>
   </form>
