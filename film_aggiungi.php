@@ -1,7 +1,8 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
+include 'includes/db.php';
 include 'includes/header.php';
-$apiKey = getenv('TMDB_API_KEY');
+$apiKey = $config['TMDB_API_KEY'];
 ?>
 <div class="container text-white">
   <a href="film.php" class="btn btn-outline-light mb-3">← Indietro</a>
