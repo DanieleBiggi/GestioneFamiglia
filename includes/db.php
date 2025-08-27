@@ -21,6 +21,12 @@ if (file_exists(__DIR__ . '/mail_config.php')) {
         $config = array_merge($config, $fileConfig);
     }
 }
+if (file_exists(__DIR__ . '/api_config.php')) {
+    $fileConfig = include __DIR__ . '/api_config.php';
+    if (is_array($fileConfig)) {
+        $config = array_merge($config, $fileConfig);
+    }
+}
 
 $host = $config['host'] ?? 'localhost';
 $port = $config['port'] ?? '3306';
