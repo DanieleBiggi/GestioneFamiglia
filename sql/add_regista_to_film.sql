@@ -1,0 +1,2 @@
+ALTER TABLE film
+  ADD COLUMN regista VARCHAR(255) DEFAULT NULL AFTER voto_medio;
