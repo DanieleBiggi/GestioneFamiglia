@@ -14,19 +14,35 @@ if ($id <= 0) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $dataVisto = $_POST['data_visto'] ?: null;
     $voto = $_POST['voto'] !== '' ? (float)$_POST['voto'] : null;
-    $commento = trim($_POST['commento'] ?? '');
     $liste = isset($_POST['liste']) ? array_map('intval', (array)$_POST['liste']) : [];
     $nuovaLista = trim($_POST['nuova_lista'] ?? '');
+    $idGruppo = isset($_POST['id_gruppo']) ? (int)$_POST['id_gruppo'] : null;
+    $nuovoGruppo = trim($_POST['nuovo_gruppo'] ?? '');
+
     $stmt = $conn->prepare("UPDATE film_utenti SET data_visto=?, voto=? WHERE id_film=? AND id_utente=?");
     $stmt->bind_param('sddi', $dataVisto, $voto, $id, $idUtente);
     $stmt->execute();
     $stmt->close();
-    if ($commento !== '') {
-        $stmtC = $conn->prepare("INSERT INTO film_commenti (id_film, id_utente, commento) VALUES (?,?,?)");
-        $stmtC->bind_param('iis', $id, $idUtente, $commento);
-        $stmtC->execute();
-        $stmtC->close();
+
+    if ($nuovoGruppo !== '') {
+        $stmtNG = $conn->prepare("INSERT INTO film_gruppi (nome) VALUES (?)");
+        $stmtNG->bind_param('s', $nuovoGruppo);
+        $stmtNG->execute();
+        $idGruppo = $stmtNG->insert_id;
+        $stmtNG->close();
     }
+    if ($idGruppo) {
+        $stmtFG = $conn->prepare("UPDATE film SET id_gruppo=? WHERE id_film=?");
+        $stmtFG->bind_param('ii', $idGruppo, $id);
+        $stmtFG->execute();
+        $stmtFG->close();
+    } else {
+        $stmtFG = $conn->prepare("UPDATE film SET id_gruppo=NULL WHERE id_film=?");
+        $stmtFG->bind_param('i', $id);
+        $stmtFG->execute();
+        $stmtFG->close();
+    }
+
     if ($nuovaLista !== '') {
         $stmtNL = $conn->prepare("INSERT INTO film_liste (id_utente, nome) VALUES (?, ?)");
         $stmtNL->bind_param('is', $idUtente, $nuovaLista);
@@ -59,7 +75,7 @@ if (!($film = $res->fetch_assoc())) {
 }
 $stmt->close();
 
-$stmtC = $conn->prepare("SELECT c.commento, c.inserito_il, u.username FROM film_commenti c JOIN utenti u ON c.id_utente=u.id WHERE c.id_film=? ORDER BY c.inserito_il DESC");
+$stmtC = $conn->prepare("SELECT c.id, c.commento, c.inserito_il, c.id_utente, u.username FROM film_commenti c JOIN utenti u ON c.id_utente=u.id WHERE c.id_film=? ORDER BY c.inserito_il DESC");
 $stmtC->bind_param('i', $id);
 $stmtC->execute();
 $commenti = $stmtC->get_result();
@@ -80,6 +96,11 @@ while ($r = $resFilmListe->fetch_assoc()) {
     $listeFilm[] = (int)$r['id_lista'];
 }
 $stmtFilmListe->close();
+
+$stmtGruppi = $conn->prepare("SELECT id_gruppo, nome FROM film_gruppi ORDER BY nome");
+$stmtGruppi->execute();
+$gruppi = $stmtGruppi->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmtGruppi->close();
 ?>
 <div class="container text-white">
   <a href="film.php" class="btn btn-outline-light mb-3">← Indietro</a>
@@ -97,8 +118,14 @@ $stmtFilmListe->close();
       <input type="number" name="voto" step="0.5" min="1" max="10" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($film['voto'] ?? '') ?>">
     </div>
     <div class="mb-3">
-      <label class="form-label">Commento</label>
-      <textarea name="commento" class="form-control bg-dark text-white border-secondary" rows="3"></textarea>
+      <label class="form-label">Gruppo</label>
+      <select name="id_gruppo" class="form-select bg-dark text-white border-secondary">
+        <option value="">Nessuno</option>
+        <?php foreach ($gruppi as $g): ?>
+        <option value="<?= $g['id_gruppo'] ?>" <?= ($film['id_gruppo'] == $g['id_gruppo']) ? 'selected' : '' ?>><?= htmlspecialchars($g['nome']) ?></option>
+        <?php endforeach; ?>
+      </select>
+      <input type="text" name="nuovo_gruppo" class="form-control bg-dark text-white border-secondary mt-2" placeholder="Nuovo gruppo">
     </div>
     <div class="mb-3">
       <label class="form-label">Liste</label>
@@ -112,14 +139,38 @@ $stmtFilmListe->close();
     </div>
     <button type="submit" class="btn btn-primary w-100">Salva</button>
   </form>
-  <?php if ($commenti->num_rows > 0): ?>
   <h5>Commenti</h5>
+  <button type="button" class="btn btn-outline-light btn-sm mb-3" id="addCommentoBtn">Aggiungi commento</button>
+  <div id="commentiList">
   <?php while($c = $commenti->fetch_assoc()): ?>
-    <div class="mb-3">
+    <div class="mb-3 commento-row" data-id="<?= $c['id'] ?>" data-commento="<?= htmlspecialchars($c['commento'], ENT_QUOTES) ?>" data-utente="<?= $c['id_utente'] ?>">
       <div class="small text-muted"><?= htmlspecialchars($c['username']) ?> - <?= htmlspecialchars($c['inserito_il']) ?></div>
-      <div><?= htmlspecialchars($c['commento']) ?></div>
+      <div><?= nl2br(htmlspecialchars($c['commento'])) ?></div>
     </div>
   <?php endwhile; ?>
-  <?php endif; ?>
+  </div>
 </div>
+<div class="modal fade" id="commentoModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="commentoForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Commento</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <textarea name="commento" class="form-control bg-dark text-white border-secondary" rows="3" required></textarea>
+        <input type="hidden" name="id">
+      </div>
+      <div class="modal-footer d-flex justify-content-between">
+        <button type="button" class="btn btn-danger d-none" id="deleteCommentoBtn">Elimina</button>
+        <button type="submit" class="btn btn-primary">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+const FILM_ID = <?= (int)$id ?>;
+const UTENTE_ID = <?= (int)$idUtente ?>;
+</script>
+<script src="js/film_dettaglio.js"></script>
 <?php include 'includes/footer.php'; ?>

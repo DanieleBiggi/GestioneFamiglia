@@ -1,3 +1,12 @@
+CREATE TABLE `film_gruppi` (
+  `id_gruppo` INT NOT NULL AUTO_INCREMENT,
+  `nome` VARCHAR(100) NOT NULL,
+  `inserito_il` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `aggiornato_il` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_gruppo`),
+  UNIQUE KEY `uq_film_gruppi_nome` (`nome`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE `film` (
   `id_film` INT NOT NULL AUTO_INCREMENT,
   `tmdb_id` INT NOT NULL,
@@ -8,10 +17,13 @@ CREATE TABLE `film` (
   `trama` TEXT,
   `poster_url` VARCHAR(255) DEFAULT NULL,
   `lingua_originale` VARCHAR(10) DEFAULT NULL,
+  `id_gruppo` INT DEFAULT NULL,
   `inserito_il` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `aggiornato_il` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_film`),
-  UNIQUE KEY `uq_film_tmdb` (`tmdb_id`)
+  UNIQUE KEY `uq_film_tmdb` (`tmdb_id`),
+  KEY `idx_film_gruppo` (`id_gruppo`),
+  CONSTRAINT `fk_film_gruppo` FOREIGN KEY (`id_gruppo`) REFERENCES `film_gruppi`(`id_gruppo`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `film_generi` (
