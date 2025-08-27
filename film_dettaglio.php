@@ -63,6 +63,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $stmtIns->close();
     }
+    $piattaforme = isset($_POST['piattaforme']) ? array_map('intval', (array)$_POST['piattaforme']) : [];
+    if (in_array(1, $piattaforme)) { $piattaforme = [1]; }
+    $stmtDelP = $conn->prepare("DELETE FROM film2piattaforme WHERE id_film=?");
+    $stmtDelP->bind_param('i', $id);
+    $stmtDelP->execute();
+    $stmtDelP->close();
+    if (!empty($piattaforme)) {
+        $stmtInsP = $conn->prepare("INSERT INTO film2piattaforme (id_film, id_piattaforma, indicata_il) VALUES (?,?,?)");
+        $today = date('Y-m-d');
+        foreach ($piattaforme as $pid) {
+            $stmtInsP->bind_param('iis', $id, $pid, $today);
+            $stmtInsP->execute();
+        }
+        $stmtInsP->close();
+    }
 }
 
 $stmt = $conn->prepare("SELECT f.*, fu.data_visto, fu.voto FROM film f JOIN film_utenti fu ON f.id_film=fu.id_film WHERE f.id_film=? AND fu.id_utente=?");
@@ -113,6 +128,17 @@ while ($g = $resGeneri->fetch_assoc()) {
 }
 $stmtGeneri->close();
 $generiStr = implode(', ', $filmGeneri);
+
+$piattaformeAll = $conn->query("SELECT id_piattaforma, nome, icon FROM streaming_piattaforme ORDER BY nome")->fetch_all(MYSQLI_ASSOC);
+$stmtFilmPiattaforme = $conn->prepare("SELECT id_piattaforma FROM film2piattaforme WHERE id_film=?");
+$stmtFilmPiattaforme->bind_param('i', $id);
+$stmtFilmPiattaforme->execute();
+$filmPiattaforme = [];
+$resPiattaforme = $stmtFilmPiattaforme->get_result();
+while ($p = $resPiattaforme->fetch_assoc()) {
+    $filmPiattaforme[] = (int)$p['id_piattaforma'];
+}
+$stmtFilmPiattaforme->close();
 ?>
 <div class="container text-white">
   <div class="mb-3 d-flex gap-2">
@@ -134,6 +160,18 @@ $generiStr = implode(', ', $filmGeneri);
       <label class="form-label">Voto</label>
       <input type="number" name="voto" step="0.5" min="1" max="10" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($film['voto'] ?? '') ?>">
     </div>
+      <div class="mb-3">
+        <label class="form-label">Piattaforme streaming</label>
+        <?php foreach ($piattaformeAll as $p): ?>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="piattaforme[]" id="pf<?= $p['id_piattaforma'] ?>" value="<?= $p['id_piattaforma'] ?>" <?= in_array($p['id_piattaforma'], $filmPiattaforme) ? 'checked' : '' ?>>
+          <label class="form-check-label" for="pf<?= $p['id_piattaforma'] ?>">
+            <?php if ($p['icon']): ?><img src="<?= htmlspecialchars($p['icon']) ?>" alt="" style="height:20px;" class="me-1"><?php endif; ?>
+            <?= htmlspecialchars($p['nome']) ?>
+          </label>
+        </div>
+        <?php endforeach; ?>
+      </div>
     <div class="mb-3">
       <label class="form-label">Gruppo</label>
       <select name="id_gruppo" class="form-select bg-dark text-white border-secondary">
