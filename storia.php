@@ -34,6 +34,7 @@ var aziende_chiavi = JSON.parse('<?= json_encode($aziende_chiavi, JSON_HEX_TAG |
 </script>
 <div class="mb-3 text-center text-md-start">
     <h4>Storia</h4>
+    <a class="btn btn-outline-light btn-sm" href="query.php">Query</a>
 </div>
 <ul class="nav nav-tabs mb-3 justify-content-center">
     <li class="nav-item">
@@ -41,9 +42,6 @@ var aziende_chiavi = JSON.parse('<?= json_encode($aziende_chiavi, JSON_HEX_TAG |
     </li>
     <li class="nav-item">
         <a class="nav-link" id="nav-aziende" data-quale="aziende" href="#">Aziende</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="query.php">Query</a>
     </li>
 </ul>
 <div class="row g-2 mb-3">
