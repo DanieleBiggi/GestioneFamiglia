@@ -43,9 +43,14 @@ $listeRes = $stmtListe->get_result();
     <input type="text" id="search" class="form-control bg-dark text-white border-secondary" placeholder="Cerca">
   </div>
   <div class="col-auto">
-    <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#filtersModal">
-      <i class="bi bi-funnel"></i>
-    </button>
+    <div class="btn-group">
+      <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#filtersModal">
+        <i class="bi bi-funnel"></i>
+      </button>
+      <button type="button" class="btn btn-outline-light" id="resetFilters" title="Reset filtri">
+        <i class="bi bi-arrow-counterclockwise"></i>
+      </button>
+    </div>
   </div>
 </div>
 

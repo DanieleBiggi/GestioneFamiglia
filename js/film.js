@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const filterDataA = document.getElementById('filterDataA');
   const filterDurataDa = document.getElementById('filterDurataDa');
   const filterDurataA = document.getElementById('filterDurataA');
+  const resetFiltersBtn = document.getElementById('resetFilters');
   const cards = Array.from(document.querySelectorAll('.film-card'));
 
   function filter() {
@@ -52,4 +53,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el) el.addEventListener('input', filter);
   });
   filter();
+
+  if (resetFiltersBtn) {
+    resetFiltersBtn.addEventListener('click', () => {
+      [search, filterAnno, filterGenere, filterRegista, filterGruppo, filterLista, filterDataDa, filterDataA, filterDurataDa, filterDurataA].forEach(el => {
+        if (!el) return;
+        el.value = '';
+      });
+      filter();
+    });
+  }
 });
