@@ -16,6 +16,12 @@ function render_film(array $row) {
     if (!empty($row['voto'])) {
         echo '<div class="small">Voto: ' . htmlspecialchars($row['voto']) . '</div>';
     }
+    if (!empty($row['voto_medio'])) {
+        echo '<div class="small">Voto medio: ' . htmlspecialchars($row['voto_medio']) . '</div>';
+    }
+    if (!empty($row['durata'])) {
+        echo '<div class="small">Durata: ' . (int)$row['durata'] . ' min</div>';
+    }
     if (!empty($row['data_visto'])) {
         echo '<div class="small">Visto il: ' . htmlspecialchars($row['data_visto']) . '</div>';
     }
