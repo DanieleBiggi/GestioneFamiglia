@@ -8,7 +8,7 @@ include 'includes/header.php';
 $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 $tipiRes = $conn->query("SELECT id, descrizione, colore_bg, colore_testo FROM turni_tipi WHERE attivo = 1 ORDER BY descrizione");
 $tipi = $tipiRes ? $tipiRes->fetch_all(MYSQLI_ASSOC) : [];
-$bambiniRes = $conn->query("SELECT u.id, COALESCE(NULLIF(u.soprannome,''), CONCAT(u.nome,' ',u.cognome)) AS nome FROM utenti u JOIN utenti2famiglie uf ON u.id = uf.id_utente WHERE uf.id_famiglia = $idFamiglia ORDER BY nome");
+$bambiniRes = $conn->query("SELECT u.id, COALESCE(NULLIF(u.soprannome,''), CONCAT(u.nome,' ',u.cognome)) AS nome FROM utenti u JOIN utenti2famiglie uf ON u.id = uf.id_utente WHERE disponibile_per_soso=1 AND uf.id_famiglia = $idFamiglia ORDER BY nome");
 $bambini = $bambiniRes ? $bambiniRes->fetch_all(MYSQLI_ASSOC) : [];
 $syncRes = $conn->query("SELECT DISTINCT DATE_FORMAT(data, '%Y-%m') AS ym FROM turni_calendario WHERE id_famiglia = $idFamiglia AND (data_ultima_sincronizzazione IS NULL OR aggiornato_il > data_ultima_sincronizzazione) ORDER BY ym");
 $canInsertEvento = has_permission($conn, 'table:eventi', 'insert');
@@ -108,7 +108,7 @@ $needSync = !empty($unsyncedMonths);
             <input type="time" class="form-control bg-dark text-white border-secondary" id="turnoOraFine" name="ora_fine" required>
           </div>
           <div class="mb-3">
-            <label class="form-label">Bambini</label>
+            <label class="form-label">Chi tiene i Bambini <i class="bi bi-info-circle" title="Utente collegato a famiglia attuale in gestione e con flag Disponibile per bambini a si"></i></label>
             <div id="turnoBambini">
               <?php foreach ($bambini as $b): ?>
               <div class="form-check form-check-inline">
