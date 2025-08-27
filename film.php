@@ -10,11 +10,14 @@ $idUtente = $_SESSION['utente_id'] ?? 0;
 $stmt = $conn->prepare(
     "SELECT f.*, fu.data_visto, fu.voto, fg.nome AS gruppo, " .
     "GROUP_CONCAT(DISTINCT f2g.id_genere) AS generi, " .
-    "GROUP_CONCAT(DISTINCT f2l.id_lista) AS liste " .
+    "GROUP_CONCAT(DISTINCT f2l.id_lista) AS liste, " .
+    "GROUP_CONCAT(DISTINCT sp.icon) AS piattaforme " .
     "FROM film f " .
     "JOIN film_utenti fu ON f.id_film = fu.id_film " .
     "LEFT JOIN film2generi f2g ON f.id_film = f2g.id_film " .
     "LEFT JOIN film_gruppi fg ON f.id_gruppo = fg.id_gruppo " .
+    "LEFT JOIN film2piattaforme f2p ON f.id_film = f2p.id_film " .
+    "LEFT JOIN streaming_piattaforme sp ON f2p.id_piattaforma = sp.id_piattaforma " .
     "LEFT JOIN film2liste f2l ON f.id_film = f2l.id_film " .
     "LEFT JOIN film_liste l ON f2l.id_lista = l.id_lista AND l.id_utente = ? " .
     "WHERE fu.id_utente = ? " .

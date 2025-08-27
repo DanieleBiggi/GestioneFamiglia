@@ -25,6 +25,14 @@ function render_film(array $row) {
     if (!empty($row['data_visto'])) {
         echo '<div class="small">Visto il: ' . htmlspecialchars($row['data_visto']) . '</div>';
     }
+    $piattaforme = array_filter(explode(',', $row['piattaforme'] ?? ''));
+    if (!empty($piattaforme)) {
+        echo '<div class="small mt-1">';
+        foreach ($piattaforme as $icon) {
+            echo '<img src="' . htmlspecialchars($icon) . '" alt="" class="me-1" style="height:20px;">';
+        }
+        echo '</div>';
+    }
     echo '</div>';
     echo '<div class="text-end">';
     if (!empty($row['voto_medio'])) {
