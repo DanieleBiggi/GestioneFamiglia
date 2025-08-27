@@ -6,14 +6,15 @@ include 'includes/header.php';
 
 $idUtente = $_SESSION['utente_id'] ?? 0;
 
-// Fetch films for current user with genres
+// Fetch films for current user with genres and group name
 $stmt = $conn->prepare(
-    "SELECT f.*, fu.data_visto, fu.voto, GROUP_CONCAT(f2g.id_genere) AS generi " .
+    "SELECT f.*, fu.data_visto, fu.voto, fg.nome AS gruppo, GROUP_CONCAT(f2g.id_genere) AS generi " .
     "FROM film f " .
     "JOIN film_utenti fu ON f.id_film = fu.id_film " .
     "LEFT JOIN film2generi f2g ON f.id_film = f2g.id_film " .
+    "LEFT JOIN film_gruppi fg ON f.id_gruppo = fg.id_gruppo " .
     "WHERE fu.id_utente = ? " .
-    "GROUP BY f.id_film, fu.data_visto, fu.voto"
+    "GROUP BY f.id_film, fu.data_visto, fu.voto, fg.nome"
 );
 $stmt->bind_param('i', $idUtente);
 $stmt->execute();
