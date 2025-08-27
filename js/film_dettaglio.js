@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('commentoForm');
   const modalEl = document.getElementById('commentoModal');
   const deleteBtn = document.getElementById('deleteCommentoBtn');
+  const deleteFilmBtn = document.getElementById('deleteFilmBtn');
   const addBtn = document.getElementById('addCommentoBtn');
   const updateBtn = document.getElementById('updateFromApiBtn');
 
@@ -57,5 +58,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if(res.success) location.reload();
         else alert(res.error || 'Errore');
       });
+  });
+
+  deleteFilmBtn?.addEventListener('click', () => {
+    if(!confirm('Eliminare questo film?')) return;
+    fetch('ajax/delete_film.php', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id: FILM_ID })
+    })
+      .then(r=>r.json())
+      .then(res=>{ if(res.success) window.location.href='film.php'; else alert(res.error||'Errore'); });
   });
 });

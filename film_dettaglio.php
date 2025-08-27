@@ -234,6 +234,7 @@ $stmtFilmPiattaforme->close();
     <li><strong>Trama:</strong> <?= nl2br(htmlspecialchars($film['trama'])) ?></li>
     <?php endif; ?>
   </ul>
+  <button type="button" class="btn btn-danger w-100 mt-4" id="deleteFilmBtn">Elimina film</button>
 </div>
 <div class="modal fade" id="commentoModal" tabindex="-1">
   <div class="modal-dialog">
