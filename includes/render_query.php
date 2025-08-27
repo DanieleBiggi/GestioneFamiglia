@@ -13,7 +13,7 @@ function render_query(array $row) {
     echo '    <div class="fw-semibold">' . htmlspecialchars($row['descrizione'] ?? '') . '</div>';
     echo '  </div>';
     echo '  <div class="ms-2 text-nowrap">';
-    echo '    <button type="button" class="btn btn-sm btn-outline-light run-query" data-id="' . (int)$row['id_dato_remoto'] . '" onclick="event.stopPropagation();">Esegui</button>';
+    echo '    <a class="btn btn-sm btn-outline-light run-query" href="query_execute.php?id=' . (int)$row['id_dato_remoto'] . '" onclick="event.stopPropagation();">Esegui</a>';
     echo '  </div>';
     echo '</div>';
 }
