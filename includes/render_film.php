@@ -11,7 +11,8 @@ function render_film(array $row) {
     $visto = htmlspecialchars($row['data_visto'] ?? '', ENT_QUOTES);
     $durata = (int)($row['durata'] ?? 0);
     $url = 'film_dettaglio.php?id=' . (int)($row['id_film'] ?? 0);
-    echo '<div class="film-card movement d-flex justify-content-between align-items-start text-white text-decoration-none mb-2" data-search="' . $searchAttr . '" data-anno="' . $anno . '" data-generi="' . $generi . '" data-regista="' . $registaAttr . '" data-gruppo="' . $gruppoId . '" data-liste="' . $listeAttr . '" data-visto="' . $visto . '" data-durata="' . $durata . '" onclick="window.location.href=\'' . $url . '\'">';
+    $trailer = $row['trailer_ita_url'] ?? '';
+    echo '<div class="film-card movement d-flex justify-content-between align-items-start text-white text-decoration-none mb-2 position-relative" data-search="' . $searchAttr . '" data-anno="' . $anno . '" data-generi="' . $generi . '" data-regista="' . $registaAttr . '" data-gruppo="' . $gruppoId . '" data-liste="' . $listeAttr . '" data-visto="' . $visto . '" data-durata="' . $durata . '" onclick="window.location.href=\'' . $url . '\'">';
     if (!empty($row['poster_url'])) {
         echo '<img src="' . htmlspecialchars($row['poster_url']) . '" alt="" class="me-3" style="height:75px;">';
     }
@@ -45,6 +46,9 @@ function render_film(array $row) {
         echo '<div class="mt-1"><span class="badge-etichetta film-filter-gruppo" data-gruppo-id="' . $gruppoId . '">' . htmlspecialchars($row['gruppo']) . '</span></div>';
     }
     echo '</div>';
+    if (!empty($trailer)) {
+        echo '<a href="' . htmlspecialchars($trailer) . '" target="_blank" class="position-absolute bottom-0 end-0 p-2 text-danger" onclick="event.stopPropagation();"><i class="bi bi-youtube"></i></a>';
+    }
     echo '</div>';
 }
 ?>
