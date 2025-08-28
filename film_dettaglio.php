@@ -1,6 +1,5 @@
-<?php include 'includes/session_check.php'; ?>
 <?php
-
+include 'includes/session_check.php';
 include 'includes/db.php';
 include 'includes/header.php';
 $apiKey = $config['TMDB_API_KEY'] ?? null;
@@ -230,6 +229,12 @@ $stmtFilmPiattaforme->close();
     <?php if (!empty($film['voto_medio'])): ?>
     <li><strong>Voto medio:</strong> <?= htmlspecialchars($film['voto_medio']) ?></li>
     <?php endif; ?>
+    <?php if (!empty($film['budget'])): ?>
+    <li><strong>Budget:</strong> $<?= number_format((int)$film['budget'], 0, ',', '.') ?></li>
+    <?php endif; ?>
+    <?php if (!empty($film['incassi'])): ?>
+    <li><strong>Incassi:</strong> $<?= number_format((int)$film['incassi'], 0, ',', '.') ?></li>
+    <?php endif; ?>
     <?php if (!empty($film['tmdb_id'])): ?>
     <li><strong>TMDB ID:</strong> <?= (int)$film['tmdb_id'] ?></li>
     <?php endif; ?>
@@ -237,6 +242,13 @@ $stmtFilmPiattaforme->close();
     <li><strong>Trama:</strong> <?= nl2br(htmlspecialchars($film['trama'])) ?></li>
     <?php endif; ?>
   </ul>
+  <?php if (!empty($film['trailer_ita_url'])):
+        $embedUrl = preg_replace('/watch\?v=/', 'embed/', $film['trailer_ita_url']);
+  ?>
+  <div class="ratio ratio-16x9 mb-3">
+    <iframe src="<?= htmlspecialchars($embedUrl) ?>" allowfullscreen></iframe>
+  </div>
+  <?php endif; ?>
   <button type="button" class="btn btn-danger w-100 mt-4" id="deleteFilmBtn">Elimina film</button>
 </div>
 <div class="modal fade" id="commentoModal" tabindex="-1">
