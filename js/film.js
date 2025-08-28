@@ -49,6 +49,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  document.querySelectorAll('.film-filter-gruppo').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      if (filterGruppo) {
+        filterGruppo.value = el.dataset.gruppoId || '';
+        filter();
+      }
+    });
+  });
+
   [search, filterAnno, filterGenere, filterRegista, filterGruppo, filterLista, filterDataDa, filterDataA, filterDurataDa, filterDurataA].forEach(el => {
     if (el) el.addEventListener('input', filter);
   });
