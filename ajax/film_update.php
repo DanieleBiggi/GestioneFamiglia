@@ -27,13 +27,24 @@ if (!$apiKey) {
     exit;
 }
 
-$detailsJson = @file_get_contents("https://api.themoviedb.org/3/movie/{$tmdbId}?api_key={$apiKey}&language=it-IT&append_to_response=credits");
+$detailsJson = @file_get_contents("https://api.themoviedb.org/3/movie/{$tmdbId}?api_key={$apiKey}&language=it-IT&append_to_response=credits,videos");
 if (!$detailsJson) {
     echo json_encode(['success' => false, 'error' => 'Errore chiamata TMDB']);
     exit;
 }
 $movie = json_decode($detailsJson, true);
 $votoMedio = isset($movie['vote_average']) ? (float)$movie['vote_average'] : null;
+$budget = isset($movie['budget']) ? (int)$movie['budget'] : null;
+$incassi = isset($movie['revenue']) ? (int)$movie['revenue'] : null;
+$trailerIta = null;
+if (!empty($movie['videos']['results'])) {
+    foreach ($movie['videos']['results'] as $video) {
+        if ($video['type'] === 'Trailer' && $video['site'] === 'YouTube' && $video['iso_639_1'] === 'it') {
+            $trailerIta = 'https://www.youtube.com/watch?v=' . $video['key'];
+            break;
+        }
+    }
+}
 $regista = null;
 if (!empty($movie['credits']['crew'])) {
     $directors = array_filter($movie['credits']['crew'], function ($member) {
@@ -49,8 +60,8 @@ $conn->begin_transaction();
 try {
     $anno = substr($movie['release_date'] ?? '', 0, 4);
     $poster = isset($movie['poster_path']) && $movie['poster_path'] !== '' ? 'https://image.tmdb.org/t/p/w500' . $movie['poster_path'] : null;
-    $stmtUp = $conn->prepare("UPDATE film SET titolo=?, titolo_originale=?, anno=?, durata=?, trama=?, poster_url=?, lingua_originale=?, voto_medio=?, regista=? WHERE id_film=?");
-    $stmtUp->bind_param('sssisssdsi', $movie['title'], $movie['original_title'], $anno, $movie['runtime'], $movie['overview'], $poster, $movie['original_language'], $votoMedio, $regista, $idFilm);
+    $stmtUp = $conn->prepare("UPDATE film SET titolo=?, titolo_originale=?, anno=?, durata=?, trama=?, poster_url=?, lingua_originale=?, voto_medio=?, regista=?, budget=?, incassi=?, trailer_ita_url=? WHERE id_film=?");
+    $stmtUp->bind_param('sssisssdsiisi', $movie['title'], $movie['original_title'], $anno, $movie['runtime'], $movie['overview'], $poster, $movie['original_language'], $votoMedio, $regista, $budget, $incassi, $trailerIta, $idFilm);
     $stmtUp->execute();
     $stmtUp->close();
 
