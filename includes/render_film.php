@@ -42,7 +42,7 @@ function render_film(array $row) {
         echo '<div class="small">Durata: ' . (int)$row['durata'] . ' min</div>';
     }
     if (!empty($row['gruppo'])) {
-        echo '<div class="mt-1"><span class="badge-etichetta">' . htmlspecialchars($row['gruppo']) . '</span></div>';
+        echo '<div class="mt-1"><span class="badge-etichetta film-filter-gruppo" data-gruppo-id="' . $gruppoId . '">' . htmlspecialchars($row['gruppo']) . '</span></div>';
     }
     echo '</div>';
     echo '</div>';
