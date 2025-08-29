@@ -338,11 +338,17 @@ include 'includes/header.php';
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <input type="hidden" name="id_caricamento" id="allegatoId">
-        <div class="mb-3">
-          <label class="form-label">File</label>
-          <input type="file" class="form-control bg-secondary text-white" name="nome_file" id="allegatoFile" <?= $allegato ? '' : 'required' ?>>
-        </div>
+          <input type="hidden" name="id_caricamento" id="allegatoId">
+          <div class="mb-3">
+            <label class="form-label">Scontrini da associare</label>
+            <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Filtra..." oninput="filterCaricamenti(this.value)">
+            <div id="listaCaricamenti" class="list-group" style="max-height:200px;overflow:auto;"></div>
+          </div>
+          <hr>
+          <div class="mb-3">
+            <label class="form-label">File</label>
+            <input type="file" class="form-control bg-secondary text-white" name="nome_file" id="allegatoFile" <?= $allegato ? '' : 'required' ?>>
+          </div>
         <div class="mb-3">
           <label class="form-label">Supermercato</label>
           <select class="form-select bg-secondary text-white" name="id_supermercato" id="idSupermercato">
@@ -546,10 +552,15 @@ function saveEtichette() {
   }).then(() => location.reload());
 }
 
+let caricamenti = [];
 function openAllegatoModal() {
   const form = document.getElementById('allegatoForm');
   form.reset();
   document.getElementById('allegatoFile').required = !allegato;
+  document.getElementById('listaCaricamenti').innerHTML = '';
+  fetch('ajax/list_caricamenti.php')
+    .then(r => r.json())
+    .then(data => { caricamenti = data; populateCaricamenti(data); });
   if (allegato) {
     document.getElementById('allegatoId').value = allegato.id_caricamento;
     document.getElementById('idSupermercato').value = allegato.id_supermercato;
@@ -562,6 +573,35 @@ function openAllegatoModal() {
   new bootstrap.Modal(document.getElementById('allegatoModal')).show();
 }
 
+function populateCaricamenti(data) {
+  const list = document.getElementById('listaCaricamenti');
+  list.innerHTML = '';
+  data.forEach(c => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'list-group-item list-group-item-action bg-secondary text-white';
+    const ds = c.data_scontrino ? c.data_scontrino.substring(0,10) : '';
+    btn.textContent = `${c.nome_file} ${ds} €${c.totale_scontrino}`;
+    btn.onclick = () => associateCaricamento(c.id_caricamento);
+    list.appendChild(btn);
+  });
+}
+
+function filterCaricamenti(term) {
+  term = term.toLowerCase();
+  document.querySelectorAll('#listaCaricamenti button').forEach(btn => {
+    btn.style.display = btn.textContent.toLowerCase().includes(term) ? '' : 'none';
+  });
+}
+
+function associateCaricamento(idCar) {
+  fetch('ajax/associate_caricamento.php', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ id_movimento: idMovimento, src: srcMovimento, id_caricamento: idCar })
+  }).then(r => r.json()).then(data => { if (data.success) { alert('Scontrino associato'); location.reload(); } });
+}
+
 document.getElementById('allegatoForm').addEventListener('submit', function(e){
   e.preventDefault();
   const fd = new FormData(this);
@@ -569,7 +609,7 @@ document.getElementById('allegatoForm').addEventListener('submit', function(e){
   fd.append('src', srcMovimento);
   fetch('ajax/save_caricamento.php', { method: 'POST', body: fd })
     .then(r => r.json())
-    .then(data => { if (data.success) location.reload(); });
+    .then(data => { if (data.success) { alert('Scontrino salvato'); location.reload(); } });
 });
 
 document.getElementById('deleteMovimento')?.addEventListener('click', () => {
