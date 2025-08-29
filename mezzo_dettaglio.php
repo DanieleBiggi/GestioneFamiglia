@@ -10,9 +10,10 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $id === 0) {
     $nome_mezzo = $_POST['nome_mezzo'] ?? '';
     $data_immatricolazione = $_POST['data_immatricolazione'] ?? '';
+    $consumo = $_POST['consumo_litri_100km'] !== '' ? (float)$_POST['consumo_litri_100km'] : null;
     $attivo = isset($_POST['attivo']) ? 1 : 0;
-    $stmt = $conn->prepare("INSERT INTO mezzi (id_utente, id_famiglia, nome_mezzo, data_immatricolazione, attivo) VALUES (?,?,?,?,?)");
-    $stmt->bind_param('iissi', $idUtente, $idFamiglia, $nome_mezzo, $data_immatricolazione, $attivo);
+    $stmt = $conn->prepare("INSERT INTO mezzi (id_utente, id_famiglia, nome_mezzo, data_immatricolazione, consumo_litri_100km, attivo) VALUES (?,?,?,?,?,?)");
+    $stmt->bind_param('iissdi', $idUtente, $idFamiglia, $nome_mezzo, $data_immatricolazione, $consumo, $attivo);
     $stmt->execute();
     $stmt->close();
     header('Location: mezzi.php');
@@ -21,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $id === 0) {
 $data = [
     'nome_mezzo' => '',
     'data_immatricolazione' => '',
+    'consumo_litri_100km' => null,
     'attivo' => 1,
     'id_mezzo' => 0,
     'id_utente' => $idUtente
@@ -160,6 +162,10 @@ if ($id > 0): ?>
           <label class="form-label">Data immatricolazione</label>
           <input type="date" name="data_immatricolazione" class="form-control bg-secondary text-white">
         </div>
+        <div class="mb-3">
+          <label class="form-label">Consumo (L/100km)</label>
+          <input type="number" step="0.1" name="consumo_litri_100km" class="form-control bg-secondary text-white">
+        </div>
         <div class="form-check form-switch mb-3">
           <input class="form-check-input" type="checkbox" name="attivo" id="mezzoAttivo">
           <label class="form-check-label" for="mezzoAttivo">Attivo</label>
@@ -241,6 +247,7 @@ const mezzoData = {
   id: <?= (int)$data['id_mezzo'] ?>,
   nome_mezzo: <?= json_encode($data['nome_mezzo']) ?>,
   data_immatricolazione: <?= json_encode($data['data_immatricolazione']) ?>,
+  consumo_litri_100km: <?= json_encode($data['consumo_litri_100km']) ?>,
   attivo: <?= (int)$data['attivo'] ?>
 };
 </script>
@@ -259,6 +266,10 @@ const mezzoData = {
   <div class="mb-3">
     <label class="form-label">Data immatricolazione</label>
     <input type="date" name="data_immatricolazione" class="form-control bg-dark text-white border-secondary">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Consumo (L/100km)</label>
+    <input type="number" step="0.1" name="consumo_litri_100km" class="form-control bg-dark text-white border-secondary">
   </div>
   <div class="form-check form-switch mb-3">
     <input class="form-check-input" type="checkbox" id="attivo" name="attivo" checked>

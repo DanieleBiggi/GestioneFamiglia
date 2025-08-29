@@ -9,6 +9,7 @@ $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 $id = (int)($_POST['id_mezzo'] ?? 0);
 $nome = $_POST['nome_mezzo'] ?? '';
 $data = $_POST['data_immatricolazione'] ?? '';
+$consumo = $_POST['consumo_litri_100km'] !== '' ? (float)$_POST['consumo_litri_100km'] : null;
 $attivo = isset($_POST['attivo']) ? 1 : 0;
 
 $stmt = $conn->prepare("SELECT id_utente FROM mezzi WHERE id_mezzo=? AND id_famiglia=?");
@@ -23,8 +24,8 @@ if (!$row || (int)$row['id_utente'] !== $idUtente) {
     exit;
 }
 
-$stmt = $conn->prepare("UPDATE mezzi SET nome_mezzo=?, data_immatricolazione=?, attivo=? WHERE id_mezzo=? AND id_famiglia=?");
-$stmt->bind_param('ssiii', $nome, $data, $attivo, $id, $idFamiglia);
+$stmt = $conn->prepare("UPDATE mezzi SET nome_mezzo=?, data_immatricolazione=?, consumo_litri_100km=?, attivo=? WHERE id_mezzo=? AND id_famiglia=?");
+$stmt->bind_param('ssdiii', $nome, $data, $consumo, $attivo, $id, $idFamiglia);
 $ok = $stmt->execute();
 $stmt->close();
 

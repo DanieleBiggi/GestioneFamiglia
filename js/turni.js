@@ -103,7 +103,11 @@ document.addEventListener('DOMContentLoaded', () => {
         evento.className='turno event';
         evento.style.background=ev.colore || '#6c757d';
         evento.style.color=ev.colore_testo || '#ffffff';
-        evento.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}" class="text-decoration-none">${ev.titolo}</a>`;
+        if(ev.link){
+          evento.innerHTML=`<a href="${ev.link}" class="text-decoration-none">${ev.titolo}</a>`;
+        }else{
+          evento.textContent=ev.titolo;
+        }
         items.push({time:ev.data_evento.slice(11,19), el:evento});
       });
       items.sort((a,b)=>a.time.localeCompare(b.time));
@@ -134,7 +138,11 @@ document.addEventListener('DOMContentLoaded', () => {
           turno.style.background=ev.colore || '#6c757d';
           turno.style.color=ev.colore_testo;
           const tCol=ev.colore_testo||'#ffffff';
-          turno.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}" class="text-decoration-none" style="color:${tCol}">${ev.titolo}</a>`;
+          if(ev.link){
+            turno.innerHTML=`<a href="${ev.link}" class="text-decoration-none" style="color:${tCol}">${ev.titolo}</a>`;
+          }else{
+            turno.textContent=ev.titolo;
+          }
           info.cell.querySelector('.turni-container').appendChild(turno);
         }
         return;
@@ -156,7 +164,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const tCol=ev.colore_testo||'#ffffff';
         bar.style.left=(startIdx/7*100)+'%';
         bar.style.width=(spanDays/7*100)+'%';
-        bar.innerHTML=`<a href="eventi_dettaglio.php?id=${ev.id}" style="color:${tCol}">${ev.titolo}</a>`;
+        if(ev.link){
+          bar.innerHTML=`<a href="${ev.link}" style="color:${tCol}">${ev.titolo}</a>`;
+        }else{
+          bar.textContent=ev.titolo;
+        }
         rowEl.appendChild(bar);
         rowEl.classList.add('multi-events');
         segStart.setDate(segEnd.getDate()+1);

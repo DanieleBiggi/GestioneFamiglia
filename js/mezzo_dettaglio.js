@@ -2,6 +2,7 @@ function openMezzoModal() {
   const form = document.getElementById('mezzoForm');
   form.nome_mezzo.value = mezzoData.nome_mezzo || '';
   form.data_immatricolazione.value = mezzoData.data_immatricolazione || '';
+  form.consumo_litri_100km.value = mezzoData.consumo_litri_100km || '';
   form.attivo.checked = mezzoData.attivo == 1;
   new bootstrap.Modal(document.getElementById('editMezzoModal')).show();
 }
