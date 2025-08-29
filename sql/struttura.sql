@@ -1756,7 +1756,8 @@ ALTER TABLE `movimenti_revolut`
   ADD PRIMARY KEY (`id_movimento_revolut`),
   ADD KEY `idx_revolut_id_gruppo` (`id_gruppo_transazione`),
   ADD KEY `idx_revolut_id_etichetta` (`id_etichetta`),
-  ADD KEY `fk_revolut_salvadanaio` (`id_salvadanaio`);
+  ADD KEY `fk_revolut_salvadanaio` (`id_salvadanaio`),
+  ADD KEY `idx_revolut_id_caricamento` (`id_caricamento`);
 
 --
 -- Indici per le tabelle `movimenti_revolut2salvadanaio_importazione`
@@ -2494,7 +2495,8 @@ ALTER TABLE `mezzi_eventi`
 ALTER TABLE `movimenti_revolut`
   ADD CONSTRAINT `fk_revolut_etichetta` FOREIGN KEY (`id_etichetta`) REFERENCES `bilancio_etichette` (`id_etichetta`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_revolut_gruppo` FOREIGN KEY (`id_gruppo_transazione`) REFERENCES `bilancio_gruppi_transazione` (`id_gruppo_transazione`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_revolut_salvadanaio` FOREIGN KEY (`id_salvadanaio`) REFERENCES `salvadanai` (`id_salvadanaio`) ON DELETE SET NULL;
+  ADD CONSTRAINT `fk_revolut_salvadanaio` FOREIGN KEY (`id_salvadanaio`) REFERENCES `salvadanai` (`id_salvadanaio`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_revolut_caricamento` FOREIGN KEY (`id_caricamento`) REFERENCES `ocr_caricamenti` (`id_caricamento`) ON DELETE SET NULL;
 
 --
 -- Limiti per la tabella `userlevel_permissions`
