@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 89.46.111.63:3306
--- Creato il: Ago 19, 2025 alle 13:22
+-- Creato il: Ago 29, 2025 alle 18:03
 -- Versione del server: 5.6.51-91.0-log
 -- Versione PHP: 8.0.7
 
@@ -583,6 +583,134 @@ CREATE TABLE `famiglie` (
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `film`
+--
+
+CREATE TABLE `film` (
+  `id_film` int(11) NOT NULL,
+  `tmdb_id` int(11) NOT NULL,
+  `titolo` varchar(255) NOT NULL,
+  `titolo_originale` varchar(255) DEFAULT NULL,
+  `anno` year(4) DEFAULT NULL,
+  `durata` int(11) DEFAULT NULL,
+  `voto_medio` decimal(11,5) DEFAULT NULL,
+  `regista` varchar(255) DEFAULT NULL,
+  `trama` text,
+  `poster_url` varchar(255) DEFAULT NULL,
+  `lingua_originale` varchar(10) DEFAULT NULL,
+  `id_gruppo` int(11) DEFAULT NULL,
+  `inserito_il` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `aggiornato_il` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `budget` bigint(20) DEFAULT NULL,
+  `incassi` bigint(20) DEFAULT NULL,
+  `trailer_ita_url` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `film2generi`
+--
+
+CREATE TABLE `film2generi` (
+  `id_film` int(11) NOT NULL,
+  `id_genere` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `film2liste`
+--
+
+CREATE TABLE `film2liste` (
+  `id_film` int(11) NOT NULL,
+  `id_lista` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `film2piattaforme`
+--
+
+CREATE TABLE `film2piattaforme` (
+  `id_film` int(11) NOT NULL,
+  `id_piattaforma` int(11) NOT NULL,
+  `indicata_il` date NOT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `film_commenti`
+--
+
+CREATE TABLE `film_commenti` (
+  `id` int(11) NOT NULL,
+  `id_film` int(11) NOT NULL,
+  `id_utente` int(11) NOT NULL,
+  `commento` text NOT NULL,
+  `inserito_il` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `film_generi`
+--
+
+CREATE TABLE `film_generi` (
+  `id_genere` int(11) NOT NULL,
+  `nome` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `film_gruppi`
+--
+
+CREATE TABLE `film_gruppi` (
+  `id_gruppo` int(11) NOT NULL,
+  `nome` varchar(100) NOT NULL,
+  `inserito_il` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `aggiornato_il` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `film_liste`
+--
+
+CREATE TABLE `film_liste` (
+  `id_lista` int(11) NOT NULL,
+  `id_utente` int(11) NOT NULL,
+  `nome` varchar(100) NOT NULL,
+  `inserito_il` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `aggiornato_il` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `film_utenti`
+--
+
+CREATE TABLE `film_utenti` (
+  `id` int(11) NOT NULL,
+  `id_film` int(11) NOT NULL,
+  `id_utente` int(11) NOT NULL,
+  `data_visto` date DEFAULT NULL,
+  `voto` decimal(3,1) DEFAULT NULL,
+  `inserito_il` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `aggiornato_il` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `gestione_account_password`
 --
 
@@ -594,7 +722,8 @@ CREATE TABLE `gestione_account_password` (
   `username` varchar(100) NOT NULL,
   `password_account` varchar(100) NOT NULL,
   `condivisa_con_famiglia` int(11) NOT NULL DEFAULT '0',
-  `attiva` int(11) NOT NULL DEFAULT '1'
+  `attiva` int(11) NOT NULL DEFAULT '1',
+  `note` text
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -703,6 +832,33 @@ CREATE TABLE `mezzi_chilometri` (
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `mezzi_eventi`
+--
+
+CREATE TABLE `mezzi_eventi` (
+  `id_evento` int(11) NOT NULL,
+  `id_mezzo` int(11) NOT NULL,
+  `id_tipo_evento` int(11) NOT NULL,
+  `data_evento` date NOT NULL,
+  `km_evento` int(11) DEFAULT NULL,
+  `note` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `mezzi_eventi_tipi`
+--
+
+CREATE TABLE `mezzi_eventi_tipi` (
+  `id_tipo_evento` int(11) NOT NULL,
+  `tipo_evento` varchar(100) NOT NULL,
+  `attivo` int(11) NOT NULL DEFAULT '1'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `mezzi_mezzi2tagliandi`
 --
 
@@ -731,33 +887,6 @@ CREATE TABLE `mezzi_tagliandi` (
   `frequenza_mesi` int(11) NOT NULL,
   `frequenza_km` int(11) NOT NULL,
   `nome_tagliando` varchar(100) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- --------------------------------------------------------
-
---
--- Struttura della tabella `mezzi_eventi_tipi`
---
-
-CREATE TABLE `mezzi_eventi_tipi` (
-  `id_tipo_evento` int(11) NOT NULL,
-  `tipo_evento` varchar(100) NOT NULL,
-  `attivo` int(11) NOT NULL DEFAULT '1'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- --------------------------------------------------------
-
---
--- Struttura della tabella `mezzi_eventi`
---
-
-CREATE TABLE `mezzi_eventi` (
-  `id_evento` int(11) NOT NULL,
-  `id_mezzo` int(11) NOT NULL,
-  `id_tipo_evento` int(11) NOT NULL,
-  `data_evento` date NOT NULL,
-  `km_evento` int(11) DEFAULT NULL,
-  `note` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -985,6 +1114,18 @@ CREATE TABLE `session` (
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `streaming_piattaforme`
+--
+
+CREATE TABLE `streaming_piattaforme` (
+  `id_piattaforma` int(11) NOT NULL,
+  `nome` varchar(50) NOT NULL,
+  `icon` varchar(255) NOT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `temi`
 --
 
@@ -1203,179 +1344,6 @@ CREATE TABLE `utenti2salvadanai` (
   `nascosto` tinyint(1) NOT NULL DEFAULT '0',
   `preferito` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- --------------------------------------------------------
-
---
--- Struttura stand-in per le viste `v_poste_categorie_totali`
--- (Vedi sotto per la vista effettiva)
---
-CREATE TABLE `v_poste_categorie_totali` (
-`id_categoria_posta` int(11)
-,`descrizione_categoria` varchar(200)
-,`accredito_tot` decimal(33,2)
-,`addebito_tot` decimal(33,2)
-);
-
--- --------------------------------------------------------
-
---
--- Struttura stand-in per le viste `v_poste_gruppi_totali`
--- (Vedi sotto per la vista effettiva)
---
-CREATE TABLE `v_poste_gruppi_totali` (
-`id_gruppo_transazione` int(11)
-,`descrizione` varchar(100)
-,`accredito_tot` decimal(33,2)
-,`addebito_tot` decimal(33,2)
-,`anno` int(4)
-,`mese` int(2)
-);
-
--- --------------------------------------------------------
-
---
--- Struttura stand-in per le viste `v_spese_mensili`
--- (Vedi sotto per la vista effettiva)
---
-CREATE TABLE `v_spese_mensili` (
-`id_utente` bigint(11)
-,`descrizione` varchar(100)
-,`attivo` int(11)
-,`id_gruppo_transazione` int(11)
-,`totale_speso` decimal(54,2)
-,`totale_entrato` decimal(54,2)
-,`ultima_operazione` datetime
-,`anno` int(4)
-,`mese` int(2)
-);
-
--- --------------------------------------------------------
-
---
--- Struttura della tabella `v_turni`
---
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_turni`  AS SELECT `Sql1203781_2`.`turni`.`id_turno` AS `id_turno`, `Sql1203781_2`.`turni`.`id_famiglia` AS `id_famiglia`, `Sql1203781_2`.`turni`.`id_utente` AS `id_utente`, `Sql1203781_2`.`turni`.`data_turno` AS `data_turno`, (case when (ifnull(`Sql1203781_2`.`turni`.`orario_da`,0) > 0) then `Sql1203781_2`.`turni`.`orario_da` else `Sql1203781_2`.`turni_tipi`.`orario_da` end) AS `orario_da`, (case when (ifnull(`Sql1203781_2`.`turni`.`orario_a`,0) > 0) then `Sql1203781_2`.`turni`.`orario_a` else `Sql1203781_2`.`turni_tipi`.`orario_a` end) AS `orario_a`, (case when (`Sql1203781_2`.`turni_tipi`.`finisce_giorno_dopo` > 0) then (`Sql1203781_2`.`turni`.`data_turno` + interval 1 day) else `Sql1203781_2`.`turni`.`data_turno` end) AS `data_fine`, `Sql1203781_2`.`turni`.`descrizione` AS `descrizione`, `Sql1203781_2`.`turni`.`id_tipo_turno` AS `id_tipo_turno`, `Sql1203781_2`.`turni`.`note` AS `note`, `Sql1203781_2`.`turni`.`ore_straordinari` AS `ore_straordinari`, `Sql1203781_2`.`turni_tipi`.`tipo_turno` AS `tipo_turno`, `Sql1203781_2`.`turni_tipi`.`icon` AS `icon`, `Sql1203781_2`.`turni_tipi`.`colore` AS `colore`, 0 AS `aggiungi_turni_fino_a_fine_mese`, ifnull(`Sql1203781_2`.`turni`.`serve_qualcuno_per_soso`,`Sql1203781_2`.`turni_tipi`.`serve_qualcuno_per_soso`) AS `serve_qualcuno_per_soso`, `Sql1203781_2`.`turni`.`id_utente_per_soso` AS `id_utente_per_soso`, `Sql1203781_2`.`utenti`.`soprannome` AS `utente_per_soso` FROM ((`turni` left join `turni_tipi` on((`Sql1203781_2`.`turni`.`id_tipo_turno` = `Sql1203781_2`.`turni_tipi`.`id_tipo_turno`))) left join `utenti` on((`Sql1203781_2`.`turni`.`id_utente_per_soso` = `Sql1203781_2`.`utenti`.`id`))) ;
-
--- --------------------------------------------------------
-
---
--- Struttura stand-in per le viste `v_utenti2famiglie`
--- (Vedi sotto per la vista effettiva)
---
-CREATE TABLE `v_utenti2famiglie` (
-`id_famiglia` int(11)
-,`nome_famiglia` varchar(100)
-,`id` int(11)
-,`nome` varchar(100)
-,`cognome` varchar(100)
-,`email` varchar(100)
-,`id_famiglia_attuale` int(11)
-,`userlevelid` int(11)
-,`admin` int(11)
-);
-
--- --------------------------------------------------------
-
---
--- Struttura stand-in per le viste `v_utenti2famiglie_ricerca`
--- (Vedi sotto per la vista effettiva)
---
-CREATE TABLE `v_utenti2famiglie_ricerca` (
-`nome` varchar(100)
-,`cognome` varchar(100)
-,`email` varchar(100)
-,`nome_famiglia` varchar(100)
-,`in_gestione` int(11)
-,`id_utente` int(11)
-,`id_famiglia` int(11)
-);
-
--- --------------------------------------------------------
-
---
--- Struttura stand-in per le viste `v_utenti_ricerca`
--- (Vedi sotto per la vista effettiva)
---
-CREATE TABLE `v_utenti_ricerca` (
-`id_utente` int(11)
-,`nome` varchar(100)
-,`cognome` varchar(100)
-,`fullname` varchar(201)
-,`email` varchar(100)
-,`attivo` int(11)
-,`id_famiglia_attuale` int(11)
-,`disponibile_per_soso` int(11)
-);
-
--- --------------------------------------------------------
-
---
--- Struttura della tabella `webauthn_credentials`
---
-
-CREATE TABLE `webauthn_credentials` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `credential_id` varchar(250) NOT NULL,
-  `public_key` text NOT NULL,
-  `counter` int(11) DEFAULT '0'
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
--- --------------------------------------------------------
-
---
--- Struttura per vista `v_poste_categorie_totali`
---
-DROP TABLE IF EXISTS `v_poste_categorie_totali`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_poste_categorie_totali`  AS SELECT `movimenti_poste_categoria`.`id_categoria_posta` AS `id_categoria_posta`, `movimenti_poste_categoria`.`descrizione_categoria` AS `descrizione_categoria`, sum(`movimenti_poste`.`accredito`) AS `accredito_tot`, sum(`movimenti_poste`.`addebito`) AS `addebito_tot` FROM (`movimenti_poste_categoria` join `movimenti_poste` on((`movimenti_poste_categoria`.`id_categoria_posta` = `movimenti_poste`.`id_categoria_posta`))) GROUP BY `movimenti_poste`.`id_categoria_posta` ;
-
--- --------------------------------------------------------
-
---
--- Struttura per vista `v_poste_gruppi_totali`
---
-DROP TABLE IF EXISTS `v_poste_gruppi_totali`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_poste_gruppi_totali`  AS SELECT `bilancio_gruppi_transazione`.`id_gruppo_transazione` AS `id_gruppo_transazione`, `bilancio_gruppi_transazione`.`descrizione` AS `descrizione`, sum(`movimenti_poste`.`accredito`) AS `accredito_tot`, sum(`movimenti_poste`.`addebito`) AS `addebito_tot`, year(`movimenti_poste`.`data_contabile`) AS `anno`, month(`movimenti_poste`.`data_contabile`) AS `mese` FROM (`bilancio_gruppi_transazione` join `movimenti_poste` on((`bilancio_gruppi_transazione`.`id_gruppo_transazione` = `movimenti_poste`.`id_gruppo_transazione`))) GROUP BY `movimenti_poste`.`id_gruppo_transazione`, year(`movimenti_poste`.`data_contabile`), month(`movimenti_poste`.`data_contabile`) ;
-
--- --------------------------------------------------------
-
---
--- Struttura per vista `v_spese_mensili`
---
-DROP TABLE IF EXISTS `v_spese_mensili`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_spese_mensili`  AS SELECT ifnull(`bilancio_uscite`.`id_utente`,`bilancio_entrate`.`id_utente`) AS `id_utente`, `bilancio_gruppi_transazione`.`descrizione` AS `descrizione`, `bilancio_gruppi_transazione`.`attivo` AS `attivo`, `bilancio_gruppi_transazione`.`id_gruppo_transazione` AS `id_gruppo_transazione`, sum(`bilancio_uscite`.`importo`) AS `totale_speso`, sum(`bilancio_entrate`.`importo`) AS `totale_entrato`, max(`bilancio_uscite`.`data_operazione`) AS `ultima_operazione`, year(ifnull(`bilancio_uscite`.`data_operazione`,`bilancio_entrate`.`data_operazione`)) AS `anno`, month(ifnull(`bilancio_uscite`.`data_operazione`,`bilancio_entrate`.`data_operazione`)) AS `mese` FROM ((`bilancio_gruppi_transazione` left join `bilancio_uscite` on((`bilancio_gruppi_transazione`.`id_gruppo_transazione` = `bilancio_uscite`.`id_gruppo_transazione`))) left join `bilancio_entrate` on((`bilancio_gruppi_transazione`.`id_gruppo_transazione` = `bilancio_entrate`.`id_gruppo_transazione`))) GROUP BY ifnull(`bilancio_uscite`.`id_utente`,`bilancio_entrate`.`id_utente`), year(ifnull(`bilancio_uscite`.`data_operazione`,`bilancio_entrate`.`data_operazione`)), month(ifnull(`bilancio_uscite`.`data_operazione`,`bilancio_entrate`.`data_operazione`)), ifnull(`bilancio_uscite`.`id_gruppo_transazione`,`bilancio_entrate`.`id_gruppo_transazione`) ;
-
--- --------------------------------------------------------
-
---
--- Struttura per vista `v_utenti2famiglie`
---
-DROP TABLE IF EXISTS `v_utenti2famiglie`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_utenti2famiglie`  AS SELECT `utenti2famiglie`.`id_famiglia` AS `id_famiglia`, `famiglie`.`nome_famiglia` AS `nome_famiglia`, `utenti`.`id` AS `id`, `utenti`.`nome` AS `nome`, `utenti`.`cognome` AS `cognome`, `utenti`.`email` AS `email`, `utenti`.`id_famiglia_attuale` AS `id_famiglia_attuale`, `utenti`.`userlevelid` AS `userlevelid`, `utenti`.`admin` AS `admin` FROM ((`utenti` left join `utenti2famiglie` on((`utenti`.`id` = `utenti2famiglie`.`id_utente`))) left join `famiglie` on((`utenti2famiglie`.`id_famiglia` = `famiglie`.`id_famiglia`))) ;
-
--- --------------------------------------------------------
-
---
--- Struttura per vista `v_utenti2famiglie_ricerca`
---
-DROP TABLE IF EXISTS `v_utenti2famiglie_ricerca`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_utenti2famiglie_ricerca`  AS SELECT `utenti`.`nome` AS `nome`, `utenti`.`cognome` AS `cognome`, `utenti`.`email` AS `email`, `famiglie`.`nome_famiglia` AS `nome_famiglia`, `famiglie`.`in_gestione` AS `in_gestione`, `utenti2famiglie`.`id_utente` AS `id_utente`, `utenti2famiglie`.`id_famiglia` AS `id_famiglia` FROM ((`utenti2famiglie` join `famiglie` on((`utenti2famiglie`.`id_famiglia` = `famiglie`.`id_famiglia`))) join `utenti` on((`utenti2famiglie`.`id_utente` = `utenti`.`id`))) ;
-
--- --------------------------------------------------------
-
---
--- Struttura per vista `v_utenti_ricerca`
---
-DROP TABLE IF EXISTS `v_utenti_ricerca`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_utenti_ricerca`  AS SELECT `utenti`.`id` AS `id_utente`, `utenti`.`nome` AS `nome`, `utenti`.`cognome` AS `cognome`, concat(`utenti`.`cognome`,' ',`utenti`.`nome`) AS `fullname`, `utenti`.`email` AS `email`, `utenti`.`attivo` AS `attivo`, `utenti`.`id_famiglia_attuale` AS `id_famiglia_attuale`, `utenti`.`disponibile_per_soso` AS `disponibile_per_soso` FROM `utenti` ;
 
 --
 -- Indici per le tabelle scaricate
@@ -1636,6 +1604,71 @@ ALTER TABLE `famiglie`
   ADD PRIMARY KEY (`id_famiglia`);
 
 --
+-- Indici per le tabelle `film`
+--
+ALTER TABLE `film`
+  ADD PRIMARY KEY (`id_film`),
+  ADD UNIQUE KEY `uq_film_tmdb` (`tmdb_id`),
+  ADD KEY `idx_film_gruppo` (`id_gruppo`);
+
+--
+-- Indici per le tabelle `film2generi`
+--
+ALTER TABLE `film2generi`
+  ADD PRIMARY KEY (`id_film`,`id_genere`),
+  ADD KEY `idx_film2generi_genere` (`id_genere`);
+
+--
+-- Indici per le tabelle `film2liste`
+--
+ALTER TABLE `film2liste`
+  ADD PRIMARY KEY (`id_film`,`id_lista`),
+  ADD KEY `idx_film2liste_lista` (`id_lista`);
+
+--
+-- Indici per le tabelle `film2piattaforme`
+--
+ALTER TABLE `film2piattaforme`
+  ADD PRIMARY KEY (`id_film`,`id_piattaforma`),
+  ADD KEY `idx_film2piattaforme_piattaforma` (`id_piattaforma`);
+
+--
+-- Indici per le tabelle `film_commenti`
+--
+ALTER TABLE `film_commenti`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_film_commenti_film` (`id_film`),
+  ADD KEY `idx_film_commenti_utente` (`id_utente`);
+
+--
+-- Indici per le tabelle `film_generi`
+--
+ALTER TABLE `film_generi`
+  ADD PRIMARY KEY (`id_genere`);
+
+--
+-- Indici per le tabelle `film_gruppi`
+--
+ALTER TABLE `film_gruppi`
+  ADD PRIMARY KEY (`id_gruppo`),
+  ADD UNIQUE KEY `uq_film_gruppi_nome` (`nome`);
+
+--
+-- Indici per le tabelle `film_liste`
+--
+ALTER TABLE `film_liste`
+  ADD PRIMARY KEY (`id_lista`),
+  ADD KEY `idx_film_liste_utente` (`id_utente`);
+
+--
+-- Indici per le tabelle `film_utenti`
+--
+ALTER TABLE `film_utenti`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_film_utente` (`id_film`,`id_utente`),
+  ADD KEY `idx_film_utenti_utente` (`id_utente`);
+
+--
 -- Indici per le tabelle `gestione_account_password`
 --
 ALTER TABLE `gestione_account_password`
@@ -1691,6 +1724,20 @@ ALTER TABLE `mezzi_chilometri`
   ADD KEY `fk_chilometri_mezzo` (`id_mezzo`);
 
 --
+-- Indici per le tabelle `mezzi_eventi`
+--
+ALTER TABLE `mezzi_eventi`
+  ADD PRIMARY KEY (`id_evento`),
+  ADD KEY `fk_eventi_mezzo` (`id_mezzo`),
+  ADD KEY `fk_eventi_tipo` (`id_tipo_evento`);
+
+--
+-- Indici per le tabelle `mezzi_eventi_tipi`
+--
+ALTER TABLE `mezzi_eventi_tipi`
+  ADD PRIMARY KEY (`id_tipo_evento`);
+
+--
 -- Indici per le tabelle `mezzi_mezzi2tagliandi`
 --
 ALTER TABLE `mezzi_mezzi2tagliandi`
@@ -1706,20 +1753,6 @@ ALTER TABLE `mezzi_tagliandi`
   ADD KEY `fk_tagliandi_mezzo` (`id_mezzo`),
   ADD KEY `fk_tagliandi_famiglia` (`id_famiglia`),
   ADD KEY `fk_tagliandi_utente` (`id_utente`);
-
---
--- Indici per le tabelle `mezzi_eventi_tipi`
---
-ALTER TABLE `mezzi_eventi_tipi`
-  ADD PRIMARY KEY (`id_tipo_evento`);
-
---
--- Indici per le tabelle `mezzi_eventi`
---
-ALTER TABLE `mezzi_eventi`
-  ADD PRIMARY KEY (`id_evento`),
-  ADD KEY `fk_eventi_mezzo` (`id_mezzo`),
-  ADD KEY `fk_eventi_tipo` (`id_tipo_evento`);
 
 --
 -- Indici per le tabelle `movimenti2caricamenti`
@@ -1823,6 +1856,12 @@ ALTER TABLE `session`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indici per le tabelle `streaming_piattaforme`
+--
+ALTER TABLE `streaming_piattaforme`
+  ADD PRIMARY KEY (`id_piattaforma`);
+
+--
 -- Indici per le tabelle `temi`
 --
 ALTER TABLE `temi`
@@ -1919,14 +1958,6 @@ ALTER TABLE `utenti2salvadanai`
   ADD PRIMARY KEY (`id_u2s`),
   ADD UNIQUE KEY `uq_u2s` (`id_utente`,`id_salvadanaio`),
   ADD KEY `fk_u2s_salvadanaio` (`id_salvadanaio`);
-
---
--- Indici per le tabelle `webauthn_credentials`
---
-ALTER TABLE `webauthn_credentials`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `credential_id` (`credential_id`),
-  ADD KEY `user_id` (`user_id`);
 
 --
 -- AUTO_INCREMENT per le tabelle scaricate
@@ -2137,6 +2168,36 @@ ALTER TABLE `famiglie`
   MODIFY `id_famiglia` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT per la tabella `film`
+--
+ALTER TABLE `film`
+  MODIFY `id_film` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `film_commenti`
+--
+ALTER TABLE `film_commenti`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `film_gruppi`
+--
+ALTER TABLE `film_gruppi`
+  MODIFY `id_gruppo` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `film_liste`
+--
+ALTER TABLE `film_liste`
+  MODIFY `id_lista` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `film_utenti`
+--
+ALTER TABLE `film_utenti`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT per la tabella `gestione_account_password`
 --
 ALTER TABLE `gestione_account_password`
@@ -2185,6 +2246,18 @@ ALTER TABLE `mezzi_chilometri`
   MODIFY `id_chilometro` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT per la tabella `mezzi_eventi`
+--
+ALTER TABLE `mezzi_eventi`
+  MODIFY `id_evento` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `mezzi_eventi_tipi`
+--
+ALTER TABLE `mezzi_eventi_tipi`
+  MODIFY `id_tipo_evento` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT per la tabella `mezzi_mezzi2tagliandi`
 --
 ALTER TABLE `mezzi_mezzi2tagliandi`
@@ -2195,18 +2268,6 @@ ALTER TABLE `mezzi_mezzi2tagliandi`
 --
 ALTER TABLE `mezzi_tagliandi`
   MODIFY `id_tagliando` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT per la tabella `mezzi_eventi_tipi`
---
-ALTER TABLE `mezzi_eventi_tipi`
-  MODIFY `id_tipo_evento` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT per la tabella `mezzi_eventi`
---
-ALTER TABLE `mezzi_eventi`
-  MODIFY `id_evento` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT per la tabella `movimenti2caricamenti`
@@ -2299,6 +2360,12 @@ ALTER TABLE `session`
   MODIFY `id` int(12) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT per la tabella `streaming_piattaforme`
+--
+ALTER TABLE `streaming_piattaforme`
+  MODIFY `id_piattaforma` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT per la tabella `temi`
 --
 ALTER TABLE `temi`
@@ -2357,12 +2424,6 @@ ALTER TABLE `utenti2menu_smartadmin`
 --
 ALTER TABLE `utenti2salvadanai`
   MODIFY `id_u2s` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT per la tabella `webauthn_credentials`
---
-ALTER TABLE `webauthn_credentials`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Limiti per le tabelle scaricate
@@ -2442,6 +2503,46 @@ ALTER TABLE `eventi_eventi2salvadanai_etichette`
   ADD CONSTRAINT `fk_e2se_salvadanaio` FOREIGN KEY (`id_salvadanaio`) REFERENCES `salvadanai` (`id_salvadanaio`);
 
 --
+-- Limiti per la tabella `film`
+--
+ALTER TABLE `film`
+  ADD CONSTRAINT `fk_film_gruppo` FOREIGN KEY (`id_gruppo`) REFERENCES `film_gruppi` (`id_gruppo`) ON DELETE SET NULL;
+
+--
+-- Limiti per la tabella `film2generi`
+--
+ALTER TABLE `film2generi`
+  ADD CONSTRAINT `fk_film2generi_film` FOREIGN KEY (`id_film`) REFERENCES `film` (`id_film`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_film2generi_genere` FOREIGN KEY (`id_genere`) REFERENCES `film_generi` (`id_genere`) ON DELETE CASCADE;
+
+--
+-- Limiti per la tabella `film2liste`
+--
+ALTER TABLE `film2liste`
+  ADD CONSTRAINT `fk_film2liste_film` FOREIGN KEY (`id_film`) REFERENCES `film` (`id_film`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_film2liste_lista` FOREIGN KEY (`id_lista`) REFERENCES `film_liste` (`id_lista`) ON DELETE CASCADE;
+
+--
+-- Limiti per la tabella `film_commenti`
+--
+ALTER TABLE `film_commenti`
+  ADD CONSTRAINT `fk_film_commenti_film` FOREIGN KEY (`id_film`) REFERENCES `film` (`id_film`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_film_commenti_utente` FOREIGN KEY (`id_utente`) REFERENCES `utenti` (`id`) ON DELETE CASCADE;
+
+--
+-- Limiti per la tabella `film_liste`
+--
+ALTER TABLE `film_liste`
+  ADD CONSTRAINT `fk_film_liste_utenti` FOREIGN KEY (`id_utente`) REFERENCES `utenti` (`id`) ON DELETE CASCADE;
+
+--
+-- Limiti per la tabella `film_utenti`
+--
+ALTER TABLE `film_utenti`
+  ADD CONSTRAINT `fk_film_utenti_film` FOREIGN KEY (`id_film`) REFERENCES `film` (`id_film`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_film_utenti_utenti` FOREIGN KEY (`id_utente`) REFERENCES `utenti` (`id`) ON DELETE CASCADE;
+
+--
 -- Limiti per la tabella `gestione_account_password`
 --
 ALTER TABLE `gestione_account_password`
@@ -2468,6 +2569,13 @@ ALTER TABLE `mezzi_chilometri`
   ADD CONSTRAINT `fk_chilometri_mezzo` FOREIGN KEY (`id_mezzo`) REFERENCES `mezzi` (`id_mezzo`);
 
 --
+-- Limiti per la tabella `mezzi_eventi`
+--
+ALTER TABLE `mezzi_eventi`
+  ADD CONSTRAINT `fk_eventi_mezzo` FOREIGN KEY (`id_mezzo`) REFERENCES `mezzi` (`id_mezzo`),
+  ADD CONSTRAINT `fk_eventi_tipo` FOREIGN KEY (`id_tipo_evento`) REFERENCES `mezzi_eventi_tipi` (`id_tipo_evento`);
+
+--
 -- Limiti per la tabella `mezzi_mezzi2tagliandi`
 --
 ALTER TABLE `mezzi_mezzi2tagliandi`
@@ -2483,20 +2591,13 @@ ALTER TABLE `mezzi_tagliandi`
   ADD CONSTRAINT `fk_tagliandi_utente` FOREIGN KEY (`id_utente`) REFERENCES `utenti` (`id`);
 
 --
--- Limiti per la tabella `mezzi_eventi`
---
-ALTER TABLE `mezzi_eventi`
-  ADD CONSTRAINT `fk_eventi_mezzo` FOREIGN KEY (`id_mezzo`) REFERENCES `mezzi` (`id_mezzo`),
-  ADD CONSTRAINT `fk_eventi_tipo` FOREIGN KEY (`id_tipo_evento`) REFERENCES `mezzi_eventi_tipi` (`id_tipo_evento`);
-
---
 -- Limiti per la tabella `movimenti_revolut`
 --
 ALTER TABLE `movimenti_revolut`
+  ADD CONSTRAINT `fk_revolut_caricamento` FOREIGN KEY (`id_caricamento`) REFERENCES `ocr_caricamenti` (`id_caricamento`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_revolut_etichetta` FOREIGN KEY (`id_etichetta`) REFERENCES `bilancio_etichette` (`id_etichetta`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_revolut_gruppo` FOREIGN KEY (`id_gruppo_transazione`) REFERENCES `bilancio_gruppi_transazione` (`id_gruppo_transazione`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_revolut_salvadanaio` FOREIGN KEY (`id_salvadanaio`) REFERENCES `salvadanai` (`id_salvadanaio`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_revolut_caricamento` FOREIGN KEY (`id_caricamento`) REFERENCES `ocr_caricamenti` (`id_caricamento`) ON DELETE SET NULL;
+  ADD CONSTRAINT `fk_revolut_salvadanaio` FOREIGN KEY (`id_salvadanaio`) REFERENCES `salvadanai` (`id_salvadanaio`) ON DELETE SET NULL;
 
 --
 -- Limiti per la tabella `userlevel_permissions`
