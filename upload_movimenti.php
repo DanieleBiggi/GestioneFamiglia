@@ -62,6 +62,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
         $tabella = 'movimenti_revolut';
         $nuove_descrizioni_inserite = 0;
         $inserita = 0;
+        $idUtenteSession = $_SESSION['utente_id'];
+        $assoc_auto  = [];
+        $assoc_multi = [];
 
         // Precarica le descrizioni note per cercare corrispondenze fuzzy
         $stmtMap = $conn->prepare(
@@ -165,6 +168,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
             $stmtInsert->execute();
             $id_tabella = $conn->insert_id;
 
+            $data_mov = $data_completed ?: $started_date;
+            verifica_associazione_scontrino($tabella, $id_tabella, $descrizione_orig, $data_mov, $amount, $assoc_auto, $assoc_multi);
+
             if ($id_salvadanaio) {
                 $data_operazione = $data_completed ?? $started_date;
                 $stmtCheck = $conn->prepare('SELECT data_aggiornamento_manuale FROM salvadanai WHERE id_salvadanaio = ?');
@@ -195,6 +201,29 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
         echo "<div class='alert alert-success'>Inserite " . $inserita . " righe</div><br>" .
             "<a class='btn btn-primary btn-sm ml-2' href='index.php'>Torna alla lista</a>";
 
+        if ($assoc_auto || $assoc_multi) {
+            echo "<div class='mt-4'><h5>Abbinamento scontrini</h5>";
+            echo "<p class='small'>Regole di matching: vengono confrontati la data del movimento e l'importo assoluto con gli scontrini non associati.</p>";
+            if ($assoc_auto) {
+                echo "<h6>Abbinamenti automatici</h6><ul>";
+                foreach ($assoc_auto as $a) {
+                    echo "<li>" . htmlspecialchars($a['descrizione']) . " → " . htmlspecialchars($a['caricamento']['nome_file']) . " (" . $a['caricamento']['data_scontrino'] . " €" . $a['caricamento']['totale_scontrino'] . ")</li>";
+                }
+                echo "</ul>";
+            }
+            if ($assoc_multi) {
+                echo "<h6>Scontrini possibili da confermare</h6>";
+                foreach ($assoc_multi as $m) {
+                    echo "<div class='mb-3'><div><strong>" . htmlspecialchars($m['descrizione']) . "</strong> (" . $m['data'] . " €" . $m['importo'] . ")</div><ul>";
+                    foreach ($m['caricamenti'] as $c) {
+                        echo "<li>" . htmlspecialchars($c['nome_file']) . " (" . $c['data_scontrino'] . " €" . $c['totale_scontrino'] . ")</li>";
+                    }
+                    echo "</ul></div>";
+                }
+            }
+            echo "</div>";
+        }
+
         if ($nuove_descrizioni_inserite > 0) {
             echo "<div class='alert alert-warning mt-4'>Sono state inserite " . $nuove_descrizioni_inserite . " Nuove descrizioni.</div>";
         }
@@ -206,6 +235,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
         $tot_righe  = 0;
         $inserita   = 0;
         $idUtenteSession = $_SESSION['utente_id'];
+        $assoc_auto  = [];
+        $assoc_multi = [];
 
         // Precarica le descrizioni note per il conto principale
         $stmtMap = $conn->prepare(
@@ -301,6 +332,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
 
             $id_tabella = $conn->insert_id;
 
+            verifica_associazione_scontrino($tabella, $id_tabella, $descrizione_orig, $data_operazione_db, $importo, $assoc_auto, $assoc_multi);
+
             if ($id_tabella > 0) {
                 $inserita++;
                 if ($id_etichetta > 0) {
@@ -319,6 +352,29 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
 
         echo "<div class='alert alert-success'>Inserite " . $inserita . " righe su " . $tot_righe . "</div><br>" .
             "<a class='btn btn-primary btn-sm ml-2' href='index.php'>Torna alla lista</a>";
+
+        if ($assoc_auto || $assoc_multi) {
+            echo "<div class='mt-4'><h5>Abbinamento scontrini</h5>";
+            echo "<p class='small'>Regole di matching: vengono confrontati la data del movimento e l'importo assoluto con gli scontrini non associati.</p>";
+            if ($assoc_auto) {
+                echo "<h6>Abbinamenti automatici</h6><ul>";
+                foreach ($assoc_auto as $a) {
+                    echo "<li>" . htmlspecialchars($a['descrizione']) . " → " . htmlspecialchars($a['caricamento']['nome_file']) . " (" . $a['caricamento']['data_scontrino'] . " €" . $a['caricamento']['totale_scontrino'] . ")</li>";
+                }
+                echo "</ul>";
+            }
+            if ($assoc_multi) {
+                echo "<h6>Scontrini possibili da confermare</h6>";
+                foreach ($assoc_multi as $m) {
+                    echo "<div class='mb-3'><div><strong>" . htmlspecialchars($m['descrizione']) . "</strong> (" . $m['data'] . " €" . $m['importo'] . ")</div><ul>";
+                    foreach ($m['caricamenti'] as $c) {
+                        echo "<li>" . htmlspecialchars($c['nome_file']) . " (" . $c['data_scontrino'] . " €" . $c['totale_scontrino'] . ")</li>";
+                    }
+                    echo "</ul></div>";
+                }
+            }
+            echo "</div>";
+        }
     }
 } else {
     $idUtenteSession = $_SESSION['utente_id'];
@@ -616,6 +672,66 @@ function normalizza_descrizione($stringa)
 {
     $stringa = strtolower($stringa);
     return preg_replace('/[^a-z0-9]/', '', $stringa);
+}
+
+/**
+ * Tenta di associare automaticamente uno scontrino al movimento appena inserito.
+ * Il match avviene confrontando la data (solo giorno) e l'importo assoluto con
+ * gli scontrini ancora non collegati. In caso di corrispondenza unica viene
+ * effettuato l'update automatico; in caso di più corrispondenze vengono restituite
+ * al chiamante per una conferma manuale.
+ */
+function verifica_associazione_scontrino($tabella, $id_tabella, $descrizione, $data_mov, $importo, &$assoc_auto, &$assoc_multi)
+{
+    global $conn, $idUtenteSession;
+
+    $importo = abs((float)$importo);
+    $data_mov = substr($data_mov, 0, 10);
+
+    $sql = "SELECT id_caricamento, nome_file, data_scontrino, totale_scontrino\n"
+         . "FROM ocr_caricamenti c\n"
+         . "WHERE id_utente = ? AND DATE(data_scontrino) = ? AND totale_scontrino = ?\n"
+         . "  AND id_caricamento NOT IN (\n"
+         . "    SELECT id_caricamento FROM bilancio_entrate WHERE id_caricamento IS NOT NULL\n"
+         . "    UNION SELECT id_caricamento FROM bilancio_uscite WHERE id_caricamento IS NOT NULL\n"
+         . "    UNION SELECT id_caricamento FROM movimenti_revolut WHERE id_caricamento IS NOT NULL\n"
+         . "  )";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('isd', $idUtenteSession, $data_mov, $importo);
+    $stmt->execute();
+    $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    if (count($rows) === 1) {
+        $id_car = $rows[0]['id_caricamento'];
+        $idFields = [
+            'movimenti_revolut' => 'id_movimento_revolut',
+            'bilancio_entrate'  => 'id_entrata',
+            'bilancio_uscite'   => 'id_uscita',
+        ];
+        if (isset($idFields[$tabella])) {
+            $field = $idFields[$tabella];
+            $stmtUp = $conn->prepare("UPDATE $tabella SET id_caricamento=? WHERE $field=?");
+            $stmtUp->bind_param('ii', $id_car, $id_tabella);
+            $stmtUp->execute();
+            $stmtUp->close();
+            $assoc_auto[] = [
+                'tabella'      => $tabella,
+                'id_movimento' => $id_tabella,
+                'descrizione'  => $descrizione,
+                'caricamento'  => $rows[0],
+            ];
+        }
+    } elseif (count($rows) > 1) {
+        $assoc_multi[] = [
+            'tabella'      => $tabella,
+            'id_movimento' => $id_tabella,
+            'descrizione'  => $descrizione,
+            'data'         => $data_mov,
+            'importo'      => $importo,
+            'caricamenti'  => $rows,
+        ];
+    }
 }
 
 function dividi_operazione_per_etichetta($id_etichetta, $tabella, $id_tabella)
