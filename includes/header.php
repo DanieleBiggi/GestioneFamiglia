@@ -149,7 +149,8 @@ $conn->set_charset('utf8mb4'); // IMPORTANTISSIMO
                       has_permission($conn, 'page:eventi.php', 'view') ||
                       has_permission($conn, 'page:lista_spesa.php', 'view') ||
                       has_permission($conn, 'page:storia.php', 'view') ||
-                      has_permission($conn, 'page:film.php', 'view');
+                      has_permission($conn, 'page:film.php', 'view') ||
+                      has_permission($conn, 'page:upload.php', 'view');
         if ($showUtility):
       ?>
       <li class="mb-3">
@@ -175,6 +176,9 @@ $conn->set_charset('utf8mb4'); // IMPORTANTISSIMO
             <?php endif; ?>
             <?php if (has_permission($conn, 'page:film.php', 'view')): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/film.php"><i class="bi bi-film me-2 text-white"></i>Film</a></li>
+            <?php endif; ?>
+            <?php if (has_permission($conn, 'page:upload.php', 'view')): ?>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/upload.php"><i class="bi bi-cloud-upload me-2 text-white"></i>Upload</a></li>
             <?php endif; ?>
             <?php if (has_permission($conn, 'table:turni_sync_google_log', 'view')): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/table_manager.php?table=turni_sync_google_log"><i class="bi bi-journal-text me-2 text-white"></i>Log sincronizzazione turni</a></li>
