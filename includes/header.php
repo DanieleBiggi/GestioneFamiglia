@@ -150,6 +150,7 @@ $conn->set_charset('utf8mb4'); // IMPORTANTISSIMO
                       has_permission($conn, 'page:lista_spesa.php', 'view') ||
                       has_permission($conn, 'page:storia.php', 'view') ||
                       has_permission($conn, 'page:film.php', 'view') ||
+                      has_permission($conn, 'page:vacanze.php', 'view') ||
                       has_permission($conn, 'page:upload.php', 'view');
         if ($showUtility):
       ?>
@@ -176,6 +177,9 @@ $conn->set_charset('utf8mb4'); // IMPORTANTISSIMO
             <?php endif; ?>
             <?php if (has_permission($conn, 'page:film.php', 'view')): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/film.php"><i class="bi bi-film me-2 text-white"></i>Film</a></li>
+            <?php endif; ?>
+            <?php if (has_permission($conn, 'page:vacanze.php', 'view')): ?>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/vacanze.php"><i class="bi bi-airplane me-2 text-white"></i>Vacanze</a></li>
             <?php endif; ?>
             <?php if (has_permission($conn, 'page:upload.php', 'view')): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/upload.php"><i class="bi bi-cloud-upload me-2 text-white"></i>Upload</a></li>

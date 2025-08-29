@@ -174,6 +174,11 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
             <i class="bi bi-film me-2"></i>Film
           </a>
           <?php endif; ?>
+          <?php if (has_permission($conn, 'page:vacanze.php', 'view')): ?>
+          <a href="vacanze.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
+            <i class="bi bi-airplane me-2"></i>Vacanze
+          </a>
+          <?php endif; ?>
           <?php if (has_permission($conn, 'page:upload.php', 'view')): ?>
           <a href="upload.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
             <i class="bi bi-cloud-upload me-2"></i>Upload
