@@ -173,7 +173,12 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
           <a href="film.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
             <i class="bi bi-film me-2"></i>Film
           </a>
-          <?php endif; ?> 
+          <?php endif; ?>
+          <?php if (has_permission($conn, 'page:upload.php', 'view')): ?>
+          <a href="upload.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
+            <i class="bi bi-cloud-upload me-2"></i>Upload
+          </a>
+          <?php endif; ?>
           <?php if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1 && has_permission($conn, 'page:etichette_lista.php', 'view')): ?>
           <a href="etichette_lista.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
             <i class="bi bi-tags me-2"></i>Etichette
