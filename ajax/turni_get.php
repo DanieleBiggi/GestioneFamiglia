@@ -64,9 +64,26 @@ while ($row = $evRes->fetch_assoc()) {
         'colore' => $row['colore'],
         'colore_testo' => $row['colore_testo'],
         'data_evento' => $row['data_evento'],
-        'data_fine' => $row['data_fine']
+        'data_fine' => $row['data_fine'],
+        'link' => 'eventi_dettaglio.php?id=' . (int)$row['id']
     ];
 }
 $evStmt->close();
+
+// Viaggi pianificati/prenotati
+$tripRes = $conn->query("SELECT titolo, data_inizio, data_fine FROM v_eventi_viaggi WHERE data_inizio <= '$end' AND COALESCE(data_fine, data_inizio) >= '$start'");
+if ($tripRes) {
+    while ($row = $tripRes->fetch_assoc()) {
+        $eventi[] = [
+            'id' => 0,
+            'titolo' => $row['titolo'],
+            'colore' => '#0dcaf0',
+            'colore_testo' => '#000000',
+            'data_evento' => $row['data_inizio'],
+            'data_fine' => $row['data_fine'],
+            'link' => null
+        ];
+    }
+}
 
 echo json_encode(['turni' => $turni, 'eventi' => $eventi]);

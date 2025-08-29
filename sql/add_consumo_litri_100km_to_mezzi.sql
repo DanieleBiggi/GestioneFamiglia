@@ -1,0 +1,2 @@
+ALTER TABLE mezzi
+  ADD COLUMN consumo_litri_100km DECIMAL(5,2) DEFAULT NULL;
