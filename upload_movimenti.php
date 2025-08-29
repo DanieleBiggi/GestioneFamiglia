@@ -360,11 +360,16 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
     $metodi = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
 
+    $stmt = $conn->prepare("SELECT id_supermercato, descrizione_supermercato FROM ocr_supermercati ORDER BY descrizione_supermercato");
+    $stmt->execute();
+    $supermercati = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
     // Movimenti recenti
     $movimenti = [];
     if ($max_started_revolut && (!$max_data_banca || strtotime($max_started_revolut) > strtotime($max_data_banca))) {
         $stmt = $conn->prepare(
-            "SELECT id_movimento_revolut AS id, 'revolut' AS tipo, description AS descrizione, id_gruppo_transazione, descrizione_extra\n"
+            "SELECT id_movimento_revolut AS id, 'revolut' AS tipo, description AS descrizione, id_gruppo_transazione, descrizione_extra, id_caricamento\n" 
             . " FROM movimenti_revolut m\n"
             . " LEFT JOIN bilancio_gruppi_transazione g ON m.id_gruppo_transazione = g.id_gruppo_transazione\n"
             . " WHERE g.id_utente = ? OR m.id_gruppo_transazione IS NULL\n"
@@ -375,13 +380,13 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
         $movimenti = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
     } else {
-        $stmt = $conn->prepare("SELECT id_entrata AS id, 'entrate' AS tipo, descrizione_operazione AS descrizione, id_gruppo_transazione, descrizione_extra FROM bilancio_entrate WHERE id_utente = ? ORDER BY data_operazione DESC LIMIT 50");
+        $stmt = $conn->prepare("SELECT id_entrata AS id, 'entrate' AS tipo, descrizione_operazione AS descrizione, id_gruppo_transazione, descrizione_extra, id_caricamento FROM bilancio_entrate WHERE id_utente = ? ORDER BY data_operazione DESC LIMIT 50");
         $stmt->bind_param('i', $idUtenteSession);
         $stmt->execute();
         $movimenti = array_merge($movimenti, $stmt->get_result()->fetch_all(MYSQLI_ASSOC));
         $stmt->close();
 
-        $stmt = $conn->prepare("SELECT id_uscita AS id, 'uscite' AS tipo, descrizione_operazione AS descrizione, id_gruppo_transazione, descrizione_extra FROM bilancio_uscite WHERE id_utente = ? ORDER BY data_operazione DESC LIMIT 50");
+        $stmt = $conn->prepare("SELECT id_uscita AS id, 'uscite' AS tipo, descrizione_operazione AS descrizione, id_gruppo_transazione, descrizione_extra, id_caricamento FROM bilancio_uscite WHERE id_utente = ? ORDER BY data_operazione DESC LIMIT 50");
         $stmt->bind_param('i', $idUtenteSession);
         $stmt->execute();
         $movimenti = array_merge($movimenti, $stmt->get_result()->fetch_all(MYSQLI_ASSOC));
@@ -431,6 +436,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
           <th scope="col">Descrizione</th>
           <th scope="col">Gruppo</th>
           <th scope="col">Extra</th>
+          <th scope="col">Scontrino</th>
         </tr>
       </thead>
       <tbody>
@@ -441,6 +447,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
             <td><?= htmlspecialchars($m['descrizione']) ?></td>
             <td><?= htmlspecialchars($m['id_gruppo_transazione']) ?></td>
             <td><?= htmlspecialchars($m['descrizione_extra']) ?></td>
+            <td><i class="bi bi-paperclip" onclick="openAllegatoModal(<?= $m['id'] ?>,'<?= $m['tipo'] ?>')"></i></td>
           </tr>
         <?php endforeach; ?>
       </tbody>
@@ -482,6 +489,105 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
     </div>
     <button type="submit" class="btn btn-success w-100">Inserisci</button>
   </form>
+
+  <div class="modal fade" id="allegatoModal" tabindex="-1">
+    <div class="modal-dialog">
+      <form class="modal-content bg-dark text-white" id="allegatoForm" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title">Gestisci scontrino</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Scontrini da associare</label>
+            <input type="text" class="form-control bg-secondary text-white mb-2" placeholder="Filtra..." oninput="filterCaricamenti(this.value)">
+            <div id="listaCaricamenti" class="list-group" style="max-height:200px;overflow:auto;"></div>
+          </div>
+          <hr>
+          <div class="mb-3">
+            <label class="form-label">File</label>
+            <input type="file" class="form-control bg-secondary text-white" name="nome_file" id="allegatoFile" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Supermercato</label>
+            <select class="form-select bg-secondary text-white" name="id_supermercato" id="idSupermercato">
+              <option value="0"></option>
+              <?php foreach ($supermercati as $s): ?>
+              <option value="<?= (int)$s['id_supermercato'] ?>"><?= htmlspecialchars($s['descrizione_supermercato']) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Data scontrino</label>
+            <input type="date" class="form-control bg-secondary text-white" name="data_scontrino" id="dataScontrino">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Totale scontrino</label>
+            <input type="number" step="0.01" class="form-control bg-secondary text-white" name="totale_scontrino" id="totaleScontrino">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Descrizione</label>
+            <input type="text" class="form-control bg-secondary text-white" name="descrizione" id="descrizioneScontrino">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary w-100">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+  let caricamenti = [];
+  let currentMovimento = null;
+  let currentSrc = null;
+  function openAllegatoModal(id, tipo) {
+    currentMovimento = id;
+    currentSrc = tipo === 'revolut' ? 'movimenti_revolut' : (tipo === 'entrate' ? 'bilancio_entrate' : 'bilancio_uscite');
+    const form = document.getElementById('allegatoForm');
+    form.reset();
+    document.getElementById('listaCaricamenti').innerHTML = '';
+    fetch('ajax/list_caricamenti.php')
+      .then(r => r.json())
+      .then(data => { caricamenti = data; populateCaricamenti(data); });
+    new bootstrap.Modal(document.getElementById('allegatoModal')).show();
+  }
+  function populateCaricamenti(data) {
+    const list = document.getElementById('listaCaricamenti');
+    list.innerHTML = '';
+    data.forEach(c => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'list-group-item list-group-item-action bg-secondary text-white';
+      const ds = c.data_scontrino ? c.data_scontrino.substring(0,10) : '';
+      btn.textContent = `${c.nome_file} ${ds} €${c.totale_scontrino}`;
+      btn.onclick = () => associateCaricamento(c.id_caricamento);
+      list.appendChild(btn);
+    });
+  }
+  function filterCaricamenti(term) {
+    term = term.toLowerCase();
+    document.querySelectorAll('#listaCaricamenti button').forEach(btn => {
+      btn.style.display = btn.textContent.toLowerCase().includes(term) ? '' : 'none';
+    });
+  }
+  function associateCaricamento(idCar) {
+    fetch('ajax/associate_caricamento.php', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ id_movimento: currentMovimento, src: currentSrc, id_caricamento: idCar })
+    }).then(r => r.json()).then(data => { if (data.success) { alert('Scontrino associato'); location.reload(); } });
+  }
+  document.getElementById('allegatoForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    const fd = new FormData(this);
+    fd.append('id_movimento', currentMovimento);
+    fd.append('src', currentSrc);
+    fetch('ajax/save_caricamento.php', { method:'POST', body: fd })
+      .then(r => r.json())
+      .then(data => { if (data.success) { alert('Scontrino salvato'); location.reload(); } });
+  });
+  </script>
 </div>
 <?php
 }
