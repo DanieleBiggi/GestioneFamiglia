@@ -4,7 +4,7 @@ include '../includes/session_check.php';
 include '../includes/db.php';
 
 $idMovimento = intval($_POST['id_movimento'] ?? 0);
-$src = $_POST['src'] ?? 'movimenti_revolut';
+$src = $_POST['src'] ?? null;
 $idCaricamento = intval($_POST['id_caricamento'] ?? 0);
 $idSupermercato = intval($_POST['id_supermercato'] ?? 0);
 $dataScontrino = $_POST['data_scontrino'] ?? null;
@@ -13,7 +13,7 @@ $totaleScontrino = $totaleScontrino !== '' ? floatval($totaleScontrino) : 0;
 $descrizione = trim($_POST['descrizione'] ?? '');
 
 $allowedSources = ['movimenti_revolut','bilancio_entrate','bilancio_uscite'];
-if (!$idMovimento || !in_array($src, $allowedSources, true)) {
+if ($src !== null && !in_array($src, $allowedSources, true)) {
     echo json_encode(['success' => false, 'error' => 'Parametri non validi']);
     exit;
 }
@@ -75,15 +75,17 @@ if ($idCaricamento > 0) {
     $idCaricamento = $stmt->insert_id;
     $stmt->close();
 
-    $idFields = [
-        'movimenti_revolut' => 'id_movimento_revolut',
-        'bilancio_entrate'  => 'id_entrata',
-        'bilancio_uscite'   => 'id_uscita'
-    ];
-    $stmt = $conn->prepare("UPDATE $src SET id_caricamento=? WHERE {$idFields[$src]}=?");
-    $stmt->bind_param('ii', $idCaricamento, $idMovimento);
-    $stmt->execute();
-    $stmt->close();
+    if ($src !== null && $idMovimento > 0) {
+        $idFields = [
+            'movimenti_revolut' => 'id_movimento_revolut',
+            'bilancio_entrate'  => 'id_entrata',
+            'bilancio_uscite'   => 'id_uscita'
+        ];
+        $stmt = $conn->prepare("UPDATE $src SET id_caricamento=? WHERE {$idFields[$src]}=?");
+        $stmt->bind_param('ii', $idCaricamento, $idMovimento);
+        $stmt->execute();
+        $stmt->close();
+    }
 }
 
 echo json_encode(['success' => true]);
