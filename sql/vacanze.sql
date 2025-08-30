@@ -95,7 +95,19 @@ CREATE TABLE viaggi_checklist (
   id_viaggio INT NOT NULL,
   voce VARCHAR(255) NOT NULL,
   completata TINYINT(1) DEFAULT 0,
-  FOREIGN KEY (id_viaggio) REFERENCES viaggi(id_viaggio) ON DELETE CASCADE
+  id_utente INT,
+  FOREIGN KEY (id_viaggio) REFERENCES viaggi(id_viaggio) ON DELETE CASCADE,
+  FOREIGN KEY (id_utente) REFERENCES utenti(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE viaggi_checklist_messaggi (
+  id_messaggio INT AUTO_INCREMENT PRIMARY KEY,
+  id_checklist INT NOT NULL,
+  id_utente INT NOT NULL,
+  messaggio TEXT NOT NULL,
+  creato_il DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_checklist) REFERENCES viaggi_checklist(id_checklist) ON DELETE CASCADE,
+  FOREIGN KEY (id_utente) REFERENCES utenti(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE viaggi_feedback (
