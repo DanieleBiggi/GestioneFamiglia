@@ -108,7 +108,7 @@ if ($id > 0) {
       <input type="text" name="titolo" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['titolo']) ?>" required>
     </div>
     <div class="mb-3">
-      <label class="form-label">Luogo <a href="vacanze_luogo_modifica.php" id="gestisci-luogo" class="btn btn-sm btn-outline-light ms-2" target="_blank" rel="noopener noreferrer">Gestisci</a></label>
+      <label class="form-label">Luogo <a href="vacanze_luogo_modifica.php" id="gestisci-luogo" class="btn btn-sm btn-outline-light ms-2" rel="noopener noreferrer">Gestisci</a></label>
       <select name="id_luogo" class="form-select bg-dark text-white border-secondary">
         <option value="">-- Seleziona --</option>
         <?php foreach($luoghi as $l): ?>
