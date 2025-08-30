@@ -7,7 +7,7 @@ $stato = $_GET['stato'] ?? '';
 $budget = $_GET['budget_max'] ?? '';
 $query = "SELECT v.*, t.min_totale, a.num_alternative, f.media_voto, f.num_feedback FROM viaggi v "
   . "LEFT JOIN (SELECT id_viaggio, MIN(totale_viaggio) AS min_totale FROM v_totali_alternative GROUP BY id_viaggio) t ON v.id_viaggio=t.id_viaggio "
-  . "LEFT JOIN (SELECT id_viaggio, COUNT(DISTINCT gruppo_alternativa) AS num_alternative FROM viaggi_tratte GROUP BY id_viaggio) a ON v.id_viaggio=a.id_viaggio "
+  . "LEFT JOIN (SELECT id_viaggio, COUNT(*) AS num_alternative FROM viaggi_alternative GROUP BY id_viaggio) a ON v.id_viaggio=a.id_viaggio "
   . "LEFT JOIN (SELECT id_viaggio, AVG(voto) AS media_voto, COUNT(*) AS num_feedback FROM viaggi_feedback GROUP BY id_viaggio) f ON v.id_viaggio=f.id_viaggio WHERE 1=1";
 $params = [];
 $types = '';

@@ -36,10 +36,17 @@ CREATE TABLE viaggi (
   FOREIGN KEY (id_luogo) REFERENCES viaggi_luoghi(id_luogo)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE viaggi_alternative (
+  id_viaggio_alternativa INT AUTO_INCREMENT PRIMARY KEY,
+  id_viaggio INT NOT NULL,
+  breve_descrizione VARCHAR(100),
+  FOREIGN KEY (id_viaggio) REFERENCES viaggi(id_viaggio)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE viaggi_tratte (
   id_tratta INT AUTO_INCREMENT PRIMARY KEY,
   id_viaggio INT NOT NULL,
-  gruppo_alternativa VARCHAR(40),
+  id_viaggio_alternativa INT,
   tipo_tratta ENUM('auto','aereo','traghetto','treno') NOT NULL,
   descrizione TEXT,
   origine_testo VARCHAR(255),
@@ -58,13 +65,14 @@ CREATE TABLE viaggi_tratte (
   costo_noleggio_eur DECIMAL(10,2),
   altri_costi_eur DECIMAL(10,2),
   note TEXT,
-  FOREIGN KEY (id_viaggio) REFERENCES viaggi(id_viaggio)
+  FOREIGN KEY (id_viaggio) REFERENCES viaggi(id_viaggio),
+  FOREIGN KEY (id_viaggio_alternativa) REFERENCES viaggi_alternative(id_viaggio_alternativa)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE viaggi_alloggi (
   id_alloggio INT AUTO_INCREMENT PRIMARY KEY,
   id_viaggio INT NOT NULL,
-  gruppo_alternativa VARCHAR(40),
+  id_viaggio_alternativa INT,
   giorno_indice INT,
   nome_alloggio VARCHAR(255),
   indirizzo VARCHAR(255),
@@ -74,7 +82,8 @@ CREATE TABLE viaggi_alloggi (
   data_checkout DATE,
   costo_notte_eur DECIMAL(10,2),
   note TEXT,
-  FOREIGN KEY (id_viaggio) REFERENCES viaggi(id_viaggio)
+  FOREIGN KEY (id_viaggio) REFERENCES viaggi(id_viaggio),
+  FOREIGN KEY (id_viaggio_alternativa) REFERENCES viaggi_alternative(id_viaggio_alternativa)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE viaggi_etichette (
@@ -132,7 +141,8 @@ CREATE TABLE viaggi2caricamenti (
 CREATE VIEW v_totali_alternative AS
 SELECT
   vt.id_viaggio,
-  vt.gruppo_alternativa,
+  alt.id_viaggio_alternativa,
+  alt.breve_descrizione,
   SUM(
     (COALESCE(vt.distanza_km,0) * COALESCE(vt.consumo_litri_100km,0) / 100) * COALESCE(vt.prezzo_carburante_eur_litro,0)
     + COALESCE(vt.pedaggi_eur,0)
@@ -144,7 +154,7 @@ SELECT
   (
     SELECT COALESCE(SUM(DATEDIFF(va.data_checkout, va.data_checkin) * COALESCE(va.costo_notte_eur,0)),0)
     FROM viaggi_alloggi va
-    WHERE va.id_viaggio = vt.id_viaggio AND va.gruppo_alternativa = vt.gruppo_alternativa
+    WHERE va.id_viaggio = vt.id_viaggio AND va.id_viaggio_alternativa = vt.id_viaggio_alternativa
   ) AS totale_alloggi,
   (
     SUM(
@@ -158,11 +168,12 @@ SELECT
     + (
       SELECT COALESCE(SUM(DATEDIFF(va.data_checkout, va.data_checkin) * COALESCE(va.costo_notte_eur,0)),0)
       FROM viaggi_alloggi va
-      WHERE va.id_viaggio = vt.id_viaggio AND va.gruppo_alternativa = vt.gruppo_alternativa
+      WHERE va.id_viaggio = vt.id_viaggio AND va.id_viaggio_alternativa = vt.id_viaggio_alternativa
     )
   ) AS totale_viaggio
 FROM viaggi_tratte vt
-GROUP BY vt.id_viaggio, vt.gruppo_alternativa;
+JOIN viaggi_alternative alt ON vt.id_viaggio_alternativa = alt.id_viaggio_alternativa
+GROUP BY vt.id_viaggio, vt.id_viaggio_alternativa;
 
 CREATE VIEW v_eventi_viaggi AS
 SELECT v.titolo, v.data_inizio, v.data_fine
