@@ -34,14 +34,15 @@ CREATE TABLE viaggi (
   priorita TINYINT,
   visibilita ENUM('private','shared','public') DEFAULT 'private',
   token_condivisione CHAR(22),
-  foto_url VARCHAR(255),
+  id_foto INT,
   breve_descrizione VARCHAR(255),
   note TEXT,
   meteo_previsto_json JSON,
   meteo_aggiornato_il DATETIME,
   creato_il DATETIME DEFAULT CURRENT_TIMESTAMP,
   aggiornato_il DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (id_luogo) REFERENCES viaggi_luoghi(id_luogo)
+  FOREIGN KEY (id_luogo) REFERENCES viaggi_luoghi(id_luogo),
+  FOREIGN KEY (id_foto) REFERENCES viaggi_luogo_foto(id_foto)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE viaggi_alternative (

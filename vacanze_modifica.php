@@ -14,10 +14,10 @@ if ($res) {
     $luoghi = $res->fetch_all(MYSQLI_ASSOC);
 }
 $foto_luoghi = [];
-$resFoto = $conn->query("SELECT id_luogo, photo_reference FROM viaggi_luogo_foto");
+$resFoto = $conn->query("SELECT id_foto, id_luogo, photo_reference FROM viaggi_luogo_foto");
 if ($resFoto) {
     while ($r = $resFoto->fetch_assoc()) {
-        $foto_luoghi[$r['id_luogo']][] = $r['photo_reference'];
+        $foto_luoghi[$r['id_luogo']][] = $r;
     }
 }
 
@@ -43,17 +43,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $note = $_POST['note'] ?? '';
     $meteo_previsto_json = $_POST['meteo_previsto_json'] ?? '';
     $meteo_aggiornato_il = $_POST['meteo_aggiornato_il'] ?? null;
-    $foto_url = $_POST['foto_url'] ?? null;
+    $id_foto = $_POST['id_foto'] !== '' ? (int)$_POST['id_foto'] : null;
     if ($meteo_aggiornato_il) {
         $meteo_aggiornato_il = date('Y-m-d H:i:s', strtotime($meteo_aggiornato_il));
     }
 
     if ($id > 0) {
-        $stmt = $conn->prepare('UPDATE viaggi SET titolo=?, id_luogo=?, data_inizio=?, data_fine=?, notti=?, persone=?, stato=?, priorita=?, visibilita=?, breve_descrizione=?, note=?, foto_url=?, meteo_previsto_json=?, meteo_aggiornato_il=? WHERE id_viaggio=?');
-        $stmt->bind_param('sissiisisssssssi', $titolo, $id_luogo, $data_inizio, $data_fine, $notti, $persone, $stato, $priorita, $visibilita, $breve_descrizione, $note, $foto_url, $meteo_previsto_json, $meteo_aggiornato_il, $id);
+        $stmt = $conn->prepare('UPDATE viaggi SET titolo=?, id_luogo=?, data_inizio=?, data_fine=?, notti=?, persone=?, stato=?, priorita=?, visibilita=?, breve_descrizione=?, note=?, id_foto=?, meteo_previsto_json=?, meteo_aggiornato_il=? WHERE id_viaggio=?');
+        $stmt->bind_param('sissiisisssisssi', $titolo, $id_luogo, $data_inizio, $data_fine, $notti, $persone, $stato, $priorita, $visibilita, $breve_descrizione, $note, $id_foto, $meteo_previsto_json, $meteo_aggiornato_il, $id);
     } else {
-        $stmt = $conn->prepare('INSERT INTO viaggi (titolo, id_luogo, data_inizio, data_fine, notti, persone, stato, priorita, visibilita, breve_descrizione, note, foto_url, meteo_previsto_json, meteo_aggiornato_il) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-        $stmt->bind_param('sissiisisssssss', $titolo, $id_luogo, $data_inizio, $data_fine, $notti, $persone, $stato, $priorita, $visibilita, $breve_descrizione, $note, $foto_url, $meteo_previsto_json, $meteo_aggiornato_il);
+        $stmt = $conn->prepare('INSERT INTO viaggi (titolo, id_luogo, data_inizio, data_fine, notti, persone, stato, priorita, visibilita, breve_descrizione, note, id_foto, meteo_previsto_json, meteo_aggiornato_il) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+        $stmt->bind_param('sissiisisssisss', $titolo, $id_luogo, $data_inizio, $data_fine, $notti, $persone, $stato, $priorita, $visibilita, $breve_descrizione, $note, $id_foto, $meteo_previsto_json, $meteo_aggiornato_il);
     }
   $stmt->execute();
   $id = $id ?: $stmt->insert_id;
@@ -73,7 +73,7 @@ $data = [
     'visibilita' => 'private',
     'breve_descrizione' => '',
     'note' => '',
-    'foto_url' => '',
+    'id_foto' => null,
     'meteo_previsto_json' => '',
     'meteo_aggiornato_il' => ''
 ];
@@ -118,7 +118,7 @@ if ($id > 0) {
       <input type="text" name="nuovo_luogo" class="form-control bg-dark text-white border-secondary mt-2" placeholder="Aggiungi nuovo luogo">
       <div class="mt-2">
         <label class="form-label">Foto</label>
-        <select name="foto_url" id="foto-url-select" class="form-select bg-dark text-white border-secondary">
+        <select name="id_foto" id="foto-id-select" class="form-select bg-dark text-white border-secondary">
           <option value="">-- Nessuna --</option>
         </select>
       </div>
@@ -184,20 +184,19 @@ if ($id > 0) {
 </div>
 <script>
 const luogoSel = document.querySelector('select[name="id_luogo"]');
-const fotoSel = document.getElementById('foto-url-select');
+const fotoSel = document.getElementById('foto-id-select');
 const gestisciBtn = document.getElementById('gestisci-luogo');
-const fotoSelezionata = <?= json_encode($data['foto_url']) ?>;
+const fotoSelezionata = <?= json_encode($data['id_foto']) ?>;
 function aggiornaFoto(){
   const opt = luogoSel.options[luogoSel.selectedIndex];
   let fotos = [];
   try { fotos = JSON.parse(opt.getAttribute('data-fotos') || '[]'); } catch(e){}
   fotoSel.innerHTML = '<option value="">-- Nessuna --</option>';
-  fotos.forEach(ref => {
-    const url = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${ref}&key=<?= $config['GOOGLE_MAPS_API'] ?>`;
+  fotos.forEach(f => {
     const option = document.createElement('option');
-    option.value = url;
-    option.textContent = ref;
-    if (url === fotoSelezionata) option.selected = true;
+    option.value = f.id_foto;
+    option.textContent = f.photo_reference;
+    if (parseInt(f.id_foto) === parseInt(fotoSelezionata)) option.selected = true;
     fotoSel.appendChild(option);
   });
 }
