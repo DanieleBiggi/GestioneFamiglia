@@ -66,7 +66,7 @@ $allRes = $allStmt->get_result();
               <div><?= htmlspecialchars($row['descrizione'] ?: $row['tipo_tratta']) ?></div>
               <div class="small text-muted"><?= ucfirst($row['tipo_tratta']) ?></div>
             </div>
-            <div>€<?= number_format($row['totale'], 2, ',', '.') ?> <i class="bi bi-pencil ms-2"></i></div>
+            <div>€<?= number_format($row['totale'], 2, ',', '.') ?> <i class="bi bi-pencil ms-2"></i><i class="bi bi-files ms-2 text-info duplicate" data-href="vacanze_tratte_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>&id_tratta=<?= (int)$row['id_tratta'] ?>&duplica=1"></i></div>
           </div>
         </a>
       <?php endwhile; ?>
@@ -86,7 +86,7 @@ $allRes = $allStmt->get_result();
         <a href="vacanze_alloggi_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>&id_alloggio=<?= (int)$row['id_alloggio'] ?>" class="list-group-item list-group-item-action bg-dark text-white">
           <div class="d-flex justify-content-between">
             <span><?= htmlspecialchars($row['nome_alloggio'] ?: 'Alloggio') ?></span>
-            <span>€<?= number_format($row['totale'], 2, ',', '.') ?> <i class="bi bi-pencil"></i></span>
+            <span>€<?= number_format($row['totale'], 2, ',', '.') ?> <i class="bi bi-pencil"></i><i class="bi bi-files ms-2 text-info duplicate" data-href="vacanze_alloggi_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>&id_alloggio=<?= (int)$row['id_alloggio'] ?>&duplica=1"></i></span>
           </div>
         </a>
       <?php endwhile; ?>

@@ -6,6 +6,7 @@ include 'includes/header.php';
 $id = (int)($_GET['id'] ?? 0);
 $alt = (int)($_GET['alt'] ?? 0);
 $id_alloggio = (int)($_GET['id_alloggio'] ?? 0);
+$duplica = isset($_GET['duplica']);
 
 // Recupera info viaggio per breadcrumb
 $stmt = $conn->prepare('SELECT titolo FROM viaggi WHERE id_viaggio=?');
@@ -72,6 +73,9 @@ if ($id_alloggio) {
         exit;
     }
     $alt = (int)$alloggio['id_viaggio_alternativa'];
+    if ($duplica) {
+        $id_alloggio = 0;
+    }
 }
 
 $altStmt = $conn->prepare('SELECT id_viaggio_alternativa, breve_descrizione FROM viaggi_alternative WHERE id_viaggio=? ORDER BY id_viaggio_alternativa');
@@ -84,7 +88,7 @@ $alt_desc = $alternative[$alt] ?? '';
 ?>
 <div class="container text-white">
   <a href="vacanze_tratte.php?id=<?= $id ?>&alt=<?= $alt ?>" class="btn btn-outline-light mb-3">← Indietro</a>
-  <h4 class="mb-3"><?= $id_alloggio ? 'Modifica' : 'Nuovo' ?> alloggio</h4>
+  <h4 class="mb-3"><?= $duplica ? 'Duplica' : ($id_alloggio ? 'Modifica' : 'Nuovo') ?> alloggio</h4>
   <form method="post">
     <input type="hidden" name="id_alloggio" value="<?= (int)$id_alloggio ?>">
     <div class="mb-3">
@@ -126,7 +130,7 @@ $alt_desc = $alternative[$alt] ?? '';
     </div>
     <div class="d-flex justify-content-between mt-3">
       <button type="submit" class="btn btn-primary">Salva</button>
-      <?php if ($id_alloggio): ?>
+      <?php if ($id_alloggio && !$duplica): ?>
         <button type="submit" name="delete" value="1" class="btn btn-danger">Elimina</button>
       <?php endif; ?>
     </div>
