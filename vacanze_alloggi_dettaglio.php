@@ -1,7 +1,6 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
 include 'includes/db.php';
-include 'includes/header.php';
 
 $id = (int)($_GET['id'] ?? 0);
 $alt = (int)($_GET['alt'] ?? 0);
@@ -14,6 +13,7 @@ $stmt->bind_param('i', $id);
 $stmt->execute();
 $viaggio = $stmt->get_result()->fetch_assoc();
 if (!$viaggio) {
+    include 'includes/header.php';
     echo '<p class="text-danger">Viaggio non trovato</p>';
     include 'includes/footer.php';
     exit;
@@ -47,7 +47,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     header('Location: vacanze_tratte.php?id=' . $id . '&alt=' . $id_alt);
     exit;
-}
 
 $alloggio = [
     'id_viaggio_alternativa' => $alt,
@@ -86,6 +85,7 @@ $alternative = [];
 while ($row = $altRes->fetch_assoc()) { $alternative[$row['id_viaggio_alternativa']] = $row['breve_descrizione']; }
 $alt_desc = $alternative[$alt] ?? '';
 ?>
+<?php include 'includes/header.php'; ?>
 <div class="container text-white">
   <a href="vacanze_tratte.php?id=<?= $id ?>&alt=<?= $alt ?>" class="btn btn-outline-light mb-3">← Indietro</a>
   <h4 class="mb-3"><?= $duplica ? 'Duplica' : ($id_alloggio ? 'Modifica' : 'Nuovo') ?> alloggio</h4>

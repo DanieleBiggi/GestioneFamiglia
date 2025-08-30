@@ -1,7 +1,6 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
 include 'includes/db.php';
-include 'includes/header.php';
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -69,6 +68,7 @@ if ($id > 0) {
     $foto_esistenti = $pf->get_result()->fetch_all(MYSQLI_ASSOC);
 }
 ?>
+<?php include 'includes/header.php'; ?>
 <div class="container text-white">
   <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
   <nav aria-label="breadcrumb">
