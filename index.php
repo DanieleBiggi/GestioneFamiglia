@@ -184,6 +184,11 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
             <i class="bi bi-airplane me-2"></i>Vacanze
           </a>
           <?php endif; ?>
+          <?php if (has_permission($conn, 'page:ocr_caricamenti_scontrini.php', 'view')): ?>
+          <a href="ocr_caricamenti_scontrini.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
+            <i class="bi bi-receipt me-2"></i>Scontrini
+          </a>
+          <?php endif; ?>
           <?php if (has_permission($conn, 'page:upload.php', 'view')): ?>
           <a href="upload.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
             <i class="bi bi-cloud-upload me-2"></i>Upload
