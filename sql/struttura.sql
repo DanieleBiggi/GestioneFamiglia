@@ -2618,6 +2618,19 @@ ALTER TABLE `utenti`
 ALTER TABLE `utenti2salvadanai`
   ADD CONSTRAINT `fk_u2s_salvadanaio` FOREIGN KEY (`id_salvadanaio`) REFERENCES `salvadanai` (`id_salvadanaio`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_u2s_utente` FOREIGN KEY (`id_utente`) REFERENCES `utenti` (`id`) ON DELETE CASCADE;
+
+-- Modifiche per gestione luoghi viaggi
+ALTER TABLE `viaggi_luoghi`
+  ADD COLUMN `place_id` varchar(255) DEFAULT NULL;
+
+CREATE TABLE `viaggi_luogo_foto` (
+  `id_foto` int(11) NOT NULL AUTO_INCREMENT,
+  `id_luogo` int(11) NOT NULL,
+  `photo_reference` varchar(255) NOT NULL,
+  PRIMARY KEY (`id_foto`),
+  KEY `idx_vlf_luogo` (`id_luogo`),
+  CONSTRAINT `fk_vlf_luogo` FOREIGN KEY (`id_luogo`) REFERENCES `viaggi_luoghi` (`id_luogo`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -13,6 +13,13 @@ $res = $conn->query("SELECT id_luogo, nome, lat, lng FROM viaggi_luoghi ORDER BY
 if ($res) {
     $luoghi = $res->fetch_all(MYSQLI_ASSOC);
 }
+$foto_luoghi = [];
+$resFoto = $conn->query("SELECT id_luogo, photo_reference FROM viaggi_luogo_foto");
+if ($resFoto) {
+    while ($r = $resFoto->fetch_assoc()) {
+        $foto_luoghi[$r['id_luogo']][] = $r['photo_reference'];
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = (int)($_POST['id_viaggio'] ?? 0);
@@ -36,16 +43,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $note = $_POST['note'] ?? '';
     $meteo_previsto_json = $_POST['meteo_previsto_json'] ?? '';
     $meteo_aggiornato_il = $_POST['meteo_aggiornato_il'] ?? null;
+    $foto_url = $_POST['foto_url'] ?? null;
     if ($meteo_aggiornato_il) {
         $meteo_aggiornato_il = date('Y-m-d H:i:s', strtotime($meteo_aggiornato_il));
     }
 
     if ($id > 0) {
-        $stmt = $conn->prepare('UPDATE viaggi SET titolo=?, id_luogo=?, data_inizio=?, data_fine=?, notti=?, persone=?, stato=?, priorita=?, visibilita=?, breve_descrizione=?, note=?, meteo_previsto_json=?, meteo_aggiornato_il=? WHERE id_viaggio=?');
-        $stmt->bind_param('sissiisisssssi', $titolo, $id_luogo, $data_inizio, $data_fine, $notti, $persone, $stato, $priorita, $visibilita, $breve_descrizione, $note, $meteo_previsto_json, $meteo_aggiornato_il, $id);
+        $stmt = $conn->prepare('UPDATE viaggi SET titolo=?, id_luogo=?, data_inizio=?, data_fine=?, notti=?, persone=?, stato=?, priorita=?, visibilita=?, breve_descrizione=?, note=?, foto_url=?, meteo_previsto_json=?, meteo_aggiornato_il=? WHERE id_viaggio=?');
+        $stmt->bind_param('sissiisisssssssi', $titolo, $id_luogo, $data_inizio, $data_fine, $notti, $persone, $stato, $priorita, $visibilita, $breve_descrizione, $note, $foto_url, $meteo_previsto_json, $meteo_aggiornato_il, $id);
     } else {
-        $stmt = $conn->prepare('INSERT INTO viaggi (titolo, id_luogo, data_inizio, data_fine, notti, persone, stato, priorita, visibilita, breve_descrizione, note, meteo_previsto_json, meteo_aggiornato_il) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
-        $stmt->bind_param('sissiisisssss', $titolo, $id_luogo, $data_inizio, $data_fine, $notti, $persone, $stato, $priorita, $visibilita, $breve_descrizione, $note, $meteo_previsto_json, $meteo_aggiornato_il);
+        $stmt = $conn->prepare('INSERT INTO viaggi (titolo, id_luogo, data_inizio, data_fine, notti, persone, stato, priorita, visibilita, breve_descrizione, note, foto_url, meteo_previsto_json, meteo_aggiornato_il) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+        $stmt->bind_param('sissiisisssssss', $titolo, $id_luogo, $data_inizio, $data_fine, $notti, $persone, $stato, $priorita, $visibilita, $breve_descrizione, $note, $foto_url, $meteo_previsto_json, $meteo_aggiornato_il);
     }
     $stmt->execute();
     $id = $id ?: $stmt->insert_id;
@@ -65,6 +73,7 @@ $data = [
     'visibilita' => 'private',
     'breve_descrizione' => '',
     'note' => '',
+    'foto_url' => '',
     'meteo_previsto_json' => '',
     'meteo_aggiornato_il' => ''
 ];
@@ -88,14 +97,20 @@ if ($id > 0) {
       <input type="text" name="titolo" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['titolo']) ?>" required>
     </div>
     <div class="mb-3">
-      <label class="form-label">Luogo</label>
+      <label class="form-label">Luogo <a href="vacanze_luogo_modifica.php" class="btn btn-sm btn-outline-light ms-2" target="_blank">Gestisci</a></label>
       <select name="id_luogo" class="form-select bg-dark text-white border-secondary">
         <option value="">-- Seleziona --</option>
         <?php foreach($luoghi as $l): ?>
-        <option value="<?= $l['id_luogo'] ?>" data-lat="<?= $l['lat'] ?>" data-lng="<?= $l['lng'] ?>" <?= $data['id_luogo']==$l['id_luogo'] ? 'selected' : '' ?>><?= htmlspecialchars($l['nome']) ?></option>
+        <option value="<?= $l['id_luogo'] ?>" data-lat="<?= $l['lat'] ?>" data-lng="<?= $l['lng'] ?>" data-fotos='<?= htmlspecialchars(json_encode($foto_luoghi[$l['id_luogo']] ?? [])) ?>' <?= $data['id_luogo']==$l['id_luogo'] ? 'selected' : '' ?>><?= htmlspecialchars($l['nome']) ?></option>
         <?php endforeach; ?>
       </select>
       <input type="text" name="nuovo_luogo" class="form-control bg-dark text-white border-secondary mt-2" placeholder="Aggiungi nuovo luogo">
+      <div class="mt-2">
+        <label class="form-label">Foto</label>
+        <select name="foto_url" id="foto-url-select" class="form-select bg-dark text-white border-secondary">
+          <option value="">-- Nessuna --</option>
+        </select>
+      </div>
     </div>
     <div class="mb-3">
       <label class="form-label">Data inizio</label>
@@ -156,6 +171,27 @@ if ($id > 0) {
   </form>
   <p class="mt-4 small">Modificare i valori predefiniti di consumo (<?= $DEFAULT_CONSUMO ?> L/100km) e prezzo carburante (<?= $DEFAULT_PREZZO ?> €/L) modificando le variabili all'inizio di questo file.</p>
 </div>
+<script>
+const luogoSel = document.querySelector('select[name="id_luogo"]');
+const fotoSel = document.getElementById('foto-url-select');
+const fotoSelezionata = <?= json_encode($data['foto_url']) ?>;
+function aggiornaFoto(){
+  const opt = luogoSel.options[luogoSel.selectedIndex];
+  let fotos = [];
+  try { fotos = JSON.parse(opt.getAttribute('data-fotos') || '[]'); } catch(e){}
+  fotoSel.innerHTML = '<option value="">-- Nessuna --</option>';
+  fotos.forEach(ref => {
+    const url = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${ref}&key=<?= $config['GOOGLE_MAPS_API'] ?>`;
+    const option = document.createElement('option');
+    option.value = url;
+    option.textContent = ref;
+    if (url === fotoSelezionata) option.selected = true;
+    fotoSel.appendChild(option);
+  });
+}
+luogoSel.addEventListener('change', aggiornaFoto);
+document.addEventListener('DOMContentLoaded', aggiornaFoto);
+</script>
 <script>
 document.getElementById('aggiorna-meteo').addEventListener('click', async function(){
   const sel = document.querySelector('select[name="id_luogo"]');
