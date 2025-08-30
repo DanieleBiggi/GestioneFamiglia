@@ -97,7 +97,7 @@ if ($id > 0) {
       <input type="text" name="titolo" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['titolo']) ?>" required>
     </div>
     <div class="mb-3">
-      <label class="form-label">Luogo <a href="vacanze_luogo_modifica.php" class="btn btn-sm btn-outline-light ms-2" target="_blank">Gestisci</a></label>
+      <label class="form-label">Luogo <a href="vacanze_luogo_modifica.php" id="gestisci-luogo" class="btn btn-sm btn-outline-light ms-2" target="_blank">Gestisci</a></label>
       <select name="id_luogo" class="form-select bg-dark text-white border-secondary">
         <option value="">-- Seleziona --</option>
         <?php foreach($luoghi as $l): ?>
@@ -174,6 +174,7 @@ if ($id > 0) {
 <script>
 const luogoSel = document.querySelector('select[name="id_luogo"]');
 const fotoSel = document.getElementById('foto-url-select');
+const gestisciBtn = document.getElementById('gestisci-luogo');
 const fotoSelezionata = <?= json_encode($data['foto_url']) ?>;
 function aggiornaFoto(){
   const opt = luogoSel.options[luogoSel.selectedIndex];
@@ -189,8 +190,12 @@ function aggiornaFoto(){
     fotoSel.appendChild(option);
   });
 }
-luogoSel.addEventListener('change', aggiornaFoto);
-document.addEventListener('DOMContentLoaded', aggiornaFoto);
+function aggiornaGestisci(){
+  const id = luogoSel.value;
+  gestisciBtn.href = id ? `vacanze_luogo_modifica.php?id=${id}` : 'vacanze_luogo_modifica.php';
+}
+luogoSel.addEventListener('change', () => { aggiornaFoto(); aggiornaGestisci(); });
+document.addEventListener('DOMContentLoaded', () => { aggiornaFoto(); aggiornaGestisci(); });
 </script>
 <script>
 document.getElementById('aggiorna-meteo').addEventListener('click', async function(){
