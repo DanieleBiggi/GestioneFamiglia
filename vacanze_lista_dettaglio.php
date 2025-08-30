@@ -88,6 +88,15 @@ $docRes = $docStmt->get_result();
   </div>
 
   <div class="mb-4">
+    <h5 class="mb-3">Note</h5>
+    <?php if (trim($viaggio['note'] ?? '') === ''): ?>
+      <p class="text-muted">Nessuna nota.</p>
+    <?php else: ?>
+      <div><?= $viaggio['note'] ?></div>
+    <?php endif; ?>
+  </div>
+
+  <div class="mb-4">
     <h5 class="mb-3">Alternative</h5>
     <?php if ($altRes->num_rows === 0): ?>
       <p class="text-muted">Nessuna alternativa.</p>
