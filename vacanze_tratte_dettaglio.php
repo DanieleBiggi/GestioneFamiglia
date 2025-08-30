@@ -4,7 +4,7 @@ include 'includes/db.php';
 include 'includes/header.php';
 
 $id = (int)($_GET['id'] ?? 0);
-$grp = $_GET['grp'] ?? '';
+$alt = (int)($_GET['alt'] ?? 0);
 $id_tratta = (int)($_GET['id_tratta'] ?? 0);
 
 // Recupera info viaggio per breadcrumb
@@ -20,7 +20,7 @@ if (!$viaggio) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id_tratta = (int)($_POST['id_tratta'] ?? 0);
-    $gruppo = trim($_POST['gruppo_alternativa'] ?? $grp);
+    $id_alt = (int)($_POST['id_viaggio_alternativa'] ?? $alt);
     $tipo = $_POST['tipo_tratta'] ?? 'auto';
     $descrizione = $_POST['descrizione'] ?? null;
     $origine = $_POST['origine_testo'] ?? null;
@@ -45,20 +45,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $del->bind_param('ii', $id_tratta, $id);
         $del->execute();
     } elseif ($id_tratta) {
-        $upd = $conn->prepare('UPDATE viaggi_tratte SET gruppo_alternativa=?, tipo_tratta=?, descrizione=?, origine_testo=?, origine_lat=?, origine_lng=?, destinazione_testo=?, destinazione_lat=?, destinazione_lng=?, distanza_km=?, durata_ore=?, consumo_litri_100km=?, prezzo_carburante_eur_litro=?, pedaggi_eur=?, costo_traghetto_eur=?, costo_volo_eur=?, costo_noleggio_eur=?, altri_costi_eur=?, note=? WHERE id_tratta=? AND id_viaggio=?');
-        $upd->bind_param('ssssddsdddddddddddsii', $gruppo, $tipo, $descrizione, $origine, $origine_lat, $origine_lng, $destinazione, $destinazione_lat, $destinazione_lng, $distanza, $durata, $consumo, $prezzo, $pedaggi, $traghetto, $volo, $noleggio, $altri, $note, $id_tratta, $id);
+        $upd = $conn->prepare('UPDATE viaggi_tratte SET id_viaggio_alternativa=?, tipo_tratta=?, descrizione=?, origine_testo=?, origine_lat=?, origine_lng=?, destinazione_testo=?, destinazione_lat=?, destinazione_lng=?, distanza_km=?, durata_ore=?, consumo_litri_100km=?, prezzo_carburante_eur_litro=?, pedaggi_eur=?, costo_traghetto_eur=?, costo_volo_eur=?, costo_noleggio_eur=?, altri_costi_eur=?, note=? WHERE id_tratta=? AND id_viaggio=?');
+        $upd->bind_param('isssddsdddddddddddsii', $id_alt, $tipo, $descrizione, $origine, $origine_lat, $origine_lng, $destinazione, $destinazione_lat, $destinazione_lng, $distanza, $durata, $consumo, $prezzo, $pedaggi, $traghetto, $volo, $noleggio, $altri, $note, $id_tratta, $id);
         $upd->execute();
     } else {
-        $ins = $conn->prepare('INSERT INTO viaggi_tratte (id_viaggio, gruppo_alternativa, tipo_tratta, descrizione, origine_testo, origine_lat, origine_lng, destinazione_testo, destinazione_lat, destinazione_lng, distanza_km, durata_ore, consumo_litri_100km, prezzo_carburante_eur_litro, pedaggi_eur, costo_traghetto_eur, costo_volo_eur, costo_noleggio_eur, altri_costi_eur, note) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-        $ins->bind_param('issssddsddddddddddds', $id, $gruppo, $tipo, $descrizione, $origine, $origine_lat, $origine_lng, $destinazione, $destinazione_lat, $destinazione_lng, $distanza, $durata, $consumo, $prezzo, $pedaggi, $traghetto, $volo, $noleggio, $altri, $note);
+        $ins = $conn->prepare('INSERT INTO viaggi_tratte (id_viaggio, id_viaggio_alternativa, tipo_tratta, descrizione, origine_testo, origine_lat, origine_lng, destinazione_testo, destinazione_lat, destinazione_lng, distanza_km, durata_ore, consumo_litri_100km, prezzo_carburante_eur_litro, pedaggi_eur, costo_traghetto_eur, costo_volo_eur, costo_noleggio_eur, altri_costi_eur, note) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+        $ins->bind_param('iisssddsddddddddddds', $id, $id_alt, $tipo, $descrizione, $origine, $origine_lat, $origine_lng, $destinazione, $destinazione_lat, $destinazione_lng, $distanza, $durata, $consumo, $prezzo, $pedaggi, $traghetto, $volo, $noleggio, $altri, $note);
         $ins->execute();
     }
-    header('Location: vacanze_tratte.php?id=' . $id . '&grp=' . urlencode($gruppo));
+    header('Location: vacanze_tratte.php?id=' . $id . '&alt=' . $id_alt);
     exit;
 }
 
 $tratta = [
-    'gruppo_alternativa' => $grp,
+    'id_viaggio_alternativa' => $alt,
     'tipo_tratta' => 'auto',
     'descrizione' => '',
     'origine_testo' => '',
@@ -89,16 +89,29 @@ if ($id_tratta) {
         include 'includes/footer.php';
         exit;
     }
+    $alt = (int)$tratta['id_viaggio_alternativa'];
 }
+
+$altStmt = $conn->prepare('SELECT id_viaggio_alternativa, breve_descrizione FROM viaggi_alternative WHERE id_viaggio=? ORDER BY id_viaggio_alternativa');
+$altStmt->bind_param('i', $id);
+$altStmt->execute();
+$altRes = $altStmt->get_result();
+$alternative = [];
+while ($row = $altRes->fetch_assoc()) { $alternative[$row['id_viaggio_alternativa']] = $row['breve_descrizione']; }
+$alt_desc = $alternative[$alt] ?? '';
 ?>
 <div class="container text-white">
-  <a href="vacanze_tratte.php?id=<?= $id ?>&grp=<?= urlencode($grp) ?>" class="btn btn-outline-light mb-3">← Indietro</a>
+  <a href="vacanze_tratte.php?id=<?= $id ?>&alt=<?= $alt ?>" class="btn btn-outline-light mb-3">← Indietro</a>
   <h4 class="mb-3"><?= $id_tratta ? 'Modifica' : 'Nuova' ?> tratta</h4>
   <form method="post">
     <input type="hidden" name="id_tratta" value="<?= (int)$id_tratta ?>">
     <div class="mb-3">
-      <label class="form-label">Gruppo alternativa</label>
-      <input type="text" class="form-control" name="gruppo_alternativa" value="<?= htmlspecialchars($tratta['gruppo_alternativa']) ?>">
+      <label class="form-label">Alternativa</label>
+      <select class="form-select" name="id_viaggio_alternativa">
+        <?php foreach ($alternative as $aid => $descr): ?>
+          <option value="<?= $aid ?>"<?= $tratta['id_viaggio_alternativa']==$aid ? ' selected' : '' ?>><?= htmlspecialchars($descr) ?></option>
+        <?php endforeach; ?>
+      </select>
     </div>
     <div class="mb-3">
       <label class="form-label">Tipo tratta</label>

@@ -18,14 +18,13 @@ $totStmt = $conn->prepare('SELECT * FROM v_totali_alternative WHERE id_viaggio=?
 $totStmt->bind_param('i', $id);
 $totStmt->execute();
 $totRes = $totStmt->get_result();
-$totali = [];
-while ($row = $totRes->fetch_assoc()) { $totali[$row['gruppo_alternativa']] = $row; }
+$totali = $totRes->fetch_all(MYSQLI_ASSOC);
 ?>
 <div class="container text-white">
   <h4 class="mb-3"><?= htmlspecialchars($viaggio['titolo']) ?></h4>
-  <?php foreach ($totali as $grp => $t): ?>
+  <?php foreach ($totali as $t): ?>
     <div class="mb-3">
-      <h6><?= htmlspecialchars($grp) ?></h6>
+      <h6><?= htmlspecialchars($t['breve_descrizione']) ?></h6>
       <div class="small">Trasporti: €<?= number_format($t['totale_trasporti'], 2, ',', '.') ?></div>
       <div class="small">Alloggi: €<?= number_format($t['totale_alloggi'], 2, ',', '.') ?></div>
       <div class="fw-bold">Totale: €<?= number_format($t['totale_viaggio'], 2, ',', '.') ?></div>

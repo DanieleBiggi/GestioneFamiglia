@@ -15,21 +15,22 @@ if (!$viaggio) {
     exit;
 }
 
+
 $totStmt = $conn->prepare('SELECT * FROM v_totali_alternative WHERE id_viaggio=?');
 $totStmt->bind_param('i', $id);
 $totStmt->execute();
 $totRes = $totStmt->get_result();
 $totali = [];
-while ($row = $totRes->fetch_assoc()) { $totali[$row['gruppo_alternativa']] = $row; }
+while ($row = $totRes->fetch_assoc()) { $totali[$row['id_viaggio_alternativa']] = $row; }
 
 // Tratte per dettaglio tipo_tratta
-$trStmt = $conn->prepare('SELECT gruppo_alternativa, tipo_tratta, origine_testo, destinazione_testo FROM viaggi_tratte WHERE id_viaggio=? ORDER BY gruppo_alternativa, id_tratta');
+$trStmt = $conn->prepare('SELECT id_viaggio_alternativa, tipo_tratta, origine_testo, destinazione_testo FROM viaggi_tratte WHERE id_viaggio=? ORDER BY id_viaggio_alternativa, id_tratta');
 $trStmt->bind_param('i', $id);
 $trStmt->execute();
 $trRes = $trStmt->get_result();
 $tratte = [];
 while ($row = $trRes->fetch_assoc()) {
-    $tratte[$row['gruppo_alternativa']][] = $row;
+    $tratte[$row['id_viaggio_alternativa']][] = $row;
 }
 
 // Checklist
@@ -74,12 +75,12 @@ $docRes = $docStmt->get_result();
       <p class="text-muted">Nessuna alternativa.</p>
     <?php else: ?>
       <div class="row row-cols-1 row-cols-md-2 g-3">
-        <?php foreach ($totali as $grp => $t): ?>
+        <?php foreach ($totali as $t): ?>
           <div class="col">
-            <a href="vacanze_tratte.php?id=<?= $id ?>&grp=<?= urlencode($grp) ?>" class="text-decoration-none text-white">
+            <a href="vacanze_tratte.php?id=<?= $id ?>&alt=<?= (int)$t['id_viaggio_alternativa'] ?>" class="text-decoration-none text-white">
               <div class="p-2 border rounded h-100">
-                <h6 class="mb-1"><?= htmlspecialchars($grp) ?></h6>
-                <?php foreach (($tratte[$grp] ?? []) as $tr): ?>
+                <h6 class="mb-1"><?= htmlspecialchars($t['breve_descrizione']) ?></h6>
+                <?php foreach (($tratte[$t['id_viaggio_alternativa']] ?? []) as $tr): ?>
                   <?php if ($tr['origine_testo'] || $tr['destinazione_testo']): ?>
                     <div class="small text-muted">
                       <?= htmlspecialchars($tr['origine_testo'] ?? '') ?> → <?= htmlspecialchars($tr['destinazione_testo'] ?? '') ?>
