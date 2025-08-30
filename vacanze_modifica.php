@@ -55,10 +55,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $conn->prepare('INSERT INTO viaggi (titolo, id_luogo, data_inizio, data_fine, notti, persone, stato, priorita, visibilita, breve_descrizione, note, foto_url, meteo_previsto_json, meteo_aggiornato_il) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
         $stmt->bind_param('sissiisisssssss', $titolo, $id_luogo, $data_inizio, $data_fine, $notti, $persone, $stato, $priorita, $visibilita, $breve_descrizione, $note, $foto_url, $meteo_previsto_json, $meteo_aggiornato_il);
     }
-    $stmt->execute();
-    $id = $id ?: $stmt->insert_id;
-    header('Location: vacanze_view.php?id=' . $id);
-    exit;
+  $stmt->execute();
+  $id = $id ?: $stmt->insert_id;
+  header('Location: vacanze_view.php?id=' . $id);
+  exit;
 }
 
 $data = [
@@ -89,6 +89,17 @@ if ($id > 0) {
 ?>
 <div class="container text-white">
   <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="vacanze.php">Vacanze</a></li>
+      <?php if ($id > 0): ?>
+        <li class="breadcrumb-item"><a href="vacanze_view.php?id=<?= $id ?>"><?= htmlspecialchars($data['titolo']) ?></a></li>
+        <li class="breadcrumb-item active" aria-current="page">Modifica</li>
+      <?php else: ?>
+        <li class="breadcrumb-item active" aria-current="page">Nuovo viaggio</li>
+      <?php endif; ?>
+    </ol>
+  </nav>
   <h4 class="mb-3"><?= $id > 0 ? 'Modifica viaggio' : 'Nuovo viaggio' ?></h4>
   <form method="post" class="bg-dark p-3 rounded">
     <input type="hidden" name="id_viaggio" value="<?= (int)$id ?>">
@@ -97,7 +108,7 @@ if ($id > 0) {
       <input type="text" name="titolo" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['titolo']) ?>" required>
     </div>
     <div class="mb-3">
-      <label class="form-label">Luogo <a href="vacanze_luogo_modifica.php" id="gestisci-luogo" class="btn btn-sm btn-outline-light ms-2" target="_blank">Gestisci</a></label>
+      <label class="form-label">Luogo <a href="vacanze_luogo_modifica.php" id="gestisci-luogo" class="btn btn-sm btn-outline-light ms-2" target="_blank" rel="noopener noreferrer">Gestisci</a></label>
       <select name="id_luogo" class="form-select bg-dark text-white border-secondary">
         <option value="">-- Seleziona --</option>
         <?php foreach($luoghi as $l): ?>
@@ -193,6 +204,8 @@ function aggiornaFoto(){
 function aggiornaGestisci(){
   const id = luogoSel.value;
   gestisciBtn.href = id ? `vacanze_luogo_modifica.php?id=${id}` : 'vacanze_luogo_modifica.php';
+  gestisciBtn.target = '_blank';
+  gestisciBtn.rel = 'noopener noreferrer';
 }
 luogoSel.addEventListener('change', () => { aggiornaFoto(); aggiornaGestisci(); });
 document.addEventListener('DOMContentLoaded', () => { aggiornaFoto(); aggiornaGestisci(); });
