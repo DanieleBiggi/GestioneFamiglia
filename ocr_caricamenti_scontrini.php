@@ -3,6 +3,8 @@
 require_once 'includes/db.php';
 require_once 'includes/permissions.php';
 if (!has_permission($conn, 'page:ocr_caricamenti_scontrini.php', 'view')) { http_response_code(403); exit('Accesso negato'); }
+$canUpdate = has_permission($conn, 'table:ocr_caricamenti', 'update');
+$canDelete = has_permission($conn, 'table:ocr_caricamenti', 'delete');
 include 'includes/header.php';
 
 $idUtente = $_SESSION['utente_id'] ?? 0;
@@ -11,7 +13,7 @@ $to = $_GET['to'] ?? '';
 $descrizione = trim($_GET['descrizione'] ?? '');
 $order = $_GET['order'] ?? 'data_desc';
 
-$sql = "SELECT id_caricamento, data_caricamento, descrizione, nome_file, totale_scontrino FROM ocr_caricamenti WHERE id_utente=?";
+$sql = "SELECT id_caricamento, data_caricamento, data_scontrino, descrizione, nome_file, totale_scontrino FROM ocr_caricamenti WHERE id_utente=?";
 $types = 'i';
 $params = [$idUtente];
 if ($from) {
@@ -55,7 +57,8 @@ $res = $stmt->get_result();
   <h4>Scontrini caricati</h4>
 </div>
 
-<form action="ajax/save_caricamento.php" method="post" enctype="multipart/form-data" class="mb-4">
+<form id="caricamentoForm" action="ajax/save_caricamento.php" method="post" enctype="multipart/form-data" class="mb-4">
+  <input type="hidden" name="id_caricamento" id="id_caricamento" value="">
   <input type="hidden" name="id_supermercato" value="0">
   <div class="row g-2">
     <div class="col-md-4">
@@ -75,7 +78,7 @@ $res = $stmt->get_result();
       <input type="text" name="descrizione" class="form-control bg-secondary text-white">
     </div>
     <div class="col-md-1 d-flex align-items-end">
-      <button type="submit" class="btn btn-primary w-100">Carica</button>
+      <button type="submit" id="submitBtn" class="btn btn-primary w-100">Carica</button>
     </div>
   </div>
 </form>
@@ -114,6 +117,9 @@ $res = $stmt->get_result();
       <th>Descrizione</th>
       <th>Totale</th>
       <th>File</th>
+      <?php if ($canUpdate || $canDelete): ?>
+      <th>Azioni</th>
+      <?php endif; ?>
     </tr>
   </thead>
   <tbody>
@@ -127,11 +133,67 @@ $res = $stmt->get_result();
         <a href="files/scontrini/<?= urlencode($row['nome_file']) ?>" target="_blank">Apri</a>
         <?php endif; ?>
       </td>
+      <?php if ($canUpdate || $canDelete): ?>
+      <td>
+        <?php if ($canUpdate): ?>
+        <button type="button" class="btn btn-sm btn-outline-light me-1 edit-btn"
+          data-id="<?= $row['id_caricamento'] ?>"
+          data-scontrino="<?= htmlspecialchars($row['data_scontrino'] ? substr($row['data_scontrino'],0,10) : '') ?>"
+          data-totale="<?= htmlspecialchars($row['totale_scontrino']) ?>"
+          data-descrizione="<?= htmlspecialchars($row['descrizione']) ?>">
+          Modifica
+        </button>
+        <?php endif; ?>
+        <?php if ($canDelete): ?>
+        <button type="button" class="btn btn-sm btn-outline-danger delete-btn" data-id="<?= $row['id_caricamento'] ?>">Elimina</button>
+        <?php endif; ?>
+      </td>
+      <?php endif; ?>
     </tr>
     <?php endwhile; ?>
   </tbody>
 </table>
 <?php
 $stmt->close();
-include 'includes/footer.php';
 ?>
+<script>
+const form = document.getElementById('caricamentoForm');
+const submitBtn = document.getElementById('submitBtn');
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData(form);
+  const resp = await fetch('ajax/save_caricamento.php', { method: 'POST', body: fd });
+  const data = await resp.json();
+  if (data.success) {
+    location.reload();
+  } else {
+    alert(data.error || 'Errore');
+  }
+});
+document.querySelectorAll('.edit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('id_caricamento').value = btn.dataset.id;
+    form.querySelector('[name=data_scontrino]').value = btn.dataset.scontrino;
+    form.querySelector('[name=totale_scontrino]').value = btn.dataset.totale;
+    form.querySelector('[name=descrizione]').value = btn.dataset.descrizione;
+    submitBtn.textContent = 'Salva';
+  });
+});
+document.querySelectorAll('.delete-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    if (!confirm('Eliminare il caricamento?')) return;
+    const resp = await fetch('ajax/delete_caricamento.php', {
+      method: 'POST',
+      headers: {'Content-Type':'application/x-www-form-urlencoded'},
+      body: 'id=' + encodeURIComponent(btn.dataset.id)
+    });
+    const data = await resp.json();
+    if (data.success) {
+      location.reload();
+    } else {
+      alert(data.error || 'Errore');
+    }
+  });
+});
+</script>
+<?php include 'includes/footer.php'; ?>
