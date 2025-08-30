@@ -1,0 +1,53 @@
+<?php
+header('Content-Type: application/json');
+include '../includes/session_check.php';
+include '../includes/db.php';
+require_once '../includes/permissions.php';
+if (!has_permission($conn, 'ajax:get_viaggi_alternativa', 'view')) { http_response_code(403); echo json_encode(['success'=>false,'error'=>'Accesso negato']); exit; }
+$idViaggio = (int)($_GET['id_viaggio'] ?? 0);
+$idAlt = (int)($_GET['id_alternativa'] ?? 0);
+if (!$idViaggio || !$idAlt) { echo json_encode(['success'=>false,'error'=>'Parametri mancanti']); exit; }
+
+$stmt = $conn->prepare('SELECT breve_descrizione, totale_trasporti, totale_alloggi, totale_viaggio FROM v_totali_alternative WHERE id_viaggio=? AND id_viaggio_alternativa=?');
+$stmt->bind_param('ii', $idViaggio, $idAlt);
+$stmt->execute();
+$alt = $stmt->get_result()->fetch_assoc();
+if (!$alt) { echo json_encode(['success'=>false,'error'=>'Alternativa non trovata']); exit; }
+
+$trStmt = $conn->prepare('SELECT descrizione, tipo_tratta, origine_testo, destinazione_testo, ((COALESCE(distanza_km,0)*COALESCE(consumo_litri_100km,0)/100)*COALESCE(prezzo_carburante_eur_litro,0) + COALESCE(pedaggi_eur,0) + COALESCE(costo_traghetto_eur,0) + COALESCE(costo_volo_eur,0) + COALESCE(costo_noleggio_eur,0) + COALESCE(altri_costi_eur,0)) AS totale FROM viaggi_tratte WHERE id_viaggio=? AND id_viaggio_alternativa=? ORDER BY id_tratta');
+$trStmt->bind_param('ii', $idViaggio, $idAlt);
+$trStmt->execute();
+$trRes = $trStmt->get_result();
+$tratte = [];
+while ($row = $trRes->fetch_assoc()) {
+    $tratte[] = [
+        'descrizione' => $row['descrizione'],
+        'tipo_tratta' => $row['tipo_tratta'],
+        'origine_testo' => $row['origine_testo'],
+        'destinazione_testo' => $row['destinazione_testo'],
+        'totale' => number_format($row['totale'], 2, ',', '.')
+    ];
+}
+
+$allStmt = $conn->prepare('SELECT nome_alloggio, DATEDIFF(data_checkout, data_checkin) * COALESCE(costo_notte_eur,0) AS totale FROM viaggi_alloggi WHERE id_viaggio=? AND id_viaggio_alternativa=? ORDER BY id_alloggio');
+$allStmt->bind_param('ii', $idViaggio, $idAlt);
+$allStmt->execute();
+$allRes = $allStmt->get_result();
+$alloggi = [];
+while ($row = $allRes->fetch_assoc()) {
+    $alloggi[] = [
+        'nome_alloggio' => $row['nome_alloggio'],
+        'totale' => number_format($row['totale'], 2, ',', '.')
+    ];
+}
+
+echo json_encode([
+    'success' => true,
+    'breve_descrizione' => $alt['breve_descrizione'],
+    'totale_trasporti' => number_format($alt['totale_trasporti'], 2, ',', '.'),
+    'totale_alloggi' => number_format($alt['totale_alloggi'], 2, ',', '.'),
+    'totale_viaggio' => number_format($alt['totale_viaggio'], 2, ',', '.'),
+    'tratte' => $tratte,
+    'alloggi' => $alloggi
+]);
+?>
