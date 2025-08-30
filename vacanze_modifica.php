@@ -1,5 +1,8 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 include 'includes/db.php';
 
 // Default carburante modificabili qui
@@ -46,17 +49,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($meteo_aggiornato_il) {
         $meteo_aggiornato_il = date('Y-m-d H:i:s', strtotime($meteo_aggiornato_il));
     }
+    
 
     if ($id > 0) {
         $stmt = $conn->prepare('UPDATE viaggi SET titolo=?, id_luogo=?, data_inizio=?, data_fine=?, notti=?, persone=?, stato=?, priorita=?, visibilita=?, breve_descrizione=?, note=?, id_foto=?, meteo_previsto_json=?, meteo_aggiornato_il=? WHERE id_viaggio=?');
         $stmt->bind_param('sissiisisssisssi', $titolo, $id_luogo, $data_inizio, $data_fine, $notti, $persone, $stato, $priorita, $visibilita, $breve_descrizione, $note, $id_foto, $meteo_previsto_json, $meteo_aggiornato_il, $id);
     } else {
-        $stmt = $conn->prepare('INSERT INTO viaggi (titolo, id_luogo, data_inizio, data_fine, notti, persone, stato, priorita, visibilita, breve_descrizione, note, id_foto, meteo_previsto_json, meteo_aggiornato_il) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-        $stmt->bind_param('sissiisisssisss', $titolo, $id_luogo, $data_inizio, $data_fine, $notti, $persone, $stato, $priorita, $visibilita, $breve_descrizione, $note, $id_foto, $meteo_previsto_json, $meteo_aggiornato_il);
+        $sql = 'INSERT INTO viaggi 
+            (titolo, id_luogo, data_inizio, data_fine, notti, persone, stato, priorita, visibilita, breve_descrizione, note, id_foto, meteo_previsto_json, meteo_aggiornato_il) 
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
+        
+        $types = 'sissiisisssiss';
+        
+        $params = [
+            $titolo,
+            $id_luogo,
+            $data_inizio,
+            $data_fine,
+            $notti,
+            $persone,
+            $stato,
+            $priorita,
+            $visibilita,
+            $breve_descrizione,
+            $note,
+            $id_foto,
+            $meteo_previsto_json,
+            $meteo_aggiornato_il
+        ];
+        
+        debugBindParams($sql, $types, $params);
+        
+        // Poi esegui normalmente
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param($types, ...$params);
     }
   $stmt->execute();
   $id = $id ?: $stmt->insert_id;
-  header('Location: vacanze_view.php?id=' . $id);
+  //header('Location: vacanze_view.php?id=' . $id);
   exit;
 }
 
@@ -178,8 +208,7 @@ if ($id > 0) {
     <input type="hidden" name="meteo_previsto_json" value="<?= htmlspecialchars($data['meteo_previsto_json']) ?>">
     <input type="hidden" name="meteo_aggiornato_il" value="<?= htmlspecialchars($data['meteo_aggiornato_il']) ?>">
     <button class="btn btn-primary w-100">Salva</button>
-  </form>
-  <p class="mt-4 small">Modificare i valori predefiniti di consumo (<?= $DEFAULT_CONSUMO ?> L/100km) e prezzo carburante (<?= $DEFAULT_PREZZO ?> €/L) modificando le variabili all'inizio di questo file.</p>
+  </form>  
 </div>
 <script>
 const luogoSel = document.querySelector('select[name="id_luogo"]');
