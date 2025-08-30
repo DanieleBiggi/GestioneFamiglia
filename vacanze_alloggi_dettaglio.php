@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $upd->execute();
     } else {
         $ins = $conn->prepare('INSERT INTO viaggi_alloggi (id_viaggio, id_viaggio_alternativa, giorno_indice, nome_alloggio, indirizzo, lat, lng, data_checkin, data_checkout, costo_notte_eur, note) VALUES (?,?,?,?,?,?,?,?,?,?,?)');
-        $ins->bind_param('iiissddsssds', $id, $id_alt, $giorno, $nome, $indirizzo, $lat, $lng, $checkin, $checkout, $costo, $note);
+        $ins->bind_param('iiissddssds', $id, $id_alt, $giorno, $nome, $indirizzo, $lat, $lng, $checkin, $checkout, $costo, $note);
         $ins->execute();
     }
     header('Location: vacanze_tratte.php?id=' . $id . '&alt=' . $id_alt);
