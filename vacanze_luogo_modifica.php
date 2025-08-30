@@ -125,9 +125,22 @@ async function initAutocomplete() {
     container.innerHTML = '';
     if (place.photos) {
       place.photos.forEach(p => {
-        const ref = p.photo_reference || (p.toJSON && p.toJSON().photo_reference) || '';
-        if(!ref) return;
-        const url = p.getUrl ? p.getUrl({maxWidth:200}) : `https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photoreference=${ref}&key=<?= $config['GOOGLE_MAPS_API'] ?>`;
+        let ref = p.photo_reference || (p.toJSON && p.toJSON().photo_reference) || '';
+        let url = '';
+        if (p.getUrl) {
+          url = p.getUrl({maxWidth:200});
+          if (!ref && url) {
+            try {
+              ref = new URL(url).searchParams.get('photoreference') || '';
+            } catch (e) {
+              ref = '';
+            }
+          }
+        }
+        if (!url && ref) {
+          url = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photoreference=${ref}&key=<?= $config['GOOGLE_MAPS_API'] ?>`;
+        }
+        if (!ref || !url) return;
         const label = document.createElement('label');
         label.className = 'd-inline-block';
         label.innerHTML = `<input type="checkbox" name="foto_refs[]" value="${ref}" class="me-1"><img src="${url}" class="img-thumbnail">`;
