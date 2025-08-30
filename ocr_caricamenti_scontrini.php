@@ -13,7 +13,23 @@ $to = $_GET['to'] ?? '';
 $descrizione = trim($_GET['descrizione'] ?? '');
 $order = $_GET['order'] ?? 'data_desc';
 
-$sql = "SELECT id_caricamento, data_caricamento, data_scontrino, descrizione, nome_file, totale_scontrino FROM ocr_caricamenti WHERE id_utente=?";
+$sql = "SELECT c.id_caricamento, c.data_caricamento, c.data_scontrino, c.descrizione, c.nome_file, c.totale_scontrino,
+               m.id AS movimento_id, m.tabella AS movimento_tabella, m.source AS movimento_source,
+               GROUP_CONCAT(CONCAT(v.id_viaggio, ':', v.titolo) SEPARATOR '|') AS viaggi
+        FROM ocr_caricamenti c
+        LEFT JOIN (
+            SELECT id_caricamento, id_movimento_revolut AS id, 'movimenti_revolut' AS tabella, 'revolut' AS source
+            FROM movimenti_revolut WHERE id_caricamento IS NOT NULL
+            UNION ALL
+            SELECT id_caricamento, id_entrata AS id, 'bilancio_entrate' AS tabella, mezzo AS source
+            FROM bilancio_entrate WHERE id_caricamento IS NOT NULL
+            UNION ALL
+            SELECT id_caricamento, id_uscita AS id, 'bilancio_uscite' AS tabella, mezzo AS source
+            FROM bilancio_uscite WHERE id_caricamento IS NOT NULL
+        ) m ON m.id_caricamento = c.id_caricamento
+        LEFT JOIN viaggi2caricamenti vc ON vc.id_caricamento = c.id_caricamento
+        LEFT JOIN viaggi v ON vc.id_viaggio = v.id_viaggio
+        WHERE c.id_utente=?";
 $types = 'i';
 $params = [$idUtente];
 if ($from) {
@@ -32,18 +48,20 @@ if ($descrizione !== '') {
     $params[] = '%' . $descrizione . '%';
 }
 
+$sql .= ' GROUP BY c.id_caricamento';
+
 switch ($order) {
     case 'data_asc':
-        $sql .= ' ORDER BY data_caricamento ASC';
+        $sql .= ' ORDER BY c.data_caricamento ASC';
         break;
     case 'descrizione_asc':
-        $sql .= ' ORDER BY descrizione ASC';
+        $sql .= ' ORDER BY c.descrizione ASC';
         break;
     case 'descrizione_desc':
-        $sql .= ' ORDER BY descrizione DESC';
+        $sql .= ' ORDER BY c.descrizione DESC';
         break;
     default:
-        $sql .= ' ORDER BY data_caricamento DESC';
+        $sql .= ' ORDER BY c.data_caricamento DESC';
         $order = 'data_desc';
         break;
 }
@@ -117,6 +135,7 @@ $res = $stmt->get_result();
       <th>Descrizione</th>
       <th>Totale</th>
       <th>File</th>
+      <th>Collegamenti</th>
       <?php if ($canUpdate || $canDelete): ?>
       <th>Azioni</th>
       <?php endif; ?>
@@ -131,6 +150,19 @@ $res = $stmt->get_result();
       <td>
         <?php if ($row['nome_file']): ?>
         <a href="files/scontrini/<?= urlencode($row['nome_file']) ?>" target="_blank">Apri</a>
+        <?php endif; ?>
+      </td>
+      <td>
+        <?php if (!empty($row['movimento_id'])): ?>
+          <a href="dettaglio.php?id=<?= (int)$row['movimento_id'] ?>&src=<?= htmlspecialchars($row['movimento_tabella']) ?>">
+            <img src="assets/<?= $row['movimento_source'] === 'revolut' ? 'revolut.jpeg' : 'credit.jpeg' ?>" alt="movimento" style="width:24px;height:24px">
+          </a>
+        <?php endif; ?>
+        <?php if (!empty($row['viaggi'])): ?>
+          <?php foreach (explode('|', $row['viaggi']) as $v): ?>
+            <?php $parts = explode(':', $v, 2); $idV = $parts[0]; $titoloV = $parts[1] ?? ''; ?>
+            <a href="vacanze_view.php?id=<?= urlencode($idV) ?>" class="badge bg-secondary text-decoration-none ms-1"><?= htmlspecialchars($titoloV) ?></a>
+          <?php endforeach; ?>
         <?php endif; ?>
       </td>
       <?php if ($canUpdate || $canDelete): ?>
