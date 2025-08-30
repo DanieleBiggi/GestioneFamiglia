@@ -240,23 +240,34 @@ function handlePlace(prefix, autocomplete) {
   }
   calculateDistance();
 }
-function calculateDistance() {
+async function calculateDistance() {
+  if (document.querySelector('select[name="tipo_tratta"]').value !== 'auto') return;
   const originLat = parseFloat(document.getElementById('origine_lat').value);
   const originLng = parseFloat(document.getElementById('origine_lng').value);
   const destLat = parseFloat(document.getElementById('destinazione_lat').value);
   const destLng = parseFloat(document.getElementById('destinazione_lng').value);
   if (isNaN(originLat) || isNaN(originLng) || isNaN(destLat) || isNaN(destLng)) return;
-  const service = new google.maps.DirectionsService();
-  service.route({
-    origin: {lat: originLat, lng: originLng},
-    destination: {lat: destLat, lng: destLng},
-    travelMode: google.maps.TravelMode.DRIVING
-  }, function(response, status) {
-    if (status === 'OK') {
-      const distanceMeters = response.routes[0].legs[0].distance.value;
-      document.getElementById('distanza').value = (distanceMeters / 1000).toFixed(2);
+  try {
+    const response = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes?key=<?= $config['GOOGLE_MAPS_API'] ?>', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-FieldMask': 'routes.distanceMeters'
+      },
+      body: JSON.stringify({
+        origin: { location: { latLng: { latitude: originLat, longitude: originLng } } },
+        destination: { location: { latLng: { latitude: destLat, longitude: destLng } } },
+        travelMode: 'DRIVE'
+      })
+    });
+    const data = await response.json();
+    const meters = data.routes && data.routes[0] ? data.routes[0].distanceMeters : null;
+    if (meters) {
+      document.getElementById('distanza').value = (meters / 1000).toFixed(2);
     }
-  });
+  } catch (err) {
+    console.error('Distance calculation error', err);
+  }
 }
 window.initAutocomplete = initAutocomplete;
 </script>
