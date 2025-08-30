@@ -96,7 +96,7 @@ $canUpdatePasto = has_permission($conn, 'table:viaggi_pasti', 'update');
             <div class="text-end">
               <div>€<?= number_format($row['totale'], 2, ',', '.') ?>
                 <?php if ($canUpdateTratta): ?><i class="bi bi-pencil ms-2"></i><?php endif; ?>
-                <?php if ($canInsertTratta): ?><i class="bi bi-files ms-2 text-info duplicate" data-href="vacanze_tratte_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>&id_tratta=<?= (int)$row['id_tratta'] ?>&duplica=1"></i><?php endif; ?>
+                <?php if ($canInsertTratta): ?><i class="bi bi-files ms-2 duplicate" data-href="vacanze_tratte_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>&id_tratta=<?= (int)$row['id_tratta'] ?>&duplica=1"></i><?php endif; ?>
               </div>
               <div class="small text-muted">
                 <?php if ($row['tipo_tratta'] === 'auto'): ?>
@@ -148,7 +148,7 @@ $canUpdatePasto = has_permission($conn, 'table:viaggi_pasti', 'update');
             <span><?= htmlspecialchars($row['nome_alloggio'] ?: 'Alloggio') ?></span>
             <span>€<?= number_format($row['totale'], 2, ',', '.') ?>
               <?php if ($canUpdateAlloggio): ?><i class="bi bi-pencil"></i><?php endif; ?>
-              <?php if ($canInsertAlloggio): ?><i class="bi bi-files ms-2 text-info duplicate" data-href="vacanze_alloggi_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>&id_alloggio=<?= (int)$row['id_alloggio'] ?>&duplica=1"></i><?php endif; ?>
+              <?php if ($canInsertAlloggio): ?><i class="bi bi-files ms-2 duplicate" data-href="vacanze_alloggi_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>&id_alloggio=<?= (int)$row['id_alloggio'] ?>&duplica=1"></i><?php endif; ?>
             </span>
           </div>
         <?php if ($canUpdateAlloggio): ?>
@@ -179,7 +179,10 @@ $canUpdatePasto = has_permission($conn, 'table:viaggi_pasti', 'update');
         <?php endif; ?>
           <div class="d-flex justify-content-between">
             <span><?= htmlspecialchars($row['nome_locale'] ?: ucfirst($row['tipologia'])) ?></span>
-            <span>€<?= number_format($row['costo_medio_eur'] ?? 0, 2, ',', '.') ?><?php if ($canUpdatePasto): ?><i class="bi bi-pencil ms-2"></i><?php endif; ?></span>
+            <span>€<?= number_format($row['costo_medio_eur'] ?? 0, 2, ',', '.') ?>
+              <?php if ($canUpdatePasto): ?><i class="bi bi-pencil ms-2"></i><?php endif; ?>
+              <?php if ($canInsertPasto): ?><i class="bi bi-files ms-2 duplicate" data-href="vacanze_pasti_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>&id_pasto=<?= (int)$row['id_pasto'] ?>&duplica=1"></i><?php endif; ?>
+            </span>
           </div>
         <?php if ($canUpdatePasto): ?>
         </a>
