@@ -1,4 +1,25 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const noteForm = document.getElementById('noteForm');
+  if(noteForm){
+    ClassicEditor.create(document.getElementById('noteEditor')).then(editor => {
+      noteForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const fd = new FormData();
+        fd.append('id_viaggio', viaggioId);
+        fd.append('note', editor.getData());
+        fetch('ajax/update_viaggi_note.php', { method: 'POST', body: fd })
+          .then(r => r.json())
+          .then(res => {
+            if(res.success){
+              window.location.reload();
+            } else {
+              alert(res.error || 'Errore');
+            }
+          });
+      });
+    });
+  }
+
   const docForm = document.getElementById('docForm');
   if(docForm){
     docForm.addEventListener('submit', e => {

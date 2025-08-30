@@ -68,6 +68,22 @@ $docRes = $docStmt->get_result();
   </h4>
 
   <div class="mb-4">
+    <h5 class="mb-3">Note</h5>
+    <?php if ($canUpdateViaggio): ?>
+      <form id="noteForm">
+        <textarea id="noteEditor" name="note" class="form-control bg-dark text-white border-secondary mb-2" rows="4"><?= htmlspecialchars($viaggio['note']) ?></textarea>
+        <button type="submit" class="btn btn-primary">Salva</button>
+      </form>
+    <?php else: ?>
+      <?php if (trim($viaggio['note'] ?? '') === ''): ?>
+        <p class="text-muted">Nessuna nota.</p>
+      <?php else: ?>
+        <div><?= $viaggio['note'] ?></div>
+      <?php endif; ?>
+    <?php endif; ?>
+  </div>
+
+  <div class="mb-4">
     <div class="d-flex justify-content-between mb-3 align-items-center">
       <h5 class="m-0">Alternative</h5>
       <?php if ($canAddAlternativa): ?>
@@ -206,6 +222,7 @@ $docRes = $docStmt->get_result();
   </div>
   <?php endif; ?>
 
+  <script src="https://cdn.ckeditor.com/ckeditor5/35.3.0/classic/ckeditor.js"></script>
   <script>const viaggioId = <?= $id ?>;</script>
   <script src="js/vacanze_view.js"></script>
 </div>
