@@ -37,8 +37,11 @@ $res = $stmt->get_result();
       <div class="col">
         <input type="number" step="0.01" name="budget_max" value="<?= htmlspecialchars($budget) ?>" class="form-control bg-dark text-white border-secondary" placeholder="Budget max €">
       </div>
-      <div class="col-12">
+      <div class="col-6">
         <button class="btn btn-primary w-100">Filtra</button>
+      </div>
+      <div class="col-6">
+        <a href="vacanze_lista.php" class="btn btn-outline-light w-100">Lista</a>
       </div>
     </div>
     <!-- Filtri aggiuntivi: regione, durata, etichette -->
