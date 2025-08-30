@@ -103,7 +103,9 @@ if ($id > 0) {
 let autocomplete;
 async function initAutocomplete() {
   const {Autocomplete} = await google.maps.importLibrary('places');
-  autocomplete = new Autocomplete(document.getElementById('place-name'));
+  autocomplete = new Autocomplete(document.getElementById('place-name'), {
+    fields: ['address_components','geometry','name','place_id','photos','url','website']
+  });
   autocomplete.addListener('place_changed', () => {
     const place = autocomplete.getPlace();
     if (!place) return;
@@ -123,8 +125,9 @@ async function initAutocomplete() {
     container.innerHTML = '';
     if (place.photos) {
       place.photos.forEach(p => {
-        const ref = p.photo_reference;
-        const url = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photoreference=${ref}&key=<?= $config['GOOGLE_MAPS_API'] ?>`;
+        const ref = p.photo_reference || (p.toJSON && p.toJSON().photo_reference) || '';
+        if(!ref) return;
+        const url = p.getUrl ? p.getUrl({maxWidth:200}) : `https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photoreference=${ref}&key=<?= $config['GOOGLE_MAPS_API'] ?>`;
         const label = document.createElement('label');
         label.className = 'd-inline-block';
         label.innerHTML = `<input type="checkbox" name="foto_refs[]" value="${ref}" class="me-1"><img src="${url}" class="img-thumbnail">`;
