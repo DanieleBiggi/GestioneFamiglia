@@ -37,6 +37,12 @@ $chkStmt = $conn->prepare('SELECT id_checklist, voce, completata FROM viaggi_che
 $chkStmt->bind_param('i', $id);
 $chkStmt->execute();
 $chkRes = $chkStmt->get_result();
+$chkRows = $chkRes->fetch_all(MYSQLI_ASSOC);
+$totChecklist = count($chkRows);
+$totChecklistDone = 0;
+foreach ($chkRows as $r) {
+    if (!empty($r['completata'])) { $totChecklistDone++; }
+}
 
 // Feedback
 $fbStmt = $conn->prepare('SELECT vf.id_feedback, vf.voto, vf.commento, u.username FROM viaggi_feedback vf LEFT JOIN utenti u ON vf.id_utente=u.id WHERE vf.id_viaggio=? ORDER BY vf.id_feedback');
@@ -74,12 +80,11 @@ $docRes = $docStmt->get_result();
               <div class="p-2 border rounded h-100">
                 <h6 class="mb-1"><?= htmlspecialchars($grp) ?></h6>
                 <?php foreach (($tratte[$grp] ?? []) as $tr): ?>
-                  <div class="small text-muted">
-                    <?= htmlspecialchars(ucfirst($tr['tipo_tratta'])) ?>
-                    <?php if ($tr['origine_testo'] || $tr['destinazione_testo']): ?>:
+                  <?php if ($tr['origine_testo'] || $tr['destinazione_testo']): ?>
+                    <div class="small text-muted">
                       <?= htmlspecialchars($tr['origine_testo'] ?? '') ?> → <?= htmlspecialchars($tr['destinazione_testo'] ?? '') ?>
-                    <?php endif; ?>
-                  </div>
+                    </div>
+                  <?php endif; ?>
                 <?php endforeach; ?>
                 <div class="small">Trasporti: €<?= number_format($t['totale_trasporti'], 2, ',', '.') ?></div>
                 <div class="small">Alloggi: €<?= number_format($t['totale_alloggi'], 2, ',', '.') ?></div>
@@ -97,19 +102,15 @@ $docRes = $docStmt->get_result();
       <h5 class="m-0">Checklist</h5>
       <a href="table_manager.php?table=viaggi_checklist&id_viaggio=<?= $id ?>" class="btn btn-sm btn-outline-light">Aggiungi</a>
     </div>
-    <?php if ($chkRes->num_rows === 0): ?>
+    <?php if ($totChecklist === 0): ?>
       <p class="text-muted">Nessuna voce.</p>
     <?php else: ?>
-      <ul class="list-group list-group-flush">
-        <?php while ($row = $chkRes->fetch_assoc()): ?>
-          <li class="list-group-item bg-dark text-white p-0">
-            <a href="table_manager.php?table=viaggi_checklist&search=<?= (int)$row['id_checklist'] ?>&id_viaggio=<?= $id ?>" class="d-flex justify-content-between align-items-center text-white text-decoration-none p-2">
-              <span><?= htmlspecialchars($row['voce']) ?></span>
-              <?php if ($row['completata']): ?><i class="bi bi-check2"></i><?php endif; ?>
-            </a>
-          </li>
-        <?php endwhile; ?>
-      </ul>
+      <a href="vacanze_checklist.php?id=<?= $id ?>" class="text-decoration-none text-white">
+        <div class="p-2 border rounded">
+          <div class="small">Voci totali: <?= $totChecklist ?></div>
+          <div class="small">Completate: <?= $totChecklistDone ?></div>
+        </div>
+      </a>
     <?php endif; ?>
   </div>
 
