@@ -61,7 +61,10 @@ $nottiRes = $conn->query("SELECT DISTINCT notti FROM viaggi WHERE notti IS NOT N
     <input type="hidden" name="prezzo_min" value="<?= htmlspecialchars($prezzoMin) ?>">
     <input type="hidden" name="prezzo_max" value="<?= htmlspecialchars($prezzoMax) ?>">
   </form>
-  <div class="d-flex justify-content-end mb-3">
+  <div class="d-flex justify-content-end mb-3 gap-2">
+    <?php if (has_permission($conn, 'page:vacanze.php', 'view')): ?>
+    <a href="vacanze.php" class="btn btn-outline-light">Gestisci vacanze</a>
+    <?php endif; ?>
     <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#filtersModal"><i class="bi bi-sliders"></i> Filtri</button>
   </div>
   <div class="row g-3">
