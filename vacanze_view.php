@@ -48,7 +48,7 @@ $fbStmt->execute();
 $fbRes = $fbStmt->get_result();
 
 // Documenti
-$docStmt = $conn->prepare('SELECT vc.id_caricamento, oc.nome_file FROM viaggi2caricamenti vc JOIN ocr_caricamenti oc ON vc.id_caricamento=oc.id_caricamento WHERE vc.id_viaggio=? ORDER BY vc.id_caricamento');
+$docStmt = $conn->prepare('SELECT vc.id_caricamento, oc.nome_file, oc.descrizione FROM viaggi2caricamenti vc JOIN ocr_caricamenti oc ON vc.id_caricamento=oc.id_caricamento WHERE vc.id_viaggio=? ORDER BY vc.id_caricamento');
 $docStmt->bind_param('i', $id);
 $docStmt->execute();
 $docRes = $docStmt->get_result();
@@ -166,7 +166,12 @@ $docRes = $docStmt->get_result();
           <div class="col">
             <div class="card bg-dark text-white h-100">
               <div class="card-body d-flex flex-column">
-                <p class="card-text flex-grow-1 mb-2"><?= htmlspecialchars($row['nome_file']) ?></p>
+                <p class="card-text flex-grow-1 mb-2">
+                  <?= htmlspecialchars($row['nome_file']) ?>
+                  <?php if (!empty($row['descrizione'])): ?>
+                    <br><small class="text-muted"><?= htmlspecialchars($row['descrizione']) ?></small>
+                  <?php endif; ?>
+                </p>
                 <a href="files/vacanze/<?= urlencode($row['nome_file']) ?>" class="btn btn-sm btn-outline-light mt-auto" target="_blank">Apri</a>
               </div>
             </div>
@@ -187,6 +192,9 @@ $docRes = $docStmt->get_result();
         <div class="modal-body">
           <div class="mb-3">
             <input type="file" name="file" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <input type="text" name="descrizione" class="form-control" placeholder="Descrizione">
           </div>
         </div>
         <div class="modal-footer">
