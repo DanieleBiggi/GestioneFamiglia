@@ -5,7 +5,10 @@ include 'includes/header.php';
 
 $stato = $_GET['stato'] ?? '';
 $budget = $_GET['budget_max'] ?? '';
-$query = "SELECT v.*, t.min_totale FROM viaggi v LEFT JOIN (SELECT id_viaggio, MIN(totale_viaggio) AS min_totale FROM v_totali_alternative GROUP BY id_viaggio) t ON v.id_viaggio=t.id_viaggio WHERE 1=1";
+$query = "SELECT v.*, t.min_totale, a.num_alternative, f.media_voto, f.num_feedback FROM viaggi v "
+  . "LEFT JOIN (SELECT id_viaggio, MIN(totale_viaggio) AS min_totale FROM v_totali_alternative GROUP BY id_viaggio) t ON v.id_viaggio=t.id_viaggio "
+  . "LEFT JOIN (SELECT id_viaggio, COUNT(DISTINCT gruppo_alternativa) AS num_alternative FROM viaggi_tratte GROUP BY id_viaggio) a ON v.id_viaggio=a.id_viaggio "
+  . "LEFT JOIN (SELECT id_viaggio, AVG(voto) AS media_voto, COUNT(*) AS num_feedback FROM viaggi_feedback GROUP BY id_viaggio) f ON v.id_viaggio=f.id_viaggio WHERE 1=1";
 $params = [];
 $types = '';
 if ($stato !== '') { $query .= " AND v.stato = ?"; $types .= 's'; $params[] = $stato; }
@@ -43,15 +46,19 @@ $res = $stmt->get_result();
   <div class="row row-cols-1 g-3">
     <?php while($row = $res->fetch_assoc()): ?>
     <div class="col">
-      <div class="card bg-dark text-white">
+      <a href="vacanze_view.php?id=<?= (int)$row['id_viaggio'] ?>" class="card bg-dark text-white text-decoration-none">
         <div class="card-body">
-          <h5 class="card-title"><a href="vacanze_view.php?id=<?= (int)$row['id_viaggio'] ?>" class="text-white text-decoration-none"><?= htmlspecialchars($row['titolo']) ?></a></h5>
+          <h5 class="card-title mb-1 d-flex justify-content-between">
+            <span><?= htmlspecialchars($row['titolo']) ?></span>
+            <span class="small"><?= number_format($row['media_voto'] ?? 0,1,',','.') ?> (<?= (int)($row['num_feedback'] ?? 0) ?>)</span>
+          </h5>
           <p class="card-text small mb-1"><?= htmlspecialchars($row['data_inizio']) ?> - <?= htmlspecialchars($row['data_fine']) ?></p>
+          <p class="card-text small mb-1">Alternative: <?= (int)($row['num_alternative'] ?? 0) ?></p>
           <?php if(isset($row['min_totale'])): ?>
-          <p class="card-text">Miglior totale: €<?= number_format($row['min_totale'],2,',','.') ?></p>
+          <p class="card-text">A partire da: €<?= number_format($row['min_totale'],2,',','.') ?></p>
           <?php endif; ?>
         </div>
-      </div>
+      </a>
     </div>
     <?php endwhile; ?>
   </div>
