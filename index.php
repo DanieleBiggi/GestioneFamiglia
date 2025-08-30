@@ -94,12 +94,12 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
     </a>
   </div>
   <div class="col-3">
-    <a href="aggiungi_uscita.php" class="text-decoration-none text-white">
-      <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
+    <a href="turni.php" class="text-decoration-none text-white">
+      <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
            style="width:50px;height:50px">
-        <i class="bi bi-arrow-up-circle fs-4"></i>
+        <i class="bi bi-calendar-week fs-4"></i>
       </div>
-      <div>Aggiungi uscita</div>
+      <div>Turni</div>
     </a>
   </div>
   <div class="col-3">
@@ -134,6 +134,11 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
       </div>
       <div class="modal-body">
         <div class="d-grid gap-2">
+          <?php if (has_permission($conn, 'page:aggiungi_uscita.php', 'view')): ?>
+          <a href="aggiungi_uscita.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
+            <i class="bi bi-arrow-up-circle me-2"></i>Aggiungi uscita
+          </a>
+          <?php endif; ?>
           <?php if (has_permission($conn, 'page:password.php', 'view')): ?>
           <a href="password.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
             <i class="bi bi-shield-lock me-2"></i>Siti e password
@@ -175,7 +180,7 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
           </a>
           <?php endif; ?>
           <?php if (has_permission($conn, 'page:vacanze.php', 'view')): ?>
-          <a href="vacanze.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
+          <a href="vacanze_lista.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
             <i class="bi bi-airplane me-2"></i>Vacanze
           </a>
           <?php endif; ?>
