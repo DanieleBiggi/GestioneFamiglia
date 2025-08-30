@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.checklist-checkbox').forEach(chk => {
-    chk.addEventListener('change', e => {
+    chk.addEventListener('change', () => {
       const id = chk.dataset.id;
       const fd = new FormData();
       fd.append('id', id);
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.querySelectorAll('.checklist-user').forEach(sel => {
-    sel.addEventListener('change', e => {
+    sel.addEventListener('change', () => {
       const id = sel.dataset.id;
       const fd = new FormData();
       fd.append('id', id);
@@ -23,49 +23,77 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  document.querySelectorAll('.collapse').forEach(col => {
-    col.addEventListener('shown.bs.collapse', () => {
-      const msgBox = col.querySelector('.checklist-chat-messages');
-      const id = msgBox.dataset.id;
-      loadMessages(id);
-    });
-  });
-
-  document.querySelectorAll('.checklist-chat-send').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.id;
-      const input = document.querySelector('.checklist-chat-input[data-id="'+id+'"]');
-      const text = input.value.trim();
-      if(!text) return;
-      const fd = new FormData();
-      fd.append('id_checklist', id);
-      fd.append('messaggio', text);
-      fetch('ajax/add_viaggi_checklist_message.php', { method:'POST', body:fd })
+  const addBtn = document.getElementById('addChecklistBtn');
+  const addModalEl = document.getElementById('addChecklistModal');
+  const addForm = document.getElementById('addChecklistForm');
+  const addModal = addModalEl ? new bootstrap.Modal(addModalEl) : null;
+  if(addBtn && addModal){
+    addBtn.addEventListener('click', () => addModal.show());
+  }
+  if(addForm){
+    addForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const fd = new FormData(addForm);
+      fd.append('id_viaggio', viaggioId);
+      fetch('ajax/add_viaggi_checklist.php', { method:'POST', body:fd })
         .then(r => r.json())
         .then(res => {
           if(res.success){
-            input.value='';
-            loadMessages(id);
+            window.location.reload();
           } else {
             alert(res.error || 'Errore');
           }
         });
     });
+  }
+
+  let currentChecklist = null;
+  const chatModalEl = document.getElementById('chatModal');
+  const chatModal = chatModalEl ? new bootstrap.Modal(chatModalEl) : null;
+  const chatMessages = document.getElementById('chatMessages');
+  const chatInput = document.getElementById('chatInput');
+  const chatSend = document.getElementById('chatSend');
+
+  document.querySelectorAll('.checklist-chat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentChecklist = btn.dataset.id;
+      chatInput.value = '';
+      loadMessages(currentChecklist);
+      chatModal.show();
+    });
   });
+
+  if(chatSend){
+    chatSend.addEventListener('click', () => {
+      const text = chatInput.value.trim();
+      if(!text || !currentChecklist) return;
+      const fd = new FormData();
+      fd.append('id_checklist', currentChecklist);
+      fd.append('messaggio', text);
+      fetch('ajax/add_viaggi_checklist_message.php', { method:'POST', body:fd })
+        .then(r => r.json())
+        .then(res => {
+          if(res.success){
+            chatInput.value='';
+            loadMessages(currentChecklist);
+          } else {
+            alert(res.error || 'Errore');
+          }
+        });
+    });
+  }
 
   function loadMessages(id){
     fetch('ajax/get_viaggi_checklist_messages.php?id_checklist='+id)
       .then(r => r.json())
       .then(res => {
-        if(res.success){
-          const box = document.querySelector('.checklist-chat-messages[data-id="'+id+'"]');
-          if(!box) return;
-          box.innerHTML = '';
+        if(res.success && chatMessages){
+          chatMessages.innerHTML = '';
           res.messages.forEach(m => {
             const div = document.createElement('div');
             div.className = 'small';
             div.textContent = m.username + ': ' + m.messaggio;
-            box.appendChild(div);
+            chatMessages.appendChild(div);
           });
         }
       });

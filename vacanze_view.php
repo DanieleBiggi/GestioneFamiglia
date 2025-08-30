@@ -99,12 +99,9 @@ $docRes = $docStmt->get_result();
   </div>
 
   <div class="mb-4">
-    <div class="d-flex justify-content-between mb-3">
-      <h5 class="m-0">Checklist</h5>
-      <a href="table_manager.php?table=viaggi_checklist&id_viaggio=<?= $id ?>" class="btn btn-sm btn-outline-light">Aggiungi</a>
-    </div>
+    <h5 class="mb-3">Checklist</h5>
     <?php if ($totChecklist === 0): ?>
-      <p class="text-muted">Nessuna voce.</p>
+      <a href="vacanze_checklist.php?id=<?= $id ?>" class="btn btn-sm btn-outline-light">Nuova checklist</a>
     <?php else: ?>
       <a href="vacanze_checklist.php?id=<?= $id ?>" class="text-decoration-none text-white">
         <div class="p-2 border rounded">
@@ -116,20 +113,15 @@ $docRes = $docStmt->get_result();
   </div>
 
   <div class="mb-4">
-    <div class="d-flex justify-content-between mb-3">
-      <h5 class="m-0">Feedback</h5>
-      <a href="table_manager.php?table=viaggi_feedback&id_viaggio=<?= $id ?>" class="btn btn-sm btn-outline-light">Aggiungi</a>
-    </div>
+    <h5 class="mb-3">Feedback</h5>
     <?php if ($fbRes->num_rows === 0): ?>
       <p class="text-muted">Nessun feedback.</p>
     <?php else: ?>
       <ul class="list-group list-group-flush">
         <?php while ($row = $fbRes->fetch_assoc()): ?>
-          <li class="list-group-item bg-dark text-white p-0">
-            <a href="table_manager.php?table=viaggi_feedback&search=<?= (int)$row['id_feedback'] ?>&id_viaggio=<?= $id ?>" class="text-white text-decoration-none d-block p-2">
-              <div><strong><?= htmlspecialchars($row['username'] ?? 'Anonimo') ?></strong> - voto <?= (int)$row['voto'] ?></div>
-              <?php if ($row['commento']): ?><div class="small"><?= htmlspecialchars($row['commento']) ?></div><?php endif; ?>
-            </a>
+          <li class="list-group-item bg-dark text-white">
+            <div><strong><?= htmlspecialchars($row['username'] ?? 'Anonimo') ?></strong> - voto <?= (int)$row['voto'] ?></div>
+            <?php if ($row['commento']): ?><div class="small"><?= htmlspecialchars($row['commento']) ?></div><?php endif; ?>
           </li>
         <?php endwhile; ?>
       </ul>
@@ -137,23 +129,49 @@ $docRes = $docStmt->get_result();
   </div>
 
   <div class="mb-4">
-    <div class="d-flex justify-content-between mb-3">
+    <div class="d-flex justify-content-between mb-3 align-items-center">
       <h5 class="m-0">Documenti</h5>
-      <a href="table_manager.php?table=viaggi2caricamenti&id_viaggio=<?= $id ?>" class="btn btn-sm btn-outline-light">Aggiungi</a>
+      <button class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#docModal">Aggiungi</button>
     </div>
     <?php if ($docRes->num_rows === 0): ?>
       <p class="text-muted">Nessun documento allegato.</p>
     <?php else: ?>
-      <ul class="list-group list-group-flush">
+      <div class="row row-cols-1 row-cols-md-2 g-3">
         <?php while ($row = $docRes->fetch_assoc()): ?>
-          <li class="list-group-item bg-dark text-white p-0">
-            <a href="table_manager.php?table=viaggi2caricamenti&search=<?= (int)$row['id_caricamento'] ?>&id_viaggio=<?= $id ?>" class="text-white text-decoration-none d-block p-2">
-              <?= htmlspecialchars($row['nome_file']) ?>
-            </a>
-          </li>
+          <div class="col">
+            <div class="card bg-dark text-white h-100">
+              <div class="card-body d-flex flex-column">
+                <p class="card-text flex-grow-1 mb-2"><?= htmlspecialchars($row['nome_file']) ?></p>
+                <a href="files/vacanze/<?= urlencode($row['nome_file']) ?>" class="btn btn-sm btn-outline-light mt-auto" target="_blank">Apri</a>
+              </div>
+            </div>
+          </div>
         <?php endwhile; ?>
-      </ul>
+      </div>
     <?php endif; ?>
   </div>
+
+  <div class="modal fade" id="docModal" tabindex="-1">
+    <div class="modal-dialog">
+      <form class="modal-content" id="docForm" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title">Carica documento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <input type="file" name="file" class="form-control" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Carica</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>const viaggioId = <?= $id ?>;</script>
+  <script src="js/vacanze_view.js"></script>
 </div>
 <?php include 'includes/footer.php'; ?>
