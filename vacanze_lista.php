@@ -97,9 +97,9 @@ $nottiRes = $conn->query("SELECT DISTINCT notti FROM viaggi WHERE notti IS NOT N
         }
       }
     ?>
-    <div class="col-12 col-md-6">
-      <a href="vacanze_lista_dettaglio.php?id=<?= (int)$row['id_viaggio'] ?>" class="text-decoration-none text-dark">
-        <div class="card">
+    <div class="col-12 col-md-6 d-flex">
+      <a href="vacanze_lista_dettaglio.php?id=<?= (int)$row['id_viaggio'] ?>" class="text-decoration-none text-dark w-100 h-100">
+        <div class="card h-100">
           <?php if ($row['foto_url']): ?>
           <?php $url = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photo_reference=' . urlencode($row['foto_url']) . '&key=' . $config['GOOGLE_PLACES_FOTO_API']; ?>
 
