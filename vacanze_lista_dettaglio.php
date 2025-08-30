@@ -26,7 +26,7 @@ $altStmt->bind_param('i', $id);
 $altStmt->execute();
 $altRes = $altStmt->get_result();
 
-$fbStmt = $conn->prepare('SELECT AVG(voto) AS media, COUNT(*) AS num FROM viaggi_feedback WHERE id_viaggio=?');
+$fbStmt = $conn->prepare('SELECT AVG(voto) AS media, COUNT(voto) AS num FROM viaggi_feedback WHERE id_viaggio=?');
 $fbStmt->bind_param('i', $id);
 $fbStmt->execute();
 $fbStats = $fbStmt->get_result()->fetch_assoc();
@@ -77,6 +77,15 @@ $docRes = $docStmt->get_result();
   <?php else: ?>
   <p><a href="vacanze_lista_dettaglio_feedback.php?id=<?= $id ?>" class="text-decoration-none">Nessuna recensione</a></p>
   <?php endif; ?>
+
+  <div class="mb-4">
+    <div class="mb-3">
+      <button class="btn btn-outline-secondary w-100 text-start" data-bs-toggle="modal" data-bs-target="#askModal">Chiedi alla community</button>
+    </div>
+    <div>
+      <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#reviewModal">Scrivi una recensione</button>
+    </div>
+  </div>
 
   <div class="mb-4">
     <h5 class="mb-3">Alternative</h5>
@@ -137,6 +146,50 @@ $docRes = $docStmt->get_result();
       <?php endif; ?>
     </div>
   </div>
+
+  <div class="modal fade" id="askModal" tabindex="-1">
+    <div class="modal-dialog">
+      <form class="modal-content" id="askForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Chiedi alla community</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <textarea class="form-control" name="commento" rows="3" required></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Invia</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal fade" id="reviewModal" tabindex="-1">
+    <div class="modal-dialog">
+      <form class="modal-content" id="reviewForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Scrivi una recensione</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Voto (0-10)</label>
+            <input type="number" name="voto" class="form-control" min="0" max="10" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Commento</label>
+            <textarea class="form-control" name="commento" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>const viaggioId = <?= $id ?>;</script>
   <script src="js/vacanze_lista_dettaglio.js"></script>
 </div>

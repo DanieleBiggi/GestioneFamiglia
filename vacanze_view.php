@@ -128,7 +128,7 @@ $docRes = $docStmt->get_result();
       <ul class="list-group list-group-flush">
         <?php while ($row = $fbRes->fetch_assoc()): ?>
           <li class="list-group-item bg-dark text-white">
-            <div><strong><?= htmlspecialchars($row['username'] ?? 'Anonimo') ?></strong> - voto <?= (int)$row['voto'] ?></div>
+            <div><strong><?= htmlspecialchars($row['username'] ?? 'Anonimo') ?></strong><?= $row['voto'] !== null ? ' - voto ' . (int)$row['voto'] : '' ?></div>
             <?php if ($row['commento']): ?><div class="small"><?= htmlspecialchars($row['commento']) ?></div><?php endif; ?>
           </li>
         <?php endwhile; ?>
