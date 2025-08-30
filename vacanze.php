@@ -1,7 +1,10 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
 include 'includes/db.php';
-include 'includes/header.php';
+require_once 'includes/permissions.php';
+
+if (!has_permission($conn, 'page:vacanze.php', 'view')) { http_response_code(403); exit('Accesso negato'); }
+$canInsert = has_permission($conn, 'table:viaggi', 'insert');
 
 $stato = $_GET['stato'] ?? '';
 $budget = $_GET['budget_max'] ?? '';
@@ -18,11 +21,14 @@ $stmt = $conn->prepare($query);
 if ($types) { $stmt->bind_param($types, ...$params); }
 $stmt->execute();
 $res = $stmt->get_result();
+include 'includes/header.php';
 ?>
 <div class="container text-white">
   <div class="d-flex mb-3 justify-content-between">
     <h4>Vacanze</h4>
+    <?php if ($canInsert): ?>
     <a href="vacanze_modifica.php" class="btn btn-outline-light btn-sm">Nuovo</a>
+    <?php endif; ?>
   </div>
   <form class="mb-3" method="get">
     <div class="row g-2">
