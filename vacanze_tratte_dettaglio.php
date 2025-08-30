@@ -141,11 +141,11 @@ $alt_desc = $alternative[$alt] ?? '';
     <input type="hidden" name="destinazione_lat" id="destinazione_lat" value="<?= htmlspecialchars($tratta['destinazione_lat']) ?>">
     <input type="hidden" name="destinazione_lng" id="destinazione_lng" value="<?= htmlspecialchars($tratta['destinazione_lng']) ?>">
     <div class="row g-2 mt-2">
-      <div class="col-md-6">
+      <div class="col-md-6 auto-only" id="distanza-col">
         <label class="form-label">Distanza (km)</label>
         <input type="number" step="0.01" class="form-control" name="distanza_km" id="distanza" value="<?= htmlspecialchars($tratta['distanza_km']) ?>">
       </div>
-      <div class="col-md-6">
+      <div class="col-md-6" id="durata-col">
         <label class="form-label">Durata (ore)</label>
         <input type="number" step="0.01" class="form-control" name="durata_ore" value="<?= htmlspecialchars($tratta['durata_ore']) ?>">
       </div>
@@ -223,6 +223,14 @@ function toggleFields() {
     const show = tipo === 'auto' || tipo === 'traghetto';
     el.style.display = show ? '' : 'none';
   });
+  const durataCol = document.getElementById('durata-col');
+  if (durataCol) {
+    durataCol.classList.toggle('col-md-12', tipo !== 'auto');
+    durataCol.classList.toggle('col-md-6', tipo === 'auto');
+  }
+  if (tipo === 'auto') {
+    calculateDistance();
+  }
 }
 let originAutocomplete, destinationAutocomplete;
 async function initAutocomplete() {
@@ -247,27 +255,16 @@ async function calculateDistance() {
   const destLat = parseFloat(document.getElementById('destinazione_lat').value);
   const destLng = parseFloat(document.getElementById('destinazione_lng').value);
   if (isNaN(originLat) || isNaN(originLng) || isNaN(destLat) || isNaN(destLng)) return;
-  try {
-    const response = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes?key=<?= $config['GOOGLE_MAPS_API'] ?>', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-FieldMask': 'routes.distanceMeters'
-      },
-      body: JSON.stringify({
-        origin: { location: { latLng: { latitude: originLat, longitude: originLng } } },
-        destination: { location: { latLng: { latitude: destLat, longitude: destLng } } },
-        travelMode: 'DRIVE'
-      })
-    });
-    const data = await response.json();
-    const meters = data.routes && data.routes[0] ? data.routes[0].distanceMeters : null;
-    if (meters) {
-      document.getElementById('distanza').value = (meters / 1000).toFixed(2);
+  const service = new google.maps.DirectionsService();
+  service.route({
+    origin: {lat: originLat, lng: originLng},
+    destination: {lat: destLat, lng: destLng},
+    travelMode: google.maps.TravelMode.DRIVING
+  }, (result, status) => {
+    if (status === 'OK' && result.routes[0] && result.routes[0].legs[0].distance) {
+      document.getElementById('distanza').value = (result.routes[0].legs[0].distance.value / 1000).toFixed(2);
     }
-  } catch (err) {
-    console.error('Distance calculation error', err);
-  }
+  });
 }
 window.initAutocomplete = initAutocomplete;
 </script>
