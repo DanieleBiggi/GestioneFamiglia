@@ -8,11 +8,23 @@ $DEFAULT_CONSUMO = 7.0; // L/100km
 $DEFAULT_PREZZO = 1.8; // €/L
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$luoghi = [];
+$res = $conn->query("SELECT id_luogo, nome, lat, lng FROM viaggi_luoghi ORDER BY nome");
+if ($res) {
+    $luoghi = $res->fetch_all(MYSQLI_ASSOC);
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = (int)($_POST['id_viaggio'] ?? 0);
     $titolo = $_POST['titolo'] ?? '';
     $id_luogo = $_POST['id_luogo'] !== '' ? (int)$_POST['id_luogo'] : null;
+    $nuovo_luogo = trim($_POST['nuovo_luogo'] ?? '');
+    if ($nuovo_luogo !== '') {
+        $stmt = $conn->prepare('INSERT INTO viaggi_luoghi (nome) VALUES (?)');
+        $stmt->bind_param('s', $nuovo_luogo);
+        $stmt->execute();
+        $id_luogo = $stmt->insert_id;
+    }
     $data_inizio = $_POST['data_inizio'] ?? null;
     $data_fine = $_POST['data_fine'] ?? null;
     $notti = $_POST['notti'] !== '' ? (int)$_POST['notti'] : null;
@@ -20,8 +32,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stato = $_POST['stato'] ?? 'idea';
     $priorita = $_POST['priorita'] !== '' ? (int)$_POST['priorita'] : null;
     $visibilita = $_POST['visibilita'] ?? 'private';
-    $token_condivisione = $_POST['token_condivisione'] ?? '';
-    $foto_url = $_POST['foto_url'] ?? '';
     $breve_descrizione = $_POST['breve_descrizione'] ?? '';
     $note = $_POST['note'] ?? '';
     $meteo_previsto_json = $_POST['meteo_previsto_json'] ?? '';
@@ -31,11 +41,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($id > 0) {
-        $stmt = $conn->prepare('UPDATE viaggi SET titolo=?, id_luogo=?, data_inizio=?, data_fine=?, notti=?, persone=?, stato=?, priorita=?, visibilita=?, token_condivisione=?, foto_url=?, breve_descrizione=?, note=?, meteo_previsto_json=?, meteo_aggiornato_il=? WHERE id_viaggio=?');
-        $stmt->bind_param('sissiisisssssssi', $titolo, $id_luogo, $data_inizio, $data_fine, $notti, $persone, $stato, $priorita, $visibilita, $token_condivisione, $foto_url, $breve_descrizione, $note, $meteo_previsto_json, $meteo_aggiornato_il, $id);
+        $stmt = $conn->prepare('UPDATE viaggi SET titolo=?, id_luogo=?, data_inizio=?, data_fine=?, notti=?, persone=?, stato=?, priorita=?, visibilita=?, breve_descrizione=?, note=?, meteo_previsto_json=?, meteo_aggiornato_il=? WHERE id_viaggio=?');
+        $stmt->bind_param('sissiisisssssi', $titolo, $id_luogo, $data_inizio, $data_fine, $notti, $persone, $stato, $priorita, $visibilita, $breve_descrizione, $note, $meteo_previsto_json, $meteo_aggiornato_il, $id);
     } else {
-        $stmt = $conn->prepare('INSERT INTO viaggi (titolo, id_luogo, data_inizio, data_fine, notti, persone, stato, priorita, visibilita, token_condivisione, foto_url, breve_descrizione, note, meteo_previsto_json, meteo_aggiornato_il) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-        $stmt->bind_param('sissiisisssssss', $titolo, $id_luogo, $data_inizio, $data_fine, $notti, $persone, $stato, $priorita, $visibilita, $token_condivisione, $foto_url, $breve_descrizione, $note, $meteo_previsto_json, $meteo_aggiornato_il);
+        $stmt = $conn->prepare('INSERT INTO viaggi (titolo, id_luogo, data_inizio, data_fine, notti, persone, stato, priorita, visibilita, breve_descrizione, note, meteo_previsto_json, meteo_aggiornato_il) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
+        $stmt->bind_param('sissiisisssss', $titolo, $id_luogo, $data_inizio, $data_fine, $notti, $persone, $stato, $priorita, $visibilita, $breve_descrizione, $note, $meteo_previsto_json, $meteo_aggiornato_il);
     }
     $stmt->execute();
     $id = $id ?: $stmt->insert_id;
@@ -53,8 +63,6 @@ $data = [
     'stato' => 'idea',
     'priorita' => null,
     'visibilita' => 'private',
-    'token_condivisione' => '',
-    'foto_url' => '',
     'breve_descrizione' => '',
     'note' => '',
     'meteo_previsto_json' => '',
@@ -80,8 +88,14 @@ if ($id > 0) {
       <input type="text" name="titolo" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['titolo']) ?>" required>
     </div>
     <div class="mb-3">
-      <label class="form-label">ID Luogo</label>
-      <input type="number" name="id_luogo" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['id_luogo'] ?? '') ?>">
+      <label class="form-label">Luogo</label>
+      <select name="id_luogo" class="form-select bg-dark text-white border-secondary">
+        <option value="">-- Seleziona --</option>
+        <?php foreach($luoghi as $l): ?>
+        <option value="<?= $l['id_luogo'] ?>" data-lat="<?= $l['lat'] ?>" data-lng="<?= $l['lng'] ?>" <?= $data['id_luogo']==$l['id_luogo'] ? 'selected' : '' ?>><?= htmlspecialchars($l['nome']) ?></option>
+        <?php endforeach; ?>
+      </select>
+      <input type="text" name="nuovo_luogo" class="form-control bg-dark text-white border-secondary mt-2" placeholder="Aggiungi nuovo luogo">
     </div>
     <div class="mb-3">
       <label class="form-label">Data inizio</label>
@@ -108,8 +122,13 @@ if ($id > 0) {
       </select>
     </div>
     <div class="mb-3">
-      <label class="form-label">Priorità</label>
-      <input type="number" name="priorita" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['priorita'] ?? '') ?>">
+      <label class="form-label">Priorità</label><br>
+      <?php foreach ([3=>'Bassa',2=>'Media',1=>'Alta'] as $val => $label): ?>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" name="priorita" id="priorita<?= $val ?>" value="<?= $val ?>" <?= (string)$data['priorita'] === (string)$val ? 'checked' : '' ?>>
+        <label class="form-check-label" for="priorita<?= $val ?>"><?= $label ?></label>
+      </div>
+      <?php endforeach; ?>
     </div>
     <div class="mb-3">
       <label class="form-label">Visibilità</label>
@@ -120,14 +139,6 @@ if ($id > 0) {
       </select>
     </div>
     <div class="mb-3">
-      <label class="form-label">Token condivisione</label>
-      <input type="text" name="token_condivisione" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['token_condivisione']) ?>">
-    </div>
-    <div class="mb-3">
-      <label class="form-label">Foto URL</label>
-      <input type="text" name="foto_url" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['foto_url']) ?>">
-    </div>
-    <div class="mb-3">
       <label class="form-label">Breve descrizione</label>
       <input type="text" name="breve_descrizione" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['breve_descrizione']) ?>">
     </div>
@@ -136,15 +147,37 @@ if ($id > 0) {
       <textarea name="note" class="form-control bg-dark text-white border-secondary" rows="3"><?= htmlspecialchars($data['note']) ?></textarea>
     </div>
     <div class="mb-3">
-      <label class="form-label">Meteo previsto (JSON)</label>
-      <textarea name="meteo_previsto_json" class="form-control bg-dark text-white border-secondary" rows="3"><?= htmlspecialchars($data['meteo_previsto_json']) ?></textarea>
+      <button type="button" id="aggiorna-meteo" class="btn btn-secondary w-100">Aggiorna meteo</button>
+      <p class="small mt-2" id="meteo-info"><?= $data['meteo_aggiornato_il'] ? 'Ultimo aggiornamento: '.htmlspecialchars($data['meteo_aggiornato_il']) : 'Meteo non aggiornato' ?></p>
     </div>
-    <div class="mb-3">
-      <label class="form-label">Meteo aggiornato il</label>
-      <input type="datetime-local" name="meteo_aggiornato_il" class="form-control bg-dark text-white border-secondary" value="<?= $data['meteo_aggiornato_il'] ? date('Y-m-d\TH:i', strtotime($data['meteo_aggiornato_il'])) : '' ?>">
-    </div>
+    <input type="hidden" name="meteo_previsto_json" value="<?= htmlspecialchars($data['meteo_previsto_json']) ?>">
+    <input type="hidden" name="meteo_aggiornato_il" value="<?= htmlspecialchars($data['meteo_aggiornato_il']) ?>">
     <button class="btn btn-primary w-100">Salva</button>
   </form>
   <p class="mt-4 small">Modificare i valori predefiniti di consumo (<?= $DEFAULT_CONSUMO ?> L/100km) e prezzo carburante (<?= $DEFAULT_PREZZO ?> €/L) modificando le variabili all'inizio di questo file.</p>
 </div>
+<script>
+document.getElementById('aggiorna-meteo').addEventListener('click', async function(){
+  const sel = document.querySelector('select[name="id_luogo"]');
+  const opt = sel.options[sel.selectedIndex];
+  const lat = opt.dataset.lat;
+  const lng = opt.dataset.lng;
+  if(!lat || !lng){
+    alert('Coordinate non disponibili per questo luogo');
+    return;
+  }
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`;
+  try {
+    const resp = await fetch(url);
+    if(!resp.ok) throw new Error();
+    const data = await resp.json();
+    document.querySelector('input[name="meteo_previsto_json"]').value = JSON.stringify(data);
+    const now = new Date().toISOString().slice(0,19).replace('T',' ');
+    document.querySelector('input[name="meteo_aggiornato_il"]').value = now;
+    document.getElementById('meteo-info').textContent = 'Ultimo aggiornamento: ' + now;
+  } catch(e){
+    alert('Impossibile aggiornare il meteo');
+  }
+});
+</script>
 <?php include 'includes/footer.php'; ?>
