@@ -1,3 +1,4 @@
+<?php include 'includes/session_check.php'; ?>
 <?php
 $id = (int)($_GET['id'] ?? 0);
 header('Location: vacanze_view.php?id=' . $id);
