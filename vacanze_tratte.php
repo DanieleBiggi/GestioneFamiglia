@@ -34,12 +34,14 @@ $trStmt = $conn->prepare('SELECT *, ((COALESCE(distanza_km,0)*COALESCE(consumo_l
 $trStmt->bind_param('ii', $id, $alt);
 $trStmt->execute();
 $trRes = $trStmt->get_result();
+$tratte = $trRes->fetch_all(MYSQLI_ASSOC);
 
 // Recupera alloggi
 $allStmt = $conn->prepare('SELECT *, DATEDIFF(data_checkout, data_checkin) * COALESCE(costo_notte_eur,0) AS totale FROM viaggi_alloggi WHERE id_viaggio=? AND id_viaggio_alternativa=? ORDER BY id_alloggio');
 $allStmt->bind_param('ii', $id, $alt);
 $allStmt->execute();
 $allRes = $allStmt->get_result();
+$alloggi = $allRes->fetch_all(MYSQLI_ASSOC);
 ?>
 <div class="container text-white">
   <a href="vacanze_view.php?id=<?= $id ?>" class="btn btn-outline-light mb-3">← Indietro</a>
@@ -55,11 +57,11 @@ $allRes = $allStmt->get_result();
       <a class="btn btn-sm btn-outline-light" href="vacanze_tratte_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>">Aggiungi</a>
   </div>
 
-  <?php if ($trRes->num_rows === 0): ?>
+  <?php if (empty($tratte)): ?>
     <p class="text-muted">Nessuna tratta.</p>
   <?php else: ?>
     <div class="list-group">
-        <?php while ($row = $trRes->fetch_assoc()): ?>
+        <?php foreach ($tratte as $row): ?>
           <a href="vacanze_tratte_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>&id_tratta=<?= (int)$row['id_tratta'] ?>" class="list-group-item list-group-item-action bg-dark text-white">
           <div class="d-flex justify-content-between">
             <div>
@@ -69,7 +71,7 @@ $allRes = $allStmt->get_result();
             <div>€<?= number_format($row['totale'], 2, ',', '.') ?> <i class="bi bi-pencil ms-2"></i></div>
           </div>
         </a>
-      <?php endwhile; ?>
+      <?php endforeach; ?>
     </div>
   <?php endif; ?>
 
@@ -78,20 +80,23 @@ $allRes = $allStmt->get_result();
       <a class="btn btn-sm btn-outline-light" href="vacanze_alloggi_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>">Aggiungi</a>
   </div>
 
-  <?php if ($allRes->num_rows === 0): ?>
+  <?php if (empty($alloggi)): ?>
     <p class="text-muted">Nessun alloggio.</p>
   <?php else: ?>
     <div class="list-group">
-      <?php while ($row = $allRes->fetch_assoc()): ?>
+      <?php foreach ($alloggi as $row): ?>
         <a href="vacanze_alloggi_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>&id_alloggio=<?= (int)$row['id_alloggio'] ?>" class="list-group-item list-group-item-action bg-dark text-white">
           <div class="d-flex justify-content-between">
             <span><?= htmlspecialchars($row['nome_alloggio'] ?: 'Alloggio') ?></span>
             <span>€<?= number_format($row['totale'], 2, ',', '.') ?> <i class="bi bi-pencil"></i></span>
           </div>
         </a>
-      <?php endwhile; ?>
+      <?php endforeach; ?>
     </div>
   <?php endif; ?>
+
+  <h4 class="mb-3 mt-4">Mappa</h4>
+  <div id="map" style="height:500px"></div>
 
   <div class="modal fade" id="altEditModal" tabindex="-1">
     <div class="modal-dialog">
@@ -114,7 +119,12 @@ $allRes = $allStmt->get_result();
     </div>
   </div>
 
-  <script>const altId = <?= $alt ?>;</script>
+  <script>
+    const altId = <?= $alt ?>;
+    const alloggi = <?= json_encode($alloggi) ?>;
+    const tratte = <?= json_encode($tratte) ?>;
+  </script>
   <script src="js/vacanze_tratte.js"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=<?= $config['GOOGLE_MAPS_API'] ?? '' ?>&callback=initMap&loading=async" async defer></script>
 </div>
 <?php include 'includes/footer.php'; ?>
