@@ -86,7 +86,7 @@ if ($id > 0) {
     </div>
     <div id="photo-container" class="mb-3 d-flex flex-wrap gap-2">
       <?php foreach ($foto_esistenti as $f): ?>
-        <?php $url = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photo_reference=' . urlencode($f['photo_reference']) . '&key=' . $config['GOOGLE_MAPS_API']; ?>
+        <?php $url = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photo_reference=' . urlencode($f['photo_reference']) . '&key=' . $config['GOOGLE_PLACES_FOTO_API']; ?>
         <label class="d-inline-block">
           <input type="checkbox" name="foto_refs[]" value="<?= htmlspecialchars($f['photo_reference']) ?>" checked>
           <img src="<?= $url ?>" class="img-thumbnail">
@@ -133,7 +133,7 @@ async function initAutocomplete() {
     // Recupera gli official photo_reference tramite backend
     if (place.place_id) {
       try {
-        const resp = await fetch(`api/places_photos.php?place_id=${place.place_id}`);
+        const resp = await fetch(`ajax/places_photos.php?place_id=${place.place_id}`);
         const data = await resp.json();
         if (data.photos) {
           data.photos.forEach(ph => {
@@ -156,4 +156,3 @@ window.initAutocomplete = initAutocomplete;
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key=<?= $config['GOOGLE_MAPS_API'] ?>&libraries=places&callback=initAutocomplete&loading=async" async defer></script>
 <?php include 'includes/footer.php'; ?>
-
