@@ -83,7 +83,7 @@ $docRes = $docStmt->get_result();
     <?php if ($altRes->num_rows === 0): ?>
       <p class="text-muted">Nessuna alternativa.</p>
     <?php else: ?>
-    <div class="row row-cols-1 g-3">
+    <div class="row row-cols-1 row-cols-md-2 g-3">
       <?php while($alt = $altRes->fetch_assoc()): ?>
       <div class="col">
         <a href="vacanze_tratte.php?id=<?= $id ?>&alt=<?= (int)$alt['id_viaggio_alternativa'] ?>" class="text-decoration-none text-dark">
