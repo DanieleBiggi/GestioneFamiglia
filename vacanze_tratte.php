@@ -43,11 +43,20 @@ $allStmt->execute();
 $allRes = $allStmt->get_result();
 $alloggi = $allRes->fetch_all(MYSQLI_ASSOC);
 
+// Recupera pasti
+$paStmt = $conn->prepare('SELECT * FROM viaggi_pasti WHERE id_viaggio=? AND id_viaggio_alternativa=? ORDER BY giorno_indice, id_pasto');
+$paStmt->bind_param('ii', $id, $alt);
+$paStmt->execute();
+$paRes = $paStmt->get_result();
+$pasti = $paRes->fetch_all(MYSQLI_ASSOC);
+
 $canEditAlt = has_permission($conn, 'ajax:update_viaggi_alternativa', 'update');
 $canInsertTratta = has_permission($conn, 'table:viaggi_tratte', 'insert');
 $canUpdateTratta = has_permission($conn, 'table:viaggi_tratte', 'update');
 $canInsertAlloggio = has_permission($conn, 'table:viaggi_alloggi', 'insert');
 $canUpdateAlloggio = has_permission($conn, 'table:viaggi_alloggi', 'update');
+$canInsertPasto = has_permission($conn, 'table:viaggi_pasti', 'insert');
+$canUpdatePasto = has_permission($conn, 'table:viaggi_pasti', 'update');
 ?>
 <div class="container text-white">
   <a href="vacanze_view.php?id=<?= $id ?>" class="btn btn-outline-light mb-3">← Indietro</a>
@@ -151,6 +160,36 @@ $canUpdateAlloggio = has_permission($conn, 'table:viaggi_alloggi', 'update');
     </div>
   <?php endif; ?>
 
+  <div class="d-flex justify-content-between mb-3 mt-4">
+      <h4 class="m-0">Pasti</h4>
+      <?php if ($canInsertPasto): ?>
+      <a class="btn btn-sm btn-outline-light" href="vacanze_pasti_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>">Aggiungi</a>
+      <?php endif; ?>
+  </div>
+
+  <?php if (empty($pasti)): ?>
+    <p class="text-muted">Nessun pasto.</p>
+  <?php else: ?>
+    <div class="list-group">
+      <?php foreach ($pasti as $row): ?>
+        <?php if ($canUpdatePasto): ?>
+        <a href="vacanze_pasti_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>&id_pasto=<?= (int)$row['id_pasto'] ?>" class="list-group-item list-group-item-action bg-dark text-white">
+        <?php else: ?>
+        <div class="list-group-item bg-dark text-white">
+        <?php endif; ?>
+          <div class="d-flex justify-content-between">
+            <span><?= htmlspecialchars($row['nome_locale'] ?: ucfirst($row['tipologia'])) ?></span>
+            <span>€<?= number_format($row['costo_medio_eur'] ?? 0, 2, ',', '.') ?><?php if ($canUpdatePasto): ?><i class="bi bi-pencil ms-2"></i><?php endif; ?></span>
+          </div>
+        <?php if ($canUpdatePasto): ?>
+        </a>
+        <?php else: ?>
+        </div>
+        <?php endif; ?>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
+
   <h4 class="mb-3 mt-4">Mappa</h4>
   <div id="map" style="height:500px"></div>
 
@@ -181,6 +220,7 @@ $canUpdateAlloggio = has_permission($conn, 'table:viaggi_alloggi', 'update');
     const altId = <?= $alt ?>;
     const alloggi = <?= json_encode($alloggi) ?>;
     const tratte = <?= json_encode($tratte) ?>;
+    const pasti = <?= json_encode($pasti) ?>;
   </script>
   <script src="js/vacanze_tratte.js"></script>
   <script src="https://maps.googleapis.com/maps/api/js?key=<?= $config['GOOGLE_MAPS_API'] ?? '' ?>&callback=initMap&loading=async" async defer></script>
