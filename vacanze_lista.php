@@ -7,7 +7,7 @@ $notti = $_GET['notti'] ?? '';
 $prezzoMin = $_GET['prezzo_min'] ?? '';
 $prezzoMax = $_GET['prezzo_max'] ?? '';
 
-$query = "SELECT v.id_viaggio, v.titolo, v.breve_descrizione, lf.photo_reference as foto_url, t.min_totale FROM viaggi v LEFT JOIN (SELECT id_viaggio, MIN(totale_viaggio) AS min_totale FROM v_totali_alternative GROUP BY id_viaggio) t ON v.id_viaggio=t.id_viaggio LEFT JOIN viaggi_luoghi l ON v.id_luogo=l.id_luogo LEFT JOIN viaggi_luogo_foto lf ON v.id_foto=lf.id_foto WHERE 1=1";
+$query = "SELECT v.id_viaggio, v.titolo, v.breve_descrizione, v.stato, v.data_inizio, v.meteo_previsto_json, lf.photo_reference as foto_url, t.min_totale FROM viaggi v LEFT JOIN (SELECT id_viaggio, MIN(totale_viaggio) AS min_totale FROM v_totali_alternative GROUP BY id_viaggio) t ON v.id_viaggio=t.id_viaggio LEFT JOIN viaggi_luoghi l ON v.id_luogo=l.id_luogo LEFT JOIN viaggi_luogo_foto lf ON v.id_foto=lf.id_foto WHERE 1=1";
 $params = [];
 $types = '';
 if ($search !== '') {
@@ -68,19 +68,53 @@ $nottiRes = $conn->query("SELECT DISTINCT notti FROM viaggi WHERE notti IS NOT N
     <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#filtersModal"><i class="bi bi-sliders"></i> Filtri</button>
   </div>
   <div class="row g-3">
-    <?php while($row = $res->fetch_assoc()): ?>
+    <?php while($row = $res->fetch_assoc()): 
+      $badgeClass = 'bg-secondary';
+      $badgeText = 'Da fare';
+      if($row['stato'] === 'prenotato'){
+        $badgeClass = 'bg-success';
+        $badgeText = 'Prenotato';
+      } elseif($row['stato'] === 'fatto') {
+        $badgeClass = 'bg-dark';
+        $badgeText = 'Fatto';
+      }
+      $weatherIcon = null;
+      if($row['stato'] === 'prenotato' && !empty($row['meteo_previsto_json'])){
+        $meteo = json_decode($row['meteo_previsto_json'], true);
+        if(isset($meteo['daily']['time'], $meteo['daily']['weathercode'])){
+          $idx = array_search($row['data_inizio'], $meteo['daily']['time']);
+          if($idx === false) $idx = 0;
+          $code = (int)($meteo['daily']['weathercode'][$idx] ?? -1);
+          $icons = [
+            0=>'sun',1=>'sun',2=>'cloud-sun',3=>'cloud',45=>'cloud-fog2',48=>'cloud-fog2',
+            51=>'cloud-drizzle',53=>'cloud-drizzle',55=>'cloud-drizzle',
+            61=>'cloud-rain',63=>'cloud-rain',65=>'cloud-rain-heavy',
+            71=>'cloud-snow',73=>'cloud-snow',75=>'cloud-snow',77=>'cloud-snow',
+            80=>'cloud-rain',81=>'cloud-rain',82=>'cloud-rain-heavy',
+            95=>'cloud-lightning',96=>'cloud-lightning-rain',99=>'cloud-lightning-rain'
+          ];
+          if(isset($icons[$code])) $weatherIcon = 'bi-' . $icons[$code];
+        }
+      }
+    ?>
     <div class="col-12 col-md-6">
       <a href="vacanze_lista_dettaglio.php?id=<?= (int)$row['id_viaggio'] ?>" class="text-decoration-none text-dark">
         <div class="card">
           <?php if ($row['foto_url']): ?>
           <?php $url = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photo_reference=' . urlencode($row['foto_url']) . '&key=' . $config['GOOGLE_PLACES_FOTO_API']; ?>
-        
+
           <img src="<?= htmlspecialchars($url) ?>" class="card-img-top" alt="">
           <?php endif; ?>
           <div class="card-body d-flex justify-content-between">
             <div>
               <h5 class="card-title mb-1"><?= htmlspecialchars($row['titolo']) ?></h5>
               <p class="card-text small mb-0 text-muted"><?= htmlspecialchars($row['breve_descrizione']) ?></p>
+              <div class="mt-1">
+                <span class="badge <?= $badgeClass ?>"><?= $badgeText ?></span>
+                <?php if($weatherIcon): ?>
+                <i class="<?= $weatherIcon ?> ms-1"></i>
+                <?php endif; ?>
+              </div>
             </div>
             <?php if(isset($row['min_totale'])): ?>
             <div class="text-end">
