@@ -32,7 +32,9 @@ function initMap(){
     ? {lat:parseFloat(alloggi[0].lat), lng:parseFloat(alloggi[0].lng)}
     : (tratte.length && tratte[0].origine_lat && tratte[0].origine_lng
         ? {lat:parseFloat(tratte[0].origine_lat), lng:parseFloat(tratte[0].origine_lng)}
-        : {lat:0, lng:0});
+        : (pasti.length && pasti[0].lat && pasti[0].lng
+            ? {lat:parseFloat(pasti[0].lat), lng:parseFloat(pasti[0].lng)}
+            : {lat:0, lng:0}));
   const map = new google.maps.Map(document.getElementById('map'), {zoom:6, center});
 
   alloggi.forEach(a => {
@@ -46,6 +48,18 @@ function initMap(){
     }
   });
 
+  pasti.forEach(p => {
+    if(p.lat && p.lng){
+      new google.maps.Marker({
+        position:{lat:parseFloat(p.lat), lng:parseFloat(p.lng)},
+        map,
+        icon:'https://maps.google.com/mapfiles/kml/shapes/dining.png',
+        title:p.nome_locale || 'Pasto'
+      });
+    }
+  });
+
+  const directionsService = new google.maps.DirectionsService();
   tratte.forEach(t => {
     const path = [];
     if(t.origine_lat && t.origine_lng){
@@ -59,7 +73,17 @@ function initMap(){
       new google.maps.Marker({position:dest, map, icon:'http://maps.google.com/mapfiles/ms/icons/red-dot.png', title:t.destinazione_testo});
     }
     if(path.length === 2){
-      new google.maps.Polyline({path, map, geodesic:true, strokeColor:'#FF0000', strokeOpacity:1.0, strokeWeight:2});
+      if(t.tipo_tratta === 'auto'){
+        directionsService.route({origin:path[0], destination:path[1], travelMode:google.maps.TravelMode.DRIVING}, (res, status) => {
+          if(status === google.maps.DirectionsStatus.OK){
+            new google.maps.DirectionsRenderer({map, suppressMarkers:true, preserveViewport:true, polylineOptions:{strokeColor:'#FF0000', strokeOpacity:1.0, strokeWeight:2}}).setDirections(res);
+          } else {
+            new google.maps.Polyline({path, map, geodesic:true, strokeColor:'#FF0000', strokeOpacity:1.0, strokeWeight:2});
+          }
+        });
+      } else {
+        new google.maps.Polyline({path, map, geodesic:true, strokeColor:'#FF0000', strokeOpacity:1.0, strokeWeight:2});
+      }
     }
   });
 }
