@@ -23,15 +23,6 @@ $totRes = $totStmt->get_result();
 $totali = [];
 while ($row = $totRes->fetch_assoc()) { $totali[$row['id_viaggio_alternativa']] = $row; }
 
-// Tratte per dettaglio tipo_tratta
-$trStmt = $conn->prepare('SELECT id_viaggio_alternativa, tipo_tratta, origine_testo, destinazione_testo FROM viaggi_tratte WHERE id_viaggio=? ORDER BY id_viaggio_alternativa, id_tratta');
-$trStmt->bind_param('i', $id);
-$trStmt->execute();
-$trRes = $trStmt->get_result();
-$tratte = [];
-while ($row = $trRes->fetch_assoc()) {
-    $tratte[$row['id_viaggio_alternativa']][] = $row;
-}
 
 // Checklist
 $chkStmt = $conn->prepare('SELECT id_checklist, voce, completata FROM viaggi_checklist WHERE id_viaggio=? ORDER BY id_checklist');
@@ -83,13 +74,6 @@ $docRes = $docStmt->get_result();
             <a href="vacanze_tratte.php?id=<?= $id ?>&alt=<?= (int)$t['id_viaggio_alternativa'] ?>" class="text-decoration-none text-white">
               <div class="p-2 border rounded h-100">
                 <h6 class="mb-1"><?= htmlspecialchars($t['breve_descrizione']) ?></h6>
-                <?php foreach (($tratte[$t['id_viaggio_alternativa']] ?? []) as $tr): ?>
-                  <?php if ($tr['origine_testo'] || $tr['destinazione_testo']): ?>
-                    <div class="small text-muted">
-                      <?= htmlspecialchars($tr['origine_testo'] ?? '') ?> → <?= htmlspecialchars($tr['destinazione_testo'] ?? '') ?>
-                    </div>
-                  <?php endif; ?>
-                <?php endforeach; ?>
                 <div class="small">Trasporti: €<?= number_format($t['totale_trasporti'], 2, ',', '.') ?></div>
                 <div class="small">Alloggi: €<?= number_format($t['totale_alloggi'], 2, ',', '.') ?></div>
                 <div class="fw-bold">Totale: €<?= number_format($t['totale_viaggio'], 2, ',', '.') ?></div>
