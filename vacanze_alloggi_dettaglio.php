@@ -109,11 +109,11 @@ $alt_desc = $alternative[$alt] ?? '';
     <div class="row g-2 mt-2">
       <div class="col">
         <label class="form-label">Checkin</label>
-        <input type="date" class="form-control" name="data_checkin" value="<?= htmlspecialchars($alloggio['data_checkin']) ?>">
+        <input type="date" class="form-control" name="data_checkin" id="data_checkin" value="<?= htmlspecialchars($alloggio['data_checkin']) ?>">
       </div>
       <div class="col">
         <label class="form-label">Checkout</label>
-        <input type="date" class="form-control" name="data_checkout" value="<?= htmlspecialchars($alloggio['data_checkout']) ?>">
+        <input type="date" class="form-control" name="data_checkout" id="data_checkout" value="<?= htmlspecialchars($alloggio['data_checkout']) ?>">
       </div>
     </div>
     <div class="mb-3 mt-2">
@@ -133,6 +133,17 @@ $alt_desc = $alternative[$alt] ?? '';
   </form>
 </div>
 <script>
+const checkinInput = document.getElementById('data_checkin');
+const checkoutInput = document.getElementById('data_checkout');
+function updateCheckoutMin() {
+  checkoutInput.min = checkinInput.value;
+  if (checkoutInput.value && checkoutInput.value < checkinInput.value) {
+    checkoutInput.value = checkinInput.value;
+  }
+}
+checkinInput.addEventListener('change', updateCheckoutMin);
+updateCheckoutMin();
+
 let autocomplete;
 async function initAutocomplete() {
   const {Autocomplete} = await google.maps.importLibrary('places');
