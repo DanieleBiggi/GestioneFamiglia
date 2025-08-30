@@ -137,7 +137,7 @@ if ($id_tratta) {
         <input type="number" step="0.01" class="form-control" name="durata_ore" value="<?= htmlspecialchars($tratta['durata_ore']) ?>">
       </div>
     </div>
-    <div class="row g-2 mt-2">
+    <div class="row g-2 mt-2 auto-only">
       <div class="col-md-6">
         <label class="form-label">Consumo L/100km</label>
         <input type="number" step="0.01" class="form-control" name="consumo_litri_100km" value="<?= htmlspecialchars($tratta['consumo_litri_100km']) ?>">
@@ -147,17 +147,17 @@ if ($id_tratta) {
         <input type="number" step="0.001" class="form-control" name="prezzo_carburante_eur_litro" value="<?= htmlspecialchars($tratta['prezzo_carburante_eur_litro']) ?>">
       </div>
     </div>
-    <div class="row g-2 mt-2">
-      <div class="col-md-6">
+    <div class="row g-2 mt-2 auto-traghetto-row">
+      <div class="col-md-6 auto-only">
         <label class="form-label">Pedaggi €</label>
         <input type="number" step="0.01" class="form-control" name="pedaggi_eur" value="<?= htmlspecialchars($tratta['pedaggi_eur']) ?>">
       </div>
-      <div class="col-md-6">
+      <div class="col-md-6 traghetto-only">
         <label class="form-label">Traghetto €</label>
         <input type="number" step="0.01" class="form-control" name="costo_traghetto_eur" value="<?= htmlspecialchars($tratta['costo_traghetto_eur']) ?>">
       </div>
     </div>
-    <div class="row g-2 mt-2">
+    <div class="row g-2 mt-2 aereo-only">
       <div class="col-md-6">
         <label class="form-label">Volo €</label>
         <input type="number" step="0.01" class="form-control" name="costo_volo_eur" value="<?= htmlspecialchars($tratta['costo_volo_eur']) ?>">
@@ -184,6 +184,33 @@ if ($id_tratta) {
   </form>
 </div>
 <script>
+document.addEventListener('DOMContentLoaded', () => {
+  const tipoSelect = document.querySelector('select[name="tipo_tratta"]');
+  tipoSelect.addEventListener('change', toggleFields);
+  toggleFields();
+});
+function toggleFields() {
+  const tipo = document.querySelector('select[name="tipo_tratta"]').value;
+  document.querySelectorAll('.auto-only').forEach(el => {
+    const show = tipo === 'auto';
+    el.style.display = show ? '' : 'none';
+    el.querySelectorAll('input').forEach(inp => inp.disabled = !show);
+  });
+  document.querySelectorAll('.aereo-only').forEach(el => {
+    const show = tipo === 'aereo';
+    el.style.display = show ? '' : 'none';
+    el.querySelectorAll('input').forEach(inp => inp.disabled = !show);
+  });
+  document.querySelectorAll('.traghetto-only').forEach(el => {
+    const show = tipo === 'traghetto';
+    el.style.display = show ? '' : 'none';
+    el.querySelectorAll('input').forEach(inp => inp.disabled = !show);
+  });
+  document.querySelectorAll('.auto-traghetto-row').forEach(el => {
+    const show = tipo === 'auto' || tipo === 'traghetto';
+    el.style.display = show ? '' : 'none';
+  });
+}
 let originAutocomplete, destinationAutocomplete;
 async function initAutocomplete() {
   const {Autocomplete} = await google.maps.importLibrary('places');
