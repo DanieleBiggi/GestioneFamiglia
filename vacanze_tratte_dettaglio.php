@@ -1,6 +1,13 @@
-<?php include 'includes/session_check.php'; ?>
+<?php 
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+include 'includes/session_check.php'; ?>
 <?php
+
 include 'includes/db.php';
+
 
 $id = (int)($_GET['id'] ?? 0);
 $alt = (int)($_GET['alt'] ?? 0);
@@ -56,6 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     header('Location: vacanze_tratte.php?id=' . $id . '&alt=' . $id_alt);
     exit;
+}
 
 $tratta = [
     'id_viaggio_alternativa' => $alt,
