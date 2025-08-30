@@ -40,7 +40,33 @@ $docStmt = $conn->prepare('SELECT oc.nome_file FROM viaggi2caricamenti vc JOIN o
 $docStmt->bind_param('i', $id);
 $docStmt->execute();
 $docRes = $docStmt->get_result();
+
+$trStmt = $conn->prepare('SELECT origine_testo, destinazione_testo FROM viaggi_tratte WHERE id_viaggio=? AND (id_viaggio_alternativa IS NULL OR id_viaggio_alternativa=0) ORDER BY id_tratta');
+$trStmt->bind_param('i', $id);
+$trStmt->execute();
+$trRes = $trStmt->get_result();
+$tratte = $trRes->fetch_all(MYSQLI_ASSOC);
+
+$paStmt = $conn->prepare('SELECT tipo_pasto, nome_locale, tipologia FROM viaggi_pasti WHERE id_viaggio=? AND (id_viaggio_alternativa IS NULL OR id_viaggio_alternativa=0) ORDER BY giorno_indice, id_pasto');
+$paStmt->bind_param('i', $id);
+$paStmt->execute();
+$paRes = $paStmt->get_result();
+$pasti = $paRes->fetch_all(MYSQLI_ASSOC);
+$ristorante = $pizzeria = $cucinato = 0;
+foreach ($pasti as $p) {
+    switch ($p['tipologia']) {
+        case 'ristorante': $ristorante++; break;
+        case 'pizzeria': $pizzeria++; break;
+        case 'cucinato': $cucinato++; break;
+    }
+}
 ?>
+<style>
+#fotoCarousel .carousel-item img { height:522px; object-fit:cover; }
+@media (max-width: 576px) {
+  #fotoCarousel .carousel-item img { height:33vh; }
+}
+</style>
 <div class="container my-3">
   <a href="vacanze_lista.php" class="btn btn-outline-secondary mb-3">&larr; Indietro</a>
   <h4 class="mb-2"><?= htmlspecialchars($viaggio['titolo']) ?></h4>
@@ -55,7 +81,7 @@ $docRes = $docStmt->get_result();
     <div class="carousel-inner">
       <?php $i=0; while($f = $fotoRes->fetch_assoc()): $url = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=' . urlencode($f['photo_reference']) . '&key=' . ($config['GOOGLE_PLACES_FOTO_API'] ?? ''); ?>
       <div class="carousel-item <?= $i===0?'active':'' ?>">
-        <img src="<?= htmlspecialchars($url) ?>" class="d-block w-100" alt="" style="height:522px;object-fit:cover;">
+        <img src="<?= htmlspecialchars($url) ?>" class="d-block w-100" alt="">
       </div>
       <?php $i++; endwhile; ?>
     </div>
@@ -111,7 +137,20 @@ $docRes = $docStmt->get_result();
 
   <div id="altDettagli" class="mb-4"></div>
 
+  <div class="mb-4">
+    <h5 class="mb-3">Pasti</h5>
+    <?php if (($ristorante + $pizzeria + $cucinato) === 0): ?>
+      <p class="text-muted">Nessun pasto.</p>
+    <?php else: ?>
+      <p>Ristorante/Pizzeria: <?= $ristorante + $pizzeria ?></p>
+      <p>Preparato: <?= $cucinato ?></p>
+    <?php endif; ?>
+  </div>
+
   <ul class="nav nav-tabs nav-fill" id="detailTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="dettagli-tab" data-bs-toggle="tab" data-bs-target="#dettagli" type="button" role="tab">Dettagli</button>
+    </li>
     <li class="nav-item" role="presentation">
       <button class="nav-link active" id="checklist-tab" data-bs-toggle="tab" data-bs-target="#checklist" type="button" role="tab">Checklist</button>
     </li>
@@ -120,6 +159,38 @@ $docRes = $docStmt->get_result();
     </li>
   </ul>
   <div class="tab-content border border-top-0 p-3" id="detailTabsContent">
+    <div class="tab-pane fade" id="dettagli" role="tabpanel" aria-labelledby="dettagli-tab">
+      <h6>Tratte</h6>
+      <?php if (empty($tratte)): ?>
+        <p class="text-muted">Nessuna tratta.</p>
+      <?php else: ?>
+        <ul class="list-group list-group-flush mb-3">
+          <?php foreach ($tratte as $tr): ?>
+          <li class="list-group-item">
+            <?= htmlspecialchars($tr['origine_testo'] ?? '') ?> &rarr; <?= htmlspecialchars($tr['destinazione_testo'] ?? '') ?>
+          </li>
+          <?php endforeach; ?>
+        </ul>
+      <?php endif; ?>
+      <h6>Pasti</h6>
+      <?php if (empty($pasti)): ?>
+        <p class="text-muted">Nessun pasto.</p>
+      <?php else: ?>
+        <ul class="list-group list-group-flush">
+          <?php foreach ($pasti as $pa): ?>
+          <li class="list-group-item">
+            <?= htmlspecialchars(ucfirst($pa['tipo_pasto'])) ?> -
+            <?php if ($pa['tipologia'] === 'cucinato'): ?>
+              Preparato
+            <?php else: ?>
+              <?= htmlspecialchars($pa['nome_locale']) ?>
+            <?php endif; ?>
+            (<?= htmlspecialchars($pa['tipologia']) ?>)
+          </li>
+          <?php endforeach; ?>
+        </ul>
+      <?php endif; ?>
+    </div>
     <div class="tab-pane fade show active" id="checklist" role="tabpanel" aria-labelledby="checklist-tab">
       <?php if ($chkRes->num_rows === 0): ?>
         <p class="text-muted">Nessuna voce.</p>
