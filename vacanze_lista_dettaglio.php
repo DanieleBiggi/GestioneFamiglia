@@ -53,7 +53,7 @@ $docRes = $docStmt->get_result();
   <?php if ($fotoRes->num_rows > 0): ?>
   <div id="fotoCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
     <div class="carousel-inner">
-      <?php $i=0; while($f = $fotoRes->fetch_assoc()): $url = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=' . urlencode($f['photo_reference']) . '&key=' . ($config['GOOGLE_MAPS_API'] ?? ''); ?>
+      <?php $i=0; while($f = $fotoRes->fetch_assoc()): $url = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=' . urlencode($f['photo_reference']) . '&key=' . ($config['GOOGLE_PLACES_FOTO_API'] ?? ''); ?>
       <div class="carousel-item <?= $i===0?'active':'' ?>">
         <img src="<?= htmlspecialchars($url) ?>" class="d-block w-100" alt="">
       </div>
