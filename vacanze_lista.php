@@ -7,7 +7,7 @@ $notti = $_GET['notti'] ?? '';
 $prezzoMin = $_GET['prezzo_min'] ?? '';
 $prezzoMax = $_GET['prezzo_max'] ?? '';
 
-$query = "SELECT v.id_viaggio, v.titolo, v.breve_descrizione, v.foto_url, t.min_totale FROM viaggi v LEFT JOIN (SELECT id_viaggio, MIN(totale_viaggio) AS min_totale FROM v_totali_alternative GROUP BY id_viaggio) t ON v.id_viaggio=t.id_viaggio LEFT JOIN viaggi_luoghi l ON v.id_luogo=l.id_luogo WHERE 1=1";
+$query = "SELECT v.id_viaggio, v.titolo, v.breve_descrizione, lf.photo_reference as foto_url, t.min_totale FROM viaggi v LEFT JOIN (SELECT id_viaggio, MIN(totale_viaggio) AS min_totale FROM v_totali_alternative GROUP BY id_viaggio) t ON v.id_viaggio=t.id_viaggio LEFT JOIN viaggi_luoghi l ON v.id_luogo=l.id_luogo LEFT JOIN viaggi_luogo_foto lf ON v.id_foto=lf.id_foto WHERE 1=1";
 $params = [];
 $types = '';
 if ($search !== '') {
@@ -73,7 +73,9 @@ $nottiRes = $conn->query("SELECT DISTINCT notti FROM viaggi WHERE notti IS NOT N
       <a href="vacanze_lista_dettaglio.php?id=<?= (int)$row['id_viaggio'] ?>" class="text-decoration-none text-dark">
         <div class="card">
           <?php if ($row['foto_url']): ?>
-          <img src="<?= htmlspecialchars($row['foto_url']) ?>" class="card-img-top" alt="">
+          <?php $url = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photo_reference=' . urlencode($row['foto_url']) . '&key=' . $config['GOOGLE_PLACES_FOTO_API']; ?>
+        
+          <img src="<?= htmlspecialchars($url) ?>" class="card-img-top" alt="">
           <?php endif; ?>
           <div class="card-body d-flex justify-content-between">
             <div>
