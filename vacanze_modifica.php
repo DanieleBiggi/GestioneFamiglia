@@ -118,9 +118,8 @@ if ($id > 0) {
       <input type="text" name="nuovo_luogo" class="form-control bg-dark text-white border-secondary mt-2" placeholder="Aggiungi nuovo luogo">
       <div class="mt-2">
         <label class="form-label">Foto</label>
-        <select name="id_foto" id="foto-id-select" class="form-select bg-dark text-white border-secondary">
-          <option value="">-- Nessuna --</option>
-        </select>
+        <div id="foto-container" class="d-flex flex-wrap gap-2"></div>
+        <input type="hidden" name="id_foto" id="id_foto_hidden" value="<?= htmlspecialchars($data['id_foto']) ?>">
       </div>
     </div>
     <div class="mb-3">
@@ -184,28 +183,50 @@ if ($id > 0) {
 </div>
 <script>
 const luogoSel = document.querySelector('select[name="id_luogo"]');
-const fotoSel = document.getElementById('foto-id-select');
+const fotoContainer = document.getElementById('foto-container');
+const idFotoHidden = document.getElementById('id_foto_hidden');
 const gestisciBtn = document.getElementById('gestisci-luogo');
 const fotoSelezionata = <?= json_encode($data['id_foto']) ?>;
+const apiKeyFoto = '<?= $config['GOOGLE_PLACES_FOTO_API'] ?? '' ?>';
+
 function aggiornaFoto(){
   const opt = luogoSel.options[luogoSel.selectedIndex];
   let fotos = [];
   try { fotos = JSON.parse(opt.getAttribute('data-fotos') || '[]'); } catch(e){}
-  fotoSel.innerHTML = '<option value="">-- Nessuna --</option>';
+  fotoContainer.innerHTML = '';
   fotos.forEach(f => {
-    const option = document.createElement('option');
-    option.value = f.id_foto;
-    option.textContent = f.photo_reference;
-    if (parseInt(f.id_foto) === parseInt(fotoSelezionata)) option.selected = true;
-    fotoSel.appendChild(option);
+    const url = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photo_reference=${encodeURIComponent(f.photo_reference)}&key=${apiKeyFoto}`;
+    const label = document.createElement('label');
+    label.className = 'd-inline-block';
+    label.innerHTML = `<input type="checkbox" class="me-1 foto-check" value="${f.id_foto}"><img src="${url}" class="img-thumbnail">`;
+    const input = label.querySelector('input');
+    if (parseInt(f.id_foto) === parseInt(fotoSelezionata)) input.checked = true;
+    fotoContainer.appendChild(label);
   });
+  updateIdFoto();
 }
+
+function updateIdFoto(){
+  const checked = fotoContainer.querySelector('input.foto-check:checked');
+  idFotoHidden.value = checked ? checked.value : '';
+}
+
+fotoContainer.addEventListener('change', (e) => {
+  if (e.target.matches('input.foto-check')) {
+    fotoContainer.querySelectorAll('input.foto-check').forEach(cb => {
+      if (cb !== e.target) cb.checked = false;
+    });
+    updateIdFoto();
+  }
+});
+
 function aggiornaGestisci(){
   const id = luogoSel.value;
   gestisciBtn.href = id ? `vacanze_luogo_modifica.php?id=${id}` : 'vacanze_luogo_modifica.php';
   gestisciBtn.target = '_blank';
   gestisciBtn.rel = 'noopener noreferrer';
 }
+
 luogoSel.addEventListener('change', () => { aggiornaFoto(); aggiornaGestisci(); });
 document.addEventListener('DOMContentLoaded', () => { aggiornaFoto(); aggiornaGestisci(); });
 </script>
