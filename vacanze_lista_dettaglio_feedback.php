@@ -5,7 +5,7 @@ include 'includes/header.php';
 
 $id = (int)($_GET['id'] ?? 0);
 
-$statStmt = $conn->prepare('SELECT AVG(voto) AS media, COUNT(*) AS num FROM viaggi_feedback WHERE id_viaggio=?');
+$statStmt = $conn->prepare('SELECT AVG(voto) AS media, COUNT(voto) AS num FROM viaggi_feedback WHERE id_viaggio=?');
 $statStmt->bind_param('i', $id);
 $statStmt->execute();
 $stats = $statStmt->get_result()->fetch_assoc();
@@ -33,7 +33,9 @@ $fbRes = $fbStmt->get_result();
           <small class="text-muted"><?= htmlspecialchars(date('d/m/Y', strtotime($row['creato_il']))) ?></small>
           <?php if ($row['commento']): ?><div><?= htmlspecialchars($row['commento']) ?></div><?php endif; ?>
         </div>
+        <?php if ($row['voto'] !== null): ?>
         <div class="ms-3 fw-bold align-self-center"><?= (int)$row['voto'] ?></div>
+        <?php endif; ?>
       </li>
       <?php endwhile; ?>
     </ul>
