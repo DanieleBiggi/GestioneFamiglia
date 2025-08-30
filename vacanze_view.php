@@ -70,7 +70,10 @@ $docRes = $docStmt->get_result();
   </h4>
 
   <div class="mb-4">
-    <h5>Alternative</h5>
+    <div class="d-flex justify-content-between mb-3 align-items-center">
+      <h5 class="m-0">Alternative</h5>
+      <button class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#altModal">Aggiungi</button>
+    </div>
     <?php if (empty($totali)): ?>
       <p class="text-muted">Nessuna alternativa.</p>
     <?php else: ?>
@@ -96,6 +99,27 @@ $docRes = $docStmt->get_result();
         <?php endforeach; ?>
       </div>
     <?php endif; ?>
+  </div>
+
+  <div class="modal fade" id="altModal" tabindex="-1">
+    <div class="modal-dialog">
+      <form class="modal-content" id="altForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Nuova alternativa</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Descrizione breve</label>
+            <input type="text" name="breve_descrizione" class="form-control" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <div class="mb-4">

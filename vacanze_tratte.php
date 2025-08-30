@@ -30,10 +30,16 @@ if (!$altRow) {
 $alt_desc = $altRow['breve_descrizione'];
 
 // Recupera tratte
-$trStmt = $conn->prepare('SELECT * FROM viaggi_tratte WHERE id_viaggio=? AND id_viaggio_alternativa=? ORDER BY id_tratta');
+$trStmt = $conn->prepare('SELECT *, ((COALESCE(distanza_km,0)*COALESCE(consumo_litri_100km,0)/100)*COALESCE(prezzo_carburante_eur_litro,0) + COALESCE(pedaggi_eur,0) + COALESCE(costo_traghetto_eur,0) + COALESCE(costo_volo_eur,0) + COALESCE(costo_noleggio_eur,0) + COALESCE(altri_costi_eur,0)) AS totale FROM viaggi_tratte WHERE id_viaggio=? AND id_viaggio_alternativa=? ORDER BY id_tratta');
 $trStmt->bind_param('ii', $id, $alt);
 $trStmt->execute();
 $trRes = $trStmt->get_result();
+
+// Recupera alloggi
+$allStmt = $conn->prepare('SELECT *, DATEDIFF(data_checkout, data_checkin) * COALESCE(costo_notte_eur,0) AS totale FROM viaggi_alloggi WHERE id_viaggio=? AND id_viaggio_alternativa=? ORDER BY id_alloggio');
+$allStmt->bind_param('ii', $id, $alt);
+$allStmt->execute();
+$allRes = $allStmt->get_result();
 ?>
 <div class="container text-white">
   <a href="vacanze_view.php?id=<?= $id ?>" class="btn btn-outline-light mb-3">← Indietro</a>
@@ -45,7 +51,7 @@ $trRes = $trStmt->get_result();
     </ol>
   </nav>
   <div class="d-flex justify-content-between mb-3">
-      <h4 class="m-0">Tratte - <?= htmlspecialchars($alt_desc) ?></h4>
+      <h4 class="m-0">Tratte - <?= htmlspecialchars($alt_desc) ?> <a href="#" class="text-white ms-2" data-bs-toggle="modal" data-bs-target="#altEditModal"><i class="bi bi-pencil"></i></a></h4>
       <a class="btn btn-sm btn-outline-light" href="vacanze_tratte_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>">Aggiungi</a>
   </div>
 
@@ -56,12 +62,59 @@ $trRes = $trStmt->get_result();
         <?php while ($row = $trRes->fetch_assoc()): ?>
           <a href="vacanze_tratte_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>&id_tratta=<?= (int)$row['id_tratta'] ?>" class="list-group-item list-group-item-action bg-dark text-white">
           <div class="d-flex justify-content-between">
-            <span><?= htmlspecialchars($row['descrizione'] ?: $row['tipo_tratta']) ?></span>
-            <i class="bi bi-pencil"></i>
+            <div>
+              <div><?= htmlspecialchars($row['descrizione'] ?: $row['tipo_tratta']) ?></div>
+              <div class="small text-muted"><?= ucfirst($row['tipo_tratta']) ?></div>
+            </div>
+            <div>€<?= number_format($row['totale'], 2, ',', '.') ?> <i class="bi bi-pencil ms-2"></i></div>
           </div>
         </a>
       <?php endwhile; ?>
     </div>
   <?php endif; ?>
+
+  <div class="d-flex justify-content-between mb-3 mt-4">
+      <h4 class="m-0">Alloggi</h4>
+      <a class="btn btn-sm btn-outline-light" href="vacanze_alloggi_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>">Aggiungi</a>
+  </div>
+
+  <?php if ($allRes->num_rows === 0): ?>
+    <p class="text-muted">Nessun alloggio.</p>
+  <?php else: ?>
+    <div class="list-group">
+      <?php while ($row = $allRes->fetch_assoc()): ?>
+        <a href="vacanze_alloggi_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>&id_alloggio=<?= (int)$row['id_alloggio'] ?>" class="list-group-item list-group-item-action bg-dark text-white">
+          <div class="d-flex justify-content-between">
+            <span><?= htmlspecialchars($row['nome_alloggio'] ?: 'Alloggio') ?></span>
+            <span>€<?= number_format($row['totale'], 2, ',', '.') ?> <i class="bi bi-pencil"></i></span>
+          </div>
+        </a>
+      <?php endwhile; ?>
+    </div>
+  <?php endif; ?>
+
+  <div class="modal fade" id="altEditModal" tabindex="-1">
+    <div class="modal-dialog">
+      <form class="modal-content" id="altEditForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Modifica alternativa</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Descrizione breve</label>
+            <input type="text" name="breve_descrizione" class="form-control" value="<?= htmlspecialchars($alt_desc) ?>" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>const altId = <?= $alt ?>;</script>
+  <script src="js/vacanze_tratte.js"></script>
 </div>
 <?php include 'includes/footer.php'; ?>
