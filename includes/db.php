@@ -28,6 +28,23 @@ if (file_exists(__DIR__ . '/api_config.php')) {
     }
 }
 
+
+function debugBindParams($sql, $types, $params) {
+    $placeholders = substr_count($sql, '?');
+    $types_len = strlen($types);
+    $params_len = count($params);
+
+    if ($placeholders !== $types_len) {
+        echo "ERRORE: numero di '?' ($placeholders) diverso da lunghezza stringa types ($types_len)\n";
+    }
+    if ($types_len !== $params_len) {
+        echo "ERRORE: numero di tipi ($types_len) diverso da numero di variabili passate ($params_len)\n";
+    }
+    if ($placeholders === $types_len && $types_len === $params_len) {
+        //echo "✅ Tutto combacia!\n";
+    }
+}
+
 $host = $config['host'] ?? 'localhost';
 $port = $config['port'] ?? '3306';
 $user = $config['user'] ?? '';
