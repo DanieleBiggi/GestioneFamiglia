@@ -130,27 +130,16 @@ async function initAutocomplete() {
     const container = document.getElementById('photo-container');
     container.innerHTML = '';
 
-    // Anteprime immediate utilizzando le foto restituite da Autocomplete
-    if (place.photos) {
-      place.photos.forEach(p => {
-        const img = document.createElement('img');
-        img.src = p.getUrl({maxWidth:200});
-        img.className = 'img-thumbnail me-1 mb-1';
-        container.appendChild(img);
-      });
-    }
-
-    // Recupera gli official photo_reference tramite Place Details API
+    // Recupera gli official photo_reference tramite backend
     if (place.place_id) {
       try {
-        const resp = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=photos&key=<?= $config['GOOGLE_MAPS_API'] ?>`);
+        const resp = await fetch(`api/places_photos.php?place_id=${place.place_id}`);
         const data = await resp.json();
-        if (data.result && data.result.photos) {
-          container.innerHTML = '';
-          data.result.photos.forEach(ph => {
+        if (data.photos) {
+          data.photos.forEach(ph => {
             const ref = ph.photo_reference;
             if (!ref) return;
-            const url = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photo_reference=${ref}&key=<?= $config['GOOGLE_MAPS_API'] ?>`;
+            const url = ph.thumb_url;
             const label = document.createElement('label');
             label.className = 'd-inline-block';
             label.innerHTML = `<input type="checkbox" name="foto_refs[]" value="${ref}" class="me-1"><img src="${url}" class="img-thumbnail">`;
