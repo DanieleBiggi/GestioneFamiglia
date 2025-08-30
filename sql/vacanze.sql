@@ -26,6 +26,8 @@ CREATE TABLE viaggi (
   priorita TINYINT,
   visibilita ENUM('private','shared','public') DEFAULT 'private',
   token_condivisione CHAR(22),
+  foto_url VARCHAR(255),
+  breve_descrizione VARCHAR(255),
   note TEXT,
   meteo_previsto_json JSON,
   meteo_aggiornato_il DATETIME,
