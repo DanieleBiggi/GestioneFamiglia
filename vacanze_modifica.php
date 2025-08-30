@@ -1,7 +1,6 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
 include 'includes/db.php';
-include 'includes/header.php';
 
 // Default carburante modificabili qui
 $DEFAULT_CONSUMO = 7.0; // L/100km
@@ -87,6 +86,7 @@ if ($id > 0) {
     }
 }
 ?>
+<?php include 'includes/header.php'; ?>
 <div class="container text-white">
   <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
   <nav aria-label="breadcrumb">
