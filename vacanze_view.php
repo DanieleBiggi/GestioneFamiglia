@@ -3,6 +3,11 @@
 include 'includes/db.php';
 include 'includes/header.php';
 
+$canUpdateViaggio = has_permission($conn, 'table:viaggi', 'update');
+$canAddAlternativa = has_permission($conn, 'ajax:add_viaggi_alternativa', 'insert');
+$canAddDocumento = has_permission($conn, 'ajax:add_viaggi_documento', 'insert');
+$canAddChecklist = has_permission($conn, 'ajax:add_viaggi_checklist', 'insert');
+
 $id = (int)($_GET['id'] ?? 0);
 $stmt = $conn->prepare('SELECT * FROM viaggi WHERE id_viaggio=?');
 $stmt->bind_param('i', $id);
@@ -57,13 +62,17 @@ $docRes = $docStmt->get_result();
     </ol>
   </nav>
   <h4 class="mb-3"><?= htmlspecialchars($viaggio['titolo']) ?>
-    <a href="vacanze_modifica.php?id=<?= $id ?>" class="text-white ms-2"><i class="bi bi-pencil"></i></a>
+    <?php if ($canUpdateViaggio): ?>
+      <a href="vacanze_modifica.php?id=<?= $id ?>" class="text-white ms-2"><i class="bi bi-pencil"></i></a>
+    <?php endif; ?>
   </h4>
 
   <div class="mb-4">
     <div class="d-flex justify-content-between mb-3 align-items-center">
       <h5 class="m-0">Alternative</h5>
-      <button class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#altModal">Aggiungi</button>
+      <?php if ($canAddAlternativa): ?>
+        <button class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#altModal">Aggiungi</button>
+      <?php endif; ?>
     </div>
     <?php if (empty($totali)): ?>
       <p class="text-muted">Nessuna alternativa.</p>
@@ -85,6 +94,7 @@ $docRes = $docStmt->get_result();
     <?php endif; ?>
   </div>
 
+  <?php if ($canAddAlternativa): ?>
   <div class="modal fade" id="altModal" tabindex="-1">
     <div class="modal-dialog">
       <form class="modal-content" id="altForm">
@@ -105,11 +115,16 @@ $docRes = $docStmt->get_result();
       </form>
     </div>
   </div>
+  <?php endif; ?>
 
   <div class="mb-4">
     <h5 class="mb-3">Checklist</h5>
     <?php if ($totChecklist === 0): ?>
-      <a href="vacanze_checklist.php?id=<?= $id ?>" class="btn btn-sm btn-outline-light">Nuova checklist</a>
+      <?php if ($canAddChecklist): ?>
+        <a href="vacanze_checklist.php?id=<?= $id ?>" class="btn btn-sm btn-outline-light">Nuova checklist</a>
+      <?php else: ?>
+        <p class="text-muted">Nessuna checklist.</p>
+      <?php endif; ?>
     <?php else: ?>
       <a href="vacanze_checklist.php?id=<?= $id ?>" class="text-decoration-none text-white">
         <div class="p-2 border rounded">
@@ -139,7 +154,9 @@ $docRes = $docStmt->get_result();
   <div class="mb-4">
     <div class="d-flex justify-content-between mb-3 align-items-center">
       <h5 class="m-0">Documenti</h5>
-      <button class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#docModal">Aggiungi</button>
+      <?php if ($canAddDocumento): ?>
+        <button class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#docModal">Aggiungi</button>
+      <?php endif; ?>
     </div>
     <?php if ($docRes->num_rows === 0): ?>
       <p class="text-muted">Nessun documento allegato.</p>
@@ -159,6 +176,7 @@ $docRes = $docStmt->get_result();
     <?php endif; ?>
   </div>
 
+  <?php if ($canAddDocumento): ?>
   <div class="modal fade" id="docModal" tabindex="-1">
     <div class="modal-dialog">
       <form class="modal-content" id="docForm" enctype="multipart/form-data">
@@ -178,6 +196,7 @@ $docRes = $docStmt->get_result();
       </form>
     </div>
   </div>
+  <?php endif; ?>
 
   <script>const viaggioId = <?= $id ?>;</script>
   <script src="js/vacanze_view.js"></script>
