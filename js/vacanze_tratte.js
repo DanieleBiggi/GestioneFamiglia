@@ -16,4 +16,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
   }
+
+  document.querySelectorAll('.duplicate').forEach(el => {
+    el.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const href = el.getAttribute('data-href');
+      if (href) window.location.href = href;
+    });
+  });
 });
