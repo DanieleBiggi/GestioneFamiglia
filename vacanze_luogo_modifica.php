@@ -86,7 +86,7 @@ if ($id > 0) {
     </div>
     <div id="photo-container" class="mb-3 d-flex flex-wrap gap-2">
       <?php foreach ($foto_esistenti as $f): ?>
-        <?php $url = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photoreference=' . urlencode($f['photo_reference']) . '&key=' . $config['GOOGLE_MAPS_API']; ?>
+        <?php $url = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photo_reference=' . urlencode($f['photo_reference']) . '&key=' . $config['GOOGLE_MAPS_API']; ?>
         <label class="d-inline-block">
           <input type="checkbox" name="foto_refs[]" value="<?= htmlspecialchars($f['photo_reference']) ?>" checked>
           <img src="<?= $url ?>" class="img-thumbnail">
@@ -112,7 +112,7 @@ async function initAutocomplete() {
   autocomplete = new Autocomplete(document.getElementById('place-name'), {
     fields: ['address_components','geometry','name','place_id','photos','url','website']
   });
-  autocomplete.addListener('place_changed', () => {
+  autocomplete.addListener('place_changed', async () => {
     const place = autocomplete.getPlace();
     if (!place) return;
     document.getElementById('place_id').value = place.place_id || '';
@@ -129,29 +129,37 @@ async function initAutocomplete() {
     }
     const container = document.getElementById('photo-container');
     container.innerHTML = '';
+
+    // Anteprime immediate utilizzando le foto restituite da Autocomplete
     if (place.photos) {
       place.photos.forEach(p => {
-        let ref = p.photo_reference || (p.toJSON && p.toJSON().photo_reference) || '';
-        let url = '';
-        if (p.getUrl) {
-          url = p.getUrl({maxWidth:200});
-          if (!ref && url) {
-            try {
-              ref = new URL(url).searchParams.get('photoreference') || '';
-            } catch (e) {
-              ref = '';
-            }
-          }
-        }
-        if (!url && ref) {
-          url = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photoreference=${ref}&key=<?= $config['GOOGLE_MAPS_API'] ?>`;
-        }
-        if (!ref || !url) return;
-        const label = document.createElement('label');
-        label.className = 'd-inline-block';
-        label.innerHTML = `<input type="checkbox" name="foto_refs[]" value="${ref}" class="me-1"><img src="${url}" class="img-thumbnail">`;
-        container.appendChild(label);
+        const img = document.createElement('img');
+        img.src = p.getUrl({maxWidth:200});
+        img.className = 'img-thumbnail me-1 mb-1';
+        container.appendChild(img);
       });
+    }
+
+    // Recupera gli official photo_reference tramite Place Details API
+    if (place.place_id) {
+      try {
+        const resp = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=photos&key=<?= $config['GOOGLE_MAPS_API'] ?>`);
+        const data = await resp.json();
+        if (data.result && data.result.photos) {
+          container.innerHTML = '';
+          data.result.photos.forEach(ph => {
+            const ref = ph.photo_reference;
+            if (!ref) return;
+            const url = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photo_reference=${ref}&key=<?= $config['GOOGLE_MAPS_API'] ?>`;
+            const label = document.createElement('label');
+            label.className = 'd-inline-block';
+            label.innerHTML = `<input type="checkbox" name="foto_refs[]" value="${ref}" class="me-1"><img src="${url}" class="img-thumbnail">`;
+            container.appendChild(label);
+          });
+        }
+      } catch (err) {
+        console.error('Errore nel recupero dei photo_reference', err);
+      }
     }
   });
 }
