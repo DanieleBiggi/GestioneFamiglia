@@ -33,10 +33,19 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         });
     });
+  }
+
   const altCards = document.querySelectorAll('.alt-card');
   const detailDiv = document.getElementById('altDettagli');
 
-  const escapeHtml = str => str ? str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m])) : '';
+  const escapeMap = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  };
+  const escapeHtml = str => str ? str.replace(/[&<>"']/g, m => escapeMap[m]) : '';
 
   function renderDetails(data){
     let html = '';
@@ -97,3 +106,4 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAlt(altCards[0].dataset.alt, altCards[0]);
   }
 });
+
