@@ -231,6 +231,7 @@ luogoSel.addEventListener('change', () => { aggiornaFoto(); aggiornaGestisci(); 
 document.addEventListener('DOMContentLoaded', () => { aggiornaFoto(); aggiornaGestisci(); });
 </script>
 <script>
+const idViaggio = <?= (int)$id ?>;
 document.getElementById('aggiorna-meteo').addEventListener('click', async function(){
   const sel = document.querySelector('select[name="id_luogo"]');
   const opt = sel.options[sel.selectedIndex];
@@ -245,10 +246,20 @@ document.getElementById('aggiorna-meteo').addEventListener('click', async functi
     const resp = await fetch(url);
     if(!resp.ok) throw new Error();
     const data = await resp.json();
-    document.querySelector('input[name="meteo_previsto_json"]').value = JSON.stringify(data);
+    const meteoJson = JSON.stringify(data);
+    document.querySelector('input[name="meteo_previsto_json"]').value = meteoJson;
     const now = new Date().toISOString().slice(0,19).replace('T',' ');
     document.querySelector('input[name="meteo_aggiornato_il"]').value = now;
     document.getElementById('meteo-info').textContent = 'Ultimo aggiornamento: ' + now;
+    if(idViaggio>0){
+      const fd = new FormData();
+      fd.append('id', idViaggio);
+      fd.append('meteo_previsto_json', meteoJson);
+      fd.append('meteo_aggiornato_il', now);
+      fetch('ajax/update_viaggio_meteo.php', {method:'POST', body: fd})
+        .then(r=>r.json())
+        .then(res=>{ if(!res.success){ alert(res.error || 'Errore salvataggio meteo'); } });
+    }
   } catch(e){
     alert('Impossibile aggiornare il meteo');
   }
