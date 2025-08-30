@@ -71,6 +71,12 @@ if ($id > 0) {
 ?>
 <div class="container text-white">
   <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="vacanze.php">Vacanze</a></li>
+      <li class="breadcrumb-item active" aria-current="page"><?= $id > 0 ? 'Modifica luogo' : 'Nuovo luogo' ?></li>
+    </ol>
+  </nav>
   <h4 class="mb-3"><?= $id > 0 ? 'Modifica luogo' : 'Nuovo luogo' ?></h4>
   <form method="post" class="bg-dark p-3 rounded">
     <input type="hidden" name="id_luogo" value="<?= (int)$id ?>">
