@@ -55,7 +55,7 @@ $docRes = $docStmt->get_result();
     <div class="carousel-inner">
       <?php $i=0; while($f = $fotoRes->fetch_assoc()): $url = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=' . urlencode($f['photo_reference']) . '&key=' . ($config['GOOGLE_PLACES_FOTO_API'] ?? ''); ?>
       <div class="carousel-item <?= $i===0?'active':'' ?>">
-        <img src="<?= htmlspecialchars($url) ?>" class="d-block w-100" alt="">
+        <img src="<?= htmlspecialchars($url) ?>" class="d-block w-100" alt="" style="height:522px;object-fit:cover;">
       </div>
       <?php $i++; endwhile; ?>
     </div>
