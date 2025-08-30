@@ -24,7 +24,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tipo = $_POST['tipo_tratta'] ?? 'auto';
     $descrizione = $_POST['descrizione'] ?? null;
     $origine = $_POST['origine_testo'] ?? null;
+    $origine_lat = $_POST['origine_lat'] !== '' ? (float)$_POST['origine_lat'] : null;
+    $origine_lng = $_POST['origine_lng'] !== '' ? (float)$_POST['origine_lng'] : null;
     $destinazione = $_POST['destinazione_testo'] ?? null;
+    $destinazione_lat = $_POST['destinazione_lat'] !== '' ? (float)$_POST['destinazione_lat'] : null;
+    $destinazione_lng = $_POST['destinazione_lng'] !== '' ? (float)$_POST['destinazione_lng'] : null;
     $distanza = (float)($_POST['distanza_km'] ?? 0);
     $durata = (float)($_POST['durata_ore'] ?? 0);
     $consumo = (float)($_POST['consumo_litri_100km'] ?? 0);
@@ -41,12 +45,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $del->bind_param('ii', $id_tratta, $id);
         $del->execute();
     } elseif ($id_tratta) {
-        $upd = $conn->prepare('UPDATE viaggi_tratte SET gruppo_alternativa=?, tipo_tratta=?, descrizione=?, origine_testo=?, destinazione_testo=?, distanza_km=?, durata_ore=?, consumo_litri_100km=?, prezzo_carburante_eur_litro=?, pedaggi_eur=?, costo_traghetto_eur=?, costo_volo_eur=?, costo_noleggio_eur=?, altri_costi_eur=?, note=? WHERE id_tratta=? AND id_viaggio=?');
-        $upd->bind_param('sssssdddddddddsii', $gruppo, $tipo, $descrizione, $origine, $destinazione, $distanza, $durata, $consumo, $prezzo, $pedaggi, $traghetto, $volo, $noleggio, $altri, $note, $id_tratta, $id);
+        $upd = $conn->prepare('UPDATE viaggi_tratte SET gruppo_alternativa=?, tipo_tratta=?, descrizione=?, origine_testo=?, origine_lat=?, origine_lng=?, destinazione_testo=?, destinazione_lat=?, destinazione_lng=?, distanza_km=?, durata_ore=?, consumo_litri_100km=?, prezzo_carburante_eur_litro=?, pedaggi_eur=?, costo_traghetto_eur=?, costo_volo_eur=?, costo_noleggio_eur=?, altri_costi_eur=?, note=? WHERE id_tratta=? AND id_viaggio=?');
+        $upd->bind_param('ssssddsdddddddddddsii', $gruppo, $tipo, $descrizione, $origine, $origine_lat, $origine_lng, $destinazione, $destinazione_lat, $destinazione_lng, $distanza, $durata, $consumo, $prezzo, $pedaggi, $traghetto, $volo, $noleggio, $altri, $note, $id_tratta, $id);
         $upd->execute();
     } else {
-        $ins = $conn->prepare('INSERT INTO viaggi_tratte (id_viaggio, gruppo_alternativa, tipo_tratta, descrizione, origine_testo, destinazione_testo, distanza_km, durata_ore, consumo_litri_100km, prezzo_carburante_eur_litro, pedaggi_eur, costo_traghetto_eur, costo_volo_eur, costo_noleggio_eur, altri_costi_eur, note) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-        $ins->bind_param('isssssddddddddds', $id, $gruppo, $tipo, $descrizione, $origine, $destinazione, $distanza, $durata, $consumo, $prezzo, $pedaggi, $traghetto, $volo, $noleggio, $altri, $note);
+        $ins = $conn->prepare('INSERT INTO viaggi_tratte (id_viaggio, gruppo_alternativa, tipo_tratta, descrizione, origine_testo, origine_lat, origine_lng, destinazione_testo, destinazione_lat, destinazione_lng, distanza_km, durata_ore, consumo_litri_100km, prezzo_carburante_eur_litro, pedaggi_eur, costo_traghetto_eur, costo_volo_eur, costo_noleggio_eur, altri_costi_eur, note) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+        $ins->bind_param('issssddsddddddddddds', $id, $gruppo, $tipo, $descrizione, $origine, $origine_lat, $origine_lng, $destinazione, $destinazione_lat, $destinazione_lng, $distanza, $durata, $consumo, $prezzo, $pedaggi, $traghetto, $volo, $noleggio, $altri, $note);
         $ins->execute();
     }
     header('Location: vacanze_tratte.php?id=' . $id . '&grp=' . urlencode($gruppo));
@@ -58,7 +62,11 @@ $tratta = [
     'tipo_tratta' => 'auto',
     'descrizione' => '',
     'origine_testo' => '',
+    'origine_lat' => '',
+    'origine_lng' => '',
     'destinazione_testo' => '',
+    'destinazione_lat' => '',
+    'destinazione_lng' => '',
     'distanza_km' => '',
     'durata_ore' => '',
     'consumo_litri_100km' => '',
@@ -115,6 +123,10 @@ if ($id_tratta) {
         <input type="text" class="form-control" name="destinazione_testo" id="destinazione" value="<?= htmlspecialchars($tratta['destinazione_testo']) ?>">
       </div>
     </div>
+    <input type="hidden" name="origine_lat" id="origine_lat" value="<?= htmlspecialchars($tratta['origine_lat']) ?>">
+    <input type="hidden" name="origine_lng" id="origine_lng" value="<?= htmlspecialchars($tratta['origine_lng']) ?>">
+    <input type="hidden" name="destinazione_lat" id="destinazione_lat" value="<?= htmlspecialchars($tratta['destinazione_lat']) ?>">
+    <input type="hidden" name="destinazione_lng" id="destinazione_lng" value="<?= htmlspecialchars($tratta['destinazione_lng']) ?>">
     <div class="row g-2 mt-2">
       <div class="col-md-6">
         <label class="form-label">Distanza (km)</label>
@@ -174,20 +186,30 @@ if ($id_tratta) {
 <script>
 let originAutocomplete, destinationAutocomplete;
 async function initAutocomplete() {
-  const {PlaceAutocompleteElement} = await google.maps.importLibrary('places');
-  originAutocomplete = new PlaceAutocompleteElement({inputElement: document.getElementById('origine')});
-  destinationAutocomplete = new PlaceAutocompleteElement({inputElement: document.getElementById('destinazione')});
-  originAutocomplete.addEventListener('gmpx-placechanged', calculateDistance);
-  destinationAutocomplete.addEventListener('gmpx-placechanged', calculateDistance);
+  const {Autocomplete} = await google.maps.importLibrary('places');
+  originAutocomplete = new Autocomplete(document.getElementById('origine'));
+  destinationAutocomplete = new Autocomplete(document.getElementById('destinazione'));
+  originAutocomplete.addListener('place_changed', () => handlePlace('origine', originAutocomplete));
+  destinationAutocomplete.addListener('place_changed', () => handlePlace('destinazione', destinationAutocomplete));
+}
+function handlePlace(prefix, autocomplete) {
+  const place = autocomplete.getPlace();
+  if (place && place.geometry && place.geometry.location) {
+    document.getElementById(prefix + '_lat').value = place.geometry.location.lat();
+    document.getElementById(prefix + '_lng').value = place.geometry.location.lng();
+  }
+  calculateDistance();
 }
 function calculateDistance() {
-  const origin = originAutocomplete.getPlace();
-  const destination = destinationAutocomplete.getPlace();
-  if (!origin || !destination) return;
+  const originLat = parseFloat(document.getElementById('origine_lat').value);
+  const originLng = parseFloat(document.getElementById('origine_lng').value);
+  const destLat = parseFloat(document.getElementById('destinazione_lat').value);
+  const destLng = parseFloat(document.getElementById('destinazione_lng').value);
+  if (isNaN(originLat) || isNaN(originLng) || isNaN(destLat) || isNaN(destLng)) return;
   const service = new google.maps.DirectionsService();
   service.route({
-    origin: origin.location,
-    destination: destination.location,
+    origin: {lat: originLat, lng: originLng},
+    destination: {lat: destLat, lng: destLng},
     travelMode: google.maps.TravelMode.DRIVING
   }, function(response, status) {
     if (status === 'OK') {
