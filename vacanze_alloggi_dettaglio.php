@@ -101,22 +101,11 @@ $alt_desc = $alternative[$alt] ?? '';
     </div>
     <div class="mb-3">
       <label class="form-label">Nome alloggio</label>
-      <input type="text" class="form-control" name="nome_alloggio" value="<?= htmlspecialchars($alloggio['nome_alloggio']) ?>">
+      <input type="text" class="form-control" name="nome_alloggio" id="nome_alloggio" value="<?= htmlspecialchars($alloggio['nome_alloggio']) ?>">
     </div>
-    <div class="mb-3">
-      <label class="form-label">Indirizzo</label>
-      <input type="text" class="form-control" name="indirizzo" value="<?= htmlspecialchars($alloggio['indirizzo']) ?>">
-    </div>
-    <div class="row g-2">
-      <div class="col">
-        <label class="form-label">Lat</label>
-        <input type="number" step="0.000001" class="form-control" name="lat" value="<?= htmlspecialchars($alloggio['lat']) ?>">
-      </div>
-      <div class="col">
-        <label class="form-label">Lng</label>
-        <input type="number" step="0.000001" class="form-control" name="lng" value="<?= htmlspecialchars($alloggio['lng']) ?>">
-      </div>
-    </div>
+    <input type="hidden" name="indirizzo" id="indirizzo" value="<?= htmlspecialchars($alloggio['indirizzo']) ?>">
+    <input type="hidden" name="lat" id="lat" value="<?= htmlspecialchars($alloggio['lat']) ?>">
+    <input type="hidden" name="lng" id="lng" value="<?= htmlspecialchars($alloggio['lng']) ?>">
     <div class="row g-2 mt-2">
       <div class="col">
         <label class="form-label">Checkin</label>
@@ -143,4 +132,24 @@ $alt_desc = $alternative[$alt] ?? '';
     </div>
   </form>
 </div>
+<script>
+let autocomplete;
+async function initAutocomplete() {
+  const {Autocomplete} = await google.maps.importLibrary('places');
+  autocomplete = new Autocomplete(document.getElementById('nome_alloggio'), {
+    types: ['establishment'],
+    fields: ['name','formatted_address','geometry']
+  });
+  autocomplete.addListener('place_changed', () => {
+    const place = autocomplete.getPlace();
+    if (!place) return;
+    document.getElementById('nome_alloggio').value = place.name || '';
+    document.getElementById('indirizzo').value = place.formatted_address || '';
+    document.getElementById('lat').value = place.geometry?.location?.lat() || '';
+    document.getElementById('lng').value = place.geometry?.location?.lng() || '';
+  });
+}
+window.initAutocomplete = initAutocomplete;
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=<?= $config['GOOGLE_MAPS_API'] ?>&libraries=places&callback=initAutocomplete&loading=async" async defer></script>
 <?php include 'includes/footer.php'; ?>
