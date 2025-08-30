@@ -8,10 +8,18 @@ CREATE TABLE viaggi_luoghi (
   lng DECIMAL(9,6),
   url_maps VARCHAR(255),
   sito_web VARCHAR(255),
+  place_id VARCHAR(255),
   note_apertura TEXT,
   note TEXT,
   creato_il DATETIME DEFAULT CURRENT_TIMESTAMP,
   aggiornato_il DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE viaggi_luogo_foto (
+  id_foto INT AUTO_INCREMENT PRIMARY KEY,
+  id_luogo INT NOT NULL,
+  photo_reference VARCHAR(255) NOT NULL,
+  FOREIGN KEY (id_luogo) REFERENCES viaggi_luoghi(id_luogo) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE viaggi (
