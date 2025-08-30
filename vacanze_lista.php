@@ -69,7 +69,7 @@ $nottiRes = $conn->query("SELECT DISTINCT notti FROM viaggi WHERE notti IS NOT N
   </div>
   <div class="row g-3">
     <?php while($row = $res->fetch_assoc()): ?>
-    <div class="col-12">
+    <div class="col-12 col-md-6">
       <a href="vacanze_lista_dettaglio.php?id=<?= (int)$row['id_viaggio'] ?>" class="text-decoration-none text-dark">
         <div class="card">
           <?php if ($row['foto_url']): ?>
