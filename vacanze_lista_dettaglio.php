@@ -95,7 +95,7 @@ $docRes = $docStmt->get_result();
     <div class="row row-cols-1 row-cols-md-2 g-3">
       <?php while($alt = $altRes->fetch_assoc()): ?>
       <div class="col">
-        <a href="vacanze_tratte.php?id=<?= $id ?>&alt=<?= (int)$alt['id_viaggio_alternativa'] ?>" class="text-decoration-none text-dark">
+        <a href="#" data-alt="<?= (int)$alt['id_viaggio_alternativa'] ?>" class="text-decoration-none text-dark alt-card">
           <div class="card">
             <div class="card-body d-flex justify-content-between">
               <div><?= htmlspecialchars($alt['breve_descrizione']) ?></div>
@@ -108,6 +108,8 @@ $docRes = $docStmt->get_result();
     </div>
     <?php endif; ?>
   </div>
+
+  <div id="altDettagli" class="mb-4"></div>
 
   <ul class="nav nav-tabs nav-fill" id="detailTabs" role="tablist">
     <li class="nav-item" role="presentation">
