@@ -173,11 +173,12 @@ if ($id_tratta) {
 </div>
 <script>
 let originAutocomplete, destinationAutocomplete;
-function initAutocomplete() {
-  originAutocomplete = new google.maps.places.Autocomplete(document.getElementById('origine'));
-  destinationAutocomplete = new google.maps.places.Autocomplete(document.getElementById('destinazione'));
-  originAutocomplete.addListener('place_changed', calculateDistance);
-  destinationAutocomplete.addListener('place_changed', calculateDistance);
+async function initAutocomplete() {
+  const {PlaceAutocompleteElement} = await google.maps.importLibrary('places');
+  originAutocomplete = new PlaceAutocompleteElement({inputElement: document.getElementById('origine')});
+  destinationAutocomplete = new PlaceAutocompleteElement({inputElement: document.getElementById('destinazione')});
+  originAutocomplete.addEventListener('gmpx-placechanged', calculateDistance);
+  destinationAutocomplete.addEventListener('gmpx-placechanged', calculateDistance);
 }
 function calculateDistance() {
   const origin = originAutocomplete.getPlace();
@@ -185,8 +186,8 @@ function calculateDistance() {
   if (!origin || !destination) return;
   const service = new google.maps.DirectionsService();
   service.route({
-    origin: origin.geometry.location,
-    destination: destination.geometry.location,
+    origin: origin.location,
+    destination: destination.location,
     travelMode: google.maps.TravelMode.DRIVING
   }, function(response, status) {
     if (status === 'OK') {
