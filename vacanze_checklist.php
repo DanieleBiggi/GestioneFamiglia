@@ -33,7 +33,7 @@ $users = $userRes ? $userRes->fetch_all(MYSQLI_ASSOC) : [];
   </nav>
   <div class="d-flex justify-content-between mb-3">
     <h4 class="m-0">Checklist</h4>
-    <a class="btn btn-sm btn-outline-light" href="table_manager.php?table=viaggi_checklist&id_viaggio=<?= $id ?>">Aggiungi</a>
+    <button class="btn btn-sm btn-outline-light" id="addChecklistBtn">Aggiungi</button>
   </div>
   <?php if ($chkRes->num_rows === 0): ?>
     <p class="text-muted">Nessuna voce.</p>
@@ -52,19 +52,61 @@ $users = $userRes ? $userRes->fetch_all(MYSQLI_ASSOC) : [];
                 <?php endforeach; ?>
               </select>
             </div>
-            <button class="btn btn-sm btn-outline-light" data-bs-toggle="collapse" data-bs-target="#chat<?= $row['id_checklist'] ?>">Chat</button>
-          </div>
-          <div class="collapse mt-2" id="chat<?= $row['id_checklist'] ?>">
-            <div class="checklist-chat-messages mb-2" data-id="<?= $row['id_checklist'] ?>"></div>
-            <div class="input-group input-group-sm">
-              <input type="text" class="form-control bg-dark text-white checklist-chat-input" data-id="<?= $row['id_checklist'] ?>" placeholder="Messaggio">
-              <button class="btn btn-outline-light checklist-chat-send" data-id="<?= $row['id_checklist'] ?>">Invia</button>
-            </div>
+            <button class="btn btn-sm btn-outline-light checklist-chat-btn" data-id="<?= $row['id_checklist'] ?>">Chat</button>
           </div>
         </li>
       <?php endwhile; ?>
     </ul>
   <?php endif; ?>
 </div>
+<div class="modal fade" id="addChecklistModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content" id="addChecklistForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Nuova voce</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Voce</label>
+          <input type="text" name="voce" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Assegna a</label>
+          <select name="id_utente" class="form-select">
+            <option value="">--</option>
+            <?php foreach ($users as $u): ?>
+              <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['username']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+        <button type="submit" class="btn btn-primary">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal fade" id="chatModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-header">
+        <h5 class="modal-title">Chat</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="chatMessages" class="mb-3" style="max-height:300px;overflow-y:auto;"></div>
+        <div class="input-group">
+          <input type="text" id="chatInput" class="form-control bg-dark text-white" placeholder="Messaggio">
+          <button class="btn btn-outline-light" id="chatSend">Invia</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>const viaggioId = <?= $id ?>;</script>
 <script src="js/vacanze_checklist.js"></script>
 <?php include 'includes/footer.php'; ?>
