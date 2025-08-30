@@ -198,5 +198,5 @@ function calculateDistance() {
 }
 window.initAutocomplete = initAutocomplete;
 </script>
-<script src="https://maps.googleapis.com/maps/api/js?key=<?= $config['GOOGLE_MAPS_API'] ?>&libraries=places&callback=initAutocomplete" async defer></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=<?= $config['GOOGLE_MAPS_API'] ?>&libraries=places&callback=initAutocomplete&loading=async" async defer></script>
 <?php include 'includes/footer.php'; ?>
