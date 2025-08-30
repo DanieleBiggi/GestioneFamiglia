@@ -84,9 +84,29 @@ $canUpdateAlloggio = has_permission($conn, 'table:viaggi_alloggi', 'update');
               <div><?= htmlspecialchars($row['descrizione'] ?: $row['tipo_tratta']) ?></div>
               <div class="small text-muted"><?= ucfirst($row['tipo_tratta']) ?></div>
             </div>
-            <div>€<?= number_format($row['totale'], 2, ',', '.') ?>
-              <?php if ($canUpdateTratta): ?><i class="bi bi-pencil ms-2"></i><?php endif; ?>
-              <?php if ($canInsertTratta): ?><i class="bi bi-files ms-2 text-info duplicate" data-href="vacanze_tratte_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>&id_tratta=<?= (int)$row['id_tratta'] ?>&duplica=1"></i><?php endif; ?>
+            <div class="text-end">
+              <div>€<?= number_format($row['totale'], 2, ',', '.') ?>
+                <?php if ($canUpdateTratta): ?><i class="bi bi-pencil ms-2"></i><?php endif; ?>
+                <?php if ($canInsertTratta): ?><i class="bi bi-files ms-2 text-info duplicate" data-href="vacanze_tratte_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>&id_tratta=<?= (int)$row['id_tratta'] ?>&duplica=1"></i><?php endif; ?>
+              </div>
+              <div class="small text-muted">
+                <?php if ($row['tipo_tratta'] === 'auto'): ?>
+                  <?php $carb = ($row['distanza_km'] ?? 0) * ($row['consumo_litri_100km'] ?? 0) / 100 * ($row['prezzo_carburante_eur_litro'] ?? 0); ?>
+                  Carb €<?= number_format($carb, 2, ',', '.') ?>, Ped €<?= number_format($row['pedaggi_eur'] ?? 0, 2, ',', '.') ?>
+                <?php else: ?>
+                  <?php
+                    $labelMap = ['aereo' => 'Volo', 'traghetto' => 'Traghetto', 'treno' => 'Treno'];
+                    $costMap = [
+                      'aereo' => $row['costo_volo_eur'] ?? 0,
+                      'traghetto' => $row['costo_traghetto_eur'] ?? 0,
+                      'treno' => $row['altri_costi_eur'] ?? 0,
+                    ];
+                    $mezzoLabel = $labelMap[$row['tipo_tratta']] ?? 'Mezzo';
+                    $mezzoCosto = $costMap[$row['tipo_tratta']] ?? ($row['altri_costi_eur'] ?? 0);
+                  ?>
+                  <?= $mezzoLabel ?> €<?= number_format($mezzoCosto, 2, ',', '.') ?>
+                <?php endif; ?>
+              </div>
             </div>
           </div>
           <?php if ($canUpdateTratta): ?>
