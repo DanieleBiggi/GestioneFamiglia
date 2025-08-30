@@ -101,11 +101,15 @@ if ($id > 0) {
     </ol>
   </nav>
   <h4 class="mb-3"><?= $id > 0 ? 'Modifica viaggio' : 'Nuovo viaggio' ?></h4>
-  <form method="post" class="bg-dark p-3 rounded">
+    <form method="post" class="bg-dark p-3 rounded">
     <input type="hidden" name="id_viaggio" value="<?= (int)$id ?>">
     <div class="mb-3">
       <label class="form-label">Titolo</label>
       <input type="text" name="titolo" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['titolo']) ?>" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Breve descrizione</label>
+      <input type="text" name="breve_descrizione" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['breve_descrizione']) ?>">
     </div>
     <div class="mb-3">
       <label class="form-label">Luogo <a href="vacanze_luogo_modifica.php" id="gestisci-luogo" class="btn btn-sm btn-outline-light ms-2" rel="noopener noreferrer">Gestisci</a></label>
@@ -162,10 +166,6 @@ if ($id > 0) {
         <option value="<?= $v ?>" <?= $data['visibilita']===$v?'selected':'' ?>><?= ucfirst($v) ?></option>
         <?php endforeach; ?>
       </select>
-    </div>
-    <div class="mb-3">
-      <label class="form-label">Breve descrizione</label>
-      <input type="text" name="breve_descrizione" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($data['breve_descrizione']) ?>">
     </div>
     <div class="mb-3">
       <label class="form-label">Note</label>
