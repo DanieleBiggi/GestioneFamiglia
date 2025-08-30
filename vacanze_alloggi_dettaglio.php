@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     header('Location: vacanze_tratte.php?id=' . $id . '&alt=' . $id_alt);
     exit;
-
+}
 $alloggio = [
     'id_viaggio_alternativa' => $alt,
     'giorno_indice' => '',
