@@ -1,6 +1,8 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
 include 'includes/db.php';
+require_once 'includes/permissions.php';
+if (!has_permission($conn, 'page:vacanze_checklist.php', 'view')) { http_response_code(403); exit('Accesso negato'); }
 include 'includes/header.php';
 
 $id = (int)($_GET['id'] ?? 0);
@@ -21,6 +23,9 @@ $chkRes = $chkStmt->get_result();
 
 $userRes = $conn->query('SELECT id, username FROM utenti ORDER BY username');
 $users = $userRes ? $userRes->fetch_all(MYSQLI_ASSOC) : [];
+$canInsert = has_permission($conn, 'ajax:add_viaggi_checklist', 'insert');
+$canUpdate = has_permission($conn, 'ajax:update_viaggi_checklist', 'update');
+$canChat = has_permission($conn, 'ajax:add_viaggi_checklist_message', 'insert');
 ?>
 <div class="container text-white">
   <a href="vacanze_view.php?id=<?= $id ?>" class="btn btn-outline-light mb-3">← Indietro</a>
@@ -33,7 +38,9 @@ $users = $userRes ? $userRes->fetch_all(MYSQLI_ASSOC) : [];
   </nav>
   <div class="d-flex justify-content-between mb-3">
     <h4 class="m-0">Checklist</h4>
+    <?php if ($canInsert): ?>
     <button class="btn btn-sm btn-outline-light" id="addChecklistBtn">Aggiungi</button>
+    <?php endif; ?>
   </div>
   <?php if ($chkRes->num_rows === 0): ?>
     <p class="text-muted">Nessuna voce.</p>
@@ -43,9 +50,9 @@ $users = $userRes ? $userRes->fetch_all(MYSQLI_ASSOC) : [];
         <li class="list-group-item bg-dark text-white">
           <div class="d-flex justify-content-between align-items-center">
             <div>
-              <input type="checkbox" class="form-check-input me-2 checklist-checkbox" data-id="<?= $row['id_checklist'] ?>" <?= $row['completata'] ? 'checked' : '' ?>>
+              <input type="checkbox" class="form-check-input me-2 checklist-checkbox" data-id="<?= $row['id_checklist'] ?>" <?= $row['completata'] ? 'checked' : '' ?> <?= $canUpdate ? '' : 'disabled' ?>>
               <?= htmlspecialchars($row['voce']) ?>
-              <select class="form-select form-select-sm d-inline-block w-auto ms-2 checklist-user" data-id="<?= $row['id_checklist'] ?>">
+              <select class="form-select form-select-sm d-inline-block w-auto ms-2 checklist-user" data-id="<?= $row['id_checklist'] ?>" <?= $canUpdate ? '' : 'disabled' ?>>
                 <option value="">--</option>
                 <?php foreach ($users as $u): ?>
                   <option value="<?= $u['id'] ?>" <?= ($row['id_utente'] == $u['id']) ? 'selected' : '' ?>><?= htmlspecialchars($u['username']) ?></option>
@@ -59,6 +66,7 @@ $users = $userRes ? $userRes->fetch_all(MYSQLI_ASSOC) : [];
     </ul>
   <?php endif; ?>
 </div>
+<?php if ($canInsert): ?>
 <div class="modal fade" id="addChecklistModal" tabindex="-1">
   <div class="modal-dialog">
     <form class="modal-content" id="addChecklistForm">
@@ -88,6 +96,7 @@ $users = $userRes ? $userRes->fetch_all(MYSQLI_ASSOC) : [];
     </form>
   </div>
 </div>
+<?php endif; ?>
 
 <div class="modal fade" id="chatModal" tabindex="-1">
   <div class="modal-dialog">
@@ -98,10 +107,12 @@ $users = $userRes ? $userRes->fetch_all(MYSQLI_ASSOC) : [];
       </div>
       <div class="modal-body">
         <div id="chatMessages" class="mb-3" style="max-height:300px;overflow-y:auto;"></div>
+        <?php if ($canChat): ?>
         <div class="input-group">
           <input type="text" id="chatInput" class="form-control bg-dark text-white" placeholder="Messaggio">
           <button class="btn btn-outline-light" id="chatSend">Invia</button>
         </div>
+        <?php endif; ?>
       </div>
     </div>
   </div>
