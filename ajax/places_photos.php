@@ -20,6 +20,7 @@ if (!empty($data['result']['photos'])) {
     foreach ($data['result']['photos'] as $idx => $ph) {
         $ref = $ph['photo_reference'] ?? '';
         if (!$ref) continue;
+        
         $thumb = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photo_reference=' . urlencode($ref) . '&key=' . $apiKey;
         $attrib = $ph['html_attributions'][0] ?? '';
         $out[] = [
