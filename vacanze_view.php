@@ -101,6 +101,8 @@ $docRes = $docStmt->get_result();
                 <h6 class="mb-1"><?= htmlspecialchars($t['breve_descrizione']) ?></h6>
                 <div class="small">Trasporti: €<?= number_format($t['totale_trasporti'], 2, ',', '.') ?></div>
                 <div class="small">Alloggi: €<?= number_format($t['totale_alloggi'], 2, ',', '.') ?></div>
+                <div class="small">Pasti: €<?= number_format($t['totale_pasti'], 2, ',', '.') ?></div>
+                <div class="small">Altri costi: €<?= number_format($t['totale_altri_costi'], 2, ',', '.') ?></div>
                 <div class="fw-bold">Totale: €<?= number_format($t['totale_viaggio'], 2, ',', '.') ?></div>
               </div>
             </a>
