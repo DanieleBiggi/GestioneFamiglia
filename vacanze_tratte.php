@@ -50,6 +50,13 @@ $paStmt->execute();
 $paRes = $paStmt->get_result();
 $pasti = $paRes->fetch_all(MYSQLI_ASSOC);
 
+// Recupera altri costi
+$coStmt = $conn->prepare('SELECT * FROM viaggi_altri_costi WHERE id_viaggio=? AND id_viaggio_alternativa=? ORDER BY data, id_costo');
+$coStmt->bind_param('ii', $id, $alt);
+$coStmt->execute();
+$coRes = $coStmt->get_result();
+$altri_costi = $coRes->fetch_all(MYSQLI_ASSOC);
+
 $canEditAlt = has_permission($conn, 'ajax:update_viaggi_alternativa', 'update');
 $canInsertTratta = has_permission($conn, 'table:viaggi_tratte', 'insert');
 $canUpdateTratta = has_permission($conn, 'table:viaggi_tratte', 'update');
@@ -57,6 +64,8 @@ $canInsertAlloggio = has_permission($conn, 'table:viaggi_alloggi', 'insert');
 $canUpdateAlloggio = has_permission($conn, 'table:viaggi_alloggi', 'update');
 $canInsertPasto = has_permission($conn, 'table:viaggi_pasti', 'insert');
 $canUpdatePasto = has_permission($conn, 'table:viaggi_pasti', 'update');
+$canInsertCosto = has_permission($conn, 'table:viaggi_altri_costi', 'insert');
+$canUpdateCosto = has_permission($conn, 'table:viaggi_altri_costi', 'update');
 ?>
 <div class="container text-white">
   <a href="vacanze_view.php?id=<?= $id ?>" class="btn btn-outline-light mb-3">← Indietro</a>
@@ -178,13 +187,52 @@ $canUpdatePasto = has_permission($conn, 'table:viaggi_pasti', 'update');
         <div class="list-group-item bg-dark text-white">
         <?php endif; ?>
           <div class="d-flex justify-content-between">
-            <span><?= htmlspecialchars($row['nome_locale'] ?: ucfirst($row['tipologia'])) ?></span>
-            <span>€<?= number_format($row['costo_medio_eur'] ?? 0, 2, ',', '.') ?>
+            <div>
+              <div><?= htmlspecialchars($row['nome_locale'] ?: ucfirst($row['tipologia'])) ?></div>
+              <div class="small text-muted">Giorno <?= (int)($row['giorno_indice'] ?? 0) ?> - <?= ucfirst($row['tipo_pasto']) ?> - <?= ($row['tipologia'] === 'cucinato') ? 'Preparato' : 'Ristorante' ?></div>
+            </div>
+            <div>€<?= number_format($row['costo_medio_eur'] ?? 0, 2, ',', '.') ?>
               <?php if ($canUpdatePasto): ?><i class="bi bi-pencil ms-2"></i><?php endif; ?>
               <?php if ($canInsertPasto): ?><i class="bi bi-files ms-2 duplicate" data-href="vacanze_pasti_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>&id_pasto=<?= (int)$row['id_pasto'] ?>&duplica=1"></i><?php endif; ?>
-            </span>
+            </div>
           </div>
         <?php if ($canUpdatePasto): ?>
+        </a>
+        <?php else: ?>
+        </div>
+        <?php endif; ?>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
+
+  <div class="d-flex justify-content-between mb-3 mt-4">
+      <h4 class="m-0">Altri costi</h4>
+      <?php if ($canInsertCosto): ?>
+      <a class="btn btn-sm btn-outline-light" href="vacanze_altri_costi_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>">Aggiungi</a>
+      <?php endif; ?>
+  </div>
+
+  <?php if (empty($altri_costi)): ?>
+    <p class="text-muted">Nessun costo.</p>
+  <?php else: ?>
+    <div class="list-group">
+      <?php foreach ($altri_costi as $row): ?>
+        <?php if ($canUpdateCosto): ?>
+        <a href="vacanze_altri_costi_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>&id_costo=<?= (int)$row['id_costo'] ?>" class="list-group-item list-group-item-action bg-dark text-white">
+        <?php else: ?>
+        <div class="list-group-item bg-dark text-white">
+        <?php endif; ?>
+          <div class="d-flex justify-content-between">
+            <div>
+              <div><?= htmlspecialchars($row['data'] ?? '') ?></div>
+              <?php if (!empty($row['note'])): ?><div class="small text-muted"><?= htmlspecialchars($row['note']) ?></div><?php endif; ?>
+            </div>
+            <div>€<?= number_format($row['importo_eur'] ?? 0, 2, ',', '.') ?>
+              <?php if ($canUpdateCosto): ?><i class="bi bi-pencil ms-2"></i><?php endif; ?>
+              <?php if ($canInsertCosto): ?><i class="bi bi-files ms-2 duplicate" data-href="vacanze_altri_costi_dettaglio.php?id=<?= $id ?>&alt=<?= $alt ?>&id_costo=<?= (int)$row['id_costo'] ?>&duplica=1"></i><?php endif; ?>
+            </div>
+          </div>
+        <?php if ($canUpdateCosto): ?>
         </a>
         <?php else: ?>
         </div>
@@ -224,6 +272,7 @@ $canUpdatePasto = has_permission($conn, 'table:viaggi_pasti', 'update');
     const alloggi = <?= json_encode($alloggi) ?>;
     const tratte = <?= json_encode($tratte) ?>;
     const pasti = <?= json_encode($pasti) ?>;
+    const altriCosti = <?= json_encode($altri_costi) ?>;
   </script>
   <script src="js/vacanze_tratte.js"></script>
   <script src="https://maps.googleapis.com/maps/api/js?key=<?= $config['GOOGLE_MAPS_API'] ?? '' ?>&callback=initMap&loading=async" async defer></script>
