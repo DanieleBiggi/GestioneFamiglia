@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($id > 0) {
         $stmt = $conn->prepare('UPDATE viaggi SET titolo=?, id_luogo=?, data_inizio=?, data_fine=?, notti=?, persone=?, stato=?, priorita=?, visibilita=?, breve_descrizione=?, note=?, id_foto=?, meteo_previsto_json=?, meteo_aggiornato_il=? WHERE id_viaggio=?');
-        $stmt->bind_param('sissiisisssisssi', $titolo, $id_luogo, $data_inizio, $data_fine, $notti, $persone, $stato, $priorita, $visibilita, $breve_descrizione, $note, $id_foto, $meteo_previsto_json, $meteo_aggiornato_il, $id);
+        $stmt->bind_param('sissiisisssissi', $titolo, $id_luogo, $data_inizio, $data_fine, $notti, $persone, $stato, $priorita, $visibilita, $breve_descrizione, $note, $id_foto, $meteo_previsto_json, $meteo_aggiornato_il, $id);
     } else {
         $sql = 'INSERT INTO viaggi 
             (titolo, id_luogo, data_inizio, data_fine, notti, persone, stato, priorita, visibilita, breve_descrizione, note, id_foto, meteo_previsto_json, meteo_aggiornato_il) 
