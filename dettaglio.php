@@ -22,6 +22,7 @@ if ($src === 'bilancio_entrate') {
            be.importo AS amount,
            be.data_operazione AS started_date,
            be.id_gruppo_transazione,
+           be.id_metodo_pagamento,
            g.descrizione AS gruppo_descrizione,
            COALESCE(c.descrizione_categoria, 'Nessuna categoria') AS categoria_descrizione,
            g.tipo_gruppo,
@@ -49,6 +50,7 @@ if ($src === 'bilancio_entrate') {
            -bu.importo AS amount,
            bu.data_operazione AS started_date,
            bu.id_gruppo_transazione,
+           bu.id_metodo_pagamento,
            g.descrizione AS gruppo_descrizione,
            COALESCE(c.descrizione_categoria, 'Nessuna categoria') AS categoria_descrizione,
            g.tipo_gruppo,
@@ -73,7 +75,8 @@ if ($src === 'bilancio_entrate') {
     SELECT m.*, g.descrizione AS gruppo_descrizione,
            COALESCE(c.descrizione_categoria, 'Nessuna categoria') AS categoria_descrizione,
            g.tipo_gruppo,
-           GROUP_CONCAT(e.descrizione SEPARATOR ', ') AS etichette
+           GROUP_CONCAT(e.descrizione SEPARATOR ', ') AS etichette,
+           0 AS id_metodo_pagamento
     FROM movimenti_revolut m
     LEFT JOIN bilancio_gruppi_transazione g ON m.id_gruppo_transazione = g.id_gruppo_transazione
     LEFT JOIN bilancio_gruppi_categorie c ON g.id_categoria = c.id_categoria
@@ -175,11 +178,16 @@ while ($row = $resSup->fetch_assoc()) {
   $supermercati[] = $row;
 }
 
+$defaultConto = ($src === 'movimenti_revolut') ? 'revolut' : 'credit';
+
 include 'includes/header.php';
 ?>
 
 <div class="container text-white">
-  <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
+  <div class="d-flex justify-content-between mb-3">
+    <a href="javascript:history.back()" class="btn btn-outline-light">← Indietro</a>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#descrizioneModal">Salva descrizione</button>
+  </div>
   <h4 class="mb-4">Dettaglio movimento</h4>
 
   <ul class="list-group list-group-flush">
@@ -370,6 +378,52 @@ include 'includes/header.php';
           <label class="form-label">Descrizione</label>
           <input type="text" class="form-control bg-secondary text-white" name="descrizione" id="descrizioneScontrino">
         </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary w-100">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Descrizione rapido modal -->
+<div class="modal fade" id="descrizioneModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="descrizioneForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Salva descrizione</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Descrizione</label>
+          <input type="text" class="form-control bg-secondary text-white" name="descrizione" value="<?= htmlspecialchars($movimento['description']) ?>" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Gruppo</label>
+          <select class="form-select bg-secondary text-white" name="id_gruppo_transazione" required>
+            <?php foreach ($gruppi as $g): ?>
+              <option value="<?= (int)$g['id_gruppo_transazione'] ?>" <?= ($movimento['id_gruppo_transazione'] == $g['id_gruppo_transazione']) ? 'selected' : '' ?>><?= htmlspecialchars($g['descrizione']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Conto</label>
+          <select class="form-select bg-secondary text-white" name="conto">
+            <option value="credit" <?= $defaultConto === 'credit' ? 'selected' : '' ?>>Credit</option>
+            <option value="revolut" <?= $defaultConto === 'revolut' ? 'selected' : '' ?>>Revolut</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Etichetta</label>
+          <select class="form-select bg-secondary text-white" name="id_etichetta">
+            <option value=""></option>
+            <?php foreach ($etichette as $e): ?>
+              <option value="<?= (int)$e['id_etichetta'] ?>"><?= htmlspecialchars($e['descrizione']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <input type="hidden" name="id_metodo_pagamento" value="<?= (int)($movimento['id_metodo_pagamento'] ?? 0) ?>">
       </div>
       <div class="modal-footer">
         <button type="submit" class="btn btn-primary w-100">Salva</button>
@@ -601,6 +655,20 @@ function associateCaricamento(idCar) {
     body: JSON.stringify({ id_movimento: idMovimento, src: srcMovimento, id_caricamento: idCar })
   }).then(r => r.json()).then(data => { if (data.success) { alert('Scontrino associato'); location.reload(); } });
 }
+
+document.getElementById('descrizioneForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  fetch('ajax/add_descrizione2id.php', { method: 'POST', body: new FormData(this) })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        alert('Descrizione salvata');
+        bootstrap.Modal.getInstance(document.getElementById('descrizioneModal')).hide();
+      } else {
+        alert('Errore nel salvataggio');
+      }
+    });
+});
 
 document.getElementById('allegatoForm').addEventListener('submit', function(e){
   e.preventDefault();
