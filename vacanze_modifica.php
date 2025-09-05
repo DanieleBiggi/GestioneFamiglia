@@ -266,11 +266,21 @@ document.getElementById('aggiorna-meteo').addEventListener('click', async functi
   const opt = sel.options[sel.selectedIndex];
   const lat = opt.dataset.lat;
   const lng = opt.dataset.lng;
+  const dataInizio = document.querySelector('input[name="data_inizio"]').value;
+  const dataFine = document.querySelector('input[name="data_fine"]').value;
   if(!lat || !lng){
     alert('Coordinate non disponibili per questo luogo');
     return;
   }
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`;
+  if(!dataInizio || !dataFine){
+    alert('Imposta data inizio e data fine della vacanza');
+    return;
+  }
+  if(new Date(dataFine) < new Date(dataInizio)){
+    alert('La data fine non può precedere la data inizio');
+    return;
+  }
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&start_date=${dataInizio}&end_date=${dataFine}&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`;
   try {
     const resp = await fetch(url);
     if(!resp.ok) throw new Error();
