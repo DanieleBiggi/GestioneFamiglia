@@ -49,18 +49,26 @@ $trStmt->execute();
 $trRes = $trStmt->get_result();
 $tratte = $trRes->fetch_all(MYSQLI_ASSOC);
 
-$paStmt = $conn->prepare('SELECT tipo_pasto, nome_locale, tipologia FROM viaggi_pasti WHERE id_viaggio=? AND (id_viaggio_alternativa IS NULL OR id_viaggio_alternativa=0) ORDER BY giorno_indice, id_pasto');
+$allStmt = $conn->prepare('SELECT nome_alloggio, data_checkin, data_checkout FROM viaggi_alloggi WHERE id_viaggio=? AND (id_viaggio_alternativa IS NULL OR id_viaggio_alternativa=0) ORDER BY giorno_indice, id_alloggio');
+$allStmt->bind_param('i', $id);
+$allStmt->execute();
+$allRes = $allStmt->get_result();
+$alloggi = $allRes->fetch_all(MYSQLI_ASSOC);
+
+$paStmt = $conn->prepare('SELECT giorno_indice, tipo_pasto, nome_locale, tipologia FROM viaggi_pasti WHERE id_viaggio=? AND (id_viaggio_alternativa IS NULL OR id_viaggio_alternativa=0) ORDER BY giorno_indice, id_pasto');
 $paStmt->bind_param('i', $id);
 $paStmt->execute();
 $paRes = $paStmt->get_result();
 $pasti = $paRes->fetch_all(MYSQLI_ASSOC);
-$ristorante = $pizzeria = $cucinato = 0;
+$mealCounts = [
+    'colazione' => ['ristorante' => 0, 'cucinato' => 0],
+    'pranzo'    => ['ristorante' => 0, 'cucinato' => 0],
+    'cena'      => ['ristorante' => 0, 'cucinato' => 0],
+];
 foreach ($pasti as $p) {
-    switch ($p['tipologia']) {
-        case 'ristorante': $ristorante++; break;
-        case 'pizzeria': $pizzeria++; break;
-        case 'cucinato': $cucinato++; break;
-    }
+    $tipo = $p['tipo_pasto'];
+    $key = $p['tipologia'] === 'cucinato' ? 'cucinato' : 'ristorante';
+    $mealCounts[$tipo][$key]++;
 }
 ?>
 <style>
@@ -152,14 +160,35 @@ foreach ($pasti as $p) {
   </div>
 
   <div id="altDettagli" class="mb-4"></div>
+  <div class="mb-4">
+    <h5 class="mb-3">Alloggi</h5>
+    <?php if (empty($alloggi)): ?>
+      <p class="text-muted">Nessun alloggio.</p>
+    <?php else: ?>
+      <ul class="list-group list-group-flush">
+        <?php foreach ($alloggi as $al): ?>
+        <li class="list-group-item">
+          <?= htmlspecialchars($al['nome_alloggio'] ?: 'Alloggio') ?>
+          <?php if ($al['data_checkin'] || $al['data_checkout']): ?>
+            <div class="small text-muted"><?= htmlspecialchars($al['data_checkin'] ?? '') ?> - <?= htmlspecialchars($al['data_checkout'] ?? '') ?></div>
+          <?php endif; ?>
+        </li>
+        <?php endforeach; ?>
+      </ul>
+    <?php endif; ?>
+  </div>
 
   <div class="mb-4">
     <h5 class="mb-3">Pasti</h5>
-    <?php if (($ristorante + $pizzeria + $cucinato) === 0): ?>
+    <?php
+      $totMeals = array_sum(array_map(fn($c) => $c['ristorante'] + $c['cucinato'], $mealCounts));
+    ?>
+    <?php if ($totMeals === 0): ?>
       <p class="text-muted">Nessun pasto.</p>
     <?php else: ?>
-      <p>Ristorante/Pizzeria: <?= $ristorante + $pizzeria ?></p>
-      <p>Preparato: <?= $cucinato ?></p>
+      <p>Colazioni: Ristorante <?= $mealCounts['colazione']['ristorante'] ?>, Preparato <?= $mealCounts['colazione']['cucinato'] ?></p>
+      <p>Pranzi: Ristorante <?= $mealCounts['pranzo']['ristorante'] ?>, Preparato <?= $mealCounts['pranzo']['cucinato'] ?></p>
+      <p>Cene: Ristorante <?= $mealCounts['cena']['ristorante'] ?>, Preparato <?= $mealCounts['cena']['cucinato'] ?></p>
     <?php endif; ?>
   </div>
 
@@ -188,14 +217,38 @@ foreach ($pasti as $p) {
           <?php endforeach; ?>
         </ul>
       <?php endif; ?>
+      <h6>Alloggi</h6>
+      <?php if (empty($alloggi)): ?>
+        <p class="text-muted">Nessun alloggio.</p>
+      <?php else: ?>
+        <ul class="list-group list-group-flush mb-3">
+          <?php foreach ($alloggi as $al): ?>
+          <li class="list-group-item">
+            <?= htmlspecialchars($al['nome_alloggio'] ?: 'Alloggio') ?>
+            <?php if ($al['data_checkin'] || $al['data_checkout']): ?>
+              <div class="small text-muted"><?= htmlspecialchars($al['data_checkin'] ?? '') ?> - <?= htmlspecialchars($al['data_checkout'] ?? '') ?></div>
+            <?php endif; ?>
+          </li>
+          <?php endforeach; ?>
+        </ul>
+      <?php endif; ?>
       <h6>Pasti</h6>
       <?php if (empty($pasti)): ?>
         <p class="text-muted">Nessun pasto.</p>
       <?php else: ?>
+        <?php $startDate = $viaggio['data_inizio'] ? new DateTime($viaggio['data_inizio']) : null; ?>
         <ul class="list-group list-group-flush">
           <?php foreach ($pasti as $pa): ?>
           <li class="list-group-item">
-            <?= htmlspecialchars(ucfirst($pa['tipo_pasto'])) ?> -
+            <?php
+              $dateText = '';
+              if ($startDate) {
+                  $d = clone $startDate;
+                  $d->modify('+' . (int)$pa['giorno_indice'] . ' days');
+                  $dateText = $d->format('d/m/Y') . ' - ';
+              }
+            ?>
+            <?= $dateText ?><?= htmlspecialchars(ucfirst($pa['tipo_pasto'])) ?> -
             <?php if ($pa['tipologia'] === 'cucinato'): ?>
               Preparato
             <?php else: ?>
