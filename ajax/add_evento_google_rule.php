@@ -13,7 +13,7 @@ if (!$idEvento) {
     echo json_encode(['success'=>false,'error'=>'ID evento mancante']);
     exit;
 }
-$stmt = $conn->prepare('SELECT creator_email, id_tipo_evento FROM eventi WHERE id=?');
+$stmt = $conn->prepare('SELECT creator_email, id_tipo_evento, descrizione FROM eventi WHERE id=?');
 $stmt->bind_param('i', $idEvento);
 $stmt->execute();
 $res = $stmt->get_result();
@@ -35,8 +35,10 @@ if (!$idTipo && !$inv) {
     echo json_encode(['success'=>false,'error'=>'Nessun tipo evento o invitati']);
     exit;
 }
-$stmt = $conn->prepare('INSERT INTO eventi_google_rules (creator_email, id_tipo_evento, attiva) VALUES (?,?,1)');
-$stmt->bind_param('si', $ev['creator_email'], $idTipo);
+$stmt = $conn->prepare('INSERT INTO eventi_google_rules (creator_email, description_keyword, id_tipo_evento, attiva) VALUES (?,?,?,1)');
+$creatorEmail = $ev['creator_email'];
+$descrizione = $ev['descrizione'];
+$stmt->bind_param('ssi', $creatorEmail, $descrizione, $idTipo);
 $stmt->execute();
 $ruleId = $stmt->insert_id;
 $stmt->close();
