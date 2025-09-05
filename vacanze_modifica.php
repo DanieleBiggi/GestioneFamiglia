@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   $stmt->execute();
   $id = $id ?: $stmt->insert_id;
-  //header('Location: vacanze_view.php?id=' . $id);
+  header('Location: vacanze_modifica.php?id=' . $id);
   exit;
 }
 
