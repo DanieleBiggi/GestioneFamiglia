@@ -43,6 +43,12 @@ $docStmt->bind_param('i', $id);
 $docStmt->execute();
 $docRes = $docStmt->get_result();
 
+$meteo = [];
+if (!empty($viaggio['meteo_previsto_json'])) {
+    $meteo = json_decode($viaggio['meteo_previsto_json'], true);
+    if (!is_array($meteo)) $meteo = [];
+}
+
 ?>
 <style>
 #fotoCarousel .carousel-item img { height:522px; object-fit:cover; }
@@ -144,6 +150,9 @@ $docRes = $docStmt->get_result();
     <li class="nav-item" role="presentation">
       <button class="nav-link" id="documenti-tab" data-bs-toggle="tab" data-bs-target="#documenti" type="button" role="tab">Documenti</button>
     </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="meteo-tab" data-bs-toggle="tab" data-bs-target="#meteo" type="button" role="tab">Meteo</button>
+    </li>
   </ul>
   <div class="tab-content border border-top-0 p-3" id="detailTabsContent">
     <div class="tab-pane fade" id="dettagli" role="tabpanel" aria-labelledby="dettagli-tab">
@@ -177,6 +186,64 @@ $docRes = $docStmt->get_result();
           <li class="list-group-item"><a href="<?= htmlspecialchars($href) ?>" target="_blank"><?= htmlspecialchars($mainText) ?></a></li>
         <?php endwhile; ?>
         </ul>
+      <?php endif; ?>
+    </div>
+    <div class="tab-pane fade" id="meteo" role="tabpanel" aria-labelledby="meteo-tab">
+      <?php if (empty($meteo['daily']['time'])): ?>
+        <p class="text-muted">Nessun dato meteo.</p>
+      <?php else: ?>
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Meteo</th>
+                <th>Min</th>
+                <th>Max</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php
+              $times = $meteo['daily']['time'];
+              $codes = $meteo['daily']['weathercode'] ?? [];
+              $maxs = $meteo['daily']['temperature_2m_max'] ?? [];
+              $mins = $meteo['daily']['temperature_2m_min'] ?? [];
+              $icons = [
+                0=>'sun',1=>'sun',2=>'cloud-sun',3=>'cloud',45=>'cloud-fog2',48=>'cloud-fog2',
+                51=>'cloud-drizzle',53=>'cloud-drizzle',55=>'cloud-drizzle',
+                61=>'cloud-rain',63=>'cloud-rain',65=>'cloud-rain-heavy',
+                71=>'cloud-snow',73=>'cloud-snow',75=>'cloud-snow',77=>'cloud-snow',
+                80=>'cloud-rain',81=>'cloud-rain',82=>'cloud-rain-heavy',
+                95=>'cloud-lightning',96=>'cloud-lightning-rain',99=>'cloud-lightning-rain'
+              ];
+              $descs = [
+                0=>'Sereno',1=>'Sereno',2=>'Parzialmente nuvoloso',3=>'Nuvoloso',
+                45=>'Nebbia',48=>'Nebbia',51=>'Pioviggine debole',53=>'Pioviggine',55=>'Pioviggine intensa',
+                61=>'Pioggia debole',63=>'Pioggia',65=>'Pioggia intensa',
+                71=>'Neve debole',73=>'Neve',75=>'Neve',77=>'Neve',
+                80=>'Rovesci',81=>'Rovesci',82=>'Rovesci forti',
+                95=>'Temporale',96=>'Temporale',99=>'Temporale'
+              ];
+              foreach ($times as $i => $date):
+                $code = (int)($codes[$i] ?? -1);
+                $icon = $icons[$code] ?? null;
+                $desc = $descs[$code] ?? '';
+                $min = $mins[$i] ?? null;
+                $max = $maxs[$i] ?? null;
+              ?>
+              <tr>
+                <td><?= htmlspecialchars(date('d/m', strtotime($date))) ?></td>
+                <td>
+                  <?php if ($icon): ?><i class="bi bi-<?= $icon ?>"></i><?php endif; ?>
+                  <?= htmlspecialchars($desc) ?>
+                </td>
+                <td><?= $min !== null ? number_format($min,1,',','.') . '°' : '-' ?></td>
+                <td><?= $max !== null ? number_format($max,1,',','.') . '°' : '-' ?></td>
+              </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       <?php endif; ?>
     </div>
   </div>
