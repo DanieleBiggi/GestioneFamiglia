@@ -3,6 +3,8 @@
 include 'includes/db.php';
 include 'includes/header.php';
 
+$canManage = has_permission($conn, 'table:viaggi', 'update');
+
 $id = (int)($_GET['id'] ?? 0);
 
 $stmt = $conn->prepare('SELECT v.*, l.nome AS luogo_nome, l.lat, l.lng FROM viaggi v LEFT JOIN viaggi_luoghi l ON v.id_luogo=l.id_luogo WHERE v.id_viaggio=?');
@@ -68,7 +70,12 @@ foreach ($pasti as $p) {
 }
 </style>
 <div class="container my-3">
-  <a href="vacanze_lista.php" class="btn btn-outline-secondary mb-3">&larr; Indietro</a>
+  <div class="d-flex justify-content-between">
+    <a href="vacanze_lista.php" class="btn btn-outline-secondary mb-3">&larr; Indietro</a>
+    <?php if ($canManage): ?>
+    <a href="vacanze_view.php?id=<?= $id ?>" class="btn btn-outline-secondary mb-3">Gestione</a>
+    <?php endif; ?>
+  </div>
   <h4 class="mb-2"><?= htmlspecialchars($viaggio['titolo']) ?></h4>
   <?php if ($viaggio['breve_descrizione']): ?>
   <p class="text-muted mb-3">
