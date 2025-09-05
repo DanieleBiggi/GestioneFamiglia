@@ -449,7 +449,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
     $movimenti = [];
     if ($max_started_revolut && (!$max_data_banca || strtotime($max_started_revolut) > strtotime($max_data_banca))) {
         $stmt = prepare_debug($conn, 
-            "SELECT id_movimento_revolut AS id, 'revolut' AS tipo, description AS descrizione, id_gruppo_transazione, descrizione_extra, id_caricamento\n" 
+            "SELECT id_movimento_revolut AS id, 'revolut' AS tipo, description AS descrizione, m.id_gruppo_transazione, m.descrizione_extra, m.id_caricamento\n"
             . " FROM movimenti_revolut m\n"
             . " LEFT JOIN bilancio_gruppi_transazione g ON m.id_gruppo_transazione = g.id_gruppo_transazione\n"
             . " WHERE g.id_utente = ? OR m.id_gruppo_transazione IS NULL\n"
