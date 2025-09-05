@@ -8,7 +8,10 @@ $canInsert = has_permission($conn, 'table:viaggi', 'insert');
 
 $stato = $_GET['stato'] ?? '';
 $budget = $_GET['budget_max'] ?? '';
-$query = "SELECT v.*, t.min_totale, a.num_alternative, f.media_voto, f.num_feedback FROM viaggi v "
+$query = "SELECT v.*, "
+  . "NULLIF(v.data_inizio,'0000-00-00') AS data_inizio, "
+  . "NULLIF(v.data_fine,'0000-00-00') AS data_fine, "
+  . "t.min_totale, a.num_alternative, f.media_voto, f.num_feedback FROM viaggi v "
   . "LEFT JOIN (SELECT id_viaggio, MIN(totale_viaggio) AS min_totale FROM v_totali_alternative GROUP BY id_viaggio) t ON v.id_viaggio=t.id_viaggio "
   . "LEFT JOIN (SELECT id_viaggio, COUNT(*) AS num_alternative FROM viaggi_alternative GROUP BY id_viaggio) a ON v.id_viaggio=a.id_viaggio "
   . "LEFT JOIN (SELECT id_viaggio, AVG(voto) AS media_voto, COUNT(voto) AS num_feedback FROM viaggi_feedback GROUP BY id_viaggio) f ON v.id_viaggio=f.id_viaggio WHERE 1=1";
@@ -61,7 +64,14 @@ include 'includes/header.php';
             <span><?= htmlspecialchars($row['titolo']) ?></span>
             <span class="small"><?= number_format($row['media_voto'] ?? 0,1,',','.') ?> (<?= (int)($row['num_feedback'] ?? 0) ?>)</span>
           </h5>
-          <p class="card-text small mb-1"><?= htmlspecialchars($row['data_inizio']) ?> - <?= htmlspecialchars($row['data_fine']) ?></p>
+          <?php
+          $di = $row['data_inizio'] ?? '';
+          $df = $row['data_fine'] ?? '';
+          if ($di || $df): ?>
+          <p class="card-text small mb-1">
+            <?= htmlspecialchars($di) ?><?= ($di && $df) ? ' - ' : '' ?><?= htmlspecialchars($df) ?>
+          </p>
+          <?php endif; ?>
           <p class="card-text small mb-1">Alternative: <?= (int)($row['num_alternative'] ?? 0) ?></p>
           <?php if(isset($row['min_totale'])): ?>
           <p class="card-text">A partire da: €<?= number_format($row['min_totale'],2,',','.') ?></p>
