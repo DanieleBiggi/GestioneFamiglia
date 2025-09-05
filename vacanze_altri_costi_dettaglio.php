@@ -24,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id_alt = (int)($_POST['id_viaggio_alternativa'] ?? $alt);
     $data = $_POST['data'] ?: null;
     $importo = $_POST['importo_eur'] !== '' ? (float)$_POST['importo_eur'] : null;
+    $descrizione = $_POST['descrizione'] ?? null;
     $note = $_POST['note'] ?? null;
 
     if (isset($_POST['delete']) && $id_costo) {
@@ -31,12 +32,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $del->bind_param('ii', $id_costo, $id);
         $del->execute();
     } elseif ($id_costo) {
-        $upd = $conn->prepare('UPDATE viaggi_altri_costi SET id_viaggio_alternativa=?, data=?, importo_eur=?, note=? WHERE id_costo=? AND id_viaggio=?');
-        $upd->bind_param('isdsii', $id_alt, $data, $importo, $note, $id_costo, $id);
+        $upd = $conn->prepare('UPDATE viaggi_altri_costi SET id_viaggio_alternativa=?, data=?, importo_eur=?, descrizione=?, note=? WHERE id_costo=? AND id_viaggio=?');
+        $upd->bind_param('isdssii', $id_alt, $data, $importo, $descrizione, $note, $id_costo, $id);
         $upd->execute();
     } else {
-        $ins = $conn->prepare('INSERT INTO viaggi_altri_costi (id_viaggio, id_viaggio_alternativa, data, importo_eur, note) VALUES (?,?,?,?,?)');
-        $ins->bind_param('iisds', $id, $id_alt, $data, $importo, $note);
+        $ins = $conn->prepare('INSERT INTO viaggi_altri_costi (id_viaggio, id_viaggio_alternativa, data, importo_eur, descrizione, note) VALUES (?,?,?,?,?,?)');
+        $ins->bind_param('iisdss', $id, $id_alt, $data, $importo, $descrizione, $note);
         $ins->execute();
     }
     header('Location: vacanze_tratte.php?id=' . $id . '&alt=' . $id_alt);
@@ -47,6 +48,7 @@ $costo = [
     'id_viaggio_alternativa' => $alt,
     'data' => '',
     'importo_eur' => '',
+    'descrizione' => '',
     'note' => '',
 ];
 
@@ -95,6 +97,10 @@ $alt_desc = $alternative[$alt] ?? '';
     <div class="mb-3">
       <label class="form-label">Importo €</label>
       <input type="number" step="0.01" class="form-control" name="importo_eur" value="<?= htmlspecialchars($costo['importo_eur']) ?>">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Descrizione</label>
+      <input type="text" class="form-control" name="descrizione" value="<?= htmlspecialchars($costo['descrizione']) ?>">
     </div>
     <div class="mb-3">
       <label class="form-label">Note</label>

@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
       html += '<ul class="list-group mb-3">';
       detHtml += '<ul class="list-group list-group-flush mb-3">';
       data.altri_costi.forEach(c => {
-        const descr = escapeHtml(c.note || 'Costo');
+        const descr = escapeHtml(c.descrizione || 'Costo');
         const date = c.data ? `${escapeHtml(c.data)} - ` : '';
         html += `<li class="list-group-item d-flex justify-content-between"><span>${descr}</span><span>€${c.totale}</span></li>`;
         detHtml += `<li class="list-group-item d-flex justify-content-between"><span>${date}${descr}</span><span>€${c.totale}</span></li>`;

@@ -224,8 +224,8 @@ $canUpdateCosto = has_permission($conn, 'table:viaggi_altri_costi', 'update');
         <?php endif; ?>
           <div class="d-flex justify-content-between">
             <div>
-              <div><?= htmlspecialchars($row['data'] ?? '') ?></div>
-              <?php if (!empty($row['note'])): ?><div class="small text-muted"><?= htmlspecialchars($row['note']) ?></div><?php endif; ?>
+              <div><?= htmlspecialchars($row['descrizione'] ?: 'Costo') ?></div>
+              <?php if (!empty($row['data'])): ?><div class="small text-muted"><?= htmlspecialchars($row['data']) ?></div><?php endif; ?>
             </div>
             <div>€<?= number_format($row['importo_eur'] ?? 0, 2, ',', '.') ?>
               <?php if ($canUpdateCosto): ?><i class="bi bi-pencil ms-2"></i><?php endif; ?>
