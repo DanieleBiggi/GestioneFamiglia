@@ -28,6 +28,9 @@ if ($id > 0) {
     $stmt->close();
 }
 
+// Check delete permission
+$canDelete = has_permission($conn, 'table:eventi_google_rules', 'delete');
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     if ($action === 'save_rule') {
@@ -80,6 +83,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         header('Location: eventi_google_rule_dettaglio.php?id=' . $id);
         exit;
+    } elseif ($action === 'delete_rule' && $id > 0 && $canDelete) {
+        // Remove invitati linked to this rule
+        $stmt = $conn->prepare('DELETE FROM eventi_google_rules_invitati WHERE id_rule=?');
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $stmt->close();
+
+        // Delete the rule itself
+        $stmt = $conn->prepare('DELETE FROM eventi_google_rules WHERE id=?');
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $stmt->close();
+
+        header('Location: eventi_google_rules.php');
+        exit;
     }
 }
 
@@ -115,6 +133,12 @@ include 'includes/header.php';
   <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
   <div class="d-flex align-items-center mb-3">
     <h4 class="flex-grow-1 mb-0">Regola Google Evento</h4>
+    <?php if ($id > 0 && $canDelete): ?>
+    <form method="post" onsubmit="return confirm('Eliminare questa regola?');" class="me-2">
+      <input type="hidden" name="action" value="delete_rule">
+      <button type="submit" class="btn btn-danger btn-sm">Elimina</button>
+    </form>
+    <?php endif; ?>
     <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#editRuleModal">✏️</button>
   </div>
   <div class="mb-4">
