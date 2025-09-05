@@ -434,6 +434,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
     execute_debug($stmt);
     $gruppi = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
+    // Mappa [id_gruppo_transazione => descrizione] per uso rapido nella tabella
+    $gruppiMap = [];
+    foreach ($gruppi as $g) {
+        $gruppiMap[$g['id_gruppo_transazione']] = $g['descrizione'];
+    }
 
     $stmt = prepare_debug($conn, "SELECT id_metodo_pagamento, descrizione_metodo_pagamento FROM bilancio_metodo_pagamento WHERE attivo = 1 ORDER BY descrizione_metodo_pagamento");
     execute_debug($stmt);
@@ -448,14 +453,12 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
     // Movimenti recenti
     $movimenti = [];
     if ($max_started_revolut && (!$max_data_banca || strtotime($max_started_revolut) > strtotime($max_data_banca))) {
-        $stmt = prepare_debug($conn, 
-            "SELECT id_movimento_revolut AS id, 'revolut' AS tipo, description AS descrizione, m.id_gruppo_transazione, m.descrizione_extra, m.id_caricamento\n"
-            . " FROM movimenti_revolut m\n"
-            . " LEFT JOIN bilancio_gruppi_transazione g ON m.id_gruppo_transazione = g.id_gruppo_transazione\n"
-            . " WHERE g.id_utente = ? OR m.id_gruppo_transazione IS NULL\n"
+        // Mostra solo i movimenti Revolut, prelevati dalla vista dedicata
+        $stmt = prepare_debug($conn,
+            "SELECT id_movimento_revolut AS id, 'revolut' AS tipo, description AS descrizione, id_gruppo_transazione, descrizione_extra, id_caricamento\n"
+            . " FROM v_movimenti_revolut\n"
             . " ORDER BY started_date DESC LIMIT 50"
         );
-        $stmt->bind_param('i', $idUtenteSession);
         execute_debug($stmt);
         $movimenti = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
@@ -525,7 +528,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
             <td><input type="checkbox" name="selected[]" value="<?= $m['tipo'] . '-' . $m['id'] ?>"></td>
             <td><?= htmlspecialchars($m['tipo']) ?></td>
             <td><?= htmlspecialchars($m['descrizione']) ?></td>
-            <td><?= htmlspecialchars($m['id_gruppo_transazione']) ?></td>
+            <td><?= htmlspecialchars($gruppiMap[$m['id_gruppo_transazione']] ?? '') ?></td>
             <td><?= htmlspecialchars($m['descrizione_extra']) ?></td>
             <td><i class="bi bi-paperclip" onclick="openAllegatoModal(<?= $m['id'] ?>,'<?= $m['tipo'] ?>')"></i></td>
           </tr>
@@ -627,7 +630,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
     const form = document.getElementById('allegatoForm');
     form.reset();
     document.getElementById('listaCaricamenti').innerHTML = '';
-    fetch('ajax/list_caricamenti.php')
+    fetch('ajax/list_caricamenti.php', { credentials: 'same-origin' })
       .then(r => r.json())
       .then(data => { caricamenti = data; populateCaricamenti(data); });
     new bootstrap.Modal(document.getElementById('allegatoModal')).show();
@@ -655,6 +658,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
     fetch('ajax/associate_caricamento.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
+      credentials: 'same-origin',
       body: JSON.stringify({ id_movimento: currentMovimento, src: currentSrc, id_caricamento: idCar })
     }).then(r => r.json()).then(data => { if (data.success) { alert('Scontrino associato'); location.reload(); } });
   }
@@ -663,7 +667,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
     const fd = new FormData(this);
     fd.append('id_movimento', currentMovimento);
     fd.append('src', currentSrc);
-    fetch('ajax/save_caricamento.php', { method:'POST', body: fd })
+    fetch('ajax/save_caricamento.php', { method:'POST', body: fd, credentials: 'same-origin' })
       .then(r => r.json())
       .then(data => { if (data.success) { alert('Scontrino salvato'); location.reload(); } });
   });
