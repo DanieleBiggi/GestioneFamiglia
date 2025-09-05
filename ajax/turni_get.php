@@ -71,7 +71,7 @@ while ($row = $evRes->fetch_assoc()) {
 $evStmt->close();
 
 // Viaggi pianificati/prenotati
-$tripRes = $conn->query("SELECT titolo, data_inizio, data_fine FROM v_eventi_viaggi WHERE data_inizio <= '$end' AND COALESCE(data_fine, data_inizio) >= '$start'");
+$tripRes = $conn->query("SELECT id_viaggio, titolo, data_inizio, data_fine FROM viaggi WHERE stato IN ('pianificato','prenotato') AND data_inizio <= '$end' AND COALESCE(data_fine, data_inizio) >= '$start'");
 if ($tripRes) {
     while ($row = $tripRes->fetch_assoc()) {
         $eventi[] = [
@@ -81,7 +81,7 @@ if ($tripRes) {
             'colore_testo' => '#000000',
             'data_evento' => $row['data_inizio'],
             'data_fine' => $row['data_fine'],
-            'link' => null
+            'link' => 'vacanze_lista_dettaglio.php?id=' . (int)$row['id_viaggio']
         ];
     }
 }
