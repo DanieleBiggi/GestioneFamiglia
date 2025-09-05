@@ -2619,6 +2619,10 @@ ALTER TABLE `utenti2salvadanai`
   ADD CONSTRAINT `fk_u2s_salvadanaio` FOREIGN KEY (`id_salvadanaio`) REFERENCES `salvadanai` (`id_salvadanaio`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_u2s_utente` FOREIGN KEY (`id_utente`) REFERENCES `utenti` (`id`) ON DELETE CASCADE;
 
+-- Modifica tabella `viaggi_altri_costi` per aggiungere descrizione
+ALTER TABLE `viaggi_altri_costi`
+  ADD COLUMN `descrizione` varchar(255) DEFAULT NULL AFTER `importo_eur`;
+
 -- Modifiche per gestione luoghi viaggi
 ALTER TABLE `viaggi_luoghi`
   ADD COLUMN `place_id` varchar(255) DEFAULT NULL;

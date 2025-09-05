@@ -65,7 +65,7 @@ while ($row = $paRes->fetch_assoc()) {
     $mealCounts[$tipo][$key]++;
 }
 
-$coStmt = $conn->prepare('SELECT data, importo_eur, note FROM viaggi_altri_costi WHERE id_viaggio=? AND id_viaggio_alternativa=? ORDER BY data, id_costo');
+$coStmt = $conn->prepare('SELECT data, importo_eur, descrizione FROM viaggi_altri_costi WHERE id_viaggio=? AND id_viaggio_alternativa=? ORDER BY data, id_costo');
 $coStmt->bind_param('ii', $idViaggio, $idAlt);
 $coStmt->execute();
 $coRes = $coStmt->get_result();
@@ -73,7 +73,7 @@ $altriCosti = [];
 while ($row = $coRes->fetch_assoc()) {
     $altriCosti[] = [
         'data' => $row['data'],
-        'note' => $row['note'],
+        'descrizione' => $row['descrizione'],
         'totale' => number_format($row['importo_eur'], 2, ',', '.')
     ];
 }
