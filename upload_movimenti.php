@@ -1,7 +1,31 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
 include 'includes/session_check.php';
 include 'includes/db.php';
 include 'includes/header.php';
+$__debug_queries = [];
+
+function prepare_debug(mysqli $conn, string $sql): mysqli_stmt {
+    global $__debug_queries;
+    $stmt = $conn->prepare($sql);
+    $__debug_queries[spl_object_id($stmt)] = $sql;
+    return $stmt;
+}
+
+function execute_debug(mysqli_stmt $stmt): void {
+    global $__debug_queries;
+    try {
+        $stmt->execute();
+    } catch (mysqli_sql_exception $e) {
+        $query = $__debug_queries[spl_object_id($stmt)] ?? 'Query non disponibile';
+        echo "<pre>Errore nella query:\n$query\n{$e->getMessage()}</pre>";
+        throw $e;
+    }
+}
 
 if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
     $ids = $_POST['selected'] ?? [];
@@ -13,22 +37,22 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
         if ($tipo === 'entrate') {
             $tabella = 'bilancio_entrate';
             $colId  = 'id_entrata';
-            $stmtUpd = $conn->prepare("UPDATE $tabella SET id_gruppo_transazione = ?, descrizione_extra = ? WHERE $colId = ? AND id_utente = ?");
+            $stmtUpd = prepare_debug($conn, "UPDATE $tabella SET id_gruppo_transazione = ?, descrizione_extra = ? WHERE $colId = ? AND id_utente = ?");
             $stmtUpd->bind_param('isii', $idGruppo, $descrizioneExtra, $id, $_SESSION['utente_id']);
         } elseif ($tipo === 'uscite') {
             $tabella = 'bilancio_uscite';
             $colId  = 'id_uscita';
-            $stmtUpd = $conn->prepare("UPDATE $tabella SET id_gruppo_transazione = ?, descrizione_extra = ? WHERE $colId = ? AND id_utente = ?");
+            $stmtUpd = prepare_debug($conn, "UPDATE $tabella SET id_gruppo_transazione = ?, descrizione_extra = ? WHERE $colId = ? AND id_utente = ?");
             $stmtUpd->bind_param('isii', $idGruppo, $descrizioneExtra, $id, $_SESSION['utente_id']);
         } elseif ($tipo === 'revolut') {
             $tabella = 'movimenti_revolut';
             $colId  = 'id_movimento_revolut';
-            $stmtUpd = $conn->prepare("UPDATE $tabella SET id_gruppo_transazione = ?, descrizione_extra = ? WHERE $colId = ?");
+            $stmtUpd = prepare_debug($conn, "UPDATE $tabella SET id_gruppo_transazione = ?, descrizione_extra = ? WHERE $colId = ?");
             $stmtUpd->bind_param('isi', $idGruppo, $descrizioneExtra, $id);
         } else {
             continue;
         }
-        $stmtUpd->execute();
+        execute_debug($stmtUpd);
         $stmtUpd->close();
     }
 
@@ -41,9 +65,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
     $descrExtra  = $_POST['descrizione_extra'] ?? null;
     $conto       = $_POST['conto'] ?? 'credit';
 
-    $stmtIns = $conn->prepare("INSERT INTO bilancio_descrizione2id (id_utente, descrizione, id_gruppo_transazione, id_metodo_pagamento, id_etichetta, descrizione_extra, conto) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmtIns = prepare_debug($conn, "INSERT INTO bilancio_descrizione2id (id_utente, descrizione, id_gruppo_transazione, id_metodo_pagamento, id_etichetta, descrizione_extra, conto) VALUES (?, ?, ?, ?, ?, ?, ?)");
     $stmtIns->bind_param('isiiiss', $_SESSION['utente_id'], $descrizione, $idGruppo, $idMetodo, $idEtichetta, $descrExtra, $conto);
-    $stmtIns->execute();
+    execute_debug($stmtIns);
     $stmtIns->close();
 
     echo "<div class='alert alert-success'>Descrizione salvata</div>";
@@ -67,17 +91,17 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
         $assoc_multi = [];
 
         // Precarica le descrizioni note per cercare corrispondenze fuzzy
-        $stmtMap = $conn->prepare(
+        $stmtMap = prepare_debug($conn, 
             "SELECT descrizione, id_gruppo_transazione, id_metodo_pagamento, id_etichetta
                FROM bilancio_descrizione2id
               WHERE conto = 'revolut' AND id_utente = ?"
         );
         $stmtMap->bind_param('i', $_SESSION['utente_id']);
-        $stmtMap->execute();
+        execute_debug($stmtMap);
         $descrizioni_mappate = $stmtMap->get_result()->fetch_all(MYSQLI_ASSOC);
         $stmtMap->close();
 
-        $stmtInsert = $conn->prepare(
+        $stmtInsert = prepare_debug($conn, 
             "INSERT INTO movimenti_revolut (
                 id_gruppo_transazione,
                 id_salvadanaio,
@@ -109,32 +133,32 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
                 $descrizione_importazione = str_replace('To EUR', '', $descrizione);
                 $descrizione_importazione = trim($descrizione_importazione);
 
-                $stmt = $conn->prepare(
+                $stmt = prepare_debug($conn, 
                     'SELECT id_mov2salv, id_salvadanaio, descrizione_importazione, inserita_il, aggiornata_il
                      FROM movimenti_revolut2salvadanaio_importazione
                      WHERE descrizione_importazione = ?'
                 );
                 $stmt->bind_param('s', $descrizione_importazione);
-                $stmt->execute();
+                execute_debug($stmt);
                 $ar_salvadanai = $stmt->get_result()->fetch_assoc();
                 $stmt->close();
 
                 if ($ar_salvadanai) {
                     $id_salvadanaio = $ar_salvadanai['id_salvadanaio'];
                 } else {
-                    $stmtIns = $conn->prepare(
+                    $stmtIns = prepare_debug($conn, 
                         'INSERT INTO salvadanai (nome_salvadanaio) VALUES (?)'
                     );
                     $stmtIns->bind_param('s', $descrizione_importazione);
-                    $stmtIns->execute();
+                    execute_debug($stmtIns);
                     $id_salvadanaio = $conn->insert_id;
                     $stmtIns->close();
 
-                    $stmtIns = $conn->prepare(
+                    $stmtIns = prepare_debug($conn, 
                         'INSERT INTO movimenti_revolut2salvadanaio_importazione (id_salvadanaio, descrizione_importazione) VALUES (?, ?)'
                     );
                     $stmtIns->bind_param('is', $id_salvadanaio, $descrizione_importazione);
-                    $stmtIns->execute();
+                    execute_debug($stmtIns);
                     $stmtIns->close();
                     $nuove_descrizioni_inserite++;
                 }
@@ -165,7 +189,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
                 $amount,
                 $note
             );
-            $stmtInsert->execute();
+            execute_debug($stmtInsert);
             $id_tabella = $conn->insert_id;
 
             $data_mov = $data_completed ?: $started_date;
@@ -173,17 +197,17 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
 
             if ($id_salvadanaio) {
                 $data_operazione = $data_completed ?? $started_date;
-                $stmtCheck = $conn->prepare('SELECT data_aggiornamento_manuale FROM salvadanai WHERE id_salvadanaio = ?');
+                $stmtCheck = prepare_debug($conn, 'SELECT data_aggiornamento_manuale FROM salvadanai WHERE id_salvadanaio = ?');
                 $stmtCheck->bind_param('i', $id_salvadanaio);
-                $stmtCheck->execute();
+                execute_debug($stmtCheck);
                 $salv = $stmtCheck->get_result()->fetch_assoc();
                 $stmtCheck->close();
 
                 if (!$salv || !$salv['data_aggiornamento_manuale'] || $salv['data_aggiornamento_manuale'] <= $data_operazione) {
                     $importo_da_aggiungere = -1 * $amount;
-                    $stmtUpd = $conn->prepare('UPDATE salvadanai SET importo_attuale = importo_attuale + ? WHERE id_salvadanaio = ?');
+                    $stmtUpd = prepare_debug($conn, 'UPDATE salvadanai SET importo_attuale = importo_attuale + ? WHERE id_salvadanaio = ?');
                     $stmtUpd->bind_param('di', $importo_da_aggiungere, $id_salvadanaio);
-                    $stmtUpd->execute();
+                    execute_debug($stmtUpd);
                     $stmtUpd->close();
                 }
             }
@@ -239,20 +263,20 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
         $assoc_multi = [];
 
         // Precarica le descrizioni note per il conto principale
-        $stmtMap = $conn->prepare(
+        $stmtMap = prepare_debug($conn, 
             "SELECT descrizione, id_gruppo_transazione, id_metodo_pagamento, id_etichetta
                FROM bilancio_descrizione2id
               WHERE id_utente = ? AND conto = 'credit'"
         );
         $stmtMap->bind_param('i', $idUtenteSession);
-        $stmtMap->execute();
+        execute_debug($stmtMap);
         $descrizioni_mappate = $stmtMap->get_result()->fetch_all(MYSQLI_ASSOC);
         $stmtMap->close();
 
-        $stmtInsertUscite = $conn->prepare(
+        $stmtInsertUscite = prepare_debug($conn, 
             'INSERT INTO bilancio_uscite (id_utente, id_tipologia, id_gruppo_transazione, id_metodo_pagamento, descrizione_operazione, descrizione_extra, importo, data_operazione) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
-        $stmtInsertEntrate = $conn->prepare(
+        $stmtInsertEntrate = prepare_debug($conn, 
             'INSERT INTO bilancio_entrate (id_utente, id_tipologia, id_gruppo_transazione, id_metodo_pagamento, descrizione_operazione, descrizione_extra, importo, data_operazione) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
 
@@ -270,17 +294,17 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
             $descrizione_orig   = $descrizione;
             $importo            = $data[4];
 
-            $stmt = $conn->prepare('SELECT id_tipologia FROM bilancio_tipologie WHERE nome_tipologia = ?');
+            $stmt = prepare_debug($conn, 'SELECT id_tipologia FROM bilancio_tipologie WHERE nome_tipologia = ?');
             $stmt->bind_param('s', $causale);
-            $stmt->execute();
+            execute_debug($stmt);
             $row = $stmt->get_result()->fetch_assoc();
             $stmt->close();
             $id_tipologia = $row['id_tipologia'] ?? null;
 
             if (!$id_tipologia) {
-                $stmt = $conn->prepare('INSERT INTO bilancio_tipologie (nome_tipologia) VALUES (?)');
+                $stmt = prepare_debug($conn, 'INSERT INTO bilancio_tipologie (nome_tipologia) VALUES (?)');
                 $stmt->bind_param('s', $causale);
-                $stmt->execute();
+                execute_debug($stmt);
                 $id_tipologia = $conn->insert_id;
                 $stmt->close();
             }
@@ -328,7 +352,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
                 $importo,
                 $data_operazione_db
             );
-            $stmtIns->execute();
+            execute_debug($stmtIns);
 
             $id_tabella = $conn->insert_id;
 
@@ -379,7 +403,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
 } else {
     $idUtenteSession = $_SESSION['utente_id'];
 
-    $stmt = $conn->prepare(
+    $stmt = prepare_debug($conn, 
         "SELECT MAX(data_operazione) AS max_data FROM (
             SELECT data_operazione FROM bilancio_entrate WHERE id_utente = ? AND mezzo = 'banca'
             UNION ALL
@@ -387,44 +411,44 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
         ) AS t"
     );
     $stmt->bind_param('ii', $idUtenteSession, $idUtenteSession);
-    $stmt->execute();
+    execute_debug($stmt);
     $row = $stmt->get_result()->fetch_assoc();
     $max_data_banca = $row['max_data'];
     $stmt->close();
 
-    $stmt = $conn->prepare(
+    $stmt = prepare_debug($conn, 
         "SELECT MAX(m.started_date) AS max_date
          FROM movimenti_revolut m
          JOIN bilancio_gruppi_transazione g ON m.id_gruppo_transazione = g.id_gruppo_transazione
          WHERE g.id_utente = ?"
     );
     $stmt->bind_param('i', $idUtenteSession);
-    $stmt->execute();
+    execute_debug($stmt);
     $row = $stmt->get_result()->fetch_assoc();
     $max_started_revolut = $row['max_date'];
     $stmt->close();
 
     // Precarica gruppi e metodi di pagamento
-    $stmt = $conn->prepare("SELECT id_gruppo_transazione, descrizione FROM bilancio_gruppi_transazione WHERE id_utente = ? ORDER BY descrizione");
+    $stmt = prepare_debug($conn, "SELECT id_gruppo_transazione, descrizione FROM bilancio_gruppi_transazione WHERE id_utente = ? ORDER BY descrizione");
     $stmt->bind_param('i', $idUtenteSession);
-    $stmt->execute();
+    execute_debug($stmt);
     $gruppi = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
 
-    $stmt = $conn->prepare("SELECT id_metodo_pagamento, descrizione_metodo_pagamento FROM bilancio_metodo_pagamento WHERE attivo = 1 ORDER BY descrizione_metodo_pagamento");
-    $stmt->execute();
+    $stmt = prepare_debug($conn, "SELECT id_metodo_pagamento, descrizione_metodo_pagamento FROM bilancio_metodo_pagamento WHERE attivo = 1 ORDER BY descrizione_metodo_pagamento");
+    execute_debug($stmt);
     $metodi = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
 
-    $stmt = $conn->prepare("SELECT id_supermercato, descrizione_supermercato FROM ocr_supermercati ORDER BY descrizione_supermercato");
-    $stmt->execute();
+    $stmt = prepare_debug($conn, "SELECT id_supermercato, descrizione_supermercato FROM ocr_supermercati ORDER BY descrizione_supermercato");
+    execute_debug($stmt);
     $supermercati = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
 
     // Movimenti recenti
     $movimenti = [];
     if ($max_started_revolut && (!$max_data_banca || strtotime($max_started_revolut) > strtotime($max_data_banca))) {
-        $stmt = $conn->prepare(
+        $stmt = prepare_debug($conn, 
             "SELECT id_movimento_revolut AS id, 'revolut' AS tipo, description AS descrizione, id_gruppo_transazione, descrizione_extra, id_caricamento\n" 
             . " FROM movimenti_revolut m\n"
             . " LEFT JOIN bilancio_gruppi_transazione g ON m.id_gruppo_transazione = g.id_gruppo_transazione\n"
@@ -432,19 +456,19 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
             . " ORDER BY started_date DESC LIMIT 50"
         );
         $stmt->bind_param('i', $idUtenteSession);
-        $stmt->execute();
+        execute_debug($stmt);
         $movimenti = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
     } else {
-        $stmt = $conn->prepare("SELECT id_entrata AS id, 'entrate' AS tipo, descrizione_operazione AS descrizione, id_gruppo_transazione, descrizione_extra, id_caricamento FROM bilancio_entrate WHERE id_utente = ? ORDER BY data_operazione DESC LIMIT 50");
+        $stmt = prepare_debug($conn, "SELECT id_entrata AS id, 'entrate' AS tipo, descrizione_operazione AS descrizione, id_gruppo_transazione, descrizione_extra, id_caricamento FROM bilancio_entrate WHERE id_utente = ? ORDER BY data_operazione DESC LIMIT 50");
         $stmt->bind_param('i', $idUtenteSession);
-        $stmt->execute();
+        execute_debug($stmt);
         $movimenti = array_merge($movimenti, $stmt->get_result()->fetch_all(MYSQLI_ASSOC));
         $stmt->close();
 
-        $stmt = $conn->prepare("SELECT id_uscita AS id, 'uscite' AS tipo, descrizione_operazione AS descrizione, id_gruppo_transazione, descrizione_extra, id_caricamento FROM bilancio_uscite WHERE id_utente = ? ORDER BY data_operazione DESC LIMIT 50");
+        $stmt = prepare_debug($conn, "SELECT id_uscita AS id, 'uscite' AS tipo, descrizione_operazione AS descrizione, id_gruppo_transazione, descrizione_extra, id_caricamento FROM bilancio_uscite WHERE id_utente = ? ORDER BY data_operazione DESC LIMIT 50");
         $stmt->bind_param('i', $idUtenteSession);
-        $stmt->execute();
+        execute_debug($stmt);
         $movimenti = array_merge($movimenti, $stmt->get_result()->fetch_all(MYSQLI_ASSOC));
         $stmt->close();
     }
@@ -696,9 +720,9 @@ function verifica_associazione_scontrino($tabella, $id_tabella, $descrizione, $d
          . "    UNION SELECT id_caricamento FROM bilancio_uscite WHERE id_caricamento IS NOT NULL\n"
          . "    UNION SELECT id_caricamento FROM movimenti_revolut WHERE id_caricamento IS NOT NULL\n"
          . "  )";
-    $stmt = $conn->prepare($sql);
+    $stmt = prepare_debug($conn, $sql);
     $stmt->bind_param('isd', $idUtenteSession, $data_mov, $importo);
-    $stmt->execute();
+    execute_debug($stmt);
     $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
 
@@ -711,9 +735,9 @@ function verifica_associazione_scontrino($tabella, $id_tabella, $descrizione, $d
         ];
         if (isset($idFields[$tabella])) {
             $field = $idFields[$tabella];
-            $stmtUp = $conn->prepare("UPDATE $tabella SET id_caricamento=? WHERE $field=?");
+            $stmtUp = prepare_debug($conn, "UPDATE $tabella SET id_caricamento=? WHERE $field=?");
             $stmtUp->bind_param('ii', $id_car, $id_tabella);
-            $stmtUp->execute();
+            execute_debug($stmtUp);
             $stmtUp->close();
             $assoc_auto[] = [
                 'tabella'      => $tabella,
@@ -738,19 +762,19 @@ function dividi_operazione_per_etichetta($id_etichetta, $tabella, $id_tabella)
 {
     global $conn;
 
-    $stmt = $conn->prepare(
+    $stmt = prepare_debug($conn, 
         'INSERT INTO bilancio_etichette2operazioni (id_etichetta, tabella_operazione, id_tabella) VALUES (?, ?, ?)'
     );
     $stmt->bind_param('isi', $id_etichetta, $tabella, $id_tabella);
-    $stmt->execute();
+    execute_debug($stmt);
     $id_e2o = $conn->insert_id;
     $stmt->close();
 
-    $stmt = $conn->prepare(
+    $stmt = prepare_debug($conn, 
         "SELECT utenti_tra_cui_dividere FROM bilancio_etichette WHERE ifnull(utenti_tra_cui_dividere,'')!='' AND id_etichetta = ?"
     );
     $stmt->bind_param('i', $id_etichetta);
-    $stmt->execute();
+    execute_debug($stmt);
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
 
@@ -758,12 +782,12 @@ function dividi_operazione_per_etichetta($id_etichetta, $tabella, $id_tabella)
 
     if ($utenti_dividere) {
         $ar_utenti = explode(',', $utenti_dividere);
-        $stmtIns = $conn->prepare(
+        $stmtIns = prepare_debug($conn, 
             'INSERT INTO bilancio_utenti2operazioni_etichettate (id_utente, id_e2o) VALUES (?, ?)'
         );
         foreach ($ar_utenti as $id_utente) {
             $stmtIns->bind_param('ii', $id_utente, $id_e2o);
-            $stmtIns->execute();
+            execute_debug($stmtIns);
         }
         $stmtIns->close();
     }
