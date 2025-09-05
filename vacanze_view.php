@@ -184,13 +184,18 @@ $docRes = $docStmt->get_result();
           <div class="col">
             <div class="card bg-dark text-white h-100">
               <div class="card-body d-flex flex-column">
+                <?php
+                  $isLink = filter_var($row['nome_file'], FILTER_VALIDATE_URL);
+                  $mainText = $isLink ? ($row['descrizione'] ?: $row['nome_file']) : $row['nome_file'];
+                  $smallText = $isLink ? ($row['descrizione'] ? $row['nome_file'] : '') : ($row['descrizione'] ?: '');
+                ?>
                 <p class="card-text flex-grow-1 mb-2">
-                  <?= htmlspecialchars($row['nome_file']) ?>
-                  <?php if (!empty($row['descrizione'])): ?>
-                    <br><small class="text-muted"><?= htmlspecialchars($row['descrizione']) ?></small>
+                  <?= htmlspecialchars($mainText) ?>
+                  <?php if (!empty($smallText)): ?>
+                    <br><small class="text-muted"><?= htmlspecialchars($smallText) ?></small>
                   <?php endif; ?>
                 </p>
-                <a href="files/vacanze/<?= urlencode($row['nome_file']) ?>" class="btn btn-sm btn-outline-light mt-auto" target="_blank">Apri</a>
+                <a href="<?= $isLink ? htmlspecialchars($row['nome_file']) : 'files/vacanze/' . urlencode($row['nome_file']) ?>" class="btn btn-sm btn-outline-light mt-auto" target="_blank">Apri</a>
               </div>
             </div>
           </div>
@@ -209,10 +214,14 @@ $docRes = $docStmt->get_result();
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <input type="file" name="file" class="form-control" required>
+            <input type="file" name="file" class="form-control">
+          </div>
+          <div class="mb-3">
+            <input type="url" name="link" class="form-control" placeholder="Link (Drive, ecc.)">
           </div>
           <div class="mb-3">
             <input type="text" name="descrizione" class="form-control" placeholder="Descrizione">
+            <small class="form-text">Inserisci un file oppure un link.</small>
           </div>
         </div>
         <div class="modal-footer">

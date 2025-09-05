@@ -38,7 +38,7 @@ $chkStmt->bind_param('i', $id);
 $chkStmt->execute();
 $chkRes = $chkStmt->get_result();
 
-$docStmt = $conn->prepare('SELECT oc.nome_file FROM viaggi2caricamenti vc JOIN ocr_caricamenti oc ON vc.id_caricamento=oc.id_caricamento WHERE vc.id_viaggio=? ORDER BY vc.id_caricamento');
+$docStmt = $conn->prepare('SELECT oc.nome_file, oc.descrizione FROM viaggi2caricamenti vc JOIN ocr_caricamenti oc ON vc.id_caricamento=oc.id_caricamento WHERE vc.id_viaggio=? ORDER BY vc.id_caricamento');
 $docStmt->bind_param('i', $id);
 $docStmt->execute();
 $docRes = $docStmt->get_result();
@@ -169,7 +169,12 @@ $docRes = $docStmt->get_result();
       <?php else: ?>
         <ul class="list-group list-group-flush">
         <?php while($doc = $docRes->fetch_assoc()): ?>
-          <li class="list-group-item"><a href="files/vacanze/<?= urlencode($doc['nome_file']) ?>" target="_blank"><?= htmlspecialchars($doc['nome_file']) ?></a></li>
+          <?php $isLink = filter_var($doc['nome_file'], FILTER_VALIDATE_URL); ?>
+          <?php
+            $mainText = $isLink ? ($doc['descrizione'] ?: $doc['nome_file']) : $doc['nome_file'];
+            $href = $isLink ? $doc['nome_file'] : 'files/vacanze/' . urlencode($doc['nome_file']);
+          ?>
+          <li class="list-group-item"><a href="<?= htmlspecialchars($href) ?>" target="_blank"><?= htmlspecialchars($mainText) ?></a></li>
         <?php endwhile; ?>
         </ul>
       <?php endif; ?>

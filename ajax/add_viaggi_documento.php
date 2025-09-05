@@ -9,19 +9,29 @@ if (!has_permission($conn, 'ajax:add_viaggi_documento', 'insert')) {
     exit;
 }
 $idViaggio = (int)($_POST['id_viaggio'] ?? 0);
-if (!$idViaggio || empty($_FILES['file']['name'])) {
+$link = trim($_POST['link'] ?? '');
+$hasFile = !empty($_FILES['file']['name']);
+if (!$idViaggio || (!$hasFile && $link === '')) {
     echo json_encode(['success'=>false,'error'=>'Dati mancanti']);
     exit;
 }
-$uploadDir = __DIR__ . '/../files/vacanze/';
-if (!is_dir($uploadDir)) {
-    mkdir($uploadDir, 0777, true);
-}
-$nomeFile = basename($_FILES['file']['name']);
-$target = $uploadDir . $nomeFile;
-if (!move_uploaded_file($_FILES['file']['tmp_name'], $target)) {
-    echo json_encode(['success'=>false,'error'=>'Upload fallito']);
-    exit;
+if ($link !== '') {
+    if (!filter_var($link, FILTER_VALIDATE_URL)) {
+        echo json_encode(['success'=>false,'error'=>'Link non valido']);
+        exit;
+    }
+    $nomeFile = $link;
+} else {
+    $uploadDir = __DIR__ . '/../files/vacanze/';
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+    }
+    $nomeFile = basename($_FILES['file']['name']);
+    $target = $uploadDir . $nomeFile;
+    if (!move_uploaded_file($_FILES['file']['tmp_name'], $target)) {
+        echo json_encode(['success'=>false,'error'=>'Upload fallito']);
+        exit;
+    }
 }
 $idUtente = $_SESSION['utente_id'] ?? ($_SESSION['id_utente'] ?? 0);
 $ip = $_SERVER['REMOTE_ADDR'] ?? '';
