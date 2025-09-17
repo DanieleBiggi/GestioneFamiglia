@@ -60,6 +60,7 @@ $altri_costi = $coRes->fetch_all(MYSQLI_ASSOC);
 $canEditAlt = has_permission($conn, 'ajax:update_viaggi_alternativa', 'update');
 $canInsertTratta = has_permission($conn, 'table:viaggi_tratte', 'insert');
 $canUpdateTratta = has_permission($conn, 'table:viaggi_tratte', 'update');
+$canDeleteAlt = has_permission($conn, 'ajax:delete_viaggi_alternativa', 'delete');
 $canInsertAlloggio = has_permission($conn, 'table:viaggi_alloggi', 'insert');
 $canUpdateAlloggio = has_permission($conn, 'table:viaggi_alloggi', 'update');
 $canInsertPasto = has_permission($conn, 'table:viaggi_pasti', 'insert');
@@ -244,6 +245,14 @@ $canUpdateCosto = has_permission($conn, 'table:viaggi_altri_costi', 'update');
   <h4 class="mb-3 mt-4">Mappa</h4>
   <div id="map" style="height:500px"></div>
 
+  <?php if ($canDeleteAlt): ?>
+  <div class="mt-4">
+    <button type="button" id="deleteAltBtn" class="btn btn-danger w-100">
+      <i class="bi bi-trash me-1"></i> Elimina alternativa
+    </button>
+  </div>
+  <?php endif; ?>
+
   <?php if ($canEditAlt): ?>
   <div class="modal fade" id="altEditModal" tabindex="-1">
     <div class="modal-dialog">
@@ -268,6 +277,7 @@ $canUpdateCosto = has_permission($conn, 'table:viaggi_altri_costi', 'update');
   <?php endif; ?>
 
   <script>
+    const viaggioId = <?= $id ?>;
     const altId = <?= $alt ?>;
     const alloggi = <?= json_encode($alloggi) ?>;
     const tratte = <?= json_encode($tratte) ?>;
