@@ -34,6 +34,7 @@ $data = [
     'id_salvadanaio' => 0,
     'nome_salvadanaio' => '',
     'importo_attuale' => 0,
+    'data_scadenza' => null,
 ];
 $finanze = [];
 $eventiDisponibili = [];
@@ -166,6 +167,10 @@ if ($id > 0): ?>
         <div class="mb-3">
           <label class="form-label">Importo attuale</label>
           <input type="number" step="0.01" name="importo_attuale" class="form-control bg-secondary text-white">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Data scadenza</label>
+          <input type="date" name="data_scadenza" class="form-control bg-secondary text-white">
         </div>
       </div>
       <div class="modal-footer">
@@ -320,7 +325,8 @@ if ($id > 0): ?>
 const salvadanaioData = {
   id: <?= (int)$data['id_salvadanaio'] ?>,
   nome_salvadanaio: <?= json_encode($data['nome_salvadanaio']) ?>,
-  importo_attuale: <?= json_encode(number_format((float)$data['importo_attuale'], 2, '.', '')) ?>
+  importo_attuale: <?= json_encode(number_format((float)$data['importo_attuale'], 2, '.', '')) ?>,
+  data_scadenza: <?= json_encode($data['data_scadenza']) ?>
 };
 </script>
 <script src="js/salvadanaio_dettaglio.js"></script>
