@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('salvadanaioForm');
     form.nome_salvadanaio.value = salvadanaioData.nome_salvadanaio || '';
     form.importo_attuale.value = salvadanaioData.importo_attuale || '';
+    if (form.data_scadenza) {
+      form.data_scadenza.value = salvadanaioData.data_scadenza || '';
+    }
     new bootstrap.Modal(document.getElementById('salvadanaioModal')).show();
   });
 
