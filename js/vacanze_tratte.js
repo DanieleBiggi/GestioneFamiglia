@@ -25,6 +25,31 @@ document.addEventListener('DOMContentLoaded', () => {
       if (href) window.location.href = href;
     });
   });
+
+  const deleteBtn = document.getElementById('deleteAltBtn');
+  if(deleteBtn){
+    deleteBtn.addEventListener('click', () => {
+      if(!confirm('Confermi l\'eliminazione dell\'alternativa? Tutti i dati associati saranno rimossi.')) return;
+      deleteBtn.disabled = true;
+      const fd = new FormData();
+      fd.append('id_viaggio', viaggioId);
+      fd.append('id_viaggio_alternativa', altId);
+      fetch('ajax/delete_viaggi_alternativa.php', { method:'POST', body: fd })
+        .then(r => r.json())
+        .then(res => {
+          if(res.success){
+            window.location.href = `vacanze_view.php?id=${viaggioId}`;
+          } else {
+            alert(res.error || 'Errore');
+            deleteBtn.disabled = false;
+          }
+        })
+        .catch(() => {
+          alert('Errore di comunicazione');
+          deleteBtn.disabled = false;
+        });
+    });
+  }
 });
 
 function initMap(){
