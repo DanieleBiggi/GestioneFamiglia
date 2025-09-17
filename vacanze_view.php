@@ -21,7 +21,59 @@ if (!$viaggio) {
 }
 
 
-$totStmt = $conn->prepare('SELECT * FROM v_totali_alternative WHERE id_viaggio=?');
+$totStmt = $conn->prepare(' 
+SELECT
+  id_viaggio,
+  id_viaggio_alternativa,
+  breve_descrizione,
+  totale_trasporti,
+  totale_alloggi,
+  totale_pasti,
+  totale_altri_costi,
+  (totale_trasporti + totale_alloggi + totale_pasti + totale_altri_costi) AS totale_viaggio
+FROM 
+(
+  SELECT
+    alt.id_viaggio,
+    alt.id_viaggio_alternativa,
+    alt.breve_descrizione,
+
+    COALESCE(SUM(
+      (
+        (COALESCE(vt.distanza_km,0) * COALESCE(vt.consumo_litri_100km,0)) / 100
+      ) * COALESCE(vt.prezzo_carburante_eur_litro,0)
+      + COALESCE(vt.pedaggi_eur,0)
+      + COALESCE(vt.costo_traghetto_eur,0)
+      + COALESCE(vt.costo_volo_eur,0)
+      + COALESCE(vt.costo_noleggio_eur,0)
+      + COALESCE(vt.altri_costi_eur,0)
+    ),0) AS totale_trasporti,
+
+    (SELECT COALESCE(SUM(
+       (TO_DAYS(va.data_checkout) - TO_DAYS(va.data_checkin)) * COALESCE(va.costo_notte_eur,0)
+     ),0)
+     FROM Sql1203781_2.viaggi_alloggi va
+     WHERE va.id_viaggio = alt.id_viaggio
+       AND va.id_viaggio_alternativa = alt.id_viaggio_alternativa
+    ) AS totale_alloggi,
+
+    (SELECT COALESCE(SUM(vp.costo_medio_eur),0)
+     FROM Sql1203781_2.viaggi_pasti vp
+     WHERE vp.id_viaggio = alt.id_viaggio
+       AND vp.id_viaggio_alternativa = alt.id_viaggio_alternativa
+    ) AS totale_pasti,
+
+    (SELECT COALESCE(SUM(vac.importo_eur),0)
+     FROM Sql1203781_2.viaggi_altri_costi vac
+     WHERE vac.id_viaggio = alt.id_viaggio
+       AND vac.id_viaggio_alternativa = alt.id_viaggio_alternativa
+    ) AS totale_altri_costi
+
+  FROM Sql1203781_2.viaggi_alternative alt
+  LEFT JOIN Sql1203781_2.viaggi_tratte vt
+    ON vt.id_viaggio_alternativa = alt.id_viaggio_alternativa
+  GROUP BY alt.id_viaggio, alt.id_viaggio_alternativa, alt.breve_descrizione
+) v WHERE id_viaggio=?');
 $totStmt->bind_param('i', $id);
 $totStmt->execute();
 $totRes = $totStmt->get_result();
