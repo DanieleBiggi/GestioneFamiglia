@@ -17,11 +17,19 @@ $yearStmt->close();
 $today = new DateTime('now', new DateTimeZone('Europe/Rome'));
 
 // 1. Importo stimato attuale per salvadanaio
-$salvStmt = $conn->prepare('SELECT b.*, s.nome_salvadanaio, s.importo_attuale FROM budget b LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio WHERE b.id_famiglia = ? AND year(b.data_scadenza) >= ? AND YEAR(b.data_inizio) <= ?');
+$salvStmt = $conn->prepare('SELECT b.*, s.nome_salvadanaio, s.importo_attuale
+    FROM budget b
+    LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio
+    WHERE b.id_famiglia = ?
+      AND YEAR(b.data_inizio) <= ?
+      AND (b.data_scadenza IS NULL OR YEAR(b.data_scadenza) >= ?)
+      AND (b.data_scadenza IS NULL OR b.data_scadenza >= ?)
+');
 if (!$salvStmt) {
     die("Prepare failed: " . $conn->error);
 }
-$salvStmt->bind_param('iii', $idFamiglia, $anno, $anno);
+$todaySql = $today->format('Y-m-d');
+$salvStmt->bind_param('iiis', $idFamiglia, $anno, $anno, $todaySql);
 
 if (!$salvStmt->execute()) {
     die("Execute failed: " . $salvStmt->error);
@@ -36,6 +44,9 @@ while ($row = $resSalv->fetch_assoc()) {
     $residuo = $importo - ($da13 + $da14);
     $dataInizio = $row['data_inizio'] ?: null;
     $dataScadenza = $row['data_scadenza'] ?: null;
+    if ($dataScadenza !== null && $dataScadenza < $todaySql) {
+        continue;
+    }
     $j = $dataScadenza ? diff_mesi($today->format('Y-m-d'), $dataScadenza) : null; // mesi a scadenza
     //$k = $dataInizio ? max(0, diff_mesi($dataInizio, $today->format('Y-m-d'))) : 0; // mesi da inizio
     $primo_del_mese_di_data_inizio = (new DateTime($dataInizio))->modify('first day of this month');
