@@ -37,7 +37,10 @@ if (!$idTipo && !$inv) {
 }
 $stmt = $conn->prepare('INSERT INTO eventi_google_rules (creator_email, description_keyword, id_tipo_evento, attiva) VALUES (?,?,?,1)');
 $creatorEmail = $ev['creator_email'];
-$descrizione = $ev['descrizione'];
+$descrizione = trim($_POST['descrizione'] ?? '');
+if ($descrizione === '') {
+    $descrizione = $ev['descrizione'];
+}
 $stmt->bind_param('ssi', $creatorEmail, $descrizione, $idTipo);
 $stmt->execute();
 $ruleId = $stmt->insert_id;

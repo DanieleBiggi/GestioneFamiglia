@@ -166,7 +166,7 @@ include 'includes/header.php';
     <h4 class="mb-0" id="eventoTitolo"><?= htmlspecialchars($evento['titolo'] ?? '') ?></h4>
     <div>
       <?php if ($showAddRule): ?>
-        <i class="bi bi-star me-2" id="addRuleBtn" data-id="<?= $id ?>" style="cursor:pointer"></i>
+        <i class="bi bi-star me-2" id="addRuleBtn" data-id="<?= $id ?>" data-descrizione="<?= htmlspecialchars($evento['descrizione'] ?? '', ENT_QUOTES) ?>" style="cursor:pointer"></i>
       <?php endif; ?>
       <?php if ($canUpdate): ?>
         <i class="bi bi-pencil-square" id="editEventoBtn" style="cursor:pointer"></i>
