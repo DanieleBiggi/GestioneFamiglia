@@ -78,7 +78,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
     $firstLine = fgets($handle);
     rewind($handle);
 
-    if (stripos($firstLine, 'Type') !== false || stripos($firstLine, 'Started Date') !== false) {
+    if (stripos($firstLine, 'Tipo') !== false || stripos($firstLine, 'Data di inizio') !== false) {
         // Importazione movimenti Revolut
         // Leggere e ignorare l'intestazione
         fgetcsv($handle, 1000, ",");
@@ -288,11 +288,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
             $id_etichetta           = 0;
 
             $data_operazione    = $data[0];
-            $data_valuta        = $data[1];
-            $causale            = $data[2];
-            $descrizione        = $data[3];
+            $data_valuta        = @$data[1];
+            $causale            = @$data[2];
+            $descrizione        = @$data[3];
             $descrizione_orig   = $descrizione;
-            $importo            = $data[4];
+            $importo            = @$data[4];
 
             $stmt = prepare_debug($conn, 'SELECT id_tipologia FROM bilancio_tipologie WHERE nome_tipologia = ?');
             $stmt->bind_param('s', $causale);
@@ -684,7 +684,7 @@ function trova_descrizione_approssimata($descrizione_importata, $descrizioni_map
     $percentuale = 0;
     foreach ($descrizioni_mappate as $riga) {
         $target_norm = normalizza_descrizione($riga['descrizione']);
-        if (strpos($descrizione_norm, $target_norm) !== false || strpos($target_norm, $descrizione_norm) !== false) {
+        if (@strpos($descrizione_norm, $target_norm) !== false || @strpos($target_norm, $descrizione_norm) !== false) {
             return $riga;
         }
         similar_text($target_norm, $descrizione_norm, $perc);
@@ -798,4 +798,3 @@ function dividi_operazione_per_etichetta($id_etichetta, $tabella, $id_tabella)
 }
 
 include 'includes/footer.php';
-
