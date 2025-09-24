@@ -126,4 +126,20 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(r=>r.json())
       .then(res=>{ if(res.success) location.reload(); else alert(res.error||'Errore'); });
   });
+
+  document.getElementById('deleteSalvadanaioBtn')?.addEventListener('click', () => {
+    if(!salvadanaioData?.id || !confirm('Eliminare questo salvadanaio?')) return;
+    const fd = new FormData();
+    fd.append('id_salvadanaio', salvadanaioData.id);
+    fetch('ajax/delete_salvadanaio.php', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(res=>{
+        if(res.success){
+          window.location.href = 'salvadanai.php';
+        } else {
+          alert(res.error || 'Errore');
+        }
+      })
+      .catch(() => alert('Errore'));
+  });
 });
