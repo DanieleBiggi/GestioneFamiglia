@@ -91,8 +91,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
         $assoc_multi = [];
 
         // Precarica le descrizioni note per cercare corrispondenze fuzzy
-        $stmtMap = prepare_debug($conn, 
-            "SELECT descrizione, id_gruppo_transazione, id_metodo_pagamento, id_etichetta
+        $stmtMap = prepare_debug($conn,
+            "SELECT descrizione, id_gruppo_transazione, id_metodo_pagamento, id_etichetta, descrizione_extra
                FROM bilancio_descrizione2id
               WHERE conto = 'revolut' AND id_utente = ?"
         );
@@ -168,13 +168,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
 
             // Ricerca miglior corrispondenza con descrizioni note
             $dati_gruppo = trova_descrizione_approssimata($descrizione_orig, $descrizioni_mappate);
+            $descrizione_extra = $descrizione_orig;
             if ($dati_gruppo) {
                 $id_gruppo    = $dati_gruppo['id_gruppo_transazione'];
                 $id_etichetta = $dati_gruppo['id_etichetta'];
                 $descrizione  = $dati_gruppo['descrizione'];
+                if (isset($dati_gruppo['descrizione_extra']) && trim($dati_gruppo['descrizione_extra']) !== '') {
+                    $descrizione_extra = $dati_gruppo['descrizione_extra'];
+                }
             }
-
-            $descrizione_extra = $descrizione_orig;
 
             $stmtInsert->bind_param(
                 'iissssssds',
@@ -263,8 +265,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
         $assoc_multi = [];
 
         // Precarica le descrizioni note per il conto principale
-        $stmtMap = prepare_debug($conn, 
-            "SELECT descrizione, id_gruppo_transazione, id_metodo_pagamento, id_etichetta
+        $stmtMap = prepare_debug($conn,
+            "SELECT descrizione, id_gruppo_transazione, id_metodo_pagamento, id_etichetta, descrizione_extra
                FROM bilancio_descrizione2id
               WHERE id_utente = ? AND conto = 'credit'"
         );
@@ -324,16 +326,18 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_movimenti') {
 
             // Ricerca della miglior corrispondenza nelle descrizioni note
             $descrizione_gruppo_metodo = trova_descrizione_approssimata($descrizione_orig, $descrizioni_mappate);
+            $descrizione_extra = $descrizione_orig;
             if ($descrizione_gruppo_metodo) {
               $id_gruppo_transazione    = $descrizione_gruppo_metodo['id_gruppo_transazione'];
               $id_metodo_pagamento      = $descrizione_gruppo_metodo['id_metodo_pagamento'];
               $id_etichetta             = $descrizione_gruppo_metodo['id_etichetta'];
               $descrizione              = $descrizione_gruppo_metodo['descrizione'];
+              if (isset($descrizione_gruppo_metodo['descrizione_extra']) && trim($descrizione_gruppo_metodo['descrizione_extra']) !== '') {
+                  $descrizione_extra = $descrizione_gruppo_metodo['descrizione_extra'];
+              }
             } else {
                 echo "<div class='alert alert-warning' >Senza gruppo o metodo:<br>" . $descrizione_orig . "</div>";
             }
-
-            $descrizione_extra = $descrizione_orig;
 
             if ($tabella === 'bilancio_uscite') {
                 $stmtIns = $stmtInsertUscite;
