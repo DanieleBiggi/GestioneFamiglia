@@ -325,13 +325,16 @@ if ($id > 0): ?>
   </div>
 </div>
 
+<?php
+$salvadanaioData = [
+  'id' => (int)$data['id_salvadanaio'],
+  'nome_salvadanaio' => $data['nome_salvadanaio'],
+  'importo_attuale' => number_format((float)$data['importo_attuale'], 2, '.', ''),
+  'data_scadenza' => $data['data_scadenza'] ?? null,
+];
+?>
 <script>
-const salvadanaioData = {
-  id: <?= (int)$data['id_salvadanaio'] ?>,
-  nome_salvadanaio: <?= json_encode($data['nome_salvadanaio']) ?>,
-  importo_attuale: <?= json_encode(number_format((float)$data['importo_attuale'], 2, '.', '')) ?>,
-  data_scadenza: <?= json_encode($data['data_scadenza']) ?>
-};
+const salvadanaioData = <?= json_encode($salvadanaioData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
 </script>
 <script src="js/salvadanaio_dettaglio.js"></script>
 <?php include 'includes/footer.php'; ?>
