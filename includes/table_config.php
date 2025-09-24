@@ -2,7 +2,7 @@
 return [
     'bilancio_descrizione2id' => [
         'primary_key' => 'id_d2id',
-        'columns' => ['id_d2id','id_utente','descrizione','id_gruppo_transazione','id_metodo_pagamento','id_etichetta','conto']
+        'columns' => ['id_d2id','id_utente','descrizione','id_gruppo_transazione','id_metodo_pagamento','id_etichetta','descrizione_extra','conto']
     ],
     'bilancio_entrate' => [
         'primary_key' => 'id_entrata',
