@@ -138,12 +138,17 @@ $alt_desc = $alternative[$alt] ?? '';
       <label class="form-label">Descrizione</label>
       <input type="text" class="form-control" name="descrizione" value="<?= htmlspecialchars($tratta['descrizione']) ?>">
     </div>
-    <div class="row g-2">
-      <div class="col-md-6">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-5">
         <label class="form-label">Origine</label>
         <input type="text" class="form-control" name="origine_testo" id="origine" value="<?= htmlspecialchars($tratta['origine_testo']) ?>">
       </div>
-      <div class="col-md-6">
+      <div class="col-md-2 d-flex align-items-center">
+        <button type="button" class="btn btn-outline-light w-100" id="swap-tratta" aria-label="Inverti origine e destinazione">
+          ↕
+        </button>
+      </div>
+      <div class="col-md-5">
         <label class="form-label">Destinazione</label>
         <input type="text" class="form-control" name="destinazione_testo" id="destinazione" value="<?= htmlspecialchars($tratta['destinazione_testo']) ?>">
       </div>
@@ -213,6 +218,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const tipoSelect = document.querySelector('select[name="tipo_tratta"]');
   tipoSelect.addEventListener('change', toggleFields);
   toggleFields();
+  const swapBtn = document.getElementById('swap-tratta');
+  if (swapBtn) {
+    swapBtn.addEventListener('click', swapLocations);
+  }
 });
 function toggleFields() {
   const tipo = document.querySelector('select[name="tipo_tratta"]').value;
@@ -251,6 +260,18 @@ async function initAutocomplete() {
   destinationAutocomplete = new Autocomplete(document.getElementById('destinazione'));
   originAutocomplete.addListener('place_changed', () => handlePlace('origine', originAutocomplete));
   destinationAutocomplete.addListener('place_changed', () => handlePlace('destinazione', destinationAutocomplete));
+}
+function swapLocations() {
+  const originInput = document.getElementById('origine');
+  const destinationInput = document.getElementById('destinazione');
+  const originLatInput = document.getElementById('origine_lat');
+  const originLngInput = document.getElementById('origine_lng');
+  const destinationLatInput = document.getElementById('destinazione_lat');
+  const destinationLngInput = document.getElementById('destinazione_lng');
+  [originInput.value, destinationInput.value] = [destinationInput.value, originInput.value];
+  [originLatInput.value, destinationLatInput.value] = [destinationLatInput.value, originLatInput.value];
+  [originLngInput.value, destinationLngInput.value] = [destinationLngInput.value, originLngInput.value];
+  calculateDistance();
 }
 function handlePlace(prefix, autocomplete) {
   const place = autocomplete.getPlace();
