@@ -400,6 +400,10 @@ include 'includes/header.php';
           <input type="text" class="form-control bg-secondary text-white" name="descrizione" value="<?= htmlspecialchars($movimento['description']) ?>" required>
         </div>
         <div class="mb-3">
+          <label class="form-label">Descrizione extra</label>
+          <input type="text" class="form-control bg-secondary text-white" name="descrizione_extra" value="<?= htmlspecialchars($movimento['descrizione_extra'] ?? '') ?>">
+        </div>
+        <div class="mb-3">
           <label class="form-label">Gruppo</label>
           <select class="form-select bg-secondary text-white" name="id_gruppo_transazione" required>
             <?php foreach ($gruppi as $g): ?>
