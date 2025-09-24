@@ -251,6 +251,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if(!confirm('Salvare regola per questo evento?')) return;
       const fd = new FormData();
       fd.append('id_evento', this.dataset.id);
+      if (this.dataset.descrizione !== undefined) {
+        fd.append('descrizione', this.dataset.descrizione ?? '');
+      }
     fetch('ajax/add_evento_google_rule.php', {method:'POST', body:fd})
       .then(r=>r.json())
       .then(res=>{
