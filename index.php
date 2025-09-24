@@ -219,8 +219,9 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                      WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut') AS etichette,
-                   bm.id_gruppo_transazione, 'revolut' AS source, 'movimenti_revolut' AS tabella, null as mezzo
-            FROM v_movimenti_revolut_filtrati bm            
+                   bm.id_gruppo_transazione, g.descrizione AS gruppo_descrizione, 'revolut' AS source, 'movimenti_revolut' AS tabella, null as mezzo
+            FROM v_movimenti_revolut_filtrati bm
+            LEFT JOIN bilancio_gruppi_transazione g ON g.id_gruppo_transazione = bm.id_gruppo_transazione
             UNION ALL";
   }
  $sql = "SELECT * FROM (
@@ -231,8 +232,9 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                      WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette,
-                   be.id_gruppo_transazione, 'ca' AS source, 'bilancio_entrate' AS tabella, be.mezzo
+                   be.id_gruppo_transazione, g.descrizione AS gruppo_descrizione, 'ca' AS source, 'bilancio_entrate' AS tabella, be.mezzo
             FROM bilancio_entrate be
+            LEFT JOIN bilancio_gruppi_transazione g ON g.id_gruppo_transazione = be.id_gruppo_transazione
             WHERE be.id_utente = {$idUtente}
             UNION ALL
             SELECT bu.id_uscita AS id, COALESCE(NULLIF(bu.descrizione_extra,''), bu.descrizione_operazione) AS descrizione, bu.descrizione_extra,
@@ -241,8 +243,9 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                      WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette,
-                   bu.id_gruppo_transazione, 'ca' AS source, 'bilancio_uscite' AS tabella, bu.mezzo
+                   bu.id_gruppo_transazione, g.descrizione AS gruppo_descrizione, 'ca' AS source, 'bilancio_uscite' AS tabella, bu.mezzo
             FROM bilancio_uscite bu
+            LEFT JOIN bilancio_gruppi_transazione g ON g.id_gruppo_transazione = bu.id_gruppo_transazione
             WHERE bu.id_utente = {$idUtente}
         ) t
         ORDER BY data_operazione DESC LIMIT 3";
@@ -266,15 +269,16 @@ if ($result && $result->num_rows > 0): ?>
 $movimenti_revolut = "";
   if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1)
   {
-    $movimenti_revolut = 
+    $movimenti_revolut =
       "SELECT id_movimento_revolut AS id, COALESCE(NULLIF(descrizione_extra,''), description) AS descrizione, bm.descrizione_extra,
                    started_date AS data_operazione, amount,
                    (SELECT GROUP_CONCAT(CONCAT(e.id_etichetta, ':', e.descrizione) SEPARATOR ',')
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                      WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut') AS etichette,
-                   bm.id_gruppo_transazione, 'revolut' AS source, 'movimenti_revolut' AS tabella, null as mezzo
-            FROM v_movimenti_revolut_filtrati bm            
+                   bm.id_gruppo_transazione, g.descrizione AS gruppo_descrizione, 'revolut' AS source, 'movimenti_revolut' AS tabella, null as mezzo
+            FROM v_movimenti_revolut_filtrati bm
+            LEFT JOIN bilancio_gruppi_transazione g ON g.id_gruppo_transazione = bm.id_gruppo_transazione
             UNION ALL";
   }
  $sql = "SELECT * FROM (
@@ -285,8 +289,9 @@ $movimenti_revolut = "";
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                      WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette,
-                   be.id_gruppo_transazione, 'ca' AS source, 'bilancio_entrate' AS tabella, be.mezzo
+                   be.id_gruppo_transazione, g.descrizione AS gruppo_descrizione, 'ca' AS source, 'bilancio_entrate' AS tabella, be.mezzo
             FROM bilancio_entrate be
+            LEFT JOIN bilancio_gruppi_transazione g ON g.id_gruppo_transazione = be.id_gruppo_transazione
             WHERE be.id_utente = {$idUtente}
             UNION ALL
             SELECT bu.id_uscita AS id, COALESCE(NULLIF(bu.descrizione_extra,''), bu.descrizione_operazione) AS descrizione, bu.descrizione_extra,
@@ -295,8 +300,9 @@ $movimenti_revolut = "";
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                      WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette,
-                   bu.id_gruppo_transazione, 'ca' AS source, 'bilancio_uscite' AS tabella, bu.mezzo
+                   bu.id_gruppo_transazione, g.descrizione AS gruppo_descrizione, 'ca' AS source, 'bilancio_uscite' AS tabella, bu.mezzo
             FROM bilancio_uscite bu
+            LEFT JOIN bilancio_gruppi_transazione g ON g.id_gruppo_transazione = bu.id_gruppo_transazione
             WHERE bu.id_utente = {$idUtente}
         ) t
         WHERE id_gruppo_transazione IS NULL AND data_operazione >= DATE_SUB(CURDATE(), INTERVAL 2 MONTH)

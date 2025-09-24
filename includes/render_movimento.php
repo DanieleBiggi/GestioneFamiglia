@@ -19,8 +19,21 @@ function render_movimento(array $mov) {
     echo '<div class="movement d-flex justify-content-between align-items-start text-white text-decoration-none" data-id="' . (int)$mov['id'] . '" data-src="' . htmlspecialchars($mov['tabella'], ENT_QUOTES) . '" data-mese="' . htmlspecialchars($mese, ENT_QUOTES) . '" data-href="' . htmlspecialchars($url, ENT_QUOTES) . '" style="cursor:pointer">';
     echo '  <img src="' . htmlspecialchars($icon) . '" alt="src" class="me-2" style="width:24px;height:24px">';
     echo '  <div class="flex-grow-1 me-3">';
+    $gruppoDescrizione = trim($mov['gruppo_descrizione'] ?? '');
+    $haGruppo = !empty($mov['id_gruppo_transazione']);
+    $badgeClasse = $haGruppo ? 'bg-info text-dark' : 'bg-secondary';
+    if ($haGruppo) {
+        $descrizioneGruppo = $gruppoDescrizione !== ''
+            ? htmlspecialchars($gruppoDescrizione, ENT_QUOTES)
+            : 'ID ' . (int) $mov['id_gruppo_transazione'];
+        $badgeTesto = 'Gruppo: ' . $descrizioneGruppo;
+    } else {
+        $badgeTesto = 'Senza gruppo';
+    }
+
     echo '    <div class="descr fw-semibold">' . htmlspecialchars($mov['descrizione']) . '</div>';
     echo '    <div class="small">' . $dataOra . '</div>';
+    echo '    <div class="mt-1"><span class="badge ' . $badgeClasse . '">' . $badgeTesto . '</span></div>';
     echo '  </div>';
     echo '  <div class="text-end">';
     echo '    <div class="amount text-white">' . ($mov['amount'] >= 0 ? '+' : '') . $importo . ' €</div>';

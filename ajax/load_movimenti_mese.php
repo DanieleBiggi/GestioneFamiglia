@@ -17,8 +17,9 @@ if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                      WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut') AS etichette,
-                   bm.id_gruppo_transazione, 'revolut' AS source, 'movimenti_revolut' AS tabella, null as mezzo
+                   bm.id_gruppo_transazione, g.descrizione AS gruppo_descrizione, 'revolut' AS source, 'movimenti_revolut' AS tabella, null as mezzo
             FROM v_movimenti_revolut_filtrati bm
+            LEFT JOIN bilancio_gruppi_transazione g ON g.id_gruppo_transazione = bm.id_gruppo_transazione
             UNION ALL";
 }
 
@@ -30,8 +31,9 @@ $sql = "SELECT * FROM (
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                      WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette,
-                   be.id_gruppo_transazione, 'ca' AS source, 'bilancio_entrate' AS tabella, be.mezzo
+                   be.id_gruppo_transazione, g.descrizione AS gruppo_descrizione, 'ca' AS source, 'bilancio_entrate' AS tabella, be.mezzo
             FROM bilancio_entrate be
+            LEFT JOIN bilancio_gruppi_transazione g ON g.id_gruppo_transazione = be.id_gruppo_transazione
             WHERE be.id_utente = {$idUtente}
             UNION ALL
             SELECT bu.id_uscita AS id, COALESCE(NULLIF(bu.descrizione_extra,''), bu.descrizione_operazione) AS descrizione, bu.descrizione_extra,
@@ -40,8 +42,9 @@ $sql = "SELECT * FROM (
                       FROM bilancio_etichette2operazioni eo
                       JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
                      WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette,
-                   bu.id_gruppo_transazione, 'ca' AS source, 'bilancio_uscite' AS tabella, bu.mezzo
+                   bu.id_gruppo_transazione, g.descrizione AS gruppo_descrizione, 'ca' AS source, 'bilancio_uscite' AS tabella, bu.mezzo
             FROM bilancio_uscite bu
+            LEFT JOIN bilancio_gruppi_transazione g ON g.id_gruppo_transazione = bu.id_gruppo_transazione
             WHERE bu.id_utente = {$idUtente}
         ) t
         WHERE DATE_FORMAT(data_operazione, '%Y-%m') = ?
