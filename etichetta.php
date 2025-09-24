@@ -216,8 +216,8 @@ $finanze = [];
 $stmtSe = $conn->prepare("SELECT e2se.id_e2se, e.id AS id_evento, e.titolo, e.data_evento, e.data_fine,
                                  s.id_salvadanaio, s.nome_salvadanaio
                           FROM eventi_eventi2salvadanai_etichette e2se
-                          JOIN eventi e ON e.id = e2se.id_evento
-                          JOIN salvadanai s ON s.id_salvadanaio = e2se.id_salvadanaio
+                          LEFT JOIN eventi e ON e.id = e2se.id_evento
+                          LEFT JOIN salvadanai s ON s.id_salvadanaio = e2se.id_salvadanaio
                           WHERE e2se.id_etichetta = ?
                           ORDER BY e.titolo, s.nome_salvadanaio");
 $stmtSe->bind_param('i', $etichettaInfo['id_etichetta']);
