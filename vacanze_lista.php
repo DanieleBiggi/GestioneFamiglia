@@ -6,6 +6,9 @@ $search = $_GET['q'] ?? '';
 $notti = $_GET['notti'] ?? '';
 $prezzoMin = $_GET['prezzo_min'] ?? '';
 $prezzoMax = $_GET['prezzo_max'] ?? '';
+$stato = $_GET['stato'] ?? '';
+
+$statiDisponibili = ['idea','shortlist','pianificato','prenotato','fatto','scartato'];
 
 $query = "SELECT v.id_viaggio, v.titolo, v.breve_descrizione, v.stato, v.data_inizio, v.meteo_previsto_json, lf.photo_reference as foto_url, t.min_totale FROM viaggi v LEFT JOIN (SELECT id_viaggio, MIN(totale_viaggio) AS min_totale FROM v_totali_alternative GROUP BY id_viaggio) t ON v.id_viaggio=t.id_viaggio LEFT JOIN viaggi_luoghi l ON v.id_luogo=l.id_luogo LEFT JOIN viaggi_luogo_foto lf ON v.id_foto=lf.id_foto WHERE 1=1";
 $params = [];
@@ -18,6 +21,13 @@ if ($search !== '') {
     $params[] = $searchLike;
     $params[] = $searchLike;
     $params[] = $searchLike;
+}
+if ($stato !== '') {
+    $query .= " AND v.stato = ?";
+    $types .= 's';
+    $params[] = $stato;
+} elseif ($search === '') {
+    $query .= " AND v.stato NOT IN ('fatto','scartato')";
 }
 if ($notti !== '') {
     $query .= " AND v.notti = ?";
@@ -58,6 +68,7 @@ $nottiRes = $conn->query("SELECT DISTINCT notti FROM viaggi WHERE notti IS NOT N
       <button class="btn btn-primary">Cerca</button>
     </div>
     <input type="hidden" name="notti" value="<?= htmlspecialchars($notti) ?>">
+    <input type="hidden" name="stato" value="<?= htmlspecialchars($stato) ?>">
     <input type="hidden" name="prezzo_min" value="<?= htmlspecialchars($prezzoMin) ?>">
     <input type="hidden" name="prezzo_max" value="<?= htmlspecialchars($prezzoMax) ?>">
   </form>
@@ -77,6 +88,9 @@ $nottiRes = $conn->query("SELECT DISTINCT notti FROM viaggi WHERE notti IS NOT N
       } elseif($row['stato'] === 'fatto') {
         $badgeClass = 'bg-dark';
         $badgeText = 'Fatto';
+      } elseif($row['stato'] === 'scartato') {
+        $badgeClass = 'bg-danger';
+        $badgeText = 'Scartato';
       }
       $weatherIcon = null;
       if($row['stato'] === 'prenotato' && !empty($row['meteo_previsto_json'])){
@@ -140,6 +154,15 @@ $nottiRes = $conn->query("SELECT DISTINCT notti FROM viaggi WHERE notti IS NOT N
       </div>
       <div class="modal-body">
         <div class="mb-3">
+          <label class="form-label">Stato</label>
+          <select class="form-select bg-dark text-white border-secondary" name="stato">
+            <option value="" <?= $stato===''?'selected':'' ?>>Tutti (esclude fatti e scartati)</option>
+            <?php foreach($statiDisponibili as $statoOpzione): ?>
+              <option value="<?= htmlspecialchars($statoOpzione) ?>" <?= $stato===$statoOpzione?'selected':'' ?>><?= htmlspecialchars(ucfirst($statoOpzione)) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="mb-3">
           <label class="form-label">Notti</label>
           <?php while($n = $nottiRes->fetch_assoc()): ?>
             <div class="form-check">
@@ -174,8 +197,9 @@ function updateCount(){
     .then(d=>{document.getElementById('applyBtn').innerText='Vedi '+d.count+' vacanze';});
 }
 document.getElementById('filtersModal').addEventListener('shown.bs.modal',updateCount);
-Array.from(document.querySelectorAll('#filtersForm input')).forEach(el=>{
+Array.from(document.querySelectorAll('#filtersForm input, #filtersForm select')).forEach(el=>{
   el.addEventListener('input',updateCount);
+  el.addEventListener('change',updateCount);
 });
 document.getElementById('resetFilters').addEventListener('click',()=>{
   const form=document.getElementById('filtersForm');
