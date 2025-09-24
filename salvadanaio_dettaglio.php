@@ -4,6 +4,7 @@ include 'includes/db.php';
 require_once 'includes/permissions.php';
 require_once 'includes/render_budget.php';
 if (!has_permission($conn, 'page:salvadanai.php', 'view')) { http_response_code(403); exit('Accesso negato'); }
+$canDeleteSalvadanaio = has_permission($conn, 'table:salvadanai', 'delete');
 
 function getEnumValues(mysqli $conn, string $table, string $field): array {
     $values = [];
@@ -149,6 +150,9 @@ if ($id > 0): ?>
       <?php render_budget($row); ?>
     <?php endforeach; ?>
   </div>
+  <?php if ($canDeleteSalvadanaio): ?>
+    <button type="button" class="btn btn-danger w-100 mt-4" id="deleteSalvadanaioBtn">Elimina</button>
+  <?php endif; ?>
 </div>
 
 <div class="modal fade" id="salvadanaioModal" tabindex="-1">
