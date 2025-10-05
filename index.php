@@ -15,7 +15,7 @@ $utilityServices = [
         'href' => 'aggiungi_entrata.php',
         'icon' => 'bi-arrow-down-circle',
         'label' => 'Aggiungi entrata',
-        'permission' => null,
+        'permission' => 'page:index.php-movimenti',
         'show_in_modal' => false,
     ],
     [
@@ -30,7 +30,7 @@ $utilityServices = [
         'href' => 'upload_movimenti.php',
         'icon' => 'bi-cloud-upload',
         'label' => 'Carica file',
-        'permission' => null,
+        'permission' => 'page:index.php-movimenti',
         'show_in_modal' => false,
     ],
     [
