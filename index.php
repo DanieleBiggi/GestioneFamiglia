@@ -10,6 +10,184 @@ include 'includes/header.php';
 $idUtente = $_SESSION['utente_id'] ?? 0;
 $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 
+$utilityServices = [
+    [
+        'href' => 'aggiungi_entrata.php',
+        'icon' => 'bi-arrow-down-circle',
+        'label' => 'Aggiungi entrata',
+        'permission' => null,
+        'show_in_modal' => false,
+    ],
+    [
+        'href' => 'turni.php',
+        'icon' => 'bi-calendar-week',
+        'label' => 'Turni',
+        'permission' => 'page:turni.php',
+        'show_in_modal' => true,
+        'always_show_in_modal' => true,
+    ],
+    [
+        'href' => 'upload_movimenti.php',
+        'icon' => 'bi-cloud-upload',
+        'label' => 'Carica file',
+        'permission' => null,
+        'show_in_modal' => false,
+    ],
+    [
+        'href' => 'aggiungi_uscita.php',
+        'icon' => 'bi-arrow-up-circle',
+        'label' => 'Aggiungi uscita',
+        'permission' => 'page:aggiungi_uscita.php',
+        'show_in_modal' => true,
+    ],
+    [
+        'href' => 'password.php',
+        'icon' => 'bi-shield-lock',
+        'label' => 'Siti e password',
+        'permission' => 'page:password.php',
+        'show_in_modal' => true,
+    ],
+    [
+        'href' => 'budget.php',
+        'icon' => 'bi-wallet2',
+        'label' => 'Budget',
+        'permission' => 'page:budget.php',
+        'show_in_modal' => true,
+    ],
+    [
+        'href' => 'mezzi.php',
+        'icon' => 'bi-truck',
+        'label' => 'Mezzi',
+        'permission' => 'page:mezzi.php',
+        'show_in_modal' => true,
+    ],
+    [
+        'href' => 'eventi.php',
+        'icon' => 'bi-calendar-event',
+        'label' => 'Eventi',
+        'permission' => 'page:eventi.php',
+        'show_in_modal' => true,
+    ],
+    [
+        'href' => 'lista_spesa.php',
+        'icon' => 'bi-cart',
+        'label' => 'Lista spesa',
+        'permission' => 'page:lista_spesa.php',
+        'show_in_modal' => true,
+    ],
+    [
+        'href' => 'storia.php',
+        'icon' => 'bi-clock-history',
+        'label' => 'Storia',
+        'permission' => 'page:storia.php',
+        'show_in_modal' => true,
+    ],
+    [
+        'href' => 'film.php',
+        'icon' => 'bi-film',
+        'label' => 'Film',
+        'permission' => 'page:film.php',
+        'show_in_modal' => true,
+    ],
+    [
+        'href' => 'vacanze_lista.php',
+        'icon' => 'bi-airplane',
+        'label' => 'Vacanze',
+        'permission' => 'page:vacanze.php',
+        'show_in_modal' => true,
+    ],
+    [
+        'href' => 'ocr_caricamenti_scontrini.php',
+        'icon' => 'bi-receipt',
+        'label' => 'Scontrini',
+        'permission' => 'page:ocr_caricamenti_scontrini.php',
+        'show_in_modal' => true,
+    ],
+    [
+        'href' => 'upload.php',
+        'icon' => 'bi-cloud-upload',
+        'label' => 'Upload',
+        'permission' => 'page:upload.php',
+        'show_in_modal' => true,
+    ],
+    [
+        'href' => 'etichette_lista.php',
+        'icon' => 'bi-tags',
+        'label' => 'Etichette',
+        'permission' => 'page:etichette_lista.php',
+        'show_in_modal' => true,
+        'condition' => function () use ($idFamiglia) {
+            return (int) $idFamiglia === 1;
+        },
+    ],
+];
+
+$availableUtilities = array_values(array_filter($utilityServices, function ($utility) use ($conn) {
+    if (isset($utility['condition']) && is_callable($utility['condition']) && !$utility['condition']()) {
+        return false;
+    }
+
+    if (!empty($utility['permission']) && !has_permission($conn, $utility['permission'], 'view')) {
+        return false;
+    }
+
+    return true;
+}));
+
+$firstUtilities = array_slice($availableUtilities, 0, 3);
+$firstUtilityHrefs = array_column($firstUtilities, 'href');
+$remainingUtilities = array_values(array_filter($availableUtilities, function ($utility) use ($firstUtilityHrefs) {
+    if (!($utility['show_in_modal'] ?? true)) {
+        return false;
+    }
+
+    if (!empty($utility['always_show_in_modal'])) {
+        return true;
+    }
+
+    return !in_array($utility['href'], $firstUtilityHrefs, true);
+}));
+
+$hasAdditionalUtilities = false;
+foreach ($remainingUtilities as $utility) {
+    if (!in_array($utility['href'], $firstUtilityHrefs, true)) {
+        $hasAdditionalUtilities = true;
+        break;
+    }
+}
+
+$renderUtilityGrid = function () use ($firstUtilities, $remainingUtilities, $hasAdditionalUtilities) {
+    if (empty($firstUtilities)) {
+        return;
+    }
+    ?>
+    <div class="row text-center g-2 mb-3">
+      <?php foreach ($firstUtilities as $utility): ?>
+        <div class="col-3">
+          <a href="<?= htmlspecialchars($utility['href'], ENT_QUOTES, 'UTF-8') ?>" class="text-decoration-none text-white">
+            <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
+                 style="width:50px;height:50px">
+              <i class="bi <?= htmlspecialchars($utility['icon'], ENT_QUOTES, 'UTF-8') ?> fs-4"></i>
+            </div>
+            <div><?= htmlspecialchars($utility['label'], ENT_QUOTES, 'UTF-8') ?></div>
+          </a>
+        </div>
+      <?php endforeach; ?>
+      <?php if ($hasAdditionalUtilities): ?>
+        <div class="col-3">
+          <a href="#" class="text-decoration-none text-white" data-bs-toggle="modal" data-bs-target="#altroModal">
+            <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
+                 style="width:50px;height:50px">
+              <i class="bi bi-three-dots fs-4"></i>
+            </div>
+            <div>Altro</div>
+          </a>
+        </div>
+      <?php endif; ?>
+    </div>
+    <?php
+};
+
 $salvadanai = [];
 $salvadanaiVisibili = [];
 if ($idFamiglia) {
@@ -83,130 +261,10 @@ if (has_permission($conn, 'page:index.php-movimenti', 'view')): ?>
     </div>
   </div>
 </div>
-<div class="row text-center g-2 mb-3">
-  <div class="col-3">
-    <a href="aggiungi_entrata.php" class="text-decoration-none text-white">
-      <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
-           style="width:50px;height:50px">
-        <i class="bi bi-arrow-down-circle fs-4"></i>
-      </div>
-      <div>Aggiungi entrata</div>
-    </a>
-  </div>
-  <div class="col-3">
-    <a href="turni.php" class="text-decoration-none text-white">
-      <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
-           style="width:50px;height:50px">
-        <i class="bi bi-calendar-week fs-4"></i>
-      </div>
-      <div>Turni</div>
-    </a>
-  </div>
-  <div class="col-3">
-    <a href="upload_movimenti.php" class="text-decoration-none text-white">
-      <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1" 
-           style="width:50px;height:50px">
-        <i class="bi bi-cloud-upload fs-4"></i>
-      </div>
-      <div>Carica file</div>
-    </a>
-  </div>
-  <div class="col-3">
-    <a href="#" class="text-decoration-none text-white" data-bs-toggle="modal" data-bs-target="#altroModal">
-      <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
-           style="width:50px;height:50px">
-        <i class="bi bi-three-dots fs-4"></i>
-      </div>
-      <div>Altro</div>
-    </a>
-  </div>
-</div>
+<?php $renderUtilityGrid(); ?>
 
 <input type="text" id="search" class="form-control bg-dark text-white border-secondary mb-3" placeholder="Cerca nei movimenti">
 <div id="searchResults"></div>
-
-<div class="modal fade" id="altroModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content bg-dark text-white">
-      <div class="modal-header">
-        <h5 class="modal-title">Altre funzioni</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div class="d-grid gap-2">
-          <?php if (has_permission($conn, 'page:aggiungi_uscita.php', 'view')): ?>
-          <a href="aggiungi_uscita.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
-            <i class="bi bi-arrow-up-circle me-2"></i>Aggiungi uscita
-          </a>
-          <?php endif; ?>
-          <?php if (has_permission($conn, 'page:password.php', 'view')): ?>
-          <a href="password.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
-            <i class="bi bi-shield-lock me-2"></i>Siti e password
-          </a>
-          <?php endif; ?>
-          <?php if (has_permission($conn, 'page:budget.php', 'view')): ?>
-          <a href="budget.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
-            <i class="bi bi-wallet2 me-2"></i>Budget
-          </a>
-          <?php endif; ?>
-          <?php if (has_permission($conn, 'page:mezzi.php', 'view')): ?>
-          <a href="mezzi.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
-            <i class="bi bi-truck me-2"></i>Mezzi
-          </a>
-          <?php endif; ?>
-          <?php if (has_permission($conn, 'page:eventi.php', 'view')): ?>
-          <a href="eventi.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
-            <i class="bi bi-calendar-event me-2"></i>Eventi
-          </a>
-          <?php endif; ?>
-          <?php if (has_permission($conn, 'page:turni.php', 'view')): ?>
-          <a href="turni.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
-            <i class="bi bi-calendar-week me-2"></i>Turni
-          </a>
-          <?php endif; ?>
-          <?php if (has_permission($conn, 'page:lista_spesa.php', 'view')): ?>
-          <a href="lista_spesa.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
-            <i class="bi bi-cart me-2"></i>Lista spesa
-          </a>
-          <?php endif; ?>
-          <?php if (has_permission($conn, 'page:storia.php', 'view')): ?>
-          <a href="storia.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
-            <i class="bi bi-clock-history me-2"></i>Storia
-          </a>
-          <?php endif; ?> 
-          <?php if (has_permission($conn, 'page:film.php', 'view')): ?>
-          <a href="film.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
-            <i class="bi bi-film me-2"></i>Film
-          </a>
-          <?php endif; ?>
-          <?php if (has_permission($conn, 'page:vacanze.php', 'view')): ?>
-          <a href="vacanze_lista.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
-            <i class="bi bi-airplane me-2"></i>Vacanze
-          </a>
-          <?php endif; ?>
-          <?php if (has_permission($conn, 'page:ocr_caricamenti_scontrini.php', 'view')): ?>
-          <a href="ocr_caricamenti_scontrini.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
-            <i class="bi bi-receipt me-2"></i>Scontrini
-          </a>
-          <?php endif; ?>
-          <?php if (has_permission($conn, 'page:upload.php', 'view')): ?>
-          <a href="upload.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
-            <i class="bi bi-cloud-upload me-2"></i>Upload
-          </a>
-          <?php endif; ?>
-          <?php if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1 && has_permission($conn, 'page:etichette_lista.php', 'view')): ?>
-          <a href="etichette_lista.php" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
-            <i class="bi bi-tags me-2"></i>Etichette
-          </a>
-          <?php endif; ?>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <?php
   $movimenti_revolut = "";
@@ -345,7 +403,37 @@ if ($result && $result->num_rows > 0): ?>
  <script src="js/index.js"></script>
  <script src="js/delete_movimento.js"></script>
 <?php else: ?>
+<?php if (!empty($firstUtilities)): ?>
+  <?php $renderUtilityGrid(); ?>
+<?php else: ?>
+  <p class="text-center text-muted">Nessun servizio disponibile.</p>
+<?php endif; ?>
 <p class="text-center text-muted">Movimenti non disponibili per questa famiglia.</p>
+<?php endif; ?>
+
+<?php if (!empty($remainingUtilities) && $hasAdditionalUtilities): ?>
+<div class="modal fade" id="altroModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-header">
+        <h5 class="modal-title">Altre funzioni</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-grid gap-2">
+          <?php foreach ($remainingUtilities as $utility): ?>
+          <a href="<?= htmlspecialchars($utility['href'], ENT_QUOTES, 'UTF-8') ?>" class="btn btn-outline-light w-100 text-start d-flex align-items-center">
+            <i class="bi <?= htmlspecialchars($utility['icon'], ENT_QUOTES, 'UTF-8') ?> me-2"></i><?= htmlspecialchars($utility['label'], ENT_QUOTES, 'UTF-8') ?>
+          </a>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+      </div>
+    </div>
+  </div>
+</div>
 <?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>
