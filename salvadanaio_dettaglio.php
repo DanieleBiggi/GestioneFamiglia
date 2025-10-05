@@ -334,7 +334,10 @@ $salvadanaioData = [
 ];
 ?>
 <script>
-const salvadanaioData = <?= json_encode($salvadanaioData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+const salvadanaioData = <?= json_encode(
+    $salvadanaioData,
+    JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_INVALID_UTF8_SUBSTITUTE
+) ?>;
 </script>
 <script src="js/salvadanaio_dettaglio.js"></script>
 <?php include 'includes/footer.php'; ?>
