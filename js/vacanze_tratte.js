@@ -1,3 +1,28 @@
+function formatCurrency(value) {
+  const amount = Number.isFinite(value) ? value : Number.parseFloat(value) || 0;
+  return new Intl.NumberFormat('it-IT', {style: 'currency', currency: 'EUR'}).format(amount);
+}
+
+function updateSummaries(section, amount, isPaid) {
+  const delta = isPaid ? amount : -amount;
+  ['overall', section].forEach(sec => {
+    if (!sec) return;
+    const block = document.querySelector(`.summary-block[data-section="${sec}"]`);
+    if (!block) return;
+    const total = Number.parseFloat(block.dataset.total || '0') || 0;
+    let paid = Number.parseFloat(block.dataset.paid || '0') || 0;
+    paid = Math.max(0, Math.min(total, +(paid + delta).toFixed(2)));
+    block.dataset.paid = paid.toFixed(2);
+    const due = Math.max(0, +(total - paid).toFixed(2));
+    const totalEl = block.querySelector('.summary-total');
+    const paidEl = block.querySelector('.summary-paid');
+    const dueEl = block.querySelector('.summary-due');
+    if (totalEl) totalEl.textContent = formatCurrency(total);
+    if (paidEl) paidEl.textContent = formatCurrency(paid);
+    if (dueEl) dueEl.textContent = formatCurrency(due);
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('altEditForm');
   if(form){
@@ -23,6 +48,58 @@ document.addEventListener('DOMContentLoaded', () => {
       e.stopPropagation();
       const href = el.getAttribute('data-href');
       if (href) window.location.href = href;
+    });
+  });
+
+  document.querySelectorAll('.payment-toggle').forEach(toggle => {
+    if (toggle.disabled) return;
+    toggle.addEventListener('click', ev => ev.stopPropagation());
+    const label = toggle.closest('.form-check')?.querySelector('.payment-label');
+    if (label) {
+      label.addEventListener('click', ev => ev.stopPropagation());
+    }
+    toggle.addEventListener('change', () => {
+      const checked = toggle.checked;
+      const amount = Number.parseFloat(toggle.dataset.amount || '0') || 0;
+      const section = toggle.dataset.section || '';
+      const table = toggle.dataset.table || '';
+      const id = toggle.dataset.id || '';
+      if (!table || !id) {
+        toggle.checked = !checked;
+        return;
+      }
+      const fd = new FormData();
+      fd.append('table', table);
+      fd.append('id', id);
+      fd.append('value', checked ? '1' : '0');
+      fd.append('id_viaggio', viaggioId);
+      fd.append('id_viaggio_alternativa', altId);
+      toggle.disabled = true;
+      fetch('ajax/update_viaggi_pagamento.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(res => {
+          if (res && res.success) {
+            updateSummaries(section, amount, checked);
+            const lbl = toggle.closest('.form-check')?.querySelector('.payment-label');
+            if (lbl) {
+              const paidLabel = lbl.dataset.paidLabel || 'Pagato';
+              const unpaidLabel = lbl.dataset.unpaidLabel || 'Da pagare';
+              lbl.textContent = checked ? paidLabel : unpaidLabel;
+              lbl.classList.toggle('text-success', checked);
+              lbl.classList.toggle('text-warning', !checked);
+            }
+          } else {
+            toggle.checked = !checked;
+            alert((res && res.error) || 'Errore durante l\'aggiornamento');
+          }
+        })
+        .catch(() => {
+          toggle.checked = !checked;
+          alert('Errore di comunicazione');
+        })
+        .finally(() => {
+          toggle.disabled = false;
+        });
     });
   });
 

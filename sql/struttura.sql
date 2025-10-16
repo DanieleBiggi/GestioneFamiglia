@@ -2623,6 +2623,19 @@ ALTER TABLE `utenti2salvadanai`
 ALTER TABLE `viaggi_altri_costi`
   ADD COLUMN `descrizione` varchar(255) DEFAULT NULL AFTER `importo_eur`;
 
+-- Gestione pagamenti viaggi
+ALTER TABLE `viaggi_tratte`
+  ADD COLUMN `pagato` tinyint(1) NOT NULL DEFAULT '0' AFTER `note`;
+
+ALTER TABLE `viaggi_alloggi`
+  ADD COLUMN `pagato` tinyint(1) NOT NULL DEFAULT '0' AFTER `note`;
+
+ALTER TABLE `viaggi_pasti`
+  ADD COLUMN `pagato` tinyint(1) NOT NULL DEFAULT '0' AFTER `note`;
+
+ALTER TABLE `viaggi_altri_costi`
+  ADD COLUMN `pagato` tinyint(1) NOT NULL DEFAULT '0' AFTER `note`;
+
 -- Modifiche per gestione luoghi viaggi
 ALTER TABLE `viaggi_luoghi`
   ADD COLUMN `place_id` varchar(255) DEFAULT NULL;

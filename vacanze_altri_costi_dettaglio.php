@@ -26,18 +26,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $importo = $_POST['importo_eur'] !== '' ? (float)$_POST['importo_eur'] : null;
     $descrizione = $_POST['descrizione'] ?? null;
     $note = $_POST['note'] ?? null;
+    $pagato = isset($_POST['pagato']) ? 1 : 0;
 
     if (isset($_POST['delete']) && $id_costo) {
         $del = $conn->prepare('DELETE FROM viaggi_altri_costi WHERE id_costo=? AND id_viaggio=?');
         $del->bind_param('ii', $id_costo, $id);
         $del->execute();
     } elseif ($id_costo) {
-        $upd = $conn->prepare('UPDATE viaggi_altri_costi SET id_viaggio_alternativa=?, data=?, importo_eur=?, descrizione=?, note=? WHERE id_costo=? AND id_viaggio=?');
-        $upd->bind_param('isdssii', $id_alt, $data, $importo, $descrizione, $note, $id_costo, $id);
+        $upd = $conn->prepare('UPDATE viaggi_altri_costi SET id_viaggio_alternativa=?, data=?, importo_eur=?, descrizione=?, note=?, pagato=? WHERE id_costo=? AND id_viaggio=?');
+        $upd->bind_param('isdssiii', $id_alt, $data, $importo, $descrizione, $note, $pagato, $id_costo, $id);
         $upd->execute();
     } else {
-        $ins = $conn->prepare('INSERT INTO viaggi_altri_costi (id_viaggio, id_viaggio_alternativa, data, importo_eur, descrizione, note) VALUES (?,?,?,?,?,?)');
-        $ins->bind_param('iisdss', $id, $id_alt, $data, $importo, $descrizione, $note);
+        $ins = $conn->prepare('INSERT INTO viaggi_altri_costi (id_viaggio, id_viaggio_alternativa, data, importo_eur, descrizione, note, pagato) VALUES (?,?,?,?,?,?,?)');
+        $ins->bind_param('iisdssi', $id, $id_alt, $data, $importo, $descrizione, $note, $pagato);
         $ins->execute();
     }
     header('Location: vacanze_tratte.php?id=' . $id . '&alt=' . $id_alt);
@@ -50,6 +51,7 @@ $costo = [
     'importo_eur' => '',
     'descrizione' => '',
     'note' => '',
+    'pagato' => 0,
 ];
 
 if ($id_costo) {
@@ -65,6 +67,7 @@ if ($id_costo) {
     $alt = (int)$costo['id_viaggio_alternativa'];
     if ($duplica) {
         $id_costo = 0;
+        $costo['pagato'] = 0;
     }
 }
 
@@ -101,6 +104,10 @@ $alt_desc = $alternative[$alt] ?? '';
     <div class="mb-3">
       <label class="form-label">Descrizione</label>
       <input type="text" class="form-control" name="descrizione" value="<?= htmlspecialchars($costo['descrizione']) ?>">
+    </div>
+    <div class="form-check form-switch mb-3">
+      <input class="form-check-input" type="checkbox" name="pagato" id="pagato_costo" <?= !empty($costo['pagato']) ? 'checked' : '' ?>>
+      <label class="form-check-label" for="pagato_costo">Già pagato</label>
     </div>
     <div class="mb-3">
       <label class="form-label">Note</label>
