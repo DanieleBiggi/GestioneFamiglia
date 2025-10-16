@@ -47,18 +47,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $noleggio = (float)($_POST['costo_noleggio_eur'] ?? 0);
     $altri = (float)($_POST['altri_costi_eur'] ?? 0);
     $note = $_POST['note'] ?? null;
+    $pagato = isset($_POST['pagato']) ? 1 : 0;
 
     if (isset($_POST['delete']) && $id_tratta) {
         $del = $conn->prepare('DELETE FROM viaggi_tratte WHERE id_tratta=? AND id_viaggio=?');
         $del->bind_param('ii', $id_tratta, $id);
         $del->execute();
     } elseif ($id_tratta) {
-        $upd = $conn->prepare('UPDATE viaggi_tratte SET id_viaggio_alternativa=?, tipo_tratta=?, descrizione=?, origine_testo=?, origine_lat=?, origine_lng=?, destinazione_testo=?, destinazione_lat=?, destinazione_lng=?, distanza_km=?, durata_ore=?, consumo_litri_100km=?, prezzo_carburante_eur_litro=?, pedaggi_eur=?, costo_traghetto_eur=?, costo_volo_eur=?, costo_noleggio_eur=?, altri_costi_eur=?, note=? WHERE id_tratta=? AND id_viaggio=?');
-        $upd->bind_param('isssddsdddddddddddsii', $id_alt, $tipo, $descrizione, $origine, $origine_lat, $origine_lng, $destinazione, $destinazione_lat, $destinazione_lng, $distanza, $durata, $consumo, $prezzo, $pedaggi, $traghetto, $volo, $noleggio, $altri, $note, $id_tratta, $id);
+        $upd = $conn->prepare('UPDATE viaggi_tratte SET id_viaggio_alternativa=?, tipo_tratta=?, descrizione=?, origine_testo=?, origine_lat=?, origine_lng=?, destinazione_testo=?, destinazione_lat=?, destinazione_lng=?, distanza_km=?, durata_ore=?, consumo_litri_100km=?, prezzo_carburante_eur_litro=?, pedaggi_eur=?, costo_traghetto_eur=?, costo_volo_eur=?, costo_noleggio_eur=?, altri_costi_eur=?, note=?, pagato=? WHERE id_tratta=? AND id_viaggio=?');
+        $upd->bind_param('isssddsdddddddddddsiii', $id_alt, $tipo, $descrizione, $origine, $origine_lat, $origine_lng, $destinazione, $destinazione_lat, $destinazione_lng, $distanza, $durata, $consumo, $prezzo, $pedaggi, $traghetto, $volo, $noleggio, $altri, $note, $pagato, $id_tratta, $id);
         $upd->execute();
     } else {
-        $ins = $conn->prepare('INSERT INTO viaggi_tratte (id_viaggio, id_viaggio_alternativa, tipo_tratta, descrizione, origine_testo, origine_lat, origine_lng, destinazione_testo, destinazione_lat, destinazione_lng, distanza_km, durata_ore, consumo_litri_100km, prezzo_carburante_eur_litro, pedaggi_eur, costo_traghetto_eur, costo_volo_eur, costo_noleggio_eur, altri_costi_eur, note) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-        $ins->bind_param('iisssddsddddddddddds', $id, $id_alt, $tipo, $descrizione, $origine, $origine_lat, $origine_lng, $destinazione, $destinazione_lat, $destinazione_lng, $distanza, $durata, $consumo, $prezzo, $pedaggi, $traghetto, $volo, $noleggio, $altri, $note);
+        $ins = $conn->prepare('INSERT INTO viaggi_tratte (id_viaggio, id_viaggio_alternativa, tipo_tratta, descrizione, origine_testo, origine_lat, origine_lng, destinazione_testo, destinazione_lat, destinazione_lng, distanza_km, durata_ore, consumo_litri_100km, prezzo_carburante_eur_litro, pedaggi_eur, costo_traghetto_eur, costo_volo_eur, costo_noleggio_eur, altri_costi_eur, note, pagato) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+        $ins->bind_param('iisssddsdddddddddddsi', $id, $id_alt, $tipo, $descrizione, $origine, $origine_lat, $origine_lng, $destinazione, $destinazione_lat, $destinazione_lng, $distanza, $durata, $consumo, $prezzo, $pedaggi, $traghetto, $volo, $noleggio, $altri, $note, $pagato);
         $ins->execute();
     }
     header('Location: vacanze_tratte.php?id=' . $id . '&alt=' . $id_alt);
@@ -85,6 +86,7 @@ $tratta = [
     'costo_noleggio_eur' => '',
     'altri_costi_eur' => '',
     'note' => '',
+    'pagato' => 0,
 ];
 
 if ($id_tratta) {
@@ -100,6 +102,7 @@ if ($id_tratta) {
     $alt = (int)$tratta['id_viaggio_alternativa'];
     if ($duplica) {
         $id_tratta = 0;
+        $tratta['pagato'] = 0;
     }
 }
 
@@ -200,6 +203,10 @@ $alt_desc = $alternative[$alt] ?? '';
     <div class="mb-3 mt-2">
       <label class="form-label">Altri costi €</label>
       <input type="number" step="0.01" class="form-control" name="altri_costi_eur" value="<?= htmlspecialchars($tratta['altri_costi_eur']) ?>">
+    </div>
+    <div class="form-check form-switch mb-3">
+      <input class="form-check-input" type="checkbox" name="pagato" id="pagato_tratta" <?= !empty($tratta['pagato']) ? 'checked' : '' ?>>
+      <label class="form-check-label" for="pagato_tratta">Già pagata</label>
     </div>
     <div class="mb-3">
       <label class="form-label">Note</label>

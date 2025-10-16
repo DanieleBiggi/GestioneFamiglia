@@ -31,18 +31,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tipologia = $_POST['tipologia'] ?? 'ristorante';
     $costo = $_POST['costo_medio_eur'] !== '' ? (float)$_POST['costo_medio_eur'] : null;
     $note = $_POST['note'] ?? null;
+    $pagato = isset($_POST['pagato']) ? 1 : 0;
 
     if (isset($_POST['delete']) && $id_pasto) {
         $del = $conn->prepare('DELETE FROM viaggi_pasti WHERE id_pasto=? AND id_viaggio=?');
         $del->bind_param('ii', $id_pasto, $id);
         $del->execute();
     } elseif ($id_pasto) {
-        $upd = $conn->prepare('UPDATE viaggi_pasti SET id_viaggio_alternativa=?, giorno_indice=?, tipo_pasto=?, nome_locale=?, indirizzo=?, lat=?, lng=?, tipologia=?, costo_medio_eur=?, note=? WHERE id_pasto=? AND id_viaggio=?');
-        $upd->bind_param('iisssddsdsii', $id_alt, $giorno, $tipo, $nome, $indirizzo, $lat, $lng, $tipologia, $costo, $note, $id_pasto, $id);
+        $upd = $conn->prepare('UPDATE viaggi_pasti SET id_viaggio_alternativa=?, giorno_indice=?, tipo_pasto=?, nome_locale=?, indirizzo=?, lat=?, lng=?, tipologia=?, costo_medio_eur=?, note=?, pagato=? WHERE id_pasto=? AND id_viaggio=?');
+        $upd->bind_param('iisssddsdsiii', $id_alt, $giorno, $tipo, $nome, $indirizzo, $lat, $lng, $tipologia, $costo, $note, $pagato, $id_pasto, $id);
         $upd->execute();
     } else {
-        $ins = $conn->prepare('INSERT INTO viaggi_pasti (id_viaggio, id_viaggio_alternativa, giorno_indice, tipo_pasto, nome_locale, indirizzo, lat, lng, tipologia, costo_medio_eur, note) VALUES (?,?,?,?,?,?,?,?,?,?,?)');
-        $ins->bind_param('iiisssddsds', $id, $id_alt, $giorno, $tipo, $nome, $indirizzo, $lat, $lng, $tipologia, $costo, $note);
+        $ins = $conn->prepare('INSERT INTO viaggi_pasti (id_viaggio, id_viaggio_alternativa, giorno_indice, tipo_pasto, nome_locale, indirizzo, lat, lng, tipologia, costo_medio_eur, note, pagato) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
+        $ins->bind_param('iiisssddsdsi', $id, $id_alt, $giorno, $tipo, $nome, $indirizzo, $lat, $lng, $tipologia, $costo, $note, $pagato);
         $ins->execute();
     }
     header('Location: vacanze_tratte.php?id=' . $id . '&alt=' . $id_alt);
@@ -60,6 +61,7 @@ $pasto = [
     'tipologia' => 'ristorante',
     'costo_medio_eur' => '',
     'note' => '',
+    'pagato' => 0,
 ];
 
 if ($id_pasto) {
@@ -75,6 +77,7 @@ if ($id_pasto) {
     $alt = (int)$pasto['id_viaggio_alternativa'];
     if ($duplica) {
         $id_pasto = 0;
+        $pasto['pagato'] = 0;
     }
 }
 
@@ -130,6 +133,10 @@ $alt_desc = $alternative[$alt] ?? '';
     <div class="mb-3">
       <label class="form-label">Costo medio €</label>
       <input type="number" step="0.01" class="form-control" name="costo_medio_eur" value="<?= htmlspecialchars($pasto['costo_medio_eur']) ?>">
+    </div>
+    <div class="form-check form-switch mb-3">
+      <input class="form-check-input" type="checkbox" name="pagato" id="pagato_pasto" <?= !empty($pasto['pagato']) ? 'checked' : '' ?>>
+      <label class="form-check-label" for="pagato_pasto">Già pagato</label>
     </div>
     <div class="mb-3">
       <label class="form-label">Note</label>

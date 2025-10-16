@@ -31,18 +31,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $checkout = $_POST['data_checkout'] ?: null;
     $costo = (float)($_POST['costo_notte_eur'] ?? 0);
     $note = $_POST['note'] ?? null;
+    $pagato = isset($_POST['pagato']) ? 1 : 0;
 
     if (isset($_POST['delete']) && $id_alloggio) {
         $del = $conn->prepare('DELETE FROM viaggi_alloggi WHERE id_alloggio=? AND id_viaggio=?');
         $del->bind_param('ii', $id_alloggio, $id);
         $del->execute();
     } elseif ($id_alloggio) {
-        $upd = $conn->prepare('UPDATE viaggi_alloggi SET id_viaggio_alternativa=?, giorno_indice=?, nome_alloggio=?, indirizzo=?, lat=?, lng=?, data_checkin=?, data_checkout=?, costo_notte_eur=?, note=? WHERE id_alloggio=? AND id_viaggio=?');
-        $upd->bind_param('iissddsssdsii', $id_alt, $giorno, $nome, $indirizzo, $lat, $lng, $checkin, $checkout, $costo, $note, $id_alloggio, $id);
+        $upd = $conn->prepare('UPDATE viaggi_alloggi SET id_viaggio_alternativa=?, giorno_indice=?, nome_alloggio=?, indirizzo=?, lat=?, lng=?, data_checkin=?, data_checkout=?, costo_notte_eur=?, note=?, pagato=? WHERE id_alloggio=? AND id_viaggio=?');
+        $upd->bind_param('iissddsssdsiii', $id_alt, $giorno, $nome, $indirizzo, $lat, $lng, $checkin, $checkout, $costo, $note, $pagato, $id_alloggio, $id);
         $upd->execute();
     } else {
-        $ins = $conn->prepare('INSERT INTO viaggi_alloggi (id_viaggio, id_viaggio_alternativa, giorno_indice, nome_alloggio, indirizzo, lat, lng, data_checkin, data_checkout, costo_notte_eur, note) VALUES (?,?,?,?,?,?,?,?,?,?,?)');
-        $ins->bind_param('iiissddssds', $id, $id_alt, $giorno, $nome, $indirizzo, $lat, $lng, $checkin, $checkout, $costo, $note);
+        $ins = $conn->prepare('INSERT INTO viaggi_alloggi (id_viaggio, id_viaggio_alternativa, giorno_indice, nome_alloggio, indirizzo, lat, lng, data_checkin, data_checkout, costo_notte_eur, note, pagato) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
+        $ins->bind_param('iiissddssdsi', $id, $id_alt, $giorno, $nome, $indirizzo, $lat, $lng, $checkin, $checkout, $costo, $note, $pagato);
         $ins->execute();
     }
     header('Location: vacanze_tratte.php?id=' . $id . '&alt=' . $id_alt);
@@ -59,6 +60,7 @@ $alloggio = [
     'data_checkout' => '',
     'costo_notte_eur' => '',
     'note' => '',
+    'pagato' => 0,
 ];
 
 if ($id_alloggio) {
@@ -74,6 +76,7 @@ if ($id_alloggio) {
     $alt = (int)$alloggio['id_viaggio_alternativa'];
     if ($duplica) {
         $id_alloggio = 0;
+        $alloggio['pagato'] = 0;
     }
 }
 
@@ -123,6 +126,10 @@ $alt_desc = $alternative[$alt] ?? '';
     <div class="mb-3 mt-2">
       <label class="form-label">Costo notte €</label>
       <input type="number" step="0.01" class="form-control" name="costo_notte_eur" value="<?= htmlspecialchars($alloggio['costo_notte_eur']) ?>">
+    </div>
+    <div class="form-check form-switch mb-3">
+      <input class="form-check-input" type="checkbox" name="pagato" id="pagato_alloggio" <?= !empty($alloggio['pagato']) ? 'checked' : '' ?>>
+      <label class="form-check-label" for="pagato_alloggio">Già pagato</label>
     </div>
     <div class="mb-3">
       <label class="form-label">Note</label>
