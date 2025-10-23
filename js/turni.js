@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let current = new Date();
   let selectedType = null;
   let multiMode = false;
+  let singleSelectionMode = false;
   let dragging = false;
   let dragDates = new Set();
   const monthLabel = document.getElementById('monthLabel');
@@ -182,6 +183,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function updateEventVisibility(){
+    calendarContainer.classList.toggle('hide-events', singleSelectionMode);
+  }
+
   function openEditModal(el){
     if(!editModal) return;
     editForm.reset();
@@ -228,12 +233,22 @@ document.addEventListener('DOMContentLoaded', () => {
       multiMode=false;
       selectedType=null;
       dragDates.clear();
+      singleSelectionMode=false;
       calendarContainer.querySelectorAll('.multi-selected').forEach(c=>c.classList.remove('multi-selected'));
     }
+    updateEventVisibility();
   }
 
-  document.getElementById('btnSingolo').addEventListener('click', ()=>{multiMode=false;toggleStateB(true);});
-  document.getElementById('btnMultipla').addEventListener('click', ()=>{multiMode=true;toggleStateB(true);});
+  document.getElementById('btnSingolo').addEventListener('click', ()=>{
+    multiMode=false;
+    singleSelectionMode=true;
+    toggleStateB(true);
+  });
+  document.getElementById('btnMultipla').addEventListener('click', ()=>{
+    multiMode=true;
+    singleSelectionMode=false;
+    toggleStateB(true);
+  });
   document.getElementById('closeStateB').addEventListener('click', ()=>toggleStateB(false));
 
   document.getElementById('pillContainer').addEventListener('click', e=>{
