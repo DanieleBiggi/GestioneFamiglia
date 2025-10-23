@@ -329,7 +329,8 @@ include 'includes/header.php';
           </div>
         </div>
         <div id="etichetteList" class="row row-cols-1 row-cols-md-3 g-2"></div>
-        <div class="bg-secondary text-white rounded p-3 mt-3">
+        <button type="button" class="btn btn-outline-light w-100 mt-3" id="showNewEtichettaBtn" onclick="toggleNewEtichettaForm(true)">Crea nuova etichetta</button>
+        <div class="bg-secondary text-white rounded p-3 mt-3 d-none" id="newEtichettaContainer">
           <h6 class="mb-3">Nuova etichetta</h6>
           <div class="mb-2">
             <label for="newEtichettaDescrizione" class="form-label small">Descrizione</label>
@@ -359,6 +360,7 @@ include 'includes/header.php';
           </div>
           <div id="newEtichettaFeedback" class="small mt-2"></div>
           <button type="button" class="btn btn-outline-light w-100 mt-2" id="newEtichettaCreateBtn" onclick="createEtichetta()">Crea etichetta</button>
+          <button type="button" class="btn btn-link text-white w-100 mt-2" onclick="toggleNewEtichettaForm(false)">Annulla</button>
         </div>
       </div>
       <div class="modal-footer">
@@ -629,6 +631,7 @@ function openEtichetteModal() {
   filtroEtichette = '';
   document.getElementById('toggleInactive').checked = false;
   document.querySelector('#etichetteModal input[type="text"]').value = '';
+  toggleNewEtichettaForm(false);
   const feedback = document.getElementById('newEtichettaFeedback');
   if (feedback) {
     feedback.textContent = '';
@@ -658,6 +661,42 @@ function filterEtichette(value) {
 function toggleInactiveEtichette() {
   mostraVecchie = document.getElementById('toggleInactive').checked;
   renderEtichetteList();
+}
+
+function toggleNewEtichettaForm(show) {
+  const container = document.getElementById('newEtichettaContainer');
+  const button = document.getElementById('showNewEtichettaBtn');
+
+  if (!container || !button) return;
+
+  if (show) {
+    container.classList.remove('d-none');
+    button.classList.add('d-none');
+    const descrizioneEl = document.getElementById('newEtichettaDescrizione');
+    if (descrizioneEl) {
+      descrizioneEl.focus();
+    }
+  } else {
+    container.classList.add('d-none');
+    button.classList.remove('d-none');
+    const feedbackEl = document.getElementById('newEtichettaFeedback');
+    if (feedbackEl) {
+      feedbackEl.textContent = '';
+      feedbackEl.className = 'small mt-2';
+    }
+    const descrizioneEl = document.getElementById('newEtichettaDescrizione');
+    if (descrizioneEl) descrizioneEl.value = '';
+    const attivoEl = document.getElementById('newEtichettaAttivo');
+    if (attivoEl) attivoEl.checked = true;
+    const daDividereEl = document.getElementById('newEtichettaDaDividere');
+    if (daDividereEl) daDividereEl.checked = false;
+    const annoEl = document.getElementById('newEtichettaAnno');
+    if (annoEl) annoEl.value = '';
+    const meseEl = document.getElementById('newEtichettaMese');
+    if (meseEl) meseEl.value = '';
+    const utentiEl = document.getElementById('newEtichettaUtenti');
+    if (utentiEl) utentiEl.value = '';
+  }
 }
 
 function saveEtichette() {
