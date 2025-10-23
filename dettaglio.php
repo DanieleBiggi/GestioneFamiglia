@@ -329,6 +329,37 @@ include 'includes/header.php';
           </div>
         </div>
         <div id="etichetteList" class="row row-cols-1 row-cols-md-3 g-2"></div>
+        <div class="bg-secondary text-white rounded p-3 mt-3">
+          <h6 class="mb-3">Nuova etichetta</h6>
+          <div class="mb-2">
+            <label for="newEtichettaDescrizione" class="form-label small">Descrizione</label>
+            <input type="text" class="form-control bg-dark text-white" id="newEtichettaDescrizione" placeholder="Nome etichetta">
+          </div>
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" id="newEtichettaAttivo" checked>
+            <label class="form-check-label" for="newEtichettaAttivo">Attiva</label>
+          </div>
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" id="newEtichettaDaDividere">
+            <label class="form-check-label" for="newEtichettaDaDividere">Da dividere</label>
+          </div>
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label for="newEtichettaAnno" class="form-label small">Anno</label>
+              <input type="number" class="form-control bg-dark text-white" id="newEtichettaAnno" placeholder="2024">
+            </div>
+            <div class="col-md-6">
+              <label for="newEtichettaMese" class="form-label small">Mese</label>
+              <input type="number" min="1" max="12" class="form-control bg-dark text-white" id="newEtichettaMese" placeholder="1-12">
+            </div>
+          </div>
+          <div class="mt-2">
+            <label for="newEtichettaUtenti" class="form-label small">Utenti tra cui dividere</label>
+            <input type="text" class="form-control bg-dark text-white" id="newEtichettaUtenti" placeholder="ID utenti separati da virgola">
+          </div>
+          <div id="newEtichettaFeedback" class="small mt-2"></div>
+          <button type="button" class="btn btn-outline-light w-100 mt-2" id="newEtichettaCreateBtn" onclick="createEtichetta()">Crea etichetta</button>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary w-100" onclick="saveEtichette()">Salva</button>
@@ -574,10 +605,21 @@ function renderEtichetteList() {
     if (filtroEtichette && !fullLabel.toLowerCase().includes(filtroEtichette)) continue;
     const div = document.createElement('div');
     div.className = 'col form-check';
-    div.innerHTML = `
-      <input class="form-check-input" type="checkbox" id="et_${e.id_etichetta}" value="${e.id_etichetta}" ${selected.has(String(e.id_etichetta)) ? 'checked' : ''}>
-      <label class="form-check-label" for="et_${e.id_etichetta}">${fullLabel}</label>
-    `;
+
+    const input = document.createElement('input');
+    input.className = 'form-check-input';
+    input.type = 'checkbox';
+    input.id = `et_${e.id_etichetta}`;
+    input.value = e.id_etichetta;
+    input.checked = selected.has(String(e.id_etichetta));
+
+    const label = document.createElement('label');
+    label.className = 'form-check-label';
+    label.setAttribute('for', input.id);
+    label.textContent = fullLabel;
+
+    div.appendChild(input);
+    div.appendChild(label);
     list.appendChild(div);
   }
 }
@@ -587,6 +629,23 @@ function openEtichetteModal() {
   filtroEtichette = '';
   document.getElementById('toggleInactive').checked = false;
   document.querySelector('#etichetteModal input[type="text"]').value = '';
+  const feedback = document.getElementById('newEtichettaFeedback');
+  if (feedback) {
+    feedback.textContent = '';
+    feedback.className = 'small mt-2';
+  }
+  const descrEl = document.getElementById('newEtichettaDescrizione');
+  if (descrEl) descrEl.value = '';
+  const attivoEl = document.getElementById('newEtichettaAttivo');
+  if (attivoEl) attivoEl.checked = true;
+  const dividereEl = document.getElementById('newEtichettaDaDividere');
+  if (dividereEl) dividereEl.checked = false;
+  const annoEl = document.getElementById('newEtichettaAnno');
+  if (annoEl) annoEl.value = '';
+  const meseEl = document.getElementById('newEtichettaMese');
+  if (meseEl) meseEl.value = '';
+  const utentiEl = document.getElementById('newEtichettaUtenti');
+  if (utentiEl) utentiEl.value = '';
   renderEtichetteList();
   new bootstrap.Modal(document.getElementById('etichetteModal')).show();
 }
@@ -608,6 +667,140 @@ function saveEtichette() {
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({ id: idMovimento, etichette: selected, src: srcMovimento })
   }).then(() => location.reload());
+}
+
+async function createEtichetta() {
+  const descrizioneEl = document.getElementById('newEtichettaDescrizione');
+  if (!descrizioneEl) return;
+  const feedbackEl = document.getElementById('newEtichettaFeedback');
+  if (feedbackEl) {
+    feedbackEl.textContent = '';
+    feedbackEl.className = 'small mt-2';
+  }
+
+  const descrizione = descrizioneEl.value.trim();
+  if (!descrizione) {
+    if (feedbackEl) {
+      feedbackEl.className = 'small mt-2 text-warning';
+      feedbackEl.textContent = "Inserisci una descrizione per l'etichetta.";
+    }
+    descrizioneEl.focus();
+    return;
+  }
+
+  const attivoEl = document.getElementById('newEtichettaAttivo');
+  const daDividereEl = document.getElementById('newEtichettaDaDividere');
+  const annoEl = document.getElementById('newEtichettaAnno');
+  const meseEl = document.getElementById('newEtichettaMese');
+  const utentiEl = document.getElementById('newEtichettaUtenti');
+  const button = document.getElementById('newEtichettaCreateBtn');
+
+  const annoVal = annoEl ? annoEl.value.trim() : '';
+  const meseVal = meseEl ? meseEl.value.trim() : '';
+
+  const anno = annoVal !== '' ? parseInt(annoVal, 10) : '';
+  const mese = meseVal !== '' ? parseInt(meseVal, 10) : '';
+
+  if (Number.isNaN(anno)) {
+    if (feedbackEl) {
+      feedbackEl.className = 'small mt-2 text-danger';
+      feedbackEl.textContent = 'Anno non valido.';
+    }
+    if (annoEl) annoEl.focus();
+    return;
+  }
+
+  if (Number.isNaN(mese) || (mese !== '' && (mese < 1 || mese > 12))) {
+    if (feedbackEl) {
+      feedbackEl.className = 'small mt-2 text-danger';
+      feedbackEl.textContent = 'Mese non valido.';
+    }
+    if (meseEl) meseEl.focus();
+    return;
+  }
+
+  if (button) button.disabled = true;
+
+  try {
+    const response = await fetch('ajax/add_etichetta.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        descrizione,
+        attivo: attivoEl && attivoEl.checked ? 1 : 0,
+        da_dividere: daDividereEl && daDividereEl.checked ? 1 : 0,
+        anno,
+        mese,
+        utenti_tra_cui_dividere: utentiEl ? utentiEl.value.trim() : ''
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Errore durante il salvataggio dell\'etichetta.');
+    }
+
+    const data = await response.json();
+    if (!data.success || !data.id) {
+      throw new Error(data.error || 'Impossibile creare l\'etichetta.');
+    }
+
+    const newId = parseInt(data.id, 10);
+    const nuovaEtichetta = {
+      id_etichetta: newId,
+      descrizione,
+      attivo: attivoEl && attivoEl.checked ? 1 : 0,
+      anno: anno === '' ? null : anno,
+      mese: mese === '' ? null : mese
+    };
+
+    etichette.push(nuovaEtichetta);
+    etichette.sort((a, b) => {
+      const attivoDiff = (b.attivo || 0) - (a.attivo || 0);
+      if (attivoDiff !== 0) return attivoDiff;
+      return (a.descrizione || '').localeCompare(b.descrizione || '', 'it', { sensitivity: 'base' });
+    });
+
+    if (nuovaEtichetta.attivo !== 1 && !mostraVecchie) {
+      mostraVecchie = true;
+      const toggle = document.getElementById('toggleInactive');
+      if (toggle) toggle.checked = true;
+    }
+
+    renderEtichetteList();
+
+    const nuovoInput = document.getElementById(`et_${newId}`);
+    if (nuovoInput) {
+      nuovoInput.checked = true;
+      nuovoInput.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+
+    const descrSelect = document.querySelector('#descrizioneForm select[name="id_etichetta"]');
+    if (descrSelect) {
+      const option = document.createElement('option');
+      option.value = String(newId);
+      option.textContent = descrizione;
+      descrSelect.appendChild(option);
+    }
+
+    if (descrizioneEl) descrizioneEl.value = '';
+    if (attivoEl) attivoEl.checked = true;
+    if (daDividereEl) daDividereEl.checked = false;
+    if (annoEl) annoEl.value = '';
+    if (meseEl) meseEl.value = '';
+    if (utentiEl) utentiEl.value = '';
+
+    if (feedbackEl) {
+      feedbackEl.className = 'small mt-2 text-success';
+      feedbackEl.textContent = 'Etichetta creata correttamente.';
+    }
+  } catch (error) {
+    if (feedbackEl) {
+      feedbackEl.className = 'small mt-2 text-danger';
+      feedbackEl.textContent = error.message || 'Errore inatteso nella creazione dell\'etichetta.';
+    }
+  } finally {
+    if (button) button.disabled = false;
+  }
 }
 
 let caricamenti = [];
