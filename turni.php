@@ -41,6 +41,8 @@ $needSync = !empty($unsyncedMonths);
   #calendarContainer .week-row {position:relative;}
   #calendarContainer .multi-event {position:absolute; top:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:.8rem; overflow:hidden; border-radius:4px;}
   #calendarContainer .multi-event a {color:inherit; text-decoration:none; width:100%; display:block; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;}
+  #calendarContainer.hide-events .turno.event,
+  #calendarContainer.hide-events .multi-event {display:none !important;}
 </style>
 <div id="shifter" class="d-flex flex-column min-vh-100 p-0">
   <div class="bg-dark text-white p-3 position-sticky top-0">
