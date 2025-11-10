@@ -83,6 +83,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $upd = $conn->prepare('UPDATE dispositivi_riconosciuti SET scadenza = ? WHERE token_dispositivo = ?');
                 $upd->bind_param('ss', $newExp, $token);
                 $upd->execute();
+
+                setcookie('device_token', $token, time()+60*60*24*30, '/', '', !empty($_SERVER['HTTPS']), true);
                 header('Location: /Gestionale25/index.php');
                 exit;
             } else {
