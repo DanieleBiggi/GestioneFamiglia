@@ -87,6 +87,8 @@ $upd = $conn->prepare('UPDATE dispositivi_riconosciuti SET scadenza = ? WHERE to
 $upd->bind_param('ss', $newExp, $token);
 $upd->execute();
 
+setcookie('device_token', $token, time()+60*60*24*30, '/', '', !empty($_SERVER['HTTPS']), true);
+
 unset($_SESSION['webauthn_user'], $_SESSION['webauthn_challenge']);
 
 echo json_encode(['success' => true]);
