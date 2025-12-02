@@ -37,6 +37,11 @@ if (!$salvStmt->execute()) {
 
 $resSalv = $salvStmt->get_result();
 $salvadanai = [];
+$per_totali = [
+    'mensile' => 0,
+    'stimato' => 0,
+    'attuale' => 0,
+];
 while ($row = $resSalv->fetch_assoc()) {
     $importo = (float)($row['importo'] ?? 0);
     $da13 = (float)($row['da_13esima'] ?? 0);
@@ -173,7 +178,13 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
           <td><a href="budget_anno.php?<?= http_build_query(['id_salvadanaio' => $dati['id']]) ?>"><?= htmlspecialchars($dati['nome']) ?></a></td>
           <td class="text-end"><?= number_format($dati['importo_mensile'], 2, ',', '.') ?></td>
           <td class="text-end"><?= number_format($dati['stimato'], 2, ',', '.') ?></td>
-          <td class="text-end"><?= number_format($dati['attuale'], 2, ',', '.') ?></td>
+          <td>
+            <form class="d-flex justify-content-end gap-1 update-salvadanaio-form">
+              <input type="hidden" name="id_salvadanaio" value="<?= (int)$dati['id'] ?>">
+              <input type="number" step="0.01" name="importo_attuale" value="<?= number_format((float)$dati['attuale'], 2, '.', '') ?>" class="form-control form-control-sm bg-dark text-white border-secondary text-end" style="max-width: 120px;">
+              <button type="submit" class="btn btn-outline-light btn-sm">Salva</button>
+            </form>
+          </td>
           <td class="text-end"><?= number_format($dati['stimato'] - $dati['attuale'], 2, ',', '.') ?></td>
         </tr>
         <?php endforeach; ?>
@@ -229,6 +240,10 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
           <td class="text-end"><?= number_format((float)$r['importo'], 2, ',', '.') ?></td>
         </tr>
         <?php endforeach; ?>
+        <tr>
+          <td class="fw-bold">Totale</td>
+          <td class="text-end fw-bold"><?= number_format($totalUsciteMensili, 2, ',', '.') ?></td>
+        </tr>
       </tbody>
     </table>
     <h5>Riepilogo</h5>
@@ -239,19 +254,38 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
           <td class="text-end"><?= number_format($totalEntrateMensili, 2, ',', '.') ?></td>
         </tr>
         <tr>
-          <td>Uscite mensili fisse</td>
-          <td class="text-end"><?= number_format($totalUsciteMensili, 2, ',', '.') ?></td>
-        </tr>
-        <tr>
-          <td>Uscite ricorrenti annuali (mensile)</td>
-          <td class="text-end"><?= number_format($totalAnnualiMensile, 2, ',', '.') ?></td>
+          <td>Uscite totali (mensile)</td>
+          <td class="text-end"><?= number_format($totalUsciteMensili + $totalAnnualiMensile, 2, ',', '.') ?></td>
         </tr>
         <tr>
           <td>Margine (mensile)</td>
-          <td class="text-end"><?= number_format($totalEntrateMensili-($totalUsciteMensili+$totalAnnualiMensile), 2, ',', '.') ?></td>
+          <td class="text-end"><?= number_format($totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMensile), 2, ',', '.') ?></td>
         </tr>
       </tbody>
     </table>
   </div>
 </div>
+<script>
+  document.querySelectorAll('.update-salvadanaio-form').forEach((form) => {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      const formData = new FormData(form);
+      fetch('ajax/update_salvadanaio_importo.php', {
+        method: 'POST',
+        body: formData,
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            location.reload();
+          } else {
+            alert('Errore durante l\'aggiornamento dell\'importo del salvadanaio');
+          }
+        })
+        .catch(() => {
+          alert('Errore di comunicazione con il server');
+        });
+    });
+  });
+</script>
 <?php include 'includes/footer.php'; ?>
