@@ -153,3 +153,33 @@ body {
 #pin-dots .dot.filled {
   background-color: var(--text-color);
 }
+
+.weekly-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.menu-card {
+  background-color: var(--primary-color);
+  border: 1px solid rgba(var(--text-color-rgb), 0.15);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  min-height: 110px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.menu-card .text-muted {
+  color: rgba(var(--text-color-rgb), 0.55) !important;
+}
+
+@media (max-width: 480px) {
+  .weekly-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .menu-card {
+    padding: 0.6rem;
+    min-height: 100px;
+  }
+}

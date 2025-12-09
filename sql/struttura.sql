@@ -2648,6 +2648,17 @@ CREATE TABLE `viaggi_luogo_foto` (
   KEY `idx_vlf_luogo` (`id_luogo`),
   CONSTRAINT `fk_vlf_luogo` FOREIGN KEY (`id_luogo`) REFERENCES `viaggi_luoghi` (`id_luogo`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Struttura della tabella `menu_cene_settimanale`
+CREATE TABLE IF NOT EXISTS `menu_cene_settimanale` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id_famiglia` int(11) NOT NULL,
+  `giorno` varchar(20) NOT NULL,
+  `piatto` text,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_menu_giorno_famiglia` (`id_famiglia`,`giorno`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

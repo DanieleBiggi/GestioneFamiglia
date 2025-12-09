@@ -170,6 +170,9 @@ $conn->set_charset('utf8mb4'); // IMPORTANTISSIMO
             <?php if (has_permission($conn, 'page:turni.php', 'view')): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/turni.php"><i class="bi bi-calendar-week me-2 text-white"></i>Turni</a></li>
             <?php endif; ?>
+            <?php if (has_permission($conn, 'page:menu_cene.php', 'view')): ?>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/menu_cene.php"><i class="bi bi-egg-fried me-2 text-white"></i>Menù cene</a></li>
+            <?php endif; ?>
             <?php if (has_permission($conn, 'page:lista_spesa.php', 'view')): ?>
             <li><a class="dropdown-item text-white" href="/Gestionale25/lista_spesa.php"><i class="bi bi-basket me-2 text-white"></i>Lista spesa</a></li>
             <?php endif; ?>
