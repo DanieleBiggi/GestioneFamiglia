@@ -69,6 +69,13 @@ $utilityServices = [
         'show_in_modal' => true,
     ],
     [
+        'href' => 'menu_cene.php',
+        'icon' => 'bi-egg-fried',
+        'label' => 'Menù cene',
+        'permission' => 'page:menu_cene.php',
+        'show_in_modal' => true,
+    ],
+    [
         'href' => 'lista_spesa.php',
         'icon' => 'bi-cart',
         'label' => 'Lista spesa',
