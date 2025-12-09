@@ -48,7 +48,7 @@ $utilityServices = [
         'show_in_modal' => true,
     ],
     [
-        'href' => 'budget.php',
+        'href' => 'budget_dashboard.php',
         'icon' => 'bi-wallet2',
         'label' => 'Budget',
         'permission' => 'page:budget.php',
