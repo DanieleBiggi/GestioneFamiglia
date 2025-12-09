@@ -136,8 +136,9 @@ $annualiStmt->close();
 // 5. Margine mensile
 $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMensile);
 ?>
-<div class="d-flex mb-3 justify-content-between">
-  <h4>Budget Dashboard</h4>
+<div class="d-flex mb-3 justify-content-between align-items-center">
+  <h4 class="mb-0">Budget Dashboard</h4>
+  <a href="budget_importi_attuali.php" class="btn btn-outline-light btn-sm">Modifica importo attuale</a>
 </div>
 <form method="get" class="row g-2 mb-3">
   <div class="col-6 col-md-2">
@@ -178,13 +179,7 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
           <td><a href="budget_anno.php?<?= http_build_query(['id_salvadanaio' => $dati['id']]) ?>"><?= htmlspecialchars($dati['nome']) ?></a></td>
           <td class="text-end"><?= number_format($dati['importo_mensile'], 2, ',', '.') ?></td>
           <td class="text-end"><?= number_format($dati['stimato'], 2, ',', '.') ?></td>
-          <td>
-            <form class="d-flex justify-content-end gap-1 update-salvadanaio-form">
-              <input type="hidden" name="id_salvadanaio" value="<?= (int)$dati['id'] ?>">
-              <input type="number" step="0.01" name="importo_attuale" value="<?= number_format((float)$dati['attuale'], 2, '.', '') ?>" class="form-control form-control-sm bg-dark text-white border-secondary text-end" style="max-width: 120px;">
-              <button type="submit" class="btn btn-outline-light btn-sm">Salva</button>
-            </form>
-          </td>
+          <td class="text-end"><?= number_format((float)$dati['attuale'], 2, ',', '.') ?></td>
           <td class="text-end"><?= number_format($dati['stimato'] - $dati['attuale'], 2, ',', '.') ?></td>
         </tr>
         <?php endforeach; ?>
@@ -265,27 +260,4 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
     </table>
   </div>
 </div>
-<script>
-  document.querySelectorAll('.update-salvadanaio-form').forEach((form) => {
-    form.addEventListener('submit', function (event) {
-      event.preventDefault();
-      const formData = new FormData(form);
-      fetch('ajax/update_salvadanaio_importo.php', {
-        method: 'POST',
-        body: formData,
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            location.reload();
-          } else {
-            alert('Errore durante l\'aggiornamento dell\'importo del salvadanaio');
-          }
-        })
-        .catch(() => {
-          alert('Errore di comunicazione con il server');
-        });
-    });
-  });
-</script>
 <?php include 'includes/footer.php'; ?>
