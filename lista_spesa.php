@@ -20,6 +20,7 @@ $canAdd = has_permission($conn, 'ajax:add_lista_spesa', 'insert');
     <button type="button" class="btn btn-outline-light btn-sm me-2" onclick="openImportModal()">Importa</button>
     <button type="button" class="btn btn-outline-light btn-sm me-2" id="clearListaBtn">Svuota lista</button>
     <button type="button" class="btn btn-outline-light btn-sm" onclick="openListaModal()">Aggiungi nuovo</button>
+    <button type="button" class="btn btn-outline-light btn-sm" onclick="location.href='menu_cene.php'">Menu</button>
   </div>
   <?php endif; ?>
 </div>
