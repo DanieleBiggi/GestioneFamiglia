@@ -85,7 +85,16 @@ $stmt->close();
 
 $insertStmt = $conn->prepare('INSERT INTO menu_cene_settimanale (id_famiglia, giorno, piatto) VALUES (?, ?, "")');
 
+// Gestione della settimana selezionata
+$weekStartParam = $_GET['week_start'] ?? null;
 $startOfWeek = new DateTimeImmutable('monday this week');
+if ($weekStartParam) {
+    $parsed = DateTimeImmutable::createFromFormat('Y-m-d', $weekStartParam);
+    if ($parsed !== false) {
+        $startOfWeek = $parsed->modify('monday this week');
+    }
+}
+
 $currentWeekNumber = (int)$startOfWeek->format('W');
 $endOfWeek = $startOfWeek->modify('sunday this week');
 

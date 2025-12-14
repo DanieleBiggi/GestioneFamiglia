@@ -17,6 +17,11 @@ $canImport = has_permission($conn, 'ajax:import_menu_cene', 'insert');
     </div>
   </div>
   <div class="d-flex align-items-center gap-2">
+    <div class="input-group input-group-sm" style="width: 230px;">
+      <button class="btn btn-outline-light" type="button" id="prevWeekBtn"><i class="bi bi-chevron-left"></i></button>
+      <input type="week" class="form-control bg-dark text-white" id="weekPicker" aria-label="Seleziona settimana">
+      <button class="btn btn-outline-light" type="button" id="nextWeekBtn"><i class="bi bi-chevron-right"></i></button>
+    </div>
     <?php if ($canImport): ?>
     <button type="button" class="btn btn-outline-light btn-sm" onclick="openImportMenuModal()">Importa</button>
     <?php endif; ?>
