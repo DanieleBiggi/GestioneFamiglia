@@ -82,12 +82,13 @@ $lvlStmt->execute();
 $lvlRes = $lvlStmt->get_result();
 $_SESSION['userlevelid'] = ($lvlRes->num_rows === 1) ? intval($lvlRes->fetch_assoc()['userlevelid']) : 0;
 
-$newExp = date('Y-m-d H:i:s', time() + 60*60*24*30);
+$longDuration = 60*60*24*365*10; // 10 anni
+$newExp = date('Y-m-d H:i:s', time() + $longDuration);
 $upd = $conn->prepare('UPDATE dispositivi_riconosciuti SET scadenza = ? WHERE token_dispositivo = ?');
 $upd->bind_param('ss', $newExp, $token);
 $upd->execute();
 
-setcookie('device_token', $token, time()+60*60*24*30, '/', '', !empty($_SERVER['HTTPS']), true);
+setcookie('device_token', $token, time()+$longDuration, '/', '', !empty($_SERVER['HTTPS']), true);
 
 unset($_SESSION['webauthn_user'], $_SESSION['webauthn_challenge']);
 
