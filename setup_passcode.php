@@ -27,12 +27,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
         $ip = $_SERVER['REMOTE_ADDR'] ?? '';
         $now = date('Y-m-d H:i:s');
-        $exp = date('Y-m-d H:i:s', time() + 60*60*24*30);
+        $longDuration = 60*60*24*365*10; // 10 anni
+        $exp = date('Y-m-d H:i:s', time() + $longDuration);
         $ins = $conn->prepare('INSERT INTO dispositivi_riconosciuti (id_utente, token_dispositivo, user_agent, ip, data_attivazione, scadenza) VALUES (?, ?, ?, ?, ?, ?)');
         $ins->bind_param('isssss', $_SESSION['utente_id'], $token, $ua, $ip, $now, $exp);
         $ins->execute();
 
-        setcookie('device_token', $token, time()+60*60*24*30, '/', '', !empty($_SERVER['HTTPS']), true);
+        setcookie('device_token', $token, time()+$longDuration, '/', '', !empty($_SERVER['HTTPS']), true);
         header('Location: index.php');
         exit;
     }

@@ -45,3 +45,8 @@ Per abilitare il pulsante **GOOGLE** nella pagina dei turni è necessario config
 
 Una volta completata la configurazione, il pulsante **GOOGLE** su `turni.php` sincronizzerà sul calendario gli eventi e i turni del mese visualizzato.
 
+
+## FAQ
+
+### Devo reinstallare l'app per usare l'accesso con impronta digitale?
+No: l'impronta digitale continua a funzionare dopo aver reinstallato o aggiornato l'app. Se viene richiesto utente e password, basta effettuare un accesso una sola volta per rigenerare il dispositivo riconosciuto e tornare a usare il fingerprint senza inserire le credenziali.
