@@ -2,6 +2,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const grid = document.getElementById('menuGrid');
   const editForm = document.getElementById('editMenuForm');
   const importForm = document.getElementById('importMenuForm');
+  const weekInfo = document.getElementById('weekInfo');
+  const promptBtn = document.getElementById('generatePromptBtn');
+  const promptModalEl = document.getElementById('promptModal');
+  const promptTextarea = document.getElementById('generatedPrompt');
+  const copyPromptBtn = document.getElementById('copyPromptBtn');
+  let lastPayload = null;
 
   function render(items) {
     if (!grid) return;
@@ -35,8 +41,46 @@ document.addEventListener('DOMContentLoaded', () => {
       body.className = 'flex-grow-1 text-break small';
       body.innerHTML = item.piatto ? item.piatto.replace(/\n/g, '<br>') : '<span class="text-muted">Nessun piatto</span>';
 
+      const meta = document.createElement('div');
+      meta.className = 'mt-2 d-flex flex-column gap-1';
+
+      if (item.turni?.length) {
+        const turniBlock = document.createElement('div');
+        turniBlock.className = 'small';
+        const title = document.createElement('div');
+        title.className = 'text-warning fw-semibold';
+        title.textContent = 'Turni (18-22)';
+        turniBlock.appendChild(title);
+
+        item.turni.forEach(t => {
+          const row = document.createElement('div');
+          row.textContent = `${formatTimeRange(t.ora_inizio, t.ora_fine)} - ${t.descrizione}`;
+          turniBlock.appendChild(row);
+        });
+        meta.appendChild(turniBlock);
+      }
+
+      if (item.eventi?.length) {
+        const eventiBlock = document.createElement('div');
+        eventiBlock.className = 'small';
+        const title = document.createElement('div');
+        title.className = 'text-info fw-semibold';
+        title.textContent = 'Eventi (18-22)';
+        eventiBlock.appendChild(title);
+
+        item.eventi.forEach(ev => {
+          const row = document.createElement('div');
+          row.textContent = `${formatTimeRange(ev.ora_evento, ev.ora_fine)} - ${ev.titolo}`;
+          eventiBlock.appendChild(row);
+        });
+        meta.appendChild(eventiBlock);
+      }
+
       card.appendChild(header);
       card.appendChild(body);
+      if (meta.childElementCount) {
+        card.appendChild(meta);
+      }
       grid.appendChild(card);
     });
   }
@@ -44,7 +88,54 @@ document.addEventListener('DOMContentLoaded', () => {
   function refreshMenu() {
     fetch('ajax/get_menu_cene.php')
       .then(r => r.json())
-      .then(res => { if (res.success) { render(res.items); } });
+      .then(res => {
+        if (res.success) {
+          lastPayload = res;
+          render(res.items);
+          updateWeekInfo(res.week);
+        }
+      });
+  }
+
+  function updateWeekInfo(week) {
+    if (!weekInfo || !week) return;
+    const formatter = new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: '2-digit' });
+    weekInfo.textContent = `Settimana ${week.number} (${formatter.format(new Date(week.start))} - ${formatter.format(new Date(week.end))})`;
+  }
+
+  function formatTimeRange(start, end) {
+    const display = [];
+    if (start) display.push(start.slice(0,5));
+    if (end) display.push(end.slice(0,5));
+    return display.length ? display.join(' - ') : 'Orario non indicato';
+  }
+
+  function buildPrompt() {
+    if (!lastPayload) return '';
+    const week = lastPayload.week;
+    const nextWeek = lastPayload.nextWeek;
+    const menuText = lastPayload.items
+      .map(item => `${item.giorno.toLowerCase()}: ${item.piatto || 'nessun piatto indicato'}`)
+      .join(', ');
+
+    const formatter = new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: '2-digit' });
+    const nextWeekLabel = nextWeek ? `${nextWeek.number}ª settimana (${formatter.format(new Date(nextWeek.start))} - ${formatter.format(new Date(nextWeek.end))})` : '';
+
+    const turniRilevanti = [];
+    if (nextWeek?.turni) {
+      Object.values(nextWeek.turni).forEach(dayTurni => {
+        dayTurni.forEach(t => {
+          const time = formatTimeRange(t.ora_inizio, t.ora_fine);
+          turniRilevanti.push(`${t.giorno} ${formatter.format(new Date(t.data))}: ${time} (${t.descrizione})`);
+        });
+      });
+    }
+
+    const regole = 'quando c\'è un turno che finisce tra le 18 e le 21 serve un piatto preparabile in anticipo o veloce (es. frittata o pollo ai ferri) e quando c\'è un turno che comincia tra le 18 e le 22 serve un piatto adatto anche all\'asporto (es. pizza, frittata, torta salata).';
+
+    return `genera il menù considerando che la settimana in corso (settimana ${week?.number}) ho mangiato ${menuText}. ` +
+      `Considera i turni della prossima settimana ${nextWeekLabel} e applica queste regole: ${regole} ` +
+      `Turni rilevanti: ${turniRilevanti.length ? turniRilevanti.join('; ') : 'nessun turno tra le fasce orarie indicate.'}`;
   }
 
   grid?.addEventListener('click', e => {
@@ -87,6 +178,23 @@ document.addEventListener('DOMContentLoaded', () => {
           alert(res.error || 'Errore durante l\'import');
         }
       });
+  });
+
+  promptBtn?.addEventListener('click', () => {
+    if (!promptTextarea || !promptModalEl) return;
+    promptTextarea.value = buildPrompt();
+    new bootstrap.Modal(promptModalEl).show();
+  });
+
+  copyPromptBtn?.addEventListener('click', async () => {
+    if (!promptTextarea?.value) return;
+    try {
+      await navigator.clipboard.writeText(promptTextarea.value);
+      copyPromptBtn.textContent = 'Copiato!';
+      setTimeout(() => { copyPromptBtn.textContent = 'Copia prompt'; }, 1500);
+    } catch (_) {
+      alert('Impossibile copiare il prompt');
+    }
   });
 
   refreshMenu();

@@ -11,13 +11,17 @@ $canImport = has_permission($conn, 'ajax:import_menu_cene', 'insert');
 <div class="d-flex mb-3 justify-content-between align-items-start flex-wrap gap-2">
   <div>
     <h4 class="mb-1">Menù cene</h4>
-    <small class="text-muted">Settimana visibile su una sola schermata</small>
+    <div class="d-flex flex-column flex-sm-row gap-2 align-items-sm-center">
+      <small class="text-muted">Settimana visibile su una sola schermata</small>
+      <small class="text-info" id="weekInfo"></small>
+    </div>
   </div>
   <div class="d-flex align-items-center gap-2">
     <?php if ($canImport): ?>
     <button type="button" class="btn btn-outline-light btn-sm" onclick="openImportMenuModal()">Importa</button>
     <?php endif; ?>
     <a href="lista_spesa.php" class="btn btn-outline-light btn-sm">Lista spesa</a>
+    <button type="button" class="btn btn-outline-light btn-sm" id="generatePromptBtn">Suggerisci menù</button>
   </div>
 </div>
 
@@ -49,6 +53,21 @@ $canImport = has_permission($conn, 'ajax:import_menu_cene', 'insert');
   </div>
 </div>
 <?php endif; ?>
+
+<div class="modal fade" id="promptModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-header">
+        <h5 class="modal-title">Prompt per generare il menù della prossima settimana</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <textarea id="generatedPrompt" class="form-control bg-secondary text-white" rows="8" readonly></textarea>
+        <button class="btn btn-outline-light btn-sm mt-3" type="button" id="copyPromptBtn">Copia prompt</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <?php if ($canImport): ?>
 <div class="modal fade" id="importMenuModal" tabindex="-1">
