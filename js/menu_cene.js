@@ -3,6 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const editForm = document.getElementById('editMenuForm');
   const importForm = document.getElementById('importMenuForm');
   const weekInfo = document.getElementById('weekInfo');
+  const weekPicker = document.getElementById('weekPicker');
+  const prevWeekBtn = document.getElementById('prevWeekBtn');
+  const nextWeekBtn = document.getElementById('nextWeekBtn');
   const promptBtn = document.getElementById('generatePromptBtn');
   const promptModalEl = document.getElementById('promptModal');
   const promptTextarea = document.getElementById('generatedPrompt');
@@ -86,7 +89,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function refreshMenu() {
-    fetch('ajax/get_menu_cene.php')
+    const weekStart = getSelectedWeekStart();
+    const url = new URL('ajax/get_menu_cene.php', window.location.href);
+    if (weekStart) {
+      url.searchParams.set('week_start', weekStart);
+    }
+
+    fetch(url)
       .then(r => r.json())
       .then(res => {
         if (res.success) {
@@ -101,6 +110,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!weekInfo || !week) return;
     const formatter = new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: '2-digit' });
     weekInfo.textContent = `Settimana ${week.number} (${formatter.format(new Date(week.start))} - ${formatter.format(new Date(week.end))})`;
+
+    if (weekPicker) {
+      weekPicker.value = toWeekInputValue(new Date(week.start));
+    }
   }
 
   function formatTimeRange(start, end) {
@@ -108,6 +121,52 @@ document.addEventListener('DOMContentLoaded', () => {
     if (start) display.push(start.slice(0,5));
     if (end) display.push(end.slice(0,5));
     return display.length ? display.join(' - ') : 'Orario non indicato';
+  }
+
+  function getSelectedWeekStart() {
+    if (!weekPicker?.value) return formatDateForApi(startOfISOWeek(new Date()));
+    const parsed = weekInputToDate(weekPicker.value);
+    return parsed ? formatDateForApi(parsed) : formatDateForApi(startOfISOWeek(new Date()));
+  }
+
+  function weekInputToDate(value) {
+    const [yearStr, weekStr] = value.split('-W');
+    const year = Number(yearStr);
+    const week = Number(weekStr);
+    if (!year || !week) return null;
+
+    const simple = new Date(Date.UTC(year, 0, 1 + (week - 1) * 7));
+    const dayOfWeek = simple.getUTCDay() || 7; // 1 (Mon) - 7 (Sun)
+    const monday = new Date(simple);
+    monday.setUTCDate(simple.getUTCDate() - dayOfWeek + 1);
+    return monday;
+  }
+
+  function startOfISOWeek(date) {
+    const cloned = new Date(date);
+    const day = cloned.getDay();
+    const diff = (day === 0 ? -6 : 1) - day; // adjust to Monday
+    cloned.setDate(cloned.getDate() + diff);
+    cloned.setHours(0, 0, 0, 0);
+    return cloned;
+  }
+
+  function toWeekInputValue(date) {
+    const [year, week] = getISOWeek(date);
+    return `${year}-W${String(week).padStart(2, '0')}`;
+  }
+
+  function getISOWeek(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNum = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return [d.getUTCFullYear(), weekNum];
+  }
+
+  function formatDateForApi(date) {
+    return date.toISOString().slice(0, 10);
   }
 
   function buildPrompt() {
@@ -119,6 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .join(', ');
 
     const formatter = new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: '2-digit' });
+    const weekLabel = week ? `${week.number}ª settimana (${formatter.format(new Date(week.start))} - ${formatter.format(new Date(week.end))})` : '';
     const nextWeekLabel = nextWeek ? `${nextWeek.number}ª settimana (${formatter.format(new Date(nextWeek.start))} - ${formatter.format(new Date(nextWeek.end))})` : '';
 
     const turniRilevanti = [];
@@ -133,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const regole = 'quando c\'è un turno che finisce tra le 18 e le 21 serve un piatto preparabile in anticipo o veloce (es. frittata o pollo ai ferri) e quando c\'è un turno che comincia tra le 18 e le 22 serve un piatto adatto anche all\'asporto (es. pizza, frittata, torta salata).';
 
-    return `genera il menù considerando che la settimana in corso (settimana ${week?.number}) ho mangiato ${menuText}. ` +
+    return `genera il menù considerando che nella settimana selezionata ${weekLabel} ho mangiato ${menuText}. ` +
       `Considera i turni della prossima settimana ${nextWeekLabel} e applica queste regole: ${regole} ` +
       `Turni rilevanti: ${turniRilevanti.length ? turniRilevanti.join('; ') : 'nessun turno tra le fasce orarie indicate.'}`;
   }
@@ -196,6 +256,30 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Impossibile copiare il prompt');
     }
   });
+
+  weekPicker?.addEventListener('change', () => {
+    refreshMenu();
+  });
+
+  prevWeekBtn?.addEventListener('click', () => {
+    const current = weekPicker?.value ? weekInputToDate(weekPicker.value) : startOfISOWeek(new Date());
+    if (!current || !weekPicker) return;
+    current.setUTCDate(current.getUTCDate() - 7);
+    weekPicker.value = toWeekInputValue(current);
+    refreshMenu();
+  });
+
+  nextWeekBtn?.addEventListener('click', () => {
+    const current = weekPicker?.value ? weekInputToDate(weekPicker.value) : startOfISOWeek(new Date());
+    if (!current || !weekPicker) return;
+    current.setUTCDate(current.getUTCDate() + 7);
+    weekPicker.value = toWeekInputValue(current);
+    refreshMenu();
+  });
+
+  if (weekPicker && !weekPicker.value) {
+    weekPicker.value = toWeekInputValue(new Date());
+  }
 
   refreshMenu();
 });
