@@ -60,7 +60,8 @@ if (empty($risultati)) {
         if ($colonna && isset($ris['DESCRIZ']) && isset($ris[$colonna])) {
             $haSintesi = true;
             echo "<div class='d-flex mb-2'>" .
-                "<div class='fw-semibold w-50'>" . htmlspecialchars($ris['DESCRIZ']) . "</div><div class='text-end ps-2 w-50'>" . htmlspecialchars($ris[$colonna]) . "</div>" .
+                "<div class='fw-semibold w-50'>" . htmlspecialchars($ris['DESCRIZ']) . "</div><div class='text-end ps-2 w-50'>" .
+                htmlspecialchars($ris[$colonna]) . "</div>" .
                 "</div>";
         }
     }
@@ -74,20 +75,58 @@ if (empty($risultati)) {
 }
 echo '</div>';
 ?>
-<button id="toggle_details" type="button" class="btn btn-secondary mb-3 <?php echo !empty($mostraDettagli) ? 'd-none' : ''; ?>">Mostra dettagli</button>
+<button id="toggle_details" type="button" class="btn btn-secondary mb-3 <?php echo !empty($mostraDettagli) ? 'd-none' : ''; ?>">
+Mostra dettagli</button>
 <div id="div_details" style="display:<?php echo !empty($mostraDettagli) ? 'block' : 'none'; ?>">
 <?php
 if (empty($risultati)) {
     echo '<p class="text-muted">Nessun dettaglio da mostrare.</p>';
 } else {
+    $campiEsclusi = ($id === 10) ? ['ANNO', 'MESE'] : [];
+    $intestazioni = [];
+
     foreach ($risultati as $ris) {
         foreach ($ris as $chiave => $valore) {
-            if (($chiave != 'ANNO' && $chiave != 'MESE') || $id != 10) {
+            if (!in_array($chiave, $campiEsclusi, true)) {
+                $intestazioni[$chiave] = true;
+            }
+        }
+    }
+
+    echo '<div class="d-flex align-items-center gap-2 mb-3">'
+        . '<span class="fw-semibold">Visualizzazione:</span>'
+        . '<button type="button" id="btn_view_list" class="btn btn-outline-primary btn-sm active">Elenco</button>'
+        . '<button type="button" id="btn_view_table" class="btn btn-outline-primary btn-sm">Tabella</button>'
+        . '</div>';
+
+    echo '<div id="view_list">';
+    foreach ($risultati as $ris) {
+        foreach ($ris as $chiave => $valore) {
+            if (!in_array($chiave, $campiEsclusi, true)) {
                 echo htmlspecialchars($chiave) . ': ' . htmlspecialchars((string)$valore) . '<br>';
             }
         }
         echo '<hr>';
     }
+    echo '</div>';
+
+    echo '<div id="view_table" class="table-responsive d-none">';
+    echo '<table class="table table-sm table-bordered"><thead><tr>';
+    foreach (array_keys($intestazioni) as $intestazione) {
+        echo '<th class="text-uppercase">' . htmlspecialchars($intestazione) . '</th>';
+    }
+    echo '</tr></thead><tbody>';
+
+    foreach ($risultati as $ris) {
+        echo '<tr>';
+        foreach (array_keys($intestazioni) as $intestazione) {
+            $valoreCella = $ris[$intestazione] ?? '';
+            echo '<td>' . htmlspecialchars((string)$valoreCella) . '</td>';
+        }
+        echo '</tr>';
+    }
+
+    echo '</tbody></table></div>';
 }
 ?>
 </div>
@@ -95,6 +134,11 @@ if (empty($risultati)) {
 document.addEventListener('DOMContentLoaded', function () {
     const btn = document.getElementById('toggle_details');
     const details = document.getElementById('div_details');
+    const listBtn = document.getElementById('btn_view_list');
+    const tableBtn = document.getElementById('btn_view_table');
+    const viewList = document.getElementById('view_list');
+    const viewTable = document.getElementById('view_table');
+
     if (btn) {
         btn.textContent = (details.style.display === 'block') ? 'Nascondi dettagli' : 'Mostra dettagli';
         btn.addEventListener('click', function () {
@@ -107,8 +151,30 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    function aggiornaVisualizzazione(mostraTabella) {
+        if (!viewList || !viewTable || !listBtn || !tableBtn) {
+            return;
+        }
+
+        if (mostraTabella) {
+            viewList.classList.add('d-none');
+            viewTable.classList.remove('d-none');
+            listBtn.classList.remove('active');
+            tableBtn.classList.add('active');
+        } else {
+            viewList.classList.remove('d-none');
+            viewTable.classList.add('d-none');
+            listBtn.classList.add('active');
+            tableBtn.classList.remove('active');
+        }
+    }
+
+    if (listBtn && tableBtn) {
+        listBtn.addEventListener('click', function () { aggiornaVisualizzazione(false); });
+        tableBtn.addEventListener('click', function () { aggiornaVisualizzazione(true); });
+    }
 });
 </script>
 </div>
 </div>
-
