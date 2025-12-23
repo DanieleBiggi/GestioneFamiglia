@@ -49,6 +49,7 @@ $mappaSintesi = [
 ];
 
 echo '<div class="mb-3">';
+$mostraDettagli = false;
 if (empty($risultati)) {
     echo '<p class="text-warning">Nessun risultato restituito dalla query.</p>';
 } else {
@@ -66,12 +67,15 @@ if (empty($risultati)) {
 
     if (!$haSintesi) {
         echo '<p class="text-muted">Nessun riepilogo disponibile per questa query.</p>';
+        if (!empty($risultati)) {
+            $mostraDettagli = true;
+        }
     }
 }
 echo '</div>';
 ?>
-<button id="toggle_details" type="button" class="btn btn-secondary mb-3">Mostra dettagli</button>
-<div id="div_details" style="display:none">
+<button id="toggle_details" type="button" class="btn btn-secondary mb-3 <?php echo !empty($mostraDettagli) ? 'd-none' : ''; ?>">Mostra dettagli</button>
+<div id="div_details" style="display:<?php echo !empty($mostraDettagli) ? 'block' : 'none'; ?>">
 <?php
 if (empty($risultati)) {
     echo '<p class="text-muted">Nessun dettaglio da mostrare.</p>';
@@ -91,15 +95,18 @@ if (empty($risultati)) {
 document.addEventListener('DOMContentLoaded', function () {
     const btn = document.getElementById('toggle_details');
     const details = document.getElementById('div_details');
-    btn.addEventListener('click', function () {
-        if (details.style.display === 'none' || details.style.display === '') {
-            details.style.display = 'block';
-            btn.textContent = 'Nascondi dettagli';
-        } else {
-            details.style.display = 'none';
-            btn.textContent = 'Mostra dettagli';
-        }
-    });
+    if (btn) {
+        btn.textContent = (details.style.display === 'block') ? 'Nascondi dettagli' : 'Mostra dettagli';
+        btn.addEventListener('click', function () {
+            if (details.style.display === 'none' || details.style.display === '') {
+                details.style.display = 'block';
+                btn.textContent = 'Nascondi dettagli';
+            } else {
+                details.style.display = 'none';
+                btn.textContent = 'Mostra dettagli';
+            }
+        });
+    }
 });
 </script>
 </div>
