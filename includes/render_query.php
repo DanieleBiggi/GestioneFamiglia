@@ -31,7 +31,7 @@ function render_query(array $row) {
     if ($tables) {
         echo '    <div class="small text-secondary">Lavora su: ' . htmlspecialchars(implode(', ', $tables)) . '</div>';
     }
-    echo '    <div class="small text-muted fst-italic">' . htmlspecialchars($row['stringa_da_completare'] ?? '') . '</div>';
+    //echo '    <div class="small text-muted fst-italic">' . htmlspecialchars($row['stringa_da_completare'] ?? '') . '</div>';
     echo '  </div>';
     echo '  <div class="ms-2 text-nowrap">';
     echo '    <a class="btn btn-sm btn-outline-light run-query" href="query_execute.php?id=' . (int)$row['id_dato_remoto'] . '" onclick="event.stopPropagation();">Esegui</a>';
