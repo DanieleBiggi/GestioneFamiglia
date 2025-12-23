@@ -10,6 +10,7 @@ $data = [
     'archiviato' => 0,
     'id_dato_remoto' => 0
 ];
+$parametriArray = [];
 
 if ($id > 0) {
     $stmt = $conn->prepare('SELECT * FROM dati_remoti WHERE id_dato_remoto = ?');
@@ -26,6 +27,12 @@ if ($id > 0) {
     }
     $stmt->close();
 }
+
+$parametriArray = json_decode($data['parametri'] ?? '', true);
+if (!is_array($parametriArray)) {
+    $parametriArray = [];
+}
+$parametriPretty = json_encode($parametriArray, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id_dato_remoto = isset($_POST['id_dato_remoto']) ? (int)$_POST['id_dato_remoto'] : 0;
@@ -69,11 +76,18 @@ include 'includes/header.php';
   </div>
   <div class="mb-3">
     <label class="form-label">Stringa da completare</label>
-    <textarea name="stringa_da_completare" class="form-control bg-dark text-white border-secondary" rows="3"><?= htmlspecialchars($data['stringa_da_completare']) ?></textarea>
+    <textarea name="stringa_da_completare" class="form-control bg-dark text-white border-secondary" rows="3" aria-describedby="stringaHelp"><?= htmlspecialchars($data['stringa_da_completare']) ?></textarea>
+    <div id="stringaHelp" class="form-text text-secondary">Usa la sintassi [[NOME_PARAMETRO]] per indicare i valori da completare.</div>
   </div>
   <div class="mb-3">
-    <label class="form-label">Parametri (JSON)</label>
-    <textarea name="parametri" class="form-control bg-dark text-white border-secondary" rows="3"><?= htmlspecialchars($data['parametri']) ?></textarea>
+    <label class="form-label">Parametri necessari</label>
+    <p class="small text-secondary" id="placeholdersInfo">Compila la stringa sopra per individuare automaticamente i campi tra parentesi quadre.</p>
+    <div id="parametriContainer" class="p-3 border border-secondary rounded bg-black"></div>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Parametri (JSON generato automaticamente)</label>
+    <textarea name="parametri" id="parametri" class="form-control bg-dark text-white border-secondary" rows="3" readonly><?= htmlspecialchars($parametriPretty ?? '') ?></textarea>
+    <div class="form-text text-secondary">Il JSON verrà aggiornato in base ai campi compilati sopra.</div>
   </div>
   <div class="form-check form-switch mb-3">
     <input class="form-check-input" type="checkbox" id="archiviato" name="archiviato" <?= ($data['archiviato'] ?? 0) ? 'checked' : '' ?>>
@@ -87,4 +101,74 @@ include 'includes/header.php';
     <button type="submit" name="delete" value="1" class="btn btn-danger w-100 mt-3" onclick="return confirm('Eliminare definitivamente?');">Elimina</button>
   <?php endif; ?>
 </form>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const stringaField = document.querySelector('textarea[name="stringa_da_completare"]');
+  const container = document.getElementById('parametriContainer');
+  const jsonField = document.getElementById('parametri');
+  const existingParams = <?php echo json_encode($parametriArray, JSON_UNESCAPED_UNICODE); ?>;
+
+  function extractPlaceholders(text) {
+    const matches = Array.from(text.matchAll(/\[\[([^\[\]]+)\]\]/g)).map(m => m[1].trim()).filter(Boolean);
+    const unique = new Set(matches);
+    Object.keys(existingParams || {}).forEach(key => unique.add(key));
+    return Array.from(unique);
+  }
+
+  function syncJson() {
+    const params = {};
+    container.querySelectorAll('input[data-name]').forEach(input => {
+      if (input.value !== '') {
+        params[input.dataset.name] = input.value;
+      }
+    });
+    jsonField.value = JSON.stringify(params, null, 2);
+  }
+
+  function buildInputs() {
+    const placeholders = extractPlaceholders(stringaField.value);
+    container.innerHTML = '';
+
+    if (placeholders.length === 0) {
+      container.innerHTML = '<p class="m-0 text-muted">Nessun parametro richiesto.</p>';
+      jsonField.value = JSON.stringify(existingParams || {}, null, 2) || '';
+      return;
+    }
+
+    placeholders.forEach(name => {
+      const value = (existingParams && Object.prototype.hasOwnProperty.call(existingParams, name)) ? existingParams[name] : '';
+      const group = document.createElement('div');
+      group.className = 'mb-2';
+
+      const label = document.createElement('label');
+      label.className = 'form-label small mb-1';
+      label.setAttribute('for', `param-${name}`);
+      label.textContent = name;
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'form-control form-control-sm bg-dark text-white border-secondary';
+      input.id = `param-${name}`;
+      input.dataset.name = name;
+      input.value = value;
+
+      group.appendChild(label);
+      group.appendChild(input);
+      container.appendChild(group);
+    });
+
+    syncJson();
+  }
+
+  container.addEventListener('input', event => {
+    if (event.target.matches('input[data-name]')) {
+      syncJson();
+    }
+  });
+
+  stringaField.addEventListener('input', buildInputs);
+
+  buildInputs();
+});
+</script>
 <?php include 'includes/footer.php'; ?>
