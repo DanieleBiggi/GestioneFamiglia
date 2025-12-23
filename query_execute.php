@@ -38,36 +38,54 @@ if (is_array($parametri)) {
 $utility = new Utility();
 
 $ret = $utility->getDati($SQLinv);
-//print_r($ret);
-$risultati = $ret;
+$risultati = is_array($ret) ? $ret : [];
 
-$ar = [];
-$ar['C99'] = "IMPORTO";
-$ar['C06'] = "IMPORTO";
-$ar['019'] = "IMPORTO";
-$ar['Z50'] = "QUANTITA";
-$ar['Z51'] = "QUANTITA";
-foreach($risultati as $ris)
-{
-	if(array_key_exists($ris['CODVOCE'],$ar))
-	{
-		echo
-		"<div class='d-flex mb-2'>".
-			"<div class='font-weight-bold w-50'>".$ris['DESCRIZ']."</div><div class='text-right pl-2 w-50'>".$ris[$ar[$ris['CODVOCE']]]."</div>".
-		"</div>";
-	}
+$mappaSintesi = [
+    'C99' => 'IMPORTO',
+    'C06' => 'IMPORTO',
+    '019' => 'IMPORTO',
+    'Z50' => 'QUANTITA',
+    'Z51' => 'QUANTITA',
+];
+
+echo '<div class="mb-3">';
+if (empty($risultati)) {
+    echo '<p class="text-warning">Nessun risultato restituito dalla query.</p>';
+} else {
+    $haSintesi = false;
+    foreach ($risultati as $ris) {
+        $codice = $ris['CODVOCE'] ?? null;
+        $colonna = $codice && array_key_exists($codice, $mappaSintesi) ? $mappaSintesi[$codice] : null;
+        if ($colonna && isset($ris['DESCRIZ']) && isset($ris[$colonna])) {
+            $haSintesi = true;
+            echo "<div class='d-flex mb-2'>" .
+                "<div class='fw-semibold w-50'>" . htmlspecialchars($ris['DESCRIZ']) . "</div><div class='text-end ps-2 w-50'>" . htmlspecialchars($ris[$colonna]) . "</div>" .
+                "</div>";
+        }
+    }
+
+    if (!$haSintesi) {
+        echo '<p class="text-muted">Nessun riepilogo disponibile per questa query.</p>';
+    }
 }
+echo '</div>';
 ?>
 <button id="toggle_details" type="button" class="btn btn-secondary mb-3">Mostra dettagli</button>
 <div id="div_details" style="display:none">
-<?php foreach($risultati as $ris) {
-        foreach($ris as $chiave => $valore) {
-                if(($chiave!="ANNO" && $chiave!="MESE") || $id != 10) {
-                        echo $chiave.": ".$valore."<br>";
-                }
+<?php
+if (empty($risultati)) {
+    echo '<p class="text-muted">Nessun dettaglio da mostrare.</p>';
+} else {
+    foreach ($risultati as $ris) {
+        foreach ($ris as $chiave => $valore) {
+            if (($chiave != 'ANNO' && $chiave != 'MESE') || $id != 10) {
+                echo htmlspecialchars($chiave) . ': ' . htmlspecialchars((string)$valore) . '<br>';
+            }
         }
-        echo "<hr>";
-} ?>
+        echo '<hr>';
+    }
+}
+?>
 </div>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
