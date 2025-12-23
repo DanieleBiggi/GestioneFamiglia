@@ -129,17 +129,38 @@ class Utility
 {
     public function getDati(string $SQLinv): array
     {
-        $token = Encrypt(microtime(true) . rand(1000, 9999), 'test');
-        $SQLen = Encrypt(htmlspecialchars_decode($SQLinv), 'test');
-        $url = 'https://new.cosulich.it/approvazione_fatture/user_get_inaz_json.php?action=execute_query'
-            . '&token=' . $token . '&SQL=' . $SQLen;
-
-        //echo $url."<br>";
-        $response = @file_get_contents($url);
-
-        //echo $response;
-
-        return json_decode($response, true) ?? [];
+        $token = Encrypt(microtime(true) . random_int(1000, 9999), 'test');
+        $sqlEncoded = Encrypt(htmlspecialchars_decode($SQLinv), 'test');
+        
+        $queryParams = http_build_query([
+            'action' => 'execute_query',
+            'token'  => $token,
+            'SQL'    => $sqlEncoded,
+        ]);
+        
+        $url = 'https://new.cosulich.it/approvazione_fatture/user_get_inaz_json.php?' . $queryParams;
+        
+        $context = stream_context_create([
+            'ssl' => [
+                'verify_peer'      => false,
+                'verify_peer_name' => false,
+                'allow_self_signed'=> true,
+            ],
+            'http' => [
+                'method'  => 'GET',
+                'timeout' => 15,
+            ],
+        ]);
+        
+        $response = file_get_contents($url, false, $context);
+        
+        if ($response === false) {
+            return [];
+        }
+        
+        $data = json_decode($response, true);
+        
+        return is_array($data) ? $data : [];
     }
 
     /**
