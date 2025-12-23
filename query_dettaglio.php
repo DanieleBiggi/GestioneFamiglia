@@ -82,7 +82,7 @@ include 'includes/header.php';
   <div class="mb-3">
     <label class="form-label">Parametri necessari</label>
     <p class="small text-secondary" id="placeholdersInfo">Compila la stringa sopra per individuare automaticamente i campi tra parentesi quadre.</p>
-    <div id="parametriContainer" class="p-3 border border-secondary rounded bg-black"></div>
+    <div id="parametriContainer" class="p-3 border border-secondary rounded"></div>
   </div>
   <div class="mb-3">
     <label class="form-label">Parametri (JSON generato automaticamente)</label>
