@@ -29,6 +29,7 @@ $tableMap = [
 
 $updated = 0;
 $errors = [];
+$rowsByTable = [];
 
 foreach ($rows as $row) {
     $tabella = $row['tabella'] ?? '';
@@ -39,6 +40,18 @@ foreach ($rows as $row) {
         continue;
     }
 
+    if (!isset($rowsByTable[$tabella])) {
+        $rowsByTable[$tabella] = [];
+    }
+    $rowsByTable[$tabella][$id] = true;
+}
+
+if (empty($rowsByTable)) {
+    echo json_encode(['success' => false, 'error' => 'Nessun record valido.']);
+    exit;
+}
+
+foreach ($rowsByTable as $tabella => $idsMap) {
     $setParts = [];
     $params = [];
     $types = '';
@@ -60,16 +73,21 @@ foreach ($rows as $row) {
         $params[] = (string) $fields['note'];
     }
 
+    $ids = array_keys($idsMap);
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
     $pk = $tableMap[$tabella]['pk'];
-    $types .= 'i';
-    $params[] = $id;
+    $sql = "UPDATE {$tabella} SET " . implode(', ', $setParts) . " WHERE {$pk} IN ({$placeholders})";
+    foreach ($ids as $id) {
+        $types .= 'i';
+        $params[] = (int) $id;
+    }
 
-    $sql = "UPDATE {$tabella} SET " . implode(', ', $setParts) . " WHERE {$pk} = ?";
     if (!empty($tableMap[$tabella]['userColumn'])) {
         $sql .= " AND {$tableMap[$tabella]['userColumn']} = ?";
         $types .= 'i';
         $params[] = (int) $idUtente;
     }
+
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
         $errors[] = 'Errore preparazione query.';
@@ -78,7 +96,7 @@ foreach ($rows as $row) {
 
     $stmt->bind_param($types, ...$params);
     if ($stmt->execute()) {
-        $updated += 1;
+        $updated += $stmt->affected_rows;
     } else {
         $errors[] = 'Errore aggiornamento.';
     }

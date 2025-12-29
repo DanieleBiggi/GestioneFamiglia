@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const rows = Array.from(table.querySelectorAll('tbody tr'));
     const noResults = document.getElementById('noResults');
     const filterForm = document.getElementById('filtersForm');
+    const clearFiltersButton = document.getElementById('clearFilters');
     const selectAll = document.getElementById('selectAllRows');
     const bulkButton = document.getElementById('bulkUpdateButton');
     const bulkForm = document.getElementById('bulkUpdateForm');
@@ -28,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const descrizioneExtraInput = document.getElementById('bulkUpdateDescrizioneExtra');
     const noteToggle = document.getElementById('bulkUpdateNoteToggle');
     const noteInput = document.getElementById('bulkUpdateNote');
+    const visibleCountEl = document.getElementById('visibleCount');
     const gruppoLabels = table.dataset.gruppi ? JSON.parse(table.dataset.gruppi) : {};
 
     const normalize = (value) => (value || '').toString().toLowerCase().trim();
@@ -37,6 +39,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const suffix = endOfDay ? 'T23:59:59' : 'T00:00:00';
         const parsed = Date.parse(`${value}${suffix}`);
         return Number.isNaN(parsed) ? null : parsed;
+    };
+
+    const updateVisibleCount = (visibleCount) => {
+        if (!visibleCountEl) return;
+        visibleCountEl.textContent = `Visualizzati ${visibleCount} di ${rows.length}`;
     };
 
     const applyFilters = () => {
@@ -128,6 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (noResults) {
             noResults.classList.toggle('d-none', visibleCount > 0);
         }
+        updateVisibleCount(visibleCount);
     };
 
     const sortState = {
@@ -194,6 +202,38 @@ document.addEventListener('DOMContentLoaded', () => {
     if (filterForm) {
         filterForm.addEventListener('submit', (event) => {
             event.preventDefault();
+            applyFilters();
+            applySort();
+        });
+    }
+
+    const setDefaultDateRange = () => {
+        if (!filters.dataDa || !filters.dataA) return;
+        const today = new Date();
+        const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const startDate = new Date(endDate);
+        startDate.setMonth(startDate.getMonth() - 2);
+        const toDateInput = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        filters.dataDa.value = toDateInput(startDate);
+        filters.dataA.value = toDateInput(endDate);
+    };
+
+    if (clearFiltersButton) {
+        clearFiltersButton.addEventListener('click', () => {
+            Object.values(filters).forEach((input) => {
+                if (!input) return;
+                if (input.tagName === 'SELECT') {
+                    input.value = '';
+                } else {
+                    input.value = '';
+                }
+            });
+            setDefaultDateRange();
             applyFilters();
             applySort();
         });
@@ -320,4 +360,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    setDefaultDateRange();
+    applyFilters();
+    applySort();
 });
