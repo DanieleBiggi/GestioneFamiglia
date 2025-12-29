@@ -180,7 +180,8 @@ sort($banche);
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="col-12 d-flex justify-content-end">
+                    <div class="col-12 d-flex flex-wrap justify-content-end gap-2">
+                        <button type="button" id="clearFilters" class="btn btn-outline-secondary">Pulisci filtri</button>
                         <button type="submit" id="filterButton" class="btn btn-outline-light">Cerca</button>
                     </div>
                 </div>
@@ -192,6 +193,7 @@ sort($banche);
         <button type="button" id="bulkUpdateButton" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#bulkUpdateModal" disabled>
             Aggiorna record selezionati
         </button>
+        <div id="visibleCount" class="text-white align-self-center"></div>
     </div>
 
     <div class="table-responsive">
