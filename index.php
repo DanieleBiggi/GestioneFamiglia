@@ -326,7 +326,8 @@ if ($result && $result->num_rows > 0): ?>
   </div>
 
   <div class="text-center mt-3">
-    <a href="tutti_movimenti.php" class="btn btn-outline-light btn-sm">Visualizza tutti</a>
+    <a href="tutti_movimenti.php" class="btn btn-outline-light btn-sm d-md-none">Visualizza tutti</a>
+    <a href="tutti_movimenti_gestione.php" class="btn btn-outline-light btn-sm d-none d-md-inline-block">Visualizza tutti</a>
   </div>
 <?php else: ?>
   <p class="text-center text-muted">Nessun movimento presente.</p>
