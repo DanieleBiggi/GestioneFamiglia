@@ -10,9 +10,14 @@ function render_film(array $row) {
     $listeAttr = htmlspecialchars($row['liste'] ?? '', ENT_QUOTES);
     $visto = htmlspecialchars($row['data_visto'] ?? '', ENT_QUOTES);
     $durata = (int)($row['durata'] ?? 0);
+    $voto = $row['voto'] ?? '';
+    $votoAttr = htmlspecialchars((string)$voto, ENT_QUOTES);
+    $piattaformeIds = htmlspecialchars($row['piattaforme_ids'] ?? '', ENT_QUOTES);
+    $inseritoIl = htmlspecialchars($row['inserito_il'] ?? '', ENT_QUOTES);
+    $piattaformeAggiornateIl = htmlspecialchars($row['piattaforme_aggiornate_il'] ?? '', ENT_QUOTES);
     $url = 'film_dettaglio.php?id=' . (int)($row['id_film'] ?? 0);
     $trailer = $row['trailer_ita_url'] ?? '';
-    echo '<div class="film-card movement d-flex justify-content-between align-items-start text-white text-decoration-none mb-2 position-relative" data-search="' . $searchAttr . '" data-anno="' . $anno . '" data-generi="' . $generi . '" data-regista="' . $registaAttr . '" data-gruppo="' . $gruppoId . '" data-liste="' . $listeAttr . '" data-visto="' . $visto . '" data-durata="' . $durata . '" onclick="window.location.href=\'' . $url . '\'">';
+    echo '<div class="film-card movement d-flex justify-content-between align-items-start text-white text-decoration-none mb-2 position-relative" data-search="' . $searchAttr . '" data-anno="' . $anno . '" data-generi="' . $generi . '" data-regista="' . $registaAttr . '" data-gruppo="' . $gruppoId . '" data-liste="' . $listeAttr . '" data-visto="' . $visto . '" data-durata="' . $durata . '" data-voto="' . $votoAttr . '" data-piattaforme="' . $piattaformeIds . '" data-inserito="' . $inseritoIl . '" data-piattaforme-aggiornate="' . $piattaformeAggiornateIl . '" onclick="window.location.href=\'' . $url . '\'">';
     if (!empty($row['poster_url'])) {
         echo '<img src="' . htmlspecialchars($row['poster_url']) . '" alt="" class="me-3" style="height:104px;">';
     }
