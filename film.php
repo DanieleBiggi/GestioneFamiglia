@@ -30,7 +30,8 @@ $stmt->bind_param('ii', $idUtente, $idUtente);
 $stmt->execute();
 $res = $stmt->get_result();
 
-$yearsRes = $conn->query("SELECT DISTINCT anno FROM film ORDER BY anno DESC");
+$yearsRangeRes = $conn->query("SELECT MIN(anno) AS min_anno, MAX(anno) AS max_anno FROM film");
+$yearsRange = $yearsRangeRes ? $yearsRangeRes->fetch_assoc() : ['min_anno' => null, 'max_anno' => null];
 $generiRes = $conn->query("SELECT id_genere, nome FROM film_generi ORDER BY nome");
 $gruppiRes = $conn->query("SELECT id_gruppo, nome FROM film_gruppi ORDER BY nome");
 $stmtListe = $conn->prepare("SELECT id_lista, nome FROM film_liste WHERE id_utente=? ORDER BY nome");
@@ -68,19 +69,32 @@ $piattaformeRes = $conn->query("SELECT id_piattaforma, nome FROM streaming_piatt
       <div class="modal-body">
         <div class="mb-3">
           <label for="filterOrdine" class="form-label">Ordinamento</label>
-          <select id="filterOrdine" class="form-select bg-dark text-white border-secondary">
-            <option value="inserimento" selected>Data inserimento</option>
-            <option value="piattaforme_aggiornamento">Data aggiornamento piattaforme</option>
-          </select>
+          <div class="d-flex gap-2">
+            <select id="filterOrdine" class="form-select bg-dark text-white border-secondary">
+              <option value="inserimento" selected>Data inserimento</option>
+              <option value="titolo">Titolo</option>
+              <option value="titolo_originale">Titolo originale</option>
+              <option value="anno">Anno</option>
+              <option value="regista">Regista</option>
+              <option value="gruppo">Gruppo</option>
+              <option value="voto">Voto</option>
+              <option value="voto_medio">Voto medio</option>
+              <option value="durata">Durata</option>
+              <option value="visto">Data visione</option>
+              <option value="piattaforme_aggiornamento">Data aggiornamento piattaforme</option>
+            </select>
+            <select id="filterOrdineDirezione" class="form-select bg-dark text-white border-secondary">
+              <option value="desc" selected>Desc</option>
+              <option value="asc">Asc</option>
+            </select>
+          </div>
         </div>
         <div class="mb-3">
-          <label for="filterAnno" class="form-label">Anno</label>
-          <select id="filterAnno" class="form-select bg-dark text-white border-secondary">
-            <option value="">Tutti gli anni</option>
-            <?php while($y = $yearsRes->fetch_assoc()): ?>
-            <option value="<?= (int)$y['anno'] ?>"><?= (int)$y['anno'] ?></option>
-            <?php endwhile; ?>
-          </select>
+          <label class="form-label">Anno</label>
+          <div class="d-flex gap-2">
+            <input type="number" id="filterAnnoDa" class="form-control bg-dark text-white border-secondary" placeholder="Da" min="<?= (int)($yearsRange['min_anno'] ?? 0) ?>" max="<?= (int)($yearsRange['max_anno'] ?? 0) ?>">
+            <input type="number" id="filterAnnoA" class="form-control bg-dark text-white border-secondary" placeholder="A" min="<?= (int)($yearsRange['min_anno'] ?? 0) ?>" max="<?= (int)($yearsRange['max_anno'] ?? 0) ?>">
+          </div>
         </div>
         <div class="mb-3">
           <label for="filterGenere" class="form-label">Genere</label>
@@ -114,13 +128,17 @@ $piattaformeRes = $conn->query("SELECT id_piattaforma, nome FROM streaming_piatt
           </select>
         </div>
         <div class="mb-3">
-          <label for="filterPiattaforma" class="form-label">Piattaforme streaming</label>
-          <select id="filterPiattaforma" class="form-select bg-dark text-white border-secondary">
-            <option value="">Tutte le piattaforme</option>
+          <label class="form-label">Piattaforme streaming</label>
+          <div class="d-flex flex-column gap-1">
             <?php while($p = $piattaformeRes->fetch_assoc()): ?>
-            <option value="<?= (int)$p['id_piattaforma'] ?>"><?= htmlspecialchars($p['nome']) ?></option>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="filterPiattaforme[]" id="filterPiattaforma<?= (int)$p['id_piattaforma'] ?>" value="<?= (int)$p['id_piattaforma'] ?>">
+              <label class="form-check-label" for="filterPiattaforma<?= (int)$p['id_piattaforma'] ?>">
+                <?= htmlspecialchars($p['nome']) ?>
+              </label>
+            </div>
             <?php endwhile; ?>
-          </select>
+          </div>
         </div>
         <div class="mb-3">
           <label class="form-label">Voto</label>
