@@ -11,7 +11,9 @@ $stmt = $conn->prepare(
     "SELECT f.*, fu.data_visto, fu.voto, fg.nome AS gruppo, " .
     "GROUP_CONCAT(DISTINCT f2g.id_genere) AS generi, " .
     "GROUP_CONCAT(DISTINCT f2l.id_lista) AS liste, " .
-    "GROUP_CONCAT(DISTINCT sp.icon) AS piattaforme " .
+    "GROUP_CONCAT(DISTINCT sp.icon) AS piattaforme, " .
+    "GROUP_CONCAT(DISTINCT f2p.id_piattaforma) AS piattaforme_ids, " .
+    "MAX(f2p.indicata_il) AS piattaforme_aggiornate_il " .
     "FROM film f " .
     "JOIN film_utenti fu ON f.id_film = fu.id_film " .
     "LEFT JOIN film2generi f2g ON f.id_film = f2g.id_film " .
@@ -21,7 +23,8 @@ $stmt = $conn->prepare(
     "LEFT JOIN film2liste f2l ON f.id_film = f2l.id_film " .
     "LEFT JOIN film_liste l ON f2l.id_lista = l.id_lista AND l.id_utente = ? " .
     "WHERE fu.id_utente = ? " .
-    "GROUP BY f.id_film, fu.data_visto, fu.voto, fg.nome"
+    "GROUP BY f.id_film, fu.data_visto, fu.voto, fg.nome, f.inserito_il " .
+    "ORDER BY f.inserito_il DESC"
 );
 $stmt->bind_param('ii', $idUtente, $idUtente);
 $stmt->execute();
@@ -34,6 +37,7 @@ $stmtListe = $conn->prepare("SELECT id_lista, nome FROM film_liste WHERE id_uten
 $stmtListe->bind_param('i', $idUtente);
 $stmtListe->execute();
 $listeRes = $stmtListe->get_result();
+$piattaformeRes = $conn->query("SELECT id_piattaforma, nome FROM streaming_piattaforme ORDER BY nome");
 ?>
 <div class="d-flex mb-3 justify-content-between">
   <h4>Film</h4><a href="film_aggiungi.php" class="btn btn-outline-light btn-sm">Aggiungi</a>
@@ -62,6 +66,13 @@ $listeRes = $stmtListe->get_result();
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
       </div>
       <div class="modal-body">
+        <div class="mb-3">
+          <label for="filterOrdine" class="form-label">Ordinamento</label>
+          <select id="filterOrdine" class="form-select bg-dark text-white border-secondary">
+            <option value="inserimento" selected>Data inserimento</option>
+            <option value="piattaforme_aggiornamento">Data aggiornamento piattaforme</option>
+          </select>
+        </div>
         <div class="mb-3">
           <label for="filterAnno" class="form-label">Anno</label>
           <select id="filterAnno" class="form-select bg-dark text-white border-secondary">
@@ -101,6 +112,22 @@ $listeRes = $stmtListe->get_result();
             <option value="<?= (int)$l['id_lista'] ?>"><?= htmlspecialchars($l['nome']) ?></option>
             <?php endwhile; ?>
           </select>
+        </div>
+        <div class="mb-3">
+          <label for="filterPiattaforma" class="form-label">Piattaforme streaming</label>
+          <select id="filterPiattaforma" class="form-select bg-dark text-white border-secondary">
+            <option value="">Tutte le piattaforme</option>
+            <?php while($p = $piattaformeRes->fetch_assoc()): ?>
+            <option value="<?= (int)$p['id_piattaforma'] ?>"><?= htmlspecialchars($p['nome']) ?></option>
+            <?php endwhile; ?>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Voto</label>
+          <div class="d-flex gap-2">
+            <input type="number" step="0.1" id="filterVotoDa" class="form-control bg-dark text-white border-secondary" placeholder="Da">
+            <input type="number" step="0.1" id="filterVotoA" class="form-control bg-dark text-white border-secondary" placeholder="A">
+          </div>
         </div>
         <div class="mb-3">
           <label class="form-label">Data visione</label>
