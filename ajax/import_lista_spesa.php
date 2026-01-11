@@ -6,16 +6,19 @@ require_once '../includes/permissions.php';
 if (!has_permission($conn, 'ajax:import_lista_spesa', 'insert')) { http_response_code(403); echo json_encode(['success'=>false,'error'=>'Accesso negato']); exit; }
 $itemsRaw = trim($_POST['items'] ?? '');
 $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
-if ($itemsRaw === '' || !$idFamiglia) { echo json_encode(['success'=>false,'error'=>'Dati non validi']); exit; }
+$itemsRaw = trim($itemsRaw);
+if ($itemsRaw === '' || !$idFamiglia) { echo json_encode(['success'=>false,'error'=>'Inserisci almeno un elemento da importare.']); exit; }
 $lines = array_filter(array_map('trim', preg_split("/[\r\n]+/", $itemsRaw)));
-if (empty($lines)) { echo json_encode(['success'=>false,'error'=>'Nessun elemento']); exit; }
+if (empty($lines)) { echo json_encode(['success'=>false,'error'=>'Nessun elemento trovato nelle righe inserite.']); exit; }
 $stmt = $conn->prepare('INSERT INTO lista_spesa (id_famiglia, nome, quantita, note) VALUES (?, ?, ?, ?)');
 $nome = '';
 $quantita = null;
 $note = null;
 $stmt->bind_param('isss', $idFamiglia, $nome, $quantita, $note);
 $ok = true;
-foreach ($lines as $line) {
+$invalidLines = [];
+$itemsToInsert = [];
+foreach ($lines as $index => $line) {
     $nome = trim($line);
     $quantita = null;
     $note = null;
@@ -40,8 +43,37 @@ foreach ($lines as $line) {
     if ($quantita === '') { $quantita = null; }
     if ($note === '') { $note = null; }
 
-    if ($nome === '') { continue; }
-    if (!$stmt->execute()) { $ok = false; break; }
+    if ($nome === '') {
+        $invalidLines[] = $index + 1;
+        continue;
+    }
+    $itemsToInsert[] = [
+        'nome' => $nome,
+        'quantita' => $quantita,
+        'note' => $note,
+    ];
 }
-echo json_encode(['success'=>$ok]);
+if (!empty($invalidLines)) {
+    echo json_encode([
+        'success' => false,
+        'error' => 'Alcune righe non contengono un nome valido (righe: ' . implode(', ', $invalidLines) . ').'
+    ]);
+    exit;
+}
+if (empty($itemsToInsert)) {
+    echo json_encode(['success' => false, 'error' => 'Nessun elemento valido trovato.']);
+    exit;
+}
+foreach ($itemsToInsert as $item) {
+    $nome = $item['nome'];
+    $quantita = $item['quantita'];
+    $note = $item['note'];
+    if (!$stmt->execute()) {
+        $ok = false;
+        $errorMessage = $stmt->error ?: 'Errore durante il salvataggio degli elementi importati.';
+        echo json_encode(['success' => false, 'error' => $errorMessage]);
+        exit;
+    }
+}
+echo json_encode(['success' => $ok]);
 ?>
