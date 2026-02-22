@@ -22,6 +22,7 @@ $canImport = has_permission($conn, 'ajax:import_menu_cene', 'insert');
     <?php if ($canImport): ?>
     <button type="button" class="btn btn-outline-light btn-sm" onclick="openImportMenuModal()">Importa</button>
     <?php endif; ?>
+    <button type="button" class="btn btn-outline-light btn-sm" id="exportMenuBtn">Esporta menù</button>
     <a href="lista_spesa.php" class="btn btn-outline-light btn-sm">Lista spesa</a>
     <button type="button" class="btn btn-outline-light btn-sm" id="generatePromptBtn">Suggerisci menù</button>
   </div>

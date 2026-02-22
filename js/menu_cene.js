@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const prevWeekBtn = document.getElementById('prevWeekBtn');
   const nextWeekBtn = document.getElementById('nextWeekBtn');
   const promptBtn = document.getElementById('generatePromptBtn');
+  const exportMenuBtn = document.getElementById('exportMenuBtn');
   const promptModalEl = document.getElementById('promptModal');
   const promptTextarea = document.getElementById('generatedPrompt');
   const copyPromptBtn = document.getElementById('copyPromptBtn');
@@ -198,6 +199,36 @@ document.addEventListener('DOMContentLoaded', () => {
       `Turni rilevanti: ${turniRilevanti.length ? turniRilevanti.join('; ') : 'nessun turno tra le fasce orarie indicate.'}`;
   }
 
+  async function exportMenu() {
+    if (!lastPayload?.items?.length) {
+      alert('Nessun menù disponibile da esportare');
+      return;
+    }
+
+    const rows = lastPayload.items
+      .filter(item => (item.piatto || '').trim() !== '')
+      .map(item => {
+        const piatto = item.piatto.replace(/\n+/g, ' ').trim();
+        const giorno = (item.giorno || '').toLocaleLowerCase('it-IT').trim();
+        return `${piatto} -${giorno}-`;
+      });
+
+    if (!rows.length) {
+      alert('Nessun piatto disponibile da esportare');
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(rows.join('\n'));
+      if (exportMenuBtn) {
+        exportMenuBtn.textContent = 'Copiato!';
+        setTimeout(() => { exportMenuBtn.textContent = 'Esporta menù'; }, 1500);
+      }
+    } catch (_) {
+      alert('Impossibile copiare il menù negli appunti');
+    }
+  }
+
   grid?.addEventListener('click', e => {
     const btn = e.target.closest('.edit-day-btn');
     if (btn) {
@@ -244,6 +275,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!promptTextarea || !promptModalEl) return;
     promptTextarea.value = buildPrompt();
     new bootstrap.Modal(promptModalEl).show();
+  });
+
+  exportMenuBtn?.addEventListener('click', async () => {
+    await exportMenu();
   });
 
   copyPromptBtn?.addEventListener('click', async () => {
