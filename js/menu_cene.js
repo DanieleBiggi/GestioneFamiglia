@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `Turni rilevanti: ${turniRilevanti.length ? turniRilevanti.join('; ') : 'nessun turno tra le fasce orarie indicate.'}`;
   }
 
-  async function exportMenu() {
+  function exportMenu() {
     if (!lastPayload?.items?.length) {
       alert('Nessun menù disponibile da esportare');
       return;
@@ -207,26 +207,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const rows = lastPayload.items
       .filter(item => (item.piatto || '').trim() !== '')
-      .map(item => {
-        const piatto = item.piatto.replace(/\n+/g, ' ').trim();
-        const giorno = (item.giorno || '').toLocaleLowerCase('it-IT').trim();
-        return `${piatto} -${giorno}-`;
-      });
+      .map(item => `${item.piatto.replace(/\n+/g, ' ').trim()} -${item.giorno}-`);
 
     if (!rows.length) {
       alert('Nessun piatto disponibile da esportare');
       return;
     }
 
-    try {
-      await navigator.clipboard.writeText(rows.join('\n'));
-      if (exportMenuBtn) {
-        exportMenuBtn.textContent = 'Copiato!';
-        setTimeout(() => { exportMenuBtn.textContent = 'Esporta menù'; }, 1500);
-      }
-    } catch (_) {
-      alert('Impossibile copiare il menù negli appunti');
-    }
+    const blob = new Blob([rows.join('\n')], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const weekStart = lastPayload?.week?.start || getSelectedWeekStart();
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `menu-cene-${weekStart}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   }
 
   grid?.addEventListener('click', e => {
@@ -277,8 +274,8 @@ document.addEventListener('DOMContentLoaded', () => {
     new bootstrap.Modal(promptModalEl).show();
   });
 
-  exportMenuBtn?.addEventListener('click', async () => {
-    await exportMenu();
+  exportMenuBtn?.addEventListener('click', () => {
+    exportMenu();
   });
 
   copyPromptBtn?.addEventListener('click', async () => {
