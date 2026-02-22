@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const prevWeekBtn = document.getElementById('prevWeekBtn');
   const nextWeekBtn = document.getElementById('nextWeekBtn');
   const promptBtn = document.getElementById('generatePromptBtn');
+  const exportMenuBtn = document.getElementById('exportMenuBtn');
   const promptModalEl = document.getElementById('promptModal');
   const promptTextarea = document.getElementById('generatedPrompt');
   const copyPromptBtn = document.getElementById('copyPromptBtn');
@@ -198,6 +199,33 @@ document.addEventListener('DOMContentLoaded', () => {
       `Turni rilevanti: ${turniRilevanti.length ? turniRilevanti.join('; ') : 'nessun turno tra le fasce orarie indicate.'}`;
   }
 
+  function exportMenu() {
+    if (!lastPayload?.items?.length) {
+      alert('Nessun menù disponibile da esportare');
+      return;
+    }
+
+    const rows = lastPayload.items
+      .filter(item => (item.piatto || '').trim() !== '')
+      .map(item => `${item.piatto.replace(/\n+/g, ' ').trim()} -${item.giorno}-`);
+
+    if (!rows.length) {
+      alert('Nessun piatto disponibile da esportare');
+      return;
+    }
+
+    const blob = new Blob([rows.join('\n')], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const weekStart = lastPayload?.week?.start || getSelectedWeekStart();
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `menu-cene-${weekStart}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   grid?.addEventListener('click', e => {
     const btn = e.target.closest('.edit-day-btn');
     if (btn) {
@@ -244,6 +272,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!promptTextarea || !promptModalEl) return;
     promptTextarea.value = buildPrompt();
     new bootstrap.Modal(promptModalEl).show();
+  });
+
+  exportMenuBtn?.addEventListener('click', () => {
+    exportMenu();
   });
 
   copyPromptBtn?.addEventListener('click', async () => {
