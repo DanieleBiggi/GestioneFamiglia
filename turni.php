@@ -26,6 +26,7 @@ if ($syncRes) {
     }
 }
 $needSync = !empty($unsyncedMonths);
+$canManageTurni = has_permission($conn, 'table:turni_calendario', 'update');
 ?>
 <style>
   #calendarContainer .col {height: 100px; min-width:0; overflow:hidden;}
@@ -62,6 +63,9 @@ $needSync = !empty($unsyncedMonths);
     <div id="stateA" class="d-flex justify-content-around">
       <button class="btn btn-outline-light flex-fill mx-1" id="btnSingolo">SINGOLA</button>
       <button class="btn btn-outline-light flex-fill mx-1" id="btnMultipla">MULTIPLA</button>
+      <?php if ($canManageTurni): ?>
+      <button class="btn btn-outline-light flex-fill mx-1" id="btnImporta">IMPORTA</button>
+      <?php endif; ?>
       <button class="btn btn-outline-light flex-fill mx-1" id="btnGoogle">GOOGLE</button>
     </div>
     <div id="stateB" class="d-none">
@@ -133,6 +137,34 @@ $needSync = !empty($unsyncedMonths);
 </div>
 </div>
 </div>
+<?php if ($canManageTurni): ?>
+<div class="modal fade" id="importTurniModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form class="modal-content bg-dark text-white" id="importTurniForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Importa turni</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="turniImportJson" class="form-label">JSON dei turni</label>
+          <textarea class="form-control bg-dark text-white border-secondary" id="turniImportJson" name="items" rows="12" placeholder='[
+  { "data": "2026-04-01", "tipo_turno": "P" },
+  { "data": "2026-04-02", "tipo_turno": "M" }
+]' required></textarea>
+        </div>
+        <div class="small text-muted">
+          L'import sostituisce tutti i turni già presenti nei mesi inclusi nel JSON e crea i nuovi turni usando il tipo indicato in <code>tipo_turno</code>.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+        <button type="submit" class="btn btn-primary">Importa</button>
+      </div>
+    </form>
+  </div>
+</div>
+<?php endif; ?>
 <?php if ($canInsertEvento): ?>
 <div class="modal fade" id="eventoModal" tabindex="-1">
   <div class="modal-dialog">
@@ -206,6 +238,7 @@ $needSync = !empty($unsyncedMonths);
 </div>
 <script>
   const turniTipi = <?= json_encode($tipi) ?>;
+  const TURNI_CAN_MANAGE = <?= $canManageTurni ? 'true' : 'false' ?>;
 </script>
 <script src="js/turni.js"></script>
 <?php if ($canInsertEvento): ?>

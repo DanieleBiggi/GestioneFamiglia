@@ -10,6 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const editModalEl = document.getElementById('turnoModal');
   const editModal = editModalEl ? new bootstrap.Modal(editModalEl) : null;
   const editForm = document.getElementById('turnoForm');
+  const importModalEl = document.getElementById('importTurniModal');
+  const importModal = importModalEl ? new bootstrap.Modal(importModalEl) : null;
+  const importForm = document.getElementById('importTurniForm');
+  const importTextarea = document.getElementById('turniImportJson');
   const loadingModalEl = document.getElementById('loadingModal');
   const loadingModal = loadingModalEl ? new bootstrap.Modal(loadingModalEl) : null;
   let firstRender = true;
@@ -311,6 +315,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('prevMonth').addEventListener('click', ()=>{current.setMonth(current.getMonth()-1);loadTurni(current.getFullYear(),current.getMonth());});
   document.getElementById('nextMonth').addEventListener('click', ()=>{current.setMonth(current.getMonth()+1);loadTurni(current.getFullYear(),current.getMonth());});
+
+  if (TURNI_CAN_MANAGE) {
+    document.getElementById('btnImporta')?.addEventListener('click', () => {
+      if (importForm && importModal) {
+        importForm.reset();
+        importModal.show();
+      }
+    });
+
+    importForm?.addEventListener('submit', e => {
+      e.preventDefault();
+      let items;
+      try {
+        items = JSON.parse(importTextarea?.value || '[]');
+      } catch (error) {
+        alert('Il contenuto non è un JSON valido.');
+        return;
+      }
+
+      if (!Array.isArray(items) || !items.length) {
+        alert('Inserisci un array JSON con almeno un turno.');
+        return;
+      }
+
+      if (!confirm("L'import sostituirà tutti i turni già presenti nei mesi inclusi nel JSON. Continuare?")) {
+        return;
+      }
+
+      fetch('ajax/turni_import.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({items})
+      })
+        .then(r => r.json())
+        .then(res => {
+          if (res.success) {
+            importForm.reset();
+            importModal?.hide();
+            loadTurni(current.getFullYear(), current.getMonth());
+            alert(`Importati ${res.imported} turni.`);
+          } else {
+            alert(res.error || "Errore durante l'importazione");
+          }
+        })
+        .catch(() => alert("Errore durante l'importazione"));
+    });
+  }
 
   document.getElementById('btnGoogle').addEventListener('click', ()=>{
     loadingModal && loadingModal.show();
