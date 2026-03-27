@@ -1,5 +1,5 @@
 <?php
-include 'includes/session_check_strong.php';
+include 'includes/session_check.php';
 include 'includes/db.php';
 
 $id  = $_GET['id']  ?? null;
