@@ -33,20 +33,6 @@ $userRow = $userStmt->get_result()->fetch_assoc();
 $userName = $userRow['nome'] ?? '';
 $userStmt->close();
 
-$redirectTarget = $_GET['redirect'] ?? $_POST['redirect'] ?? '/Gestionale25/index.php';
-if (!is_string($redirectTarget) || $redirectTarget === '') {
-    $redirectTarget = '/Gestionale25/index.php';
-}
-if (strpos($redirectTarget, '/Gestionale25/') !== 0) {
-    $redirectTarget = '/Gestionale25/index.php';
-}
-$stepupMode = isset($_GET['stepup']) || isset($_POST['stepup']);
-
-if ($stepupMode && (($_SESSION['auth_level'] ?? '') === 'strong')) {
-    header('Location: ' . $redirectTarget);
-    exit;
-}
-
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -86,7 +72,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['utente_nome'] = $user['nome'];
                 $_SESSION['id_famiglia_gestione'] = $user['id_famiglia_gestione'] ?? 0;
                 $_SESSION['theme_id'] = (int)($user['id_tema'] ?? 1);
-                $_SESSION['auth_level'] = 'strong';
 
                 $lvlStmt = $conn->prepare('SELECT userlevelid FROM utenti2famiglie WHERE id_utente = ? AND id_famiglia = ? LIMIT 1');
                 $lvlStmt->bind_param('ii', $_SESSION['utente_id'], $_SESSION['id_famiglia_gestione']);
@@ -101,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $upd->execute();
 
                 setcookie('device_token', $token, time()+$longDuration, '/', '', !empty($_SERVER['HTTPS']), true);
-                header('Location: ' . $redirectTarget);
+                header('Location: /Gestionale25/index.php');
                 exit;
             } else {
                 $attempts = (int)$user['passcode_attempts'] + 1;
@@ -129,17 +114,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="d-flex flex-column align-items-center mt-5">
   <img src="assets/icona.png" alt="Gestione Famiglia" class="mb-3" style="width:80px;">
   <h4 class="mb-4 text-center">Ciao, <?= htmlspecialchars($userName) ?></h4>
-  <?php if ($stepupMode): ?>
-    <p class="text-center text-warning mb-3">Per aprire la sezione movimenti serve una conferma con passcode o impronta.</p>
-  <?php endif; ?>
   <?php if ($error): ?>
     <div class="alert alert-danger text-center w-75"><?= $error ?> <a href="/Gestionale25/login.php?scelta_login=1" class="alert-link">Login classico</a></div>
   <?php else: ?>
   <form id="passcode-form" method="POST" action="login_passcode.php" class="w-100 d-flex flex-column align-items-center">
-    <input type="hidden" name="redirect" value="<?= htmlspecialchars($redirectTarget, ENT_QUOTES, 'UTF-8') ?>">
-    <?php if ($stepupMode): ?>
-      <input type="hidden" name="stepup" value="1">
-    <?php endif; ?>
     <input type="hidden" id="passcode" name="passcode">
     <div id="pin-dots" class="d-flex justify-content-center mb-4">
       <?php for ($i = 0; $i < 6; $i++): ?>
@@ -157,7 +135,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </form>
   <a href="/Gestionale25/login.php?scelta_login=1" class="btn btn-link text-light mt-3">Login con utente e password</a>
   <script>
-    window.LOGIN_REDIRECT = <?= json_encode($redirectTarget) ?>;
     const input = document.getElementById('passcode');
     const dots = document.querySelectorAll('#pin-dots .dot');
     function addDigit(d){

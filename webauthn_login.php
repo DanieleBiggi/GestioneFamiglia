@@ -75,7 +75,6 @@ $_SESSION['utente_id'] = $userId;
 $_SESSION['utente_nome'] = $user['nome'] ?? '';
 $_SESSION['id_famiglia_gestione'] = $user['id_famiglia_gestione'] ?? 0;
 $_SESSION['theme_id'] = (int)($user['id_tema'] ?? 1);
-$_SESSION['auth_level'] = 'strong';
 
 $lvlStmt = $conn->prepare('SELECT userlevelid FROM utenti2famiglie WHERE id_utente = ? AND id_famiglia = ? LIMIT 1');
 $lvlStmt->bind_param('ii', $_SESSION['utente_id'], $_SESSION['id_famiglia_gestione']);
