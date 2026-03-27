@@ -31,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['utente_id'] = $_SESSION['2fa_user_id'];
         $_SESSION['utente_nome'] = $_SESSION['2fa_user_nome'];
         $_SESSION['id_famiglia_gestione'] = $_SESSION['2fa_id_famiglia_gestione'] ?? 0;
+        $_SESSION['auth_level'] = 'strong';
 
         $lvlStmt = $conn->prepare('SELECT userlevelid FROM utenti2famiglie WHERE id_utente = ? AND id_famiglia = ? LIMIT 1');
         $lvlStmt->bind_param('ii', $_SESSION['utente_id'], $_SESSION['id_famiglia_gestione']);

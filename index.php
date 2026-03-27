@@ -1,4 +1,4 @@
-<?php include 'includes/session_check.php'; ?>
+<?php include 'includes/session_check_strong.php'; ?>
 <?php
 include 'includes/db.php';
 require_once 'includes/permissions.php';
