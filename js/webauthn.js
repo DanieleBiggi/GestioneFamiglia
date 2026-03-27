@@ -45,6 +45,7 @@ async function registerWebAuthn() {
 }
 
 async function loginWebAuthn() {
+  const targetRedirect = window.LOGIN_REDIRECT || 'index.php';
   const resp = await fetch('webauthn_login.php');
   if (!resp.ok) {
     console.error('Impossibile ottenere le opzioni di login WebAuthn');
@@ -81,7 +82,7 @@ async function loginWebAuthn() {
   });
   const result = await verify.json();
   if (result.success) {
-    window.location.href = 'index.php';
+    window.location.href = targetRedirect;
   } else {
     alert('Autenticazione WebAuthn fallita');
   }
