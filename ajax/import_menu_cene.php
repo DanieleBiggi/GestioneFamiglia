@@ -16,36 +16,36 @@ if (!$idFamiglia) {
     exit;
 }
 
+$weekStartRaw = trim($_POST['week_start'] ?? '');
+$weekStart = DateTimeImmutable::createFromFormat('!Y-m-d', $weekStartRaw);
+if (!$weekStart || $weekStart->format('Y-m-d') !== $weekStartRaw || $weekStart->format('N') !== '1') {
+    echo json_encode(['success' => false, 'error' => 'Settimana non valida']);
+    exit;
+}
+
 $raw = $_POST['items'] ?? '';
 $lines = array_map('trim', preg_split('/\r?\n/', $raw));
-$days = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
+$days = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì'];
+$weekStartSql = $weekStart->format('Y-m-d');
 
-$stmt = $conn->prepare('SELECT id, giorno FROM menu_cene_settimanale WHERE id_famiglia = ?');
-$stmt->bind_param('i', $idFamiglia);
-$stmt->execute();
-$res = $stmt->get_result();
-$rows = [];
-while ($row = $res->fetch_assoc()) {
-    $rows[$row['giorno']] = (int)$row['id'];
-}
-$stmt->close();
+$conn->begin_transaction();
+try {
+    $stmt = $conn->prepare('INSERT INTO menu_cene_settimanale (id_famiglia, week_start, giorno, piatto)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE piatto = VALUES(piatto)');
 
-$insertStmt = $conn->prepare('INSERT INTO menu_cene_settimanale (id_famiglia, giorno, piatto) VALUES (?, ?, "")');
-foreach ($days as $day) {
-    if (!isset($rows[$day])) {
-        $insertStmt->bind_param('is', $idFamiglia, $day);
-        $insertStmt->execute();
-        $rows[$day] = $conn->insert_id;
+    foreach ($days as $i => $day) {
+        $piatto = $lines[$i] ?? '';
+        $stmt->bind_param('isss', $idFamiglia, $weekStartSql, $day, $piatto);
+        if (!$stmt->execute()) {
+            throw new RuntimeException($stmt->error);
+        }
     }
+    $stmt->close();
+    $conn->commit();
+    echo json_encode(['success' => true]);
+} catch (Throwable $e) {
+    $conn->rollback();
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Errore durante l\'import']);
 }
-$insertStmt->close();
-
-$updateStmt = $conn->prepare('UPDATE menu_cene_settimanale SET piatto = ? WHERE id = ? AND id_famiglia = ?');
-foreach ($days as $i => $day) {
-    $piatto = $lines[$i] ?? '';
-    $updateStmt->bind_param('sii', $piatto, $rows[$day], $idFamiglia);
-    $updateStmt->execute();
-}
-$updateStmt->close();
-
-echo json_encode(['success' => true]);

@@ -55,7 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
         title.className = 'text-warning fw-semibold';
         title.textContent = 'Turni (18-22)';
         turniBlock.appendChild(title);
-
         item.turni.forEach(t => {
           const row = document.createElement('div');
           row.textContent = `${formatTimeRange(t.ora_inizio, t.ora_fine)} - ${t.descrizione}`;
@@ -71,7 +70,6 @@ document.addEventListener('DOMContentLoaded', () => {
         title.className = 'text-info fw-semibold';
         title.textContent = 'Eventi (18-22)';
         eventiBlock.appendChild(title);
-
         item.eventi.forEach(ev => {
           const row = document.createElement('div');
           row.textContent = `${formatTimeRange(ev.ora_evento, ev.ora_fine)} - ${ev.titolo}`;
@@ -82,9 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       card.appendChild(header);
       card.appendChild(body);
-      if (meta.childElementCount) {
-        card.appendChild(meta);
-      }
+      if (meta.childElementCount) card.appendChild(meta);
       grid.appendChild(card);
     });
   }
@@ -92,29 +88,21 @@ document.addEventListener('DOMContentLoaded', () => {
   function refreshMenu() {
     const weekStart = getSelectedWeekStart();
     const url = new URL('ajax/get_menu_cene.php', window.location.href);
-    if (weekStart) {
-      url.searchParams.set('week_start', weekStart);
-    }
-
-    fetch(url)
-      .then(r => r.json())
-      .then(res => {
-        if (res.success) {
-          lastPayload = res;
-          render(res.items);
-          updateWeekInfo(res.week);
-        }
-      });
+    if (weekStart) url.searchParams.set('week_start', weekStart);
+    fetch(url).then(r => r.json()).then(res => {
+      if (res.success) {
+        lastPayload = res;
+        render(res.items);
+        updateWeekInfo(res.week);
+      }
+    });
   }
 
   function updateWeekInfo(week) {
     if (!weekInfo || !week) return;
     const formatter = new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: '2-digit' });
     weekInfo.textContent = `Settimana ${week.number} (${formatter.format(new Date(week.start))} - ${formatter.format(new Date(week.end))})`;
-
-    if (weekPicker) {
-      weekPicker.value = toWeekInputValue(new Date(week.start));
-    }
+    if (weekPicker) weekPicker.value = toWeekInputValue(new Date(week.start));
   }
 
   function formatTimeRange(start, end) {
@@ -135,9 +123,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const year = Number(yearStr);
     const week = Number(weekStr);
     if (!year || !week) return null;
-
     const simple = new Date(Date.UTC(year, 0, 1 + (week - 1) * 7));
-    const dayOfWeek = simple.getUTCDay() || 7; // 1 (Mon) - 7 (Sun)
+    const dayOfWeek = simple.getUTCDay() || 7;
     const monday = new Date(simple);
     monday.setUTCDate(simple.getUTCDate() - dayOfWeek + 1);
     return monday;
@@ -146,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function startOfISOWeek(date) {
     const cloned = new Date(date);
     const day = cloned.getDay();
-    const diff = (day === 0 ? -6 : 1) - day; // adjust to Monday
+    const diff = (day === 0 ? -6 : 1) - day;
     cloned.setDate(cloned.getDate() + diff);
     cloned.setHours(0, 0, 0, 0);
     return cloned;
@@ -174,101 +161,67 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!lastPayload) return '';
     const week = lastPayload.week;
     const nextWeek = lastPayload.nextWeek;
-    const menuText = lastPayload.items
-      .map(item => `${item.giorno.toLowerCase()}: ${item.piatto || 'nessun piatto indicato'}`)
-      .join(', ');
-
+    const menuText = lastPayload.items.map(item => `${item.giorno.toLowerCase()}: ${item.piatto || 'nessun piatto indicato'}`).join(', ');
     const formatter = new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: '2-digit' });
     const weekLabel = week ? `${week.number}ª settimana (${formatter.format(new Date(week.start))} - ${formatter.format(new Date(week.end))})` : '';
     const nextWeekLabel = nextWeek ? `${nextWeek.number}ª settimana (${formatter.format(new Date(nextWeek.start))} - ${formatter.format(new Date(nextWeek.end))})` : '';
-
     const turniRilevanti = [];
     if (nextWeek?.turni) {
-      Object.values(nextWeek.turni).forEach(dayTurni => {
-        dayTurni.forEach(t => {
-          const time = formatTimeRange(t.ora_inizio, t.ora_fine);
-          turniRilevanti.push(`${t.giorno} ${formatter.format(new Date(t.data))}: ${time} (${t.descrizione})`);
-        });
-      });
+      Object.values(nextWeek.turni).forEach(dayTurni => dayTurni.forEach(t => {
+        const time = formatTimeRange(t.ora_inizio, t.ora_fine);
+        turniRilevanti.push(`${t.giorno} ${formatter.format(new Date(t.data))}: ${time} (${t.descrizione})`);
+      }));
     }
-
     const regole = 'quando c\'è un turno che finisce tra le 18 e le 21 serve un piatto preparabile in anticipo o veloce (es. frittata o pollo ai ferri) e quando c\'è un turno che comincia tra le 18 e le 22 serve un piatto adatto anche all\'asporto (es. pizza, frittata, torta salata).';
-
     return `genera il menù considerando che nella settimana selezionata ${weekLabel} ho mangiato ${menuText}. ` +
       `Considera i turni della prossima settimana ${nextWeekLabel} e applica queste regole: ${regole} ` +
       `Turni rilevanti: ${turniRilevanti.length ? turniRilevanti.join('; ') : 'nessun turno tra le fasce orarie indicate.'}`;
   }
 
   async function exportMenu() {
-    if (!lastPayload?.items?.length) {
-      alert('Nessun menù disponibile da esportare');
-      return;
-    }
-
-    const rows = lastPayload.items
-      .filter(item => (item.piatto || '').trim() !== '')
-      .map(item => {
-        const piatto = item.piatto.replace(/\n+/g, ' ').trim();
-        const giorno = (item.giorno || '').toLocaleLowerCase('it-IT').trim();
-        return `${piatto} -${giorno}-`;
-      });
-
-    if (!rows.length) {
-      alert('Nessun piatto disponibile da esportare');
-      return;
-    }
-
+    if (!lastPayload?.items?.length) { alert('Nessun menù disponibile da esportare'); return; }
+    const rows = lastPayload.items.filter(item => (item.piatto || '').trim() !== '').map(item => {
+      const piatto = item.piatto.replace(/\n+/g, ' ').trim();
+      const giorno = (item.giorno || '').toLocaleLowerCase('it-IT').trim();
+      return `${piatto} -${giorno}-`;
+    });
+    if (!rows.length) { alert('Nessun piatto disponibile da esportare'); return; }
     try {
       await navigator.clipboard.writeText(rows.join('\n'));
       if (exportMenuBtn) {
         exportMenuBtn.textContent = 'Copiato!';
         setTimeout(() => { exportMenuBtn.textContent = 'Esporta menù'; }, 1500);
       }
-    } catch (_) {
-      alert('Impossibile copiare il menù negli appunti');
-    }
+    } catch (_) { alert('Impossibile copiare il menù negli appunti'); }
   }
 
   grid?.addEventListener('click', e => {
     const btn = e.target.closest('.edit-day-btn');
-    if (btn) {
-      openEditMenuModal({
-        id: btn.dataset.id,
-        giorno: btn.dataset.giorno,
-        piatto: btn.dataset.piatto
-      });
-    }
+    if (btn) openEditMenuModal({ id: btn.dataset.id, giorno: btn.dataset.giorno, piatto: btn.dataset.piatto });
   });
 
   editForm?.addEventListener('submit', e => {
     e.preventDefault();
     const fd = new FormData(editForm);
-    fetch('ajax/update_menu_cena.php', { method: 'POST', body: fd })
-      .then(r => r.json())
-      .then(res => {
-        if (res.success) {
-          bootstrap.Modal.getInstance(document.getElementById('editMenuModal'))?.hide();
-          refreshMenu();
-        } else {
-          alert(res.error || 'Errore durante il salvataggio');
-        }
-      });
+    fetch('ajax/update_menu_cena.php', { method: 'POST', body: fd }).then(r => r.json()).then(res => {
+      if (res.success) {
+        bootstrap.Modal.getInstance(document.getElementById('editMenuModal'))?.hide();
+        refreshMenu();
+      } else alert(res.error || 'Errore durante il salvataggio');
+    });
   });
 
   importForm?.addEventListener('submit', e => {
     e.preventDefault();
     const fd = new FormData(importForm);
-    fetch('ajax/import_menu_cene.php', { method: 'POST', body: fd })
-      .then(r => r.json())
-      .then(res => {
-        if (res.success) {
-          bootstrap.Modal.getInstance(document.getElementById('importMenuModal'))?.hide();
-          importForm.reset();
-          refreshMenu();
-        } else {
-          alert(res.error || 'Errore durante l\'import');
-        }
-      });
+    fd.append('week_start', getSelectedWeekStart());
+    fetch('ajax/import_menu_cene.php', { method: 'POST', body: fd }).then(r => r.json()).then(res => {
+      if (res.success) {
+        bootstrap.Modal.getInstance(document.getElementById('importMenuModal'))?.hide();
+        importForm.reset();
+        refreshMenu();
+      } else alert(res.error || 'Errore durante l\'import');
+    });
   });
 
   promptBtn?.addEventListener('click', () => {
@@ -276,26 +229,16 @@ document.addEventListener('DOMContentLoaded', () => {
     promptTextarea.value = buildPrompt();
     new bootstrap.Modal(promptModalEl).show();
   });
-
-  exportMenuBtn?.addEventListener('click', () => {
-    exportMenu();
-  });
-
+  exportMenuBtn?.addEventListener('click', exportMenu);
   copyPromptBtn?.addEventListener('click', async () => {
     if (!promptTextarea?.value) return;
     try {
       await navigator.clipboard.writeText(promptTextarea.value);
       copyPromptBtn.textContent = 'Copiato!';
       setTimeout(() => { copyPromptBtn.textContent = 'Copia prompt'; }, 1500);
-    } catch (_) {
-      alert('Impossibile copiare il prompt');
-    }
+    } catch (_) { alert('Impossibile copiare il prompt negli appunti'); }
   });
-
-  weekPicker?.addEventListener('change', () => {
-    refreshMenu();
-  });
-
+  weekPicker?.addEventListener('change', refreshMenu);
   prevWeekBtn?.addEventListener('click', () => {
     const current = weekPicker?.value ? weekInputToDate(weekPicker.value) : startOfISOWeek(new Date());
     if (!current || !weekPicker) return;
@@ -303,7 +246,6 @@ document.addEventListener('DOMContentLoaded', () => {
     weekPicker.value = toWeekInputValue(current);
     refreshMenu();
   });
-
   nextWeekBtn?.addEventListener('click', () => {
     const current = weekPicker?.value ? weekInputToDate(weekPicker.value) : startOfISOWeek(new Date());
     if (!current || !weekPicker) return;
@@ -311,11 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
     weekPicker.value = toWeekInputValue(current);
     refreshMenu();
   });
-
-  if (weekPicker && !weekPicker.value) {
-    weekPicker.value = toWeekInputValue(new Date());
-  }
-
+  if (weekPicker && !weekPicker.value) weekPicker.value = toWeekInputValue(new Date());
   refreshMenu();
 });
 

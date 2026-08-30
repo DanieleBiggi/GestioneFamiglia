@@ -18,7 +18,6 @@ $canImport = has_permission($conn, 'ajax:import_menu_cene', 'insert');
     </div>
   </div>
   <div class="d-flex align-items-center gap-2">
-    
     <?php if ($canImport): ?>
     <button type="button" class="btn btn-outline-light btn-sm" onclick="openImportMenuModal()">Importa</button>
     <?php endif; ?>
@@ -82,8 +81,8 @@ $canImport = has_permission($conn, 'ajax:import_menu_cene', 'insert');
       </div>
       <div class="modal-body">
         <div class="mb-3">
-          <label class="form-label">Pasti (uno per riga in ordine da Lunedì a Domenica)</label>
-          <textarea name="items" class="form-control bg-secondary text-white" rows="7" placeholder="Incolla l'output di ChatGPT"></textarea>
+          <label class="form-label">Pasti (uno per riga in ordine da Lunedì a Venerdì)</label>
+          <textarea name="items" class="form-control bg-secondary text-white" rows="5" placeholder="Incolla l'output di ChatGPT"></textarea>
         </div>
       </div>
       <div class="modal-footer">
