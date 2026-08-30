@@ -27,7 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
       header.className = 'd-flex justify-content-between align-items-start mb-2';
       const title = document.createElement('div');
       title.className = 'fw-semibold text-uppercase small';
-      title.textContent = item.giorno;
+      const dayNumber = item.data ? Number(item.data.slice(8, 10)) : '';
+      title.textContent = `${item.giorno}${dayNumber !== '' ? ` ${dayNumber}` : ''}`;
       header.appendChild(title);
 
       if (MENU_CENE_CAN_EDIT) {
