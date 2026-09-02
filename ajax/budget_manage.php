@@ -51,6 +51,107 @@ if ($action === 'save') {
     }
 }
 
+if ($action === 'duplicate_next_year') {
+    $ids = $_POST['ids'] ?? [];
+    if (!is_array($ids)) {
+        $ids = [];
+    }
+
+    $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static function ($id) {
+        return $id > 0;
+    })));
+
+    if (!$ids) {
+        echo json_encode(['success' => false, 'error' => 'Nessun budget selezionato']);
+        exit;
+    }
+
+    $addOneYear = static function ($date) {
+        if (!$date) {
+            return null;
+        }
+
+        $dt = DateTime::createFromFormat('!Y-m-d', $date);
+        $errors = DateTime::getLastErrors();
+        if (!$dt || ($errors !== false && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))) {
+            throw new RuntimeException('Data non valida: ' . $date);
+        }
+
+        $targetYear = (int)$dt->format('Y') + 1;
+        $month = (int)$dt->format('m');
+        $day = (int)$dt->format('d');
+
+        if ($month === 2 && $day === 29 && !checkdate(2, 29, $targetYear)) {
+            $day = 28;
+        }
+
+        return sprintf('%04d-%02d-%02d', $targetYear, $month, $day);
+    };
+
+    $selectStmt = $conn->prepare('SELECT id_salvadanaio, tipologia, importo, descrizione, data_inizio, data_scadenza, tipologia_spesa FROM budget WHERE id_budget=? AND id_famiglia=?');
+    $insertStmt = $conn->prepare('INSERT INTO budget (tipologia, tipologia_spesa, id_salvadanaio, descrizione, data_inizio, data_scadenza, da_13esima, da_14esima, importo, id_famiglia) VALUES (?,?,?,?,?,?,?,?,?,?)');
+
+    if (!$selectStmt || !$insertStmt) {
+        if ($selectStmt) {
+            $selectStmt->close();
+        }
+        if ($insertStmt) {
+            $insertStmt->close();
+        }
+        echo json_encode(['success' => false, 'error' => 'Impossibile preparare la duplicazione']);
+        exit;
+    }
+
+    $duplicated = 0;
+    $conn->begin_transaction();
+
+    try {
+        foreach ($ids as $id) {
+            $selectStmt->bind_param('ii', $id, $idFamiglia);
+            if (!$selectStmt->execute()) {
+                throw new RuntimeException('Errore durante la lettura del budget');
+            }
+
+            $result = $selectStmt->get_result();
+            $row = $result->fetch_assoc();
+            $result->free();
+
+            if (!$row) {
+                throw new RuntimeException('Budget non trovato o non appartenente alla famiglia');
+            }
+
+            $id_salvadanaio = $row['id_salvadanaio'] !== null ? (int)$row['id_salvadanaio'] : null;
+            $tipologia = $row['tipologia'];
+            $tipologia_spesa = $row['tipologia_spesa'];
+            $descrizione = $row['descrizione'];
+            $data_inizio = $addOneYear($row['data_inizio']);
+            $data_scadenza = $addOneYear($row['data_scadenza']);
+            $da13 = 0.0;
+            $da14 = 0.0;
+            $importo = (float)$row['importo'];
+
+            $insertStmt->bind_param('ssisssdddi', $tipologia, $tipologia_spesa, $id_salvadanaio, $descrizione, $data_inizio, $data_scadenza, $da13, $da14, $importo, $idFamiglia);
+            if (!$insertStmt->execute()) {
+                throw new RuntimeException('Errore durante la creazione del budget duplicato');
+            }
+
+            $duplicated++;
+        }
+
+        $conn->commit();
+        $selectStmt->close();
+        $insertStmt->close();
+        echo json_encode(['success' => true, 'duplicated' => $duplicated]);
+        exit;
+    } catch (Throwable $e) {
+        $conn->rollback();
+        $selectStmt->close();
+        $insertStmt->close();
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        exit;
+    }
+}
+
 if ($action === 'delete') {
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
