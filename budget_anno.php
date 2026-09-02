@@ -178,8 +178,9 @@ $salStmt->execute();
 $salvadanai = $salStmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $salStmt->close();
 ?>
-<div class="d-flex mb-3 justify-content-between">
-  <h4>Budget per anno</h4>
+<div class="d-flex mb-3 justify-content-between align-items-center gap-2 flex-wrap">
+  <h4 class="mb-0">Budget per anno</h4>
+  <button type="button" class="btn btn-outline-info" id="duplicateNextYearBtn" disabled>Duplica per anno successivo</button>
 </div>
 <form method="get" class="row g-2 mb-3">
   <div class="col-6 col-md-2">
@@ -239,6 +240,7 @@ $salStmt->close();
 <table class="table table-dark table-striped table-sm w-100" id="budgetTable">
   <thead>
     <tr>
+      <th class="text-center no-sort"><input type="checkbox" class="form-check-input" id="selectAllBudgets" aria-label="Seleziona tutti i budget visibili"></th>
       <th></th>
       <th></th>
       <th>Salvadanaio</th>
@@ -256,6 +258,7 @@ $salStmt->close();
   <tbody>
     <?php foreach ($rows as $r): ?>
     <tr data-id="<?= (int)$r['id_budget'] ?>" data-salvadanaio="<?= htmlspecialchars((string)$r['id_salvadanaio']) ?>" data-descrizione="<?= htmlspecialchars($r['descrizione'], ENT_QUOTES) ?>" data-inizio="<?= htmlspecialchars($r['data_inizio']) ?>" data-scadenza="<?= htmlspecialchars($r['data_scadenza']) ?>" data-da13="<?= number_format($r['da_13esima'],2,'.','') ?>" data-da14="<?= number_format($r['da_14esima'],2,'.','') ?>" data-importo="<?= number_format($r['importo'],2,'.','') ?>" data-tipologia="<?= htmlspecialchars($r['tipologia']) ?>" data-tipologia-spesa="<?= htmlspecialchars($r['tipologia_spesa']) ?>">
+      <td class="text-center"><input type="checkbox" class="form-check-input budget-select" value="<?= (int)$r['id_budget'] ?>" aria-label="Seleziona <?= htmlspecialchars($r['descrizione'], ENT_QUOTES) ?>"></td>
       <td class="text-center">
         <?php if (strtolower($r['tipologia']) === 'entrata'): ?>
           <i class="bi bi-arrow-down-circle text-success"></i>
@@ -291,12 +294,13 @@ $salStmt->close();
   </tbody>
   <tfoot class="table-dark" style="position: sticky; bottom: 0;">
     <tr>
+      <th></th>
       <th colspan="8">Totali</th>
       <th class="text-end"><?= number_format($totImporto,2,',','.') ?></th>
       <th class="text-end"><?= number_format($totStimato,2,',','.') ?></th>
       <th class="text-end"><?= number_format($totMensile,2,',','.') ?></th>
-  <th></th>
-  </tr>
+      <th></th>
+    </tr>
   </tfoot>
 </table>
 </div>
@@ -372,14 +376,15 @@ $salStmt->close();
 </div>
 <script>
 document.addEventListener('DOMContentLoaded', function(){
-  // Ordinamento cliccando sull'intestazione
-  document.querySelectorAll('#budgetTable th').forEach(function(th, idx){
+  // Ordinamento cliccando sull'intestazione. Le colonne operative non sono ordinabili.
+  document.querySelectorAll('#budgetTable thead th:not(.no-sort)').forEach(function(th){
     th.addEventListener('click', function(){
       const table = th.closest('table');
       const tbody = table.querySelector('tbody');
+      const idx = Array.from(th.parentElement.children).indexOf(th);
       const rows = Array.from(tbody.querySelectorAll('tr'));
       const asc = !th.classList.contains('asc');
-      document.querySelectorAll('#budgetTable th').forEach(th2=>th2.classList.remove('asc','desc'));
+      document.querySelectorAll('#budgetTable thead th').forEach(th2=>th2.classList.remove('asc','desc'));
       th.classList.add(asc ? 'asc' : 'desc');
       rows.sort(function(a,b){
         const aVal = a.children[idx].dataset.sort || a.children[idx].innerText;
@@ -394,6 +399,63 @@ document.addEventListener('DOMContentLoaded', function(){
       rows.forEach(r => tbody.appendChild(r));
     });
   });
+
+  const selectAllBudgets = document.getElementById('selectAllBudgets');
+  const budgetSelects = Array.from(document.querySelectorAll('.budget-select'));
+  const duplicateNextYearBtn = document.getElementById('duplicateNextYearBtn');
+
+  function updateBulkSelectionState(){
+    const selected = budgetSelects.filter(cb => cb.checked);
+    if(duplicateNextYearBtn){
+      duplicateNextYearBtn.disabled = selected.length === 0;
+      duplicateNextYearBtn.textContent = selected.length > 0
+        ? `Duplica per anno successivo (${selected.length})`
+        : 'Duplica per anno successivo';
+    }
+    if(selectAllBudgets){
+      selectAllBudgets.checked = budgetSelects.length > 0 && selected.length === budgetSelects.length;
+      selectAllBudgets.indeterminate = selected.length > 0 && selected.length < budgetSelects.length;
+    }
+  }
+
+  selectAllBudgets?.addEventListener('change', () => {
+    budgetSelects.forEach(cb => { cb.checked = selectAllBudgets.checked; });
+    updateBulkSelectionState();
+  });
+
+  budgetSelects.forEach(cb => cb.addEventListener('change', updateBulkSelectionState));
+
+  duplicateNextYearBtn?.addEventListener('click', () => {
+    const selectedIds = budgetSelects.filter(cb => cb.checked).map(cb => cb.value);
+    if(selectedIds.length === 0) return;
+
+    const message = selectedIds.length === 1
+      ? 'Duplicare il budget selezionato per l’anno successivo? 13esima e 14esima saranno azzerate.'
+      : `Duplicare i ${selectedIds.length} budget selezionati per l’anno successivo? 13esima e 14esima saranno azzerate.`;
+    if(!confirm(message)) return;
+
+    const fd = new FormData();
+    fd.append('action', 'duplicate_next_year');
+    selectedIds.forEach(id => fd.append('ids[]', id));
+    duplicateNextYearBtn.disabled = true;
+
+    fetch('ajax/budget_manage.php', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(res => {
+        if(res.success){
+          location.reload();
+        } else {
+          alert(res.error || 'Errore durante la duplicazione');
+          updateBulkSelectionState();
+        }
+      })
+      .catch(() => {
+        alert('Errore durante la duplicazione');
+        updateBulkSelectionState();
+      });
+  });
+
+  updateBulkSelectionState();
 
   const editModalEl = document.getElementById('editBudgetModal');
   const editForm = document.getElementById('editBudgetForm');
