@@ -21,12 +21,21 @@ register_shutdown_function(function () use ($syncFatalTypes) {
         http_response_code(500);
     }
 
+    $file = basename($error['file']);
+    $line = (int)$error['line'];
+    $detail = trim((string)$error['message']);
+    $message = 'Errore PHP fatale durante la sincronizzazione';
+    if ($detail !== '') {
+        $message .= ': ' . $detail;
+    }
+    $message .= ' [File: ' . $file . ', riga: ' . $line . ']';
+
     echo json_encode([
         'success' => false,
-        'message' => 'Errore PHP fatale durante la sincronizzazione',
-        'details' => $error['message'],
-        'file' => basename($error['file']),
-        'line' => $error['line'],
+        'message' => $message,
+        'details' => $detail,
+        'file' => $file,
+        'line' => $line,
         'error_type' => $error['type']
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 });
@@ -43,12 +52,21 @@ try {
         http_response_code(500);
     }
 
+    $file = basename($e->getFile());
+    $line = $e->getLine();
+    $detail = trim($e->getMessage());
+    $message = 'Eccezione PHP durante la sincronizzazione';
+    if ($detail !== '') {
+        $message .= ': ' . $detail;
+    }
+    $message .= ' [' . get_class($e) . ', file: ' . $file . ', riga: ' . $line . ']';
+
     echo json_encode([
         'success' => false,
-        'message' => 'Eccezione PHP durante la sincronizzazione',
-        'details' => $e->getMessage(),
+        'message' => $message,
+        'details' => $detail,
         'exception' => get_class($e),
-        'file' => basename($e->getFile()),
-        'line' => $e->getLine()
+        'file' => $file,
+        'line' => $line
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
