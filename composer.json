@@ -1,0 +1,22 @@
+{
+  "name": "danielebiggi/gestione-famiglia",
+  "description": "Dipendenze PHP per GestioneFamiglia",
+  "type": "project",
+  "require": {
+    "php": ">=7.4",
+    "google/apiclient": "2.15.1"
+  },
+  "scripts": {
+    "pre-autoload-dump": "Google\\Task\\Composer::cleanup"
+  },
+  "extra": {
+    "google/apiclient-services": [
+      "Calendar"
+    ]
+  },
+  "config": {
+    "sort-packages": true,
+    "optimize-autoloader": true,
+    "process-timeout": 600
+  }
+}
