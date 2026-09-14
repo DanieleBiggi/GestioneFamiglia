@@ -240,7 +240,7 @@ $canManageTurni = has_permission($conn, 'table:turni_calendario', 'update');
   const turniTipi = <?= json_encode($tipi) ?>;
   const TURNI_CAN_MANAGE = <?= $canManageTurni ? 'true' : 'false' ?>;
 </script>
-<script src="js/turni.js"></script>
+<script src="js/turni20260914.js"></script>
 <?php if ($canInsertEvento): ?>
 <script src="js/eventi.js"></script>
 <?php endif; ?>
