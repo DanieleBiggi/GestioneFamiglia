@@ -141,7 +141,29 @@ $availableUtilities = array_values(array_filter($utilityServices, function ($uti
     return true;
 }));
 
-$firstUtilities = array_slice($availableUtilities, 0, 3);
+// Funzioni più usate: manteniamo un ordine esplicito, indipendente dall'ordine
+// dell'elenco completo, così la home può evolvere senza alterare il menu "Altro".
+$homeUtilityHrefs = [
+    'aggiungi_entrata.php',
+    'menu_cene.php',
+    'lista_spesa.php',
+    'budget_dashboard.php',
+    'password.php',
+    'film.php',
+];
+
+$utilitiesByHref = [];
+foreach ($availableUtilities as $utility) {
+    $utilitiesByHref[$utility['href']] = $utility;
+}
+
+$firstUtilities = [];
+foreach ($homeUtilityHrefs as $href) {
+    if (isset($utilitiesByHref[$href])) {
+        $firstUtilities[] = $utilitiesByHref[$href];
+    }
+}
+
 $firstUtilityHrefs = array_column($firstUtilities, 'href');
 $remainingUtilities = array_values(array_filter($availableUtilities, function ($utility) use ($firstUtilityHrefs) {
     if (!($utility['show_in_modal'] ?? true)) {
@@ -155,43 +177,33 @@ $remainingUtilities = array_values(array_filter($availableUtilities, function ($
     return !in_array($utility['href'], $firstUtilityHrefs, true);
 }));
 
-$hasAdditionalUtilities = false;
-foreach ($remainingUtilities as $utility) {
-    if (!in_array($utility['href'], $firstUtilityHrefs, true)) {
-        $hasAdditionalUtilities = true;
-        break;
-    }
-}
+$hasAdditionalUtilities = !empty($remainingUtilities);
 
 $renderUtilityGrid = function () use ($firstUtilities, $remainingUtilities, $hasAdditionalUtilities) {
     if (empty($firstUtilities)) {
         return;
     }
     ?>
-    <div class="row text-center g-2 mb-3">
+    <div class="row text-center g-3 mb-2">
       <?php foreach ($firstUtilities as $utility): ?>
-        <div class="col-3">
+        <div class="col-4 col-md-2">
           <a href="<?= htmlspecialchars($utility['href'], ENT_QUOTES, 'UTF-8') ?>" class="text-decoration-none text-white">
             <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
                  style="width:50px;height:50px">
               <i class="bi <?= htmlspecialchars($utility['icon'], ENT_QUOTES, 'UTF-8') ?> fs-4"></i>
             </div>
-            <div><?= htmlspecialchars($utility['label'], ENT_QUOTES, 'UTF-8') ?></div>
+            <div class="small"><?= htmlspecialchars($utility['label'], ENT_QUOTES, 'UTF-8') ?></div>
           </a>
         </div>
       <?php endforeach; ?>
-      <?php if ($hasAdditionalUtilities): ?>
-        <div class="col-3">
-          <a href="#" class="text-decoration-none text-white" data-bs-toggle="modal" data-bs-target="#altroModal">
-            <div class="badge-etichetta rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
-                 style="width:50px;height:50px">
-              <i class="bi bi-three-dots fs-4"></i>
-            </div>
-            <div>Altro</div>
-          </a>
-        </div>
-      <?php endif; ?>
     </div>
+    <?php if ($hasAdditionalUtilities): ?>
+      <div class="text-center mb-3">
+        <button type="button" class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#altroModal">
+          <i class="bi bi-three-dots me-1"></i>Altre funzioni
+        </button>
+      </div>
+    <?php endif; ?>
     <?php
 };
 
@@ -331,63 +343,7 @@ if ($result && $result->num_rows > 0): ?>
   </div>
 <?php else: ?>
   <p class="text-center text-muted">Nessun movimento presente.</p>
-<?php endif; 
-$movimenti_revolut = "";
-  if (isset($_SESSION['id_famiglia_gestione']) && $_SESSION['id_famiglia_gestione'] == 1)
-  {
-    $movimenti_revolut =
-      "SELECT id_movimento_revolut AS id, COALESCE(NULLIF(descrizione_extra,''), description) AS descrizione, bm.descrizione_extra,
-                   started_date AS data_operazione, amount,
-                   (SELECT GROUP_CONCAT(CONCAT(e.id_etichetta, ':', e.descrizione) SEPARATOR ',')
-                      FROM bilancio_etichette2operazioni eo
-                      JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                     WHERE eo.id_tabella = bm.id_movimento_revolut AND eo.tabella_operazione='movimenti_revolut') AS etichette,
-                   bm.id_gruppo_transazione, g.descrizione AS gruppo_descrizione, 'revolut' AS source, 'movimenti_revolut' AS tabella, null as mezzo
-            FROM v_movimenti_revolut_filtrati bm
-            LEFT JOIN bilancio_gruppi_transazione g ON g.id_gruppo_transazione = bm.id_gruppo_transazione
-            UNION ALL";
-  }
- $sql = "SELECT * FROM (
-            ".$movimenti_revolut."
-            SELECT be.id_entrata AS id, COALESCE(NULLIF(be.descrizione_extra,''), be.descrizione_operazione) AS descrizione, be.descrizione_extra,
-                   be.data_operazione, be.importo AS amount,
-                   (SELECT GROUP_CONCAT(CONCAT(e.id_etichetta, ':', e.descrizione) SEPARATOR ',')
-                      FROM bilancio_etichette2operazioni eo
-                      JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                     WHERE eo.id_tabella = be.id_entrata AND eo.tabella_operazione='bilancio_entrate') AS etichette,
-                   be.id_gruppo_transazione, g.descrizione AS gruppo_descrizione, 'ca' AS source, 'bilancio_entrate' AS tabella, be.mezzo
-            FROM bilancio_entrate be
-            LEFT JOIN bilancio_gruppi_transazione g ON g.id_gruppo_transazione = be.id_gruppo_transazione
-            WHERE be.id_utente = {$idUtente}
-            UNION ALL
-            SELECT bu.id_uscita AS id, COALESCE(NULLIF(bu.descrizione_extra,''), bu.descrizione_operazione) AS descrizione, bu.descrizione_extra,
-                   bu.data_operazione, -bu.importo AS amount,
-                   (SELECT GROUP_CONCAT(CONCAT(e.id_etichetta, ':', e.descrizione) SEPARATOR ',')
-                      FROM bilancio_etichette2operazioni eo
-                      JOIN bilancio_etichette e ON e.id_etichetta = eo.id_etichetta
-                     WHERE eo.id_tabella = bu.id_uscita AND eo.tabella_operazione='bilancio_uscite') AS etichette,
-                   bu.id_gruppo_transazione, g.descrizione AS gruppo_descrizione, 'ca' AS source, 'bilancio_uscite' AS tabella, bu.mezzo
-            FROM bilancio_uscite bu
-            LEFT JOIN bilancio_gruppi_transazione g ON g.id_gruppo_transazione = bu.id_gruppo_transazione
-            WHERE bu.id_utente = {$idUtente}
-        ) t
-        WHERE id_gruppo_transazione IS NULL AND data_operazione >= DATE_SUB(CURDATE(), INTERVAL 2 MONTH)
-        ORDER BY data_operazione DESC";
-
-$result = $conn->query($sql);
-
-if ($result && $result->num_rows > 0): ?>
-    <div class="mt-2 mb-2"><?= $result->num_rows ?> movimenti senza gruppo</div>
-  <div id="MovimentiSenzaGruppo" class="list-group">
-    <?php while($row = $result->fetch_assoc()): ?>
-      <?php render_movimento($row); ?>
-    <?php endwhile; ?>
-
-  </div>
-<?php else: ?>
-  <!--<p class="text-center text-white mt-2">Tutti i movimenti hanno un gruppo.</p>-->
-<?php endif; 
-    ?>
+<?php endif; ?>
 
  <!-- Modal conferma eliminazione -->
  <div class="modal fade" id="deleteModal" tabindex="-1">
