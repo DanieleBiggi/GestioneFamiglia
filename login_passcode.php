@@ -156,7 +156,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       btn.addEventListener('click', () => addDigit(btn.dataset.number));
     });
     document.getElementById('backspace').addEventListener('click', removeDigit);
-    document.getElementById('fingerprint').addEventListener('click', () => loginWebAuthn());
+    document.getElementById('fingerprint').addEventListener('click', async () => {
+      if (typeof loginWebAuthn !== 'function') {
+        alert('Il modulo passkey non è stato caricato. Ricarica la pagina e riprova.');
+        return;
+      }
+      await loginWebAuthn();
+    });
     document.addEventListener('keydown', (e) => {
       if (e.key >= '0' && e.key <= '9') {
         addDigit(e.key);
