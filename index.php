@@ -31,7 +31,7 @@ $utilityServices = [
         'icon' => 'bi-cloud-upload',
         'label' => 'Carica file',
         'permission' => 'page:index.php-movimenti',
-        'show_in_modal' => false,
+        'show_in_modal' => true,
     ],
     [
         'href' => 'aggiungi_uscita.php',
