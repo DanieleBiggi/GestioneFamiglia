@@ -35,7 +35,7 @@ $canAdd = has_permission($conn, 'ajax:add_lista_spesa', 'insert');
 <?php endwhile; ?>
 </div>
 </div>
-<div class="tab-pane fade" id="verificaMenuPane" role="tabpanel"><div id="verificaMenuContent"></div></div>
+<div class="tab-pane fade" id="verificaMenuPane" role="tabpanel"><div class="input-group input-group-sm mb-3" style="max-width: 230px;"><button class="btn btn-outline-light" type="button" id="verificaPrevWeekBtn" aria-label="Settimana precedente"><i class="bi bi-chevron-left"></i></button><input type="week" class="form-control bg-dark text-white" id="verificaWeekPicker" aria-label="Seleziona settimana"><button class="btn btn-outline-light" type="button" id="verificaNextWeekBtn" aria-label="Settimana successiva"><i class="bi bi-chevron-right"></i></button></div><div id="verificaMenuContent"></div></div>
 </div>
 <?php if ($canAdd): ?>
 <div class="modal fade" id="listaModal" tabindex="-1">
@@ -88,5 +88,6 @@ $canAdd = has_permission($conn, 'ajax:add_lista_spesa', 'insert');
 </div>
 <?php endif; ?>
 <script src="js/lista_spesa.js"></script>
+<script src="js/menu_week_shared.js"></script>
 <script src="js/verifica_menu_spesa.js"></script>
 <?php include 'includes/footer.php'; ?>
