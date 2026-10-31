@@ -98,7 +98,5 @@ document.addEventListener('DOMContentLoaded', () => {
       section.append(body);root.append(section);
     }
   }
-  tab.addEventListener('shown.bs.tab',load);
-  // Quando la lista viene modificata, la vista si aggiorna alla prossima apertura.
-  document.getElementById('verificaMenuTab')?.addEventListener('click',()=>{ if(!shopping)return; });
+  // Bootstrap may not dispatch shown.bs.tab if its JS bundle is unavailable.\n  // Use click as a fallback, without relying on a second event.\n  tab.addEventListener('click', () => {\n    if (window.bootstrap?.Tab) {\n      window.bootstrap.Tab.getOrCreateInstance(tab).show();\n    } else {\n      document.getElementById('listaSpesaPane')?.classList.remove('show', 'active');\n      document.getElementById('listaSpesaTab')?.classList.remove('active');\n      document.getElementById('verificaMenuPane')?.classList.add('show', 'active');\n      tab.classList.add('active');\n    }\n    load();\n  });\n  document.getElementById('listaSpesaTab')?.addEventListener('click', () => {\n    if (!window.bootstrap?.Tab) {\n      document.getElementById('verificaMenuPane')?.classList.remove('show', 'active');\n      tab.classList.remove('active');\n      document.getElementById('listaSpesaPane')?.classList.add('show', 'active');\n      document.getElementById('listaSpesaTab')?.classList.add('active');\n    }\n  });
 });
