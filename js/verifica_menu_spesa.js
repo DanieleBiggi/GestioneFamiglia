@@ -33,11 +33,45 @@ document.addEventListener('DOMContentLoaded', () => {
     return refs;
   };
   const fetchJson = url => fetch(url).then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json();}).then(x=>{if(!x.success)throw Error(x.error||'Errore');return x;});
+
+  const picker = document.getElementById('verificaWeekPicker');
+  const prev = document.getElementById('verificaPrevWeekBtn');
+  const next = document.getElementById('verificaNextWeekBtn');
+  const weekToDate = value => {
+    const [year, week] = (value || '').split('-W').map(Number);
+    if (!year || !week || week < 1 || week > 53) return null;
+    const jan4 = new Date(Date.UTC(year, 0, 4));
+    jan4.setUTCDate(jan4.getUTCDate() - ((jan4.getUTCDay() + 6) % 7) + (week - 1) * 7);
+    return jan4.toISOString().slice(0, 10);
+  };
+  const dateToWeek = value => {
+    const d = new Date(value + 'T12:00:00Z');
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const year = d.getUTCFullYear();
+    const start = new Date(Date.UTC(year, 0, 1));
+    const week = Math.ceil((((d - start) / 86400000) + 1) / 7);
+    return year + '-W' + String(week).padStart(2, '0');
+  };
+  const selectedWeek = () => weekToDate(picker?.value) || window.GestioneMenuWeek?.get();
+  if (picker) picker.value = dateToWeek(window.GestioneMenuWeek?.get() || new Date().toISOString().slice(0,10));
+  const changeWeek = step => {
+    const current = selectedWeek();
+    if (!current || !picker) return;
+    const date = new Date(current + 'T12:00:00Z');
+    date.setUTCDate(date.getUTCDate() + step * 7);
+    picker.value = dateToWeek(date.toISOString().slice(0,10));
+    load();
+  };
+  picker?.addEventListener('change', load);
+  prev?.addEventListener('click', () => changeWeek(-1));
+  next?.addEventListener('click', () => changeWeek(1));
   let menu=[], items=[];
   async function load(){
     root.replaceChildren(el('div','text-muted py-3','Caricamento verifica…'));
     try{
-      const [m,s]=await Promise.all([fetchJson('ajax/get_menu_cene.php'),fetchJson('ajax/get_lista_spesa.php')]);
+      const weekStart = selectedWeek();
+      if (weekStart) window.GestioneMenuWeek?.set(weekStart);
+      const [m,s]=await Promise.all([fetchJson('ajax/get_menu_cene.php?week_start=' + encodeURIComponent(weekStart)),fetchJson('ajax/get_lista_spesa.php')]);
       menu=m.items||[];items=s.items||[];render();
     }catch(e){root.replaceChildren(el('div','alert alert-warning','Impossibile caricare la verifica: '+e.message));}
   }
