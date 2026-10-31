@@ -34,6 +34,7 @@ $canAdd = has_permission($conn, 'ajax:add_lista_spesa', 'insert');
   <?php render_lista_spesa($row); ?>
 <?php endwhile; ?>
 </div>
+</div>
 <div class="tab-pane fade" id="verificaMenuPane" role="tabpanel"><div id="verificaMenuContent"></div></div>
 </div>
 <?php if ($canAdd): ?>
