@@ -182,19 +182,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function exportMenu() {
     if (!lastPayload?.items?.length) { alert('Nessun menù disponibile da esportare'); return; }
-    const rows = lastPayload.items.filter(item => (item.piatto || '').trim() !== '').map(item => {
-      const piatto = item.piatto.replace(/\n+/g, ' ').trim();
-      const giorno = (item.giorno || '').toLocaleLowerCase('it-IT').trim();
-      return `${piatto} -${giorno}-`;
-    });
-    if (!rows.length) { alert('Nessun piatto disponibile da esportare'); return; }
     try {
-      await navigator.clipboard.writeText(rows.join('\n'));
+      const weekStart = lastPayload.week?.start || getSelectedWeekStart();
+      const response = await fetch('ajax/export_menu_spesa.php?week_start=' + encodeURIComponent(weekStart));
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'Esportazione non riuscita');
+      const rows = lastPayload.items.filter(item => (item.piatto || '').trim() !== '').map(item =>
+        item.piatto.replace(/\n+/g, ' ').trim() + ' -' + (item.giorno || '').toLocaleLowerCase('it-IT').trim() + '-'
+      );
+      const recipes = (data.ricette || []).filter(r => (r.istruzioni || '').trim()).map(r =>
+        '- ' + r.nome + ': ' + r.istruzioni
+      );
+      const missing = (data.non_associati || []).map(x => x.giorno + ': ' + x.piatto);
+      const output = rows.join('\n') + (recipes.length ? '\n\nPreferenze familiari da rispettare per la lista della spesa:\n' + recipes.join('\n') : '') +
+        (missing.length ? '\n\nPiatti senza ricetta configurata (usa ingredienti standard, senza inventare preferenze):\n' + missing.join('\n') : '');
+      await navigator.clipboard.writeText(output);
       if (exportMenuBtn) {
         exportMenuBtn.textContent = 'Copiato!';
         setTimeout(() => { exportMenuBtn.textContent = 'Esporta menù'; }, 1500);
       }
-    } catch (_) { alert('Impossibile copiare il menù negli appunti'); }
+    } catch (err) { alert('Impossibile esportare il menù: ' + err.message); }
   }
 
   grid?.addEventListener('click', e => {
