@@ -1,3 +1,4 @@
 includes/db_config.php
-config/
+config/*
+!config/.htaccess
 vendor/
