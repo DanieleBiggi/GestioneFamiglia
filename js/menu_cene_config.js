@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const $ = id => document.getElementById(id);
   const canSave = !!window.MENU_CONFIG_CAN_SAVE;
   const state = { master: null, ricette: null };
-  let kind = 'master';
+  const kind = new URLSearchParams(window.location.search).get('section') === 'ricette' ? 'ricette' : 'master';
   const alertBox = $('menuConfigAlert');
   const message = (text, error = false) => {
     alertBox.textContent = text;
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const item = data.stagioni?.[season]?.[week]?.[day];
         if (!item || typeof item.cena !== 'string' || !item.cena.trim() || typeof item.contorno !== 'string') throw new Error('Menù incompleto: ' + season + ', settimana ' + week + ', ' + day);
       }
-    } else if (!Array.isArray(data.ricette) || data.ricette.some(r => !r || typeof r.id !== 'string' || typeof r.nome !== 'string' || typeof r.istruzioni !== 'string' || !Array.isArray(r.alias))) {
+    } else if (!Array.isArray(data.ricette) || data.ricette.some(r => !r || typeof r.id !== 'string' || typeof r.nome !== 'string' || typeof r.istruzioni !== 'string' || !r.nome.trim())) {
       throw new Error('Ricettario non valido');
     }
   }
@@ -83,12 +83,37 @@ document.addEventListener('DOMContentLoaded', () => {
       root.append(box);
     });
   }
+  function masterDishes() {
+    const names = new Map();
+    for (const season of ['Estivo', 'Invernale']) {
+      for (const week of ['1', '2', '3', '4']) {
+        for (const day of days) {
+          const item = state.master?.stagioni?.[season]?.[week]?.[day];
+          if (!item) continue;
+          for (const text of [item.cena, item.contorno]) {
+            for (const part of (text || '').split(/\\r?\\n|\\s*\\+\\s*|\\s*;\\s*/)) {
+              const name = part.trim();
+              if (name) names.set(name.toLocaleLowerCase('it-IT'), name);
+            }
+          }
+        }
+      }
+    }
+    return [...names.values()].sort((a, b) => a.localeCompare(b, 'it'));
+  }
+  function makeRecipeId(name, used) {
+    const base = name.toLocaleLowerCase('it-IT').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 70) || 'ricetta';
+    let id = base;
+    let n = 2;
+    while (used.has(id)) id = base + '-' + n++;
+    return id;
+  }
   function captureRecipes() {
     if (!state.ricette) return;
     state.ricette.ricette = [...$('cfgRecipes').querySelectorAll('[data-recipe]')].map(box => ({
-      id: box.querySelector('[data-field="id"]').value.trim(),
+      id: box.dataset.recipeId,
       nome: box.querySelector('[data-field="nome"]').value.trim(),
-      alias: box.querySelector('[data-field="alias"]').value.split('\n').map(x => x.trim()).filter(Boolean),
       istruzioni: box.querySelector('[data-field="istruzioni"]').value.trim()
     }));
   }
@@ -102,16 +127,41 @@ document.addEventListener('DOMContentLoaded', () => {
       const heading = document.createElement('h6');
       heading.textContent = 'Ricetta ' + (index + 1);
       box.append(heading);
-      for (const [key, title, value, multiline] of [
-        ['id', 'ID stabile (lettere minuscole, numeri, _ o -)', recipe.id, false],
-        ['nome', 'Nome del piatto', recipe.nome, false],
-        ['alias', 'Altri nomi equivalenti (uno per riga)', recipe.alias.join('\n'), true],
-        ['istruzioni', 'Indicazioni per ChatGPT', recipe.istruzioni, true]
-      ]) {
-        const input = wrap(title, value, multiline);
-        input.input.dataset.field = key;
-        box.append(input.box);
+      const dishField = document.createElement('div');
+      dishField.className = 'mb-2';
+      const dishLabel = label('Piatto del master');
+      const select = field('select', 'form-select bg-dark text-white');
+      select.dataset.field = 'nome';
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Seleziona un piatto';
+      select.append(placeholder);
+      const options = masterDishes();
+      if (recipe.nome && !options.includes(recipe.nome)) {
+        const old = document.createElement('option');
+        old.value = recipe.nome;
+        old.textContent = recipe.nome + ' (non più nel master)';
+        select.append(old);
       }
+      options.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        select.append(option);
+      });
+      select.value = recipe.nome;
+      dishField.append(dishLabel, select);
+      box.dataset.recipeId = recipe.id || '';
+      select.addEventListener('change', () => {
+        if (!box.dataset.recipeId && select.value) {
+          const used = new Set([...root.querySelectorAll('[data-recipe]')].map(el => el.dataset.recipeId).filter(Boolean));
+          box.dataset.recipeId = makeRecipeId(select.value, used);
+        }
+      });
+      box.append(dishField);
+      const instructions = wrap('Indicazioni per ChatGPT', recipe.istruzioni, true);
+      instructions.input.dataset.field = 'istruzioni';
+      box.append(instructions.box);
       if (canSave) {
         const remove = document.createElement('button');
         remove.type = 'button';
@@ -128,16 +178,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   function capture() { if (kind === 'master') captureMaster(); else captureRecipes(); }
-  function switchKind(next) {
-    capture();
-    kind = next;
-    document.querySelectorAll('[data-kind]').forEach(b => b.classList.toggle('active', b.dataset.kind === kind));
-    $('masterEditor').hidden = kind !== 'master';
-    $('recipesEditor').hidden = kind !== 'ricette';
-    if (kind === 'master') renderMaster(); else renderRecipes();
-    alertBox.className = '';
-    alertBox.textContent = '';
-  }
   async function request(k) {
     const res = await fetch('ajax/menu_cene_config.php?kind=' + encodeURIComponent(k), { credentials: 'same-origin' });
     const data = await res.json();
@@ -147,7 +187,10 @@ document.addEventListener('DOMContentLoaded', () => {
   async function initialize() {
     try {
       [state.master, state.ricette] = await Promise.all([request('master'), request('ricette')]);
-      renderMaster();
+      $('masterEditor').hidden = kind !== 'master';
+      $('recipesEditor').hidden = kind !== 'ricette';
+      $('menuConfigTitle').textContent = 'Configurazione · Menù cene · ' + (kind === 'master' ? 'Master' : 'Ricette');
+      if (kind === 'master') renderMaster(); else renderRecipes();
     } catch (err) { message(err.message, true); }
   }
   $('cfgSeason').addEventListener('change', e => {
@@ -169,10 +212,9 @@ document.addEventListener('DOMContentLoaded', () => {
     e.target.dataset.previous = next;
     renderMaster();
   });
-  document.querySelectorAll('[data-kind]').forEach(b => b.addEventListener('click', () => switchKind(b.dataset.kind)));
   $('cfgAddRecipe')?.addEventListener('click', () => {
     captureRecipes();
-    state.ricette.ricette.push({ id: '', nome: '', alias: [], istruzioni: '' });
+    state.ricette.ricette.push({ id: '', nome: '', istruzioni: '' });
     renderRecipes();
   });
   $('cfgExport').addEventListener('click', () => {
