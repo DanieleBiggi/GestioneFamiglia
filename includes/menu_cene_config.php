@@ -57,22 +57,20 @@ function food_config_validate(string $kind, array $data): void {
             throw new InvalidArgumentException('Ricette deve essere un elenco');
         }
         $ids = [];
+        $names = [];
         foreach ($data['ricette'] as $r) {
             if (!is_array($r) || !is_string($r['id'] ?? null) || !preg_match('/^[a-z0-9_-]{1,80}$/', $r['id'])
                 || !is_string($r['nome'] ?? null) || trim($r['nome']) === ''
-                || !is_string($r['istruzioni'] ?? null)
-                || !isset($r['alias']) || !is_array($r['alias']) || (count($r['alias']) > 0 && array_keys($r['alias']) !== range(0, count($r['alias']) - 1))) {
+                || !is_string($r['istruzioni'] ?? null)) {
                 throw new InvalidArgumentException('Ricetta non valida');
             }
             if (isset($ids[$r['id']])) throw new InvalidArgumentException('ID ricetta duplicato');
             $ids[$r['id']] = true;
+            $nameKey = food_config_norm($r['nome']);
+            if (isset($names[$nameKey])) throw new InvalidArgumentException('Piatto duplicato nel ricettario');
+            $names[$nameKey] = true;
             if (mb_strlen($r['nome']) > 150 || mb_strlen($r['istruzioni']) > 3000) {
                 throw new InvalidArgumentException('Ricetta troppo lunga');
-            }
-            foreach ($r['alias'] as $alias) {
-                if (!is_string($alias) || trim($alias) === '' || mb_strlen($alias) > 150) {
-                    throw new InvalidArgumentException('Alias non valido');
-                }
             }
         }
     } else {
@@ -119,10 +117,8 @@ function food_config_norm(string $name): string {
 function food_config_match_recipes(array $menuItems, array $recipes): array {
     $map = [];
     foreach ($recipes['ricette'] as $recipe) {
-        foreach (array_merge([$recipe['nome']], $recipe['alias']) as $alias) {
-            $key = food_config_norm($alias);
-            if ($key !== '') $map[$key][$recipe['id']] = $recipe;
-        }
+        $key = food_config_norm($recipe['nome']);
+        if ($key !== '') $map[$key][$recipe['id']] = $recipe;
     }
     $matched = [];
     $unmatched = [];
