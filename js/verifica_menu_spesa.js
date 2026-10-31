@@ -98,5 +98,25 @@ document.addEventListener('DOMContentLoaded', () => {
       section.append(body);root.append(section);
     }
   }
-  // Bootstrap may not dispatch shown.bs.tab if its JS bundle is unavailable.\n  // Use click as a fallback, without relying on a second event.\n  tab.addEventListener('click', () => {\n    if (window.bootstrap?.Tab) {\n      window.bootstrap.Tab.getOrCreateInstance(tab).show();\n    } else {\n      document.getElementById('listaSpesaPane')?.classList.remove('show', 'active');\n      document.getElementById('listaSpesaTab')?.classList.remove('active');\n      document.getElementById('verificaMenuPane')?.classList.add('show', 'active');\n      tab.classList.add('active');\n    }\n    load();\n  });\n  document.getElementById('listaSpesaTab')?.addEventListener('click', () => {\n    if (!window.bootstrap?.Tab) {\n      document.getElementById('verificaMenuPane')?.classList.remove('show', 'active');\n      tab.classList.remove('active');\n      document.getElementById('listaSpesaPane')?.classList.add('show', 'active');\n      document.getElementById('listaSpesaTab')?.classList.add('active');\n    }\n  });
+  // Bootstrap may not dispatch shown.bs.tab if its JS bundle is unavailable.
+  // Use click as a fallback, without relying on a second event.
+  tab.addEventListener('click', () => {
+    if (window.bootstrap?.Tab) {
+      window.bootstrap.Tab.getOrCreateInstance(tab).show();
+    } else {
+      document.getElementById('listaSpesaPane')?.classList.remove('show', 'active');
+      document.getElementById('listaSpesaTab')?.classList.remove('active');
+      document.getElementById('verificaMenuPane')?.classList.add('show', 'active');
+      tab.classList.add('active');
+    }
+    load();
+  });
+  document.getElementById('listaSpesaTab')?.addEventListener('click', () => {
+    if (!window.bootstrap?.Tab) {
+      document.getElementById('verificaMenuPane')?.classList.remove('show', 'active');
+      tab.classList.remove('active');
+      document.getElementById('listaSpesaPane')?.classList.add('show', 'active');
+      document.getElementById('listaSpesaTab')?.classList.add('active');
+    }
+  });
 });
