@@ -20,6 +20,9 @@ $invalidLines = [];
 $itemsToInsert = [];
 foreach ($lines as $index => $line) {
     $nome = trim($line);
+    // Accetta elenchi Markdown e parentesi con escape (es. \\[...\\]).
+    $nome = preg_replace('/^[-*+]\\s+/u', '', $nome);
+    $nome = str_replace(['\\\\[', '\\\\]', '\\\\(', '\\\\)'], ['[', ']', '(', ')'], $nome);
     $quantita = null;
     $note = null;
 
