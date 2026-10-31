@@ -88,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function refreshMenu() {
     const weekStart = getSelectedWeekStart();
+    window.GestioneMenuWeek?.set(weekStart);
     const url = new URL('ajax/get_menu_cene.php', window.location.href);
     if (weekStart) url.searchParams.set('week_start', weekStart);
     fetch(url).then(r => r.json()).then(res => {
@@ -254,7 +255,10 @@ document.addEventListener('DOMContentLoaded', () => {
     weekPicker.value = toWeekInputValue(current);
     refreshMenu();
   });
-  if (weekPicker && !weekPicker.value) weekPicker.value = toWeekInputValue(new Date());
+  if (weekPicker && !weekPicker.value) {
+    const saved = window.GestioneMenuWeek?.get();
+    weekPicker.value = toWeekInputValue(saved ? new Date(saved + 'T12:00:00') : new Date());
+  }
   refreshMenu();
 });
 
