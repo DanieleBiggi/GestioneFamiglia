@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/menu_cene_config.php';
 
 /**
  * Menu cene famiglia 2026-2027.
@@ -13,6 +14,11 @@
 
 function menu_cene_master(): array
 {
+    $familyId = (int)($_SESSION['id_famiglia_gestione'] ?? 0);
+    if ($familyId > 0) {
+        $custom = food_config_read($familyId, 'master');
+        if ($custom !== null) return $custom['stagioni'];
+    }
     return [
         'Estivo' => [
             1 => [
@@ -84,12 +90,15 @@ function menu_cene_week_start(DateTimeImmutable $date): DateTimeImmutable
 
 function menu_cene_cycle_week(DateTimeImmutable $weekStart): int
 {
-    $anchor = new DateTimeImmutable('2026-09-14'); // settimana menu 2
+    $familyId = (int)($_SESSION['id_famiglia_gestione'] ?? 0);
+    $config = $familyId > 0 ? food_config_read($familyId, 'master') : null;
+    $anchor = new DateTimeImmutable($config['ciclo']['data_riferimento'] ?? '2026-09-14');
     $anchor = menu_cene_week_start($anchor);
     $weekStart = menu_cene_week_start($weekStart);
     $days = (int)$anchor->diff($weekStart)->format('%r%a');
     $weeksDiff = intdiv($days, 7);
-    return ((2 - 1 + $weeksDiff) % 4 + 4) % 4 + 1;
+    $anchorWeek = $config['ciclo']['settimana_riferimento'] ?? 2;
+    return (($anchorWeek - 1 + $weeksDiff) % 4 + 4) % 4 + 1;
 }
 
 function menu_cene_first_monday_of_november(int $year): DateTimeImmutable
