@@ -46,6 +46,19 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     });
   }
+  function validateImport(data, type) {
+    if (!data || typeof data !== 'object' || data.version !== 1) throw new Error('Versione JSON non valida');
+    if (type === 'master') {
+      if (!data.ciclo || data.ciclo.settimane !== 4 || !Number.isInteger(data.ciclo.settimana_riferimento) ||
+          !/^\\d{4}-\\d{2}-\\d{2}$/.test(data.ciclo.data_riferimento || '')) throw new Error('Ciclo non valido');
+      for (const season of ['Estivo', 'Invernale']) for (const week of ['1','2','3','4']) for (const day of days) {
+        const item = data.stagioni?.[season]?.[week]?.[day];
+        if (!item || typeof item.cena !== 'string' || !item.cena.trim() || typeof item.contorno !== 'string') throw new Error('Menù incompleto: ' + season + ', settimana ' + week + ', ' + day);
+      }
+    } else if (!Array.isArray(data.ricette) || data.ricette.some(r => !r || typeof r.id !== 'string' || typeof r.nome !== 'string' || typeof r.istruzioni !== 'string' || !Array.isArray(r.alias))) {
+      throw new Error('Ricettario non valido');
+    }
+  }
   function renderMaster() {
     const data = state.master;
     if (!data) return;
@@ -178,9 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       if (file.size > 250000) throw new Error('File troppo grande');
       const data = JSON.parse(await file.text());
-      if (!data || typeof data !== 'object' || data.version !== 1) throw new Error('Versione JSON non valida');
-      if (kind === 'master' && (!data.stagioni || !data.ciclo)) throw new Error('Master non riconosciuto');
-      if (kind === 'ricette' && !Array.isArray(data.ricette)) throw new Error('Ricette non riconosciute');
+      validateImport(data, kind);
       if (!confirm('Caricare il JSON nell’editor? Le modifiche non saranno salvate finché non premi Salva.')) return;
       state[kind] = data;
       if (kind === 'master') {
