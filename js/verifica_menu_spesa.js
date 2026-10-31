@@ -98,7 +98,25 @@ document.addEventListener('DOMContentLoaded', () => {
       section.append(body);root.append(section);
     }
   }
-  tab.addEventListener('shown.bs.tab',load);
-  // Quando la lista viene modificata, la vista si aggiorna alla prossima apertura.
-  document.getElementById('verificaMenuTab')?.addEventListener('click',()=>{ if(!shopping)return; });
+  // Bootstrap may not dispatch shown.bs.tab if its JS bundle is unavailable.
+  // Use click as a fallback, without relying on a second event.
+  tab.addEventListener('click', () => {
+    if (window.bootstrap?.Tab) {
+      window.bootstrap.Tab.getOrCreateInstance(tab).show();
+    } else {
+      document.getElementById('listaSpesaPane')?.classList.remove('show', 'active');
+      document.getElementById('listaSpesaTab')?.classList.remove('active');
+      document.getElementById('verificaMenuPane')?.classList.add('show', 'active');
+      tab.classList.add('active');
+    }
+    load();
+  });
+  document.getElementById('listaSpesaTab')?.addEventListener('click', () => {
+    if (!window.bootstrap?.Tab) {
+      document.getElementById('verificaMenuPane')?.classList.remove('show', 'active');
+      tab.classList.remove('active');
+      document.getElementById('listaSpesaPane')?.classList.add('show', 'active');
+      document.getElementById('listaSpesaTab')?.classList.add('active');
+    }
+  });
 });
