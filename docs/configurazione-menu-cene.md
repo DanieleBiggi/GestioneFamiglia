@@ -1,9 +1,9 @@
 # Configurazione Menù cene e ricette
 
-La pagina **Configurazione > Menù cene** permette di gestire, per ciascuna famiglia, due JSON separati.
+Le voci **Configurazione > Menù cene > Master** e **Configurazione > Menù cene > Ricette** permettono di gestire, per ciascuna famiglia, due JSON separati.
 
 - `master.json`: ciclo di 4 settimane per le stagioni `Estivo` e `Invernale`, da lunedì a venerdì.
-- `ricette.json`: preferenze di preparazione associate ai nomi dei piatti e agli alias.
+- `ricette.json`: preferenze di preparazione associate ai piatti selezionati da una tendina alimentata dal master.
 
 I file vengono salvati sul server in `config/menu_cene/<id_famiglia>/`, esclusi da Git. La regola `config/.htaccess` ne impedisce l'accesso diretto su Apache, **da verificare su Aruba**. Il server deve poter scrivere nella directory. Il backup immediatamente precedente viene salvato come `.json.bak`.
 
@@ -44,20 +44,18 @@ I menù settimanali già presenti in `menu_cene_settimanale` non vengono sovrasc
     {
       "id": "pizza",
       "nome": "Pizza",
-      "alias": [],
       "istruzioni": "Prepariamo la pizza in casa: non acquistare impasto pronto. Prevedi farina e lievito."
     },
     {
       "id": "polpette",
       "nome": "Polpette di carne",
-      "alias": ["Polpette al sugo"],
       "istruzioni": "Usiamo macinato e salsiccia. Non prevedere mortadella."
     }
   ]
 }
 ```
 
-Questi esempi **non sono inseriti automaticamente** nel ricettario. Possono essere aggiunti dall'interfaccia. Le corrispondenze avvengono per nome esatto (ignorando maiuscole e spazi multipli), non per somiglianza: un piatto non riconosciuto viene segnalato nell'export. Le istruzioni vengono incluse nel testo copiato da **Esporta menù** per il plugin Lista della spesa; il plugin resta responsabile di generare le quantità e gli ingredienti.
+Questi esempi **non sono inseriti automaticamente** nel ricettario. I piatti si scelgono dalla tendina, che contiene i nomi del master (cena e singoli contorni). Non esistono alias: se nel master compaiono sia «Polpette di carne» sia «Polpette al sugo», occorrono due ricette distinte. Le corrispondenze avvengono per nome esatto (ignorando maiuscole e spazi multipli), non per somiglianza: un piatto non riconosciuto viene segnalato nell'export. Le istruzioni vengono incluse nel testo copiato da **Esporta menù** per il plugin Lista della spesa; il plugin resta responsabile di generare le quantità e gli ingredienti.
 
 ## Permessi e verifica
 
