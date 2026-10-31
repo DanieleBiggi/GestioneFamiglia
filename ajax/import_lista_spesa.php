@@ -9,8 +9,11 @@ $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 $itemsRaw = trim($itemsRaw);
 if ($itemsRaw === '' || !$idFamiglia) { echo json_encode(['success'=>false,'error'=>'Inserisci almeno un elemento da importare.']); exit; }
 // Formato JSON del plugin Lista della spesa, con fallback al vecchio formato testuale.
-$decoded = json_decode($itemsRaw, true);
-if (preg_match('/^\\s*[\\{\\[]/', $itemsRaw) && json_last_error() !== JSON_ERROR_NONE) {
+// Rimuove soltanto gli escape Markdown davanti alle parentesi quadre del JSON.
+// Non modifica i backslash legittimi presenti dentro le stringhe JSON.
+$normalizedRaw = preg_replace('/\\\\([\\[\\]])/', '$1', $itemsRaw);
+$decoded = json_decode($normalizedRaw, true);
+if (preg_match('/^\\s*[\\{\\[]/', $normalizedRaw) && json_last_error() !== JSON_ERROR_NONE) {
     echo json_encode(['success'=>false,'error'=>'JSON non valido: '.json_last_error_msg()]); exit;
 }
 $jsonItems = null;
