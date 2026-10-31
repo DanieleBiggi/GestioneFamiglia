@@ -121,7 +121,7 @@ function food_config_match_recipes(array $menuItems, array $recipes): array {
     foreach ($recipes['ricette'] as $recipe) {
         foreach (array_merge([$recipe['nome']], $recipe['alias']) as $alias) {
             $key = food_config_norm($alias);
-            if ($key !== '') $map[$key][] = $recipe;
+            if ($key !== '') $map[$key][$recipe['id']] = $recipe;
         }
     }
     $matched = [];
@@ -130,7 +130,7 @@ function food_config_match_recipes(array $menuItems, array $recipes): array {
         foreach (preg_split('/\r?\n|\s*\+\s*|\s*;\s*/u', $item['piatto'] ?? '') as $dish) {
             $dish = trim($dish);
             if ($dish === '') continue;
-            $choices = $map[food_config_norm($dish)] ?? [];
+            $choices = array_values($map[food_config_norm($dish)] ?? []);
             if (count($choices) === 1) {
                 $matched[$choices[0]['id']] = $choices[0];
             } else {
