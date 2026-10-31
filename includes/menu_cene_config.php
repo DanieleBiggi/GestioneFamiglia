@@ -53,7 +53,7 @@ function food_config_validate(string $kind, array $data): void {
             throw new InvalidArgumentException('Anno scolastico non valido');
         }
     } elseif ($kind === 'ricette') {
-        if (!isset($data['ricette']) || !is_array($data['ricette']) || !array_is_list($data['ricette'])) {
+        if (!isset($data['ricette']) || !is_array($data['ricette']) || array_keys($data['ricette']) !== range(0, count($data['ricette']) - 1) && count($data['ricette']) > 0) {
             throw new InvalidArgumentException('Ricette deve essere un elenco');
         }
         $ids = [];
@@ -61,7 +61,7 @@ function food_config_validate(string $kind, array $data): void {
             if (!is_array($r) || !is_string($r['id'] ?? null) || !preg_match('/^[a-z0-9_-]{1,80}$/', $r['id'])
                 || !is_string($r['nome'] ?? null) || trim($r['nome']) === ''
                 || !is_string($r['istruzioni'] ?? null)
-                || !isset($r['alias']) || !is_array($r['alias']) || !array_is_list($r['alias'])) {
+                || !isset($r['alias']) || !is_array($r['alias']) || (count($r['alias']) > 0 && array_keys($r['alias']) !== range(0, count($r['alias']) - 1))) {
                 throw new InvalidArgumentException('Ricetta non valida');
             }
             if (isset($ids[$r['id']])) throw new InvalidArgumentException('ID ricetta duplicato');
