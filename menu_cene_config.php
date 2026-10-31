@@ -7,12 +7,8 @@ $canSave = has_permission($conn, 'page:menu_cene_config.php', 'update');
 if (empty($_SESSION['menu_config_csrf'])) $_SESSION['menu_config_csrf'] = bin2hex(random_bytes(32));
 include 'includes/header.php';
 ?>
-<h4>Configurazione · Menù cene</h4>
+<h4 id="menuConfigTitle">Configurazione · Menù cene</h4>
 <p class="text-secondary">Configurazioni della famiglia selezionata. I menù settimanali già generati non vengono modificati.</p>
-<ul class="nav nav-tabs mb-3">
-  <li class="nav-item"><button class="nav-link active" type="button" data-kind="master">Master menù</button></li>
-  <li class="nav-item"><button class="nav-link" type="button" data-kind="ricette">Ricette e preferenze</button></li>
-</ul>
 <div id="menuConfigAlert" role="status"></div>
 <section id="masterEditor">
   <div class="row g-2 mb-3">
@@ -27,7 +23,7 @@ include 'includes/header.php';
   <div id="cfgDays"></div>
 </section>
 <section id="recipesEditor" hidden>
-  <p class="small text-secondary">Associazioni per nome esatto o alias. Una ricetta può valere per più piatti. Le istruzioni vengono esportate insieme al menù.</p>
+  <p class="small text-secondary">Seleziona un piatto dal master e specifica come lo preparate. Le indicazioni saranno incluse nell'esportazione del menù per la lista della spesa.</p>
   <div id="cfgRecipes"></div>
   <?php if ($canSave): ?><button id="cfgAddRecipe" type="button" class="btn btn-outline-light btn-sm mb-3">+ Aggiungi ricetta</button><?php endif; ?>
 </section>
