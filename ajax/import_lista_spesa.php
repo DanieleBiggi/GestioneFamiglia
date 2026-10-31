@@ -10,9 +10,12 @@ $itemsRaw = trim($itemsRaw);
 if ($itemsRaw === '' || !$idFamiglia) { echo json_encode(['success'=>false,'error'=>'Inserisci almeno un elemento da importare.']); exit; }
 // Formato JSON del plugin Lista della spesa, con fallback al vecchio formato testuale.
 $decoded = json_decode($itemsRaw, true);
+if (preg_match('/^\\s*[\\{\\[]/', $itemsRaw) && json_last_error() !== JSON_ERROR_NONE) {
+    echo json_encode(['success'=>false,'error'=>'JSON non valido: '.json_last_error_msg()]); exit;
+}
 $jsonItems = null;
 if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) && isset($decoded['version'], $decoded['items'])) {
-    if ($decoded['version'] !== 1 || !is_array($decoded['items']) || !array_is_list($decoded['items'])) {
+    if ($decoded['version'] !== 1 || !is_array($decoded['items']) || array_keys($decoded['items']) !== range(0, count($decoded['items']) - 1)) {
         echo json_encode(['success'=>false,'error'=>'Formato JSON non valido: version deve essere 1 e items un elenco.']); exit;
     }
     $validDays = ['Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato','Domenica'];
