@@ -275,8 +275,9 @@ $conn->set_charset('utf8mb4'); // IMPORTANTISSIMO
           </button>
           <ul class="dropdown-menu dropdown-menu-dark w-100">
             <?php if (has_permission($conn, 'page:menu_cene_config.php', 'view')): ?>
-            <li><h6 class="dropdown-header">Alimentazione</h6></li>
-            <li><a class="dropdown-item text-white" href="/Gestionale25/menu_cene_config.php">Menù cene</a></li>
+            <li><h6 class="dropdown-header">Menù cene</h6></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/menu_cene_config.php?section=master">Master</a></li>
+            <li><a class="dropdown-item text-white" href="/Gestionale25/menu_cene_config.php?section=ricette">Ricette</a></li>
             <li><hr class="dropdown-divider"></li>
             <?php endif; ?>
             <li><h6 class="dropdown-header">Bilancio</h6></li>
