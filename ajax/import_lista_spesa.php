@@ -8,8 +8,37 @@ $itemsRaw = trim($_POST['items'] ?? '');
 $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 $itemsRaw = trim($itemsRaw);
 if ($itemsRaw === '' || !$idFamiglia) { echo json_encode(['success'=>false,'error'=>'Inserisci almeno un elemento da importare.']); exit; }
-$lines = array_filter(array_map('trim', preg_split("/[\r\n]+/", $itemsRaw)));
-if (empty($lines)) { echo json_encode(['success'=>false,'error'=>'Nessun elemento trovato nelle righe inserite.']); exit; }
+// Formato JSON del plugin Lista della spesa, con fallback al vecchio formato testuale.
+$decoded = json_decode($itemsRaw, true);
+$jsonItems = null;
+if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) && isset($decoded['version'], $decoded['items'])) {
+    if ($decoded['version'] !== 1 || !is_array($decoded['items']) || !array_is_list($decoded['items'])) {
+        echo json_encode(['success'=>false,'error'=>'Formato JSON non valido: version deve essere 1 e items un elenco.']); exit;
+    }
+    $validDays = ['Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato','Domenica'];
+    $jsonItems = [];
+    foreach ($decoded['items'] as $index => $item) {
+        if (!is_array($item) || !is_string($item['nome'] ?? null) || !is_string($item['quantita'] ?? null) || !is_array($item['associazioni'] ?? null) || !$item['associazioni']) {
+            echo json_encode(['success'=>false,'error'=>'Elemento JSON non valido alla posizione '.($index+1)]); exit;
+        }
+        $nome = trim($item['nome']);
+        $quantita = trim($item['quantita']);
+        if ($nome === '') { echo json_encode(['success'=>false,'error'=>'Nome ingrediente vuoto']); exit; }
+        $associazioni = [];
+        foreach ($item['associazioni'] as $ref) {
+            if (!is_array($ref) || !is_string($ref['giorno'] ?? null) || !is_string($ref['piatto'] ?? null) || !in_array($ref['giorno'], $validDays, true) || trim($ref['piatto']) === '') {
+                echo json_encode(['success'=>false,'error'=>'Associazione giorno/piatto non valida per '.$nome]); exit;
+            }
+            $associazioni[] = trim($ref['piatto']).', '.$ref['giorno'];
+        }
+        $jsonItems[] = ['nome'=>$nome, 'quantita'=>$quantita ?: null, 'note'=>implode('; ', array_unique($associazioni))];
+    }
+    if (!$jsonItems) { echo json_encode(['success'=>false,'error'=>'Il JSON non contiene ingredienti']); exit; }
+} elseif (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+    echo json_encode(['success'=>false,'error'=>'JSON non riconosciuto: servono version e items']); exit;
+}
+$lines = $jsonItems === null ? array_filter(array_map('trim', preg_split("/[\\r\\n]+/", $itemsRaw))) : [];
+if ($jsonItems === null && empty($lines)) { echo json_encode(['success'=>false,'error'=>'Nessun elemento trovato nelle righe inserite.']); exit; }
 $stmt = $conn->prepare('INSERT INTO lista_spesa (id_famiglia, nome, quantita, note) VALUES (?, ?, ?, ?)');
 $nome = '';
 $quantita = null;
@@ -56,6 +85,7 @@ foreach ($lines as $index => $line) {
         'note' => $note,
     ];
 }
+if ($jsonItems !== null) { $itemsToInsert = $jsonItems; }
 if (!empty($invalidLines)) {
     echo json_encode([
         'success' => false,
