@@ -24,10 +24,17 @@ $canAdd = has_permission($conn, 'ajax:add_lista_spesa', 'insert');
   </div>
   <?php endif; ?>
 </div>
-<ul class="nav nav-tabs mb-3" role="tablist">\n  <li class="nav-item"><button class="nav-link active" id="listaSpesaTab" data-bs-toggle="tab" data-bs-target="#listaSpesaPane" type="button" role="tab">Lista della spesa</button></li>\n  <li class="nav-item"><button class="nav-link" id="verificaMenuTab" data-bs-toggle="tab" data-bs-target="#verificaMenuPane" type="button" role="tab">Verifica menù</button></li>\n</ul>\n<div class="tab-content"><div class="tab-pane fade show active" id="listaSpesaPane" role="tabpanel">\n<div id="listaSpesaList">
+<ul class="nav nav-tabs mb-3" role="tablist">
+  <li class="nav-item"><button class="nav-link active" id="listaSpesaTab" data-bs-toggle="tab" data-bs-target="#listaSpesaPane" type="button" role="tab">Lista della spesa</button></li>
+  <li class="nav-item"><button class="nav-link" id="verificaMenuTab" data-bs-toggle="tab" data-bs-target="#verificaMenuPane" type="button" role="tab">Verifica menù</button></li>
+</ul>
+<div class="tab-content"><div class="tab-pane fade show active" id="listaSpesaPane" role="tabpanel">
+<div id="listaSpesaList">
 <?php while ($row = $res->fetch_assoc()): ?>
   <?php render_lista_spesa($row); ?>
 <?php endwhile; ?>
+</div>
+<div class="tab-pane fade" id="verificaMenuPane" role="tabpanel"><div id="verificaMenuContent"></div></div>
 </div>
 <?php if ($canAdd): ?>
 <div class="modal fade" id="listaModal" tabindex="-1">
@@ -79,5 +86,6 @@ $canAdd = has_permission($conn, 'ajax:add_lista_spesa', 'insert');
   </div>
 </div>
 <?php endif; ?>
-<script src="js/lista_spesa.js"></script>\n<script src="js/verifica_menu_spesa.js"></script>
+<script src="js/lista_spesa.js"></script>
+<script src="js/verifica_menu_spesa.js"></script>
 <?php include 'includes/footer.php'; ?>
