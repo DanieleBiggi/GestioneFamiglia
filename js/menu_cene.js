@@ -262,7 +262,9 @@ document.addEventListener('DOMContentLoaded', () => {
     weekPicker.value = toWeekInputValue(current);
     refreshMenu();
   });
-  if (weekPicker && !weekPicker.value) {
+  // Il browser può ripristinare automaticamente il valore del campo type="week".
+  // La settimana condivisa con Verifica menù deve sempre avere la precedenza.
+  if (weekPicker) {
     const saved = window.GestioneMenuWeek?.get();
     weekPicker.value = toWeekInputValue(saved ? new Date(saved + 'T12:00:00') : new Date());
   }
