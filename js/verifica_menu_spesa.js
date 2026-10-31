@@ -12,20 +12,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const matchDish = (hint, dish) => {
     const a=norm(hint), b=norm(dish);
     if (!a || !b) return false;
-    if (a === b || (a.length >= 5 && b.includes(a)) || (b.length >= 5 && a.includes(b))) return true;
-    return false;
+    return a===b || (a.length>=4 && b.startsWith(a+' ')) || (b.length>=4 && a.startsWith(b+' '));
   };
   const parseNotes = note => {
-    const pieces=(note||'').split(';').map(x=>x.trim()).filter(Boolean), refs=[];
-    pieces.forEach(piece => {
-      const matches=[...piece.matchAll(/lunedi|martedi|mercoledi|giovedi|venerdi|sabato|domenica/gi)];
-      if (!matches.length) return;
-      const dayIndexes=matches.map(m=>days.findIndex(d=>norm(d)===norm(m[0]))).filter(i=>i>=0);
-      if (!dayIndexes.length) return;
-      const prefix=piece.slice(0,matches[0].index).replace(/[,\s-]+$/,'').trim();
-      const range=piece.includes('-') && dayIndexes.length>=2;
-      const chosen=range ? days.slice(Math.min(...dayIndexes),Math.max(...dayIndexes)+1) : dayIndexes.map(i=>days[i]);
-      chosen.forEach(day=>refs.push({day, dish:prefix}));
+    const refs=[];
+    (note||'').replace(/\\([\[\]()])/g,'$1').split(';').forEach(part=>{
+      const piece=part.trim();
+      const dayPattern=/luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica/gi;
+      const found=[...piece.matchAll(dayPattern)];
+      if(!found.length)return;
+      const indexes=found.map(m=>days.findIndex(d=>norm(d)===norm(m[0]))).filter(i=>i>=0);
+      if(!indexes.length)return;
+      const dish=piece.slice(0,found[0].index).replace(/[,\s-]+$/,'').trim();
+      const isRange=/\s*-\s*/.test(piece.slice(found[0].index)) && indexes.length>=2;
+      const selected=isRange
+        ? days.slice(Math.min(...indexes),Math.max(...indexes)+1)
+        : [...new Set(indexes.map(i=>days[i]))];
+      selected.forEach(day=>refs.push({day,dish}));
     });
     return refs;
   };
@@ -52,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function render(){
     root.replaceChildren();
     const assigned=new Map(), unmatched=[];
-    const menuDays=menu.map(m=>({day:m.giorno,dishes:splitDishes(m.piatto)}));
+    const menuDays=menu.map(m=>({day:m.giorno,dishes:[...splitDishes(m.piatto), 'Condimenti']}));
     menuDays.forEach(m=>m.dishes.forEach(d=>assigned.set(m.day+'|'+d,[])));
     items.forEach(item=>{
       const refs=parseNotes(item.note), hits=new Set();
@@ -60,6 +63,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const dayEntry=menuDays.find(m=>norm(m.day)===norm(ref.day));
         if(!dayEntry)return;
         const candidates=dayEntry.dishes.filter(d=>matchDish(ref.dish,d));
+        // I contorni sono indicati come 'Contorno' nelle note: abbinali al contorno del giorno.
+        if(norm(ref.dish)==='contorno' && dayEntry.dishes.length>1) {
+          const sides=dayEntry.dishes.slice(1).filter(d=>d!=='Condimenti');
+          const ingredientMatches=sides.filter(d=>matchDish(item.nome,d) || matchDish(d,item.nome));
+          candidates.splice(0,candidates.length, ...(ingredientMatches.length===1 ? ingredientMatches : sides.length===1 ? sides : []));
+        }
+        if(norm(ref.dish)==='condimenti') candidates.splice(0,candidates.length,'Condimenti');
         if(candidates.length===1)hits.add(dayEntry.day+'|'+candidates[0]);
         // "Contorno" / "Condimenti" non identificano un piatto in modo univoco.
       });
