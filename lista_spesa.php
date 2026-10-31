@@ -76,7 +76,7 @@ $canAdd = has_permission($conn, 'ajax:add_lista_spesa', 'insert');
       </div>
       <div class="modal-body">
         <div class="mb-3">
-          <label class="form-label">Elementi (uno per riga - quantit&agrave; opzionale tra parentesi tonde e note opzionali tra parentesi quadre)</label>
+          <label class="form-label">Incolla il JSON generato dal plugin Lista della spesa. È supportato anche il formato precedente, un ingrediente per riga.</label>
           <textarea name="items" class="form-control bg-secondary text-white" rows="5"></textarea>
         </div>
       </div>
