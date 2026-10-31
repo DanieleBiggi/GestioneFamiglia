@@ -97,5 +97,6 @@ $canImport = has_permission($conn, 'ajax:import_menu_cene', 'insert');
   const MENU_CENE_CAN_EDIT = <?= $canEdit ? 'true' : 'false' ?>;
   const MENU_CENE_CAN_IMPORT = <?= $canImport ? 'true' : 'false' ?>;
 </script>
+<script src="js/menu_week_shared.js"></script>
 <script src="js/menu_cene.js"></script>
 <?php include 'includes/footer.php'; ?>
