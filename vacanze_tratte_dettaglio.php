@@ -7,6 +7,8 @@ include 'includes/session_check.php'; ?>
 <?php
 
 include 'includes/db.php';
+require_once 'includes/vacanze_spese_assoc.php';
+
 
 
 $id = (int)($_GET['id'] ?? 0);
@@ -28,7 +30,8 @@ if (!$viaggio) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id_tratta = (int)($_POST['id_tratta'] ?? 0);
-    $id_alt = (int)($_POST['id_viaggio_alternativa'] ?? $alt);
+    $selectedAltIds = array_map('intval', (array)($_POST['id_alternative'] ?? []));
+    $id_alt = $selectedAltIds[0] ?? null;
     $tipo = $_POST['tipo_tratta'] ?? 'auto';
     $descrizione = $_POST['descrizione'] ?? null;
     $origine = $_POST['origine_testo'] ?? null;
@@ -49,20 +52,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $note = $_POST['note'] ?? null;
     $pagato = isset($_POST['pagato']) ? 1 : 0;
 
+    $conn->begin_transaction();
+    try {
     if (isset($_POST['delete']) && $id_tratta) {
         $del = $conn->prepare('DELETE FROM viaggi_tratte WHERE id_tratta=? AND id_viaggio=?');
         $del->bind_param('ii', $id_tratta, $id);
-        $del->execute();
+        if (!$del->execute()) { throw new RuntimeException('Eliminazione fallita'); }
     } elseif ($id_tratta) {
         $upd = $conn->prepare('UPDATE viaggi_tratte SET id_viaggio_alternativa=?, tipo_tratta=?, descrizione=?, origine_testo=?, origine_lat=?, origine_lng=?, destinazione_testo=?, destinazione_lat=?, destinazione_lng=?, distanza_km=?, durata_ore=?, consumo_litri_100km=?, prezzo_carburante_eur_litro=?, pedaggi_eur=?, costo_traghetto_eur=?, costo_volo_eur=?, costo_noleggio_eur=?, altri_costi_eur=?, note=?, pagato=? WHERE id_tratta=? AND id_viaggio=?');
         $upd->bind_param('isssddsdddddddddddsiii', $id_alt, $tipo, $descrizione, $origine, $origine_lat, $origine_lng, $destinazione, $destinazione_lat, $destinazione_lng, $distanza, $durata, $consumo, $prezzo, $pedaggi, $traghetto, $volo, $noleggio, $altri, $note, $pagato, $id_tratta, $id);
-        $upd->execute();
+        if (!$upd->execute()) { throw new RuntimeException('Aggiornamento fallito'); }
+        vacanze_sync_spesa_alternative($conn, 'viaggi_tratte', $id_tratta, $id, $selectedAltIds);
     } else {
         $ins = $conn->prepare('INSERT INTO viaggi_tratte (id_viaggio, id_viaggio_alternativa, tipo_tratta, descrizione, origine_testo, origine_lat, origine_lng, destinazione_testo, destinazione_lat, destinazione_lng, distanza_km, durata_ore, consumo_litri_100km, prezzo_carburante_eur_litro, pedaggi_eur, costo_traghetto_eur, costo_volo_eur, costo_noleggio_eur, altri_costi_eur, note, pagato) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
         $ins->bind_param('iisssddsdddddddddddsi', $id, $id_alt, $tipo, $descrizione, $origine, $origine_lat, $origine_lng, $destinazione, $destinazione_lat, $destinazione_lng, $distanza, $durata, $consumo, $prezzo, $pedaggi, $traghetto, $volo, $noleggio, $altri, $note, $pagato);
-        $ins->execute();
+        if (!$ins->execute()) { throw new RuntimeException('Inserimento fallito'); }
+        vacanze_sync_spesa_alternative($conn, 'viaggi_tratte', (int)$conn->insert_id, $id, $selectedAltIds);
     }
-    header('Location: vacanze_tratte.php?id=' . $id . '&alt=' . $id_alt);
+    $conn->commit();
+    } catch (Throwable $e) {
+        $conn->rollback();
+        http_response_code(400);
+        exit('Impossibile salvare la spesa: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
+    }
+    header('Location: vacanze_tratte.php?id=' . $id . '&alt=' . ($alt ?: (int)$id_alt));
     exit;
 }
 
@@ -112,6 +125,7 @@ $altStmt->execute();
 $altRes = $altStmt->get_result();
 $alternative = [];
 while ($row = $altRes->fetch_assoc()) { $alternative[$row['id_viaggio_alternativa']] = $row['breve_descrizione']; }
+$selectedAlternativeIds = $id_tratta && !$duplica ? vacanze_spesa_alternative($conn, 'viaggi_tratte_alternative', 'id_tratta', $id_tratta) : [($alt ?: 0)];
 $alt_desc = $alternative[$alt] ?? '';
 ?>
 <?php include 'includes/header.php'; ?>
@@ -122,11 +136,12 @@ $alt_desc = $alternative[$alt] ?? '';
     <input type="hidden" name="id_tratta" value="<?= (int)$id_tratta ?>">
     <div class="mb-3">
       <label class="form-label">Alternativa</label>
-      <select class="form-select" name="id_viaggio_alternativa">
+      <div class="border border-secondary rounded p-2">
         <?php foreach ($alternative as $aid => $descr): ?>
-          <option value="<?= $aid ?>"<?= $tratta['id_viaggio_alternativa']==$aid ? ' selected' : '' ?>><?= htmlspecialchars($descr) ?></option>
+          <label class="d-block mb-1"><input type="checkbox" name="id_alternative[]" value="<?= (int)$aid ?>" <?= in_array((int)$aid, $selectedAlternativeIds, true) ? 'checked' : '' ?>> <?= htmlspecialchars($descr) ?></label>
         <?php endforeach; ?>
-      </select>
+        <small class="text-muted">Puoi scegliere più scenari o nessuno (spesa non assegnata).</small>
+      </div>
     </div>
     <div class="mb-3">
       <label class="form-label">Tipo tratta</label>
