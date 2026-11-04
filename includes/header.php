@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/Gestionale25/assets/style.css">
   <?php if (strpos(basename($_SERVER['SCRIPT_NAME'] ?? ''), 'vacanze_') === 0): ?>
   <link rel="stylesheet" href="/Gestionale25/assets/vacanze_controls.css?v=1">
-  <link rel="stylesheet" href="/Gestionale25/assets/vacanze_workspace.css?v=5">
+  <link rel="stylesheet" href="/Gestionale25/assets/vacanze_workspace.css?v=6">
   <?php endif; ?>
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
   <link rel="manifest" href="/Gestionale25/manifest.json">
