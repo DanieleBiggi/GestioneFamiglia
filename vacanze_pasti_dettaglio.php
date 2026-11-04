@@ -44,10 +44,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tipo = $_POST['tipo_pasto'] ?? 'pranzo';
     $nome = $_POST['nome_locale'] ?? null;
     $indirizzo = $_POST['indirizzo'] ?? null;
-    $lat = $_POST['lat'] !== '' ? (float)$_POST['lat'] : null;
-    $lng = $_POST['lng'] !== '' ? (float)$_POST['lng'] : null;
+    $lat = (($_POST['lat'] ?? '') !== '') ? (float)$_POST['lat'] : null;
+    $lng = (($_POST['lng'] ?? '') !== '') ? (float)$_POST['lng'] : null;
     $tipologia = $_POST['tipologia'] ?? 'ristorante';
-    $costo = $_POST['costo_medio_eur'] !== '' ? (float)$_POST['costo_medio_eur'] : null;
+    $costo = (($_POST['costo_medio_eur'] ?? '') !== '') ? (float)$_POST['costo_medio_eur'] : null;
     $note = $_POST['note'] ?? null;
     $pagato = isset($_POST['pagato']) ? 1 : 0;
 
