@@ -76,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fd.append('value', checked ? '1' : '0');
       fd.append('id_viaggio', viaggioId);
       fd.append('id_viaggio_alternativa', altId);
+      fd.append('vacanze_csrf', document.querySelector('meta[name="vacanze-csrf"]')?.content || '');
       toggle.disabled = true;
       fetch('ajax/update_viaggi_pagamento.php', { method: 'POST', body: fd })
         .then(r => r.json())
