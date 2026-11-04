@@ -7,7 +7,7 @@ if (!has_permission($conn, 'table:viaggi', 'view')) { http_response_code(403); e
 $conn->set_charset('utf8mb4');
 $id=(int)($_GET['id'] ?? 0);
 $tab=(string)($_GET['tab'] ?? 'overview');
-$tabs=['overview'=>'Riepilogo','compare'=>'Confronta scenari','scenario'=>'Dettaglio scenario','catalog'=>'Catalogo spese','notes'=>'Note e documenti','photos'=>'Foto','checklist'=>'Checklist','sharing'=>'Condivisione','map'=>'Mappa'];
+$tabs=['overview'=>'Riepilogo','compare'=>'Confronta scenari','scenario'=>'Dettaglio scenario','catalog'=>'Catalogo spese','notes'=>'Note e documenti','photos'=>'Foto','checklist'=>'Checklist','sharing'=>'Condivisione','map'=>'Mappa','reviews'=>'Recensioni'];
 if (!isset($tabs[$tab])) $tab='overview';
 $stmt=$conn->prepare('SELECT v.*,l.nome AS luogo_nome,l.lat AS luogo_lat,l.lng AS luogo_lng FROM viaggi v LEFT JOIN viaggi_luoghi l ON l.id_luogo=v.id_luogo WHERE v.id_viaggio=?');
 $stmt->bind_param('i',$id);$stmt->execute();$trip=$stmt->get_result()->fetch_assoc();$stmt->close();
@@ -35,6 +35,17 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
      $q=$conn->prepare('INSERT INTO viaggi_alternative (id_viaggio,breve_descrizione) VALUES (?,?)');
      $q->bind_param('is',$id,$desc);$q->execute();$q->close();
      header('Location: '.vwUrl($id,'overview'));exit;
+   }
+ } elseif($action==='add_review' && has_permission($conn,'ajax:add_viaggi_feedback','insert')){
+   $ratingRaw=(string)($_POST['voto'] ?? '');
+   $rating=$ratingRaw===''?null:(int)$ratingRaw;
+   $comment=trim((string)($_POST['commento'] ?? ''));
+   if(($rating===null&&$comment==='')||($rating!==null&&($rating<0||$rating>10))||mb_strlen($comment,'UTF-8')>5000) $workspaceError='Recensione non valida.';
+   else{
+    $uid=(int)$_SESSION['utente_id'];
+    $q=$conn->prepare('INSERT INTO viaggi_feedback (id_viaggio,id_utente,voto,commento) VALUES (?,?,?,?)');
+    $q->bind_param('iiis',$id,$uid,$rating,$comment);$q->execute();$q->close();
+    header('Location: '.vwUrl($id,'reviews'));exit;
    }
  } elseif($action==='edit_scenario' && $canEditScenario){
    $altId=(int)($_POST['id_viaggio_alternativa'] ?? 0);
@@ -84,6 +95,14 @@ $shared=[];
 if ($tab==='sharing') {
  $q=$conn->prepare('SELECT c.id_condivisione,c.creato_il,c.scade_il,c.revocato_il,GROUP_CONCAT(a.breve_descrizione SEPARATOR ", ") AS scenari FROM viaggi_condivisioni c LEFT JOIN viaggi_condivisioni_alternative ca ON ca.id_condivisione=c.id_condivisione LEFT JOIN viaggi_alternative a ON a.id_viaggio_alternativa=ca.id_viaggio_alternativa AND a.id_viaggio=c.id_viaggio WHERE c.id_viaggio=? GROUP BY c.id_condivisione ORDER BY c.id_condivisione DESC');
  $q->bind_param('i',$id);$q->execute();$shared=$q->get_result()->fetch_all(MYSQLI_ASSOC);$q->close();
+}
+$reviews=[];
+$reviewStats=['media'=>null,'num'=>0];
+if($tab==='reviews'){
+ $q=$conn->prepare('SELECT vf.voto,vf.commento,vf.creato_il,u.username FROM viaggi_feedback vf LEFT JOIN utenti u ON u.id=vf.id_utente WHERE vf.id_viaggio=? ORDER BY vf.creato_il DESC');
+ $q->bind_param('i',$id);$q->execute();$reviews=$q->get_result()->fetch_all(MYSQLI_ASSOC);$q->close();
+ $q=$conn->prepare('SELECT AVG(voto) AS media,COUNT(voto) AS num FROM viaggi_feedback WHERE id_viaggio=?');
+ $q->bind_param('i',$id);$q->execute();$reviewStats=$q->get_result()->fetch_assoc();$q->close();
 }
 $tripPhotos=[];
 if($tab==='photos'){
@@ -167,7 +186,7 @@ include 'includes/header.php';
  <div class="d-flex flex-wrap gap-2"><?php if($canEdit): ?><a class="vw-btn" href="vacanze_modifica.php?id=<?= $id ?>">Modifica vacanza</a><?php endif; ?><a class="vw-btn vw-btn-primary" href="<?= vwUrl($id,'catalog') ?>">+ Nuova spesa</a></div></div>
  <nav class="vw-tabs" aria-label="Sezioni della vacanza"><?php foreach($tabs as $key=>$label): ?><a class="vw-tab <?= $tab===$key?'active':'' ?>" href="<?= vwUrl($id,$key) ?>"><?= vwEsc($label) ?></a><?php endforeach; ?></nav>
  <?php if($tab==='overview'): ?>
- <div class="d-flex flex-wrap gap-2 mb-3"><a class="vw-btn" href="<?= vwUrl($id,'map') ?>"><i class="bi bi-geo-alt"></i> Apri mappa</a><a class="vw-btn" href="<?= vwUrl($id,'notes') ?>">Note e documenti</a></div>
+ <div class="d-flex flex-wrap gap-2 mb-3"><a class="vw-btn" href="<?= vwUrl($id,'map') ?>"><i class="bi bi-geo-alt"></i> Apri mappa</a><a class="vw-btn" href="<?= vwUrl($id,'notes') ?>">Note e documenti</a><a class="vw-btn" href="<?= vwUrl($id,'reviews') ?>">Recensioni e domande</a></div>
  <div class="vw-note">Le spese condivise si aggiornano in tutti gli scenari collegati. Le spese non assegnate rimangono nel catalogo e non entrano nei totali.</div>
  <div class="vw-grid">
   <div class="vw-panel"><div class="vw-stat-label">Scenari a confronto</div><div class="vw-stat-num"><?= count($scenarios) ?></div><div class="vw-muted">Combinazioni disponibili</div></div>
@@ -265,6 +284,20 @@ include 'includes/header.php';
  <div class="vw-section-head"><h2>Condividi scenari</h2><a class="vw-btn vw-btn-primary" href="vacanze_condivisioni.php?id=<?= $id ?>">+ Nuovo link</a></div>
  <div class="vw-panel"><h2>Link temporanei, in sola lettura, validi 7 giorni</h2><p class="vw-muted">Puoi selezionare uno o più scenari. Documenti e note interne non vengono pubblicati.</p><a class="vw-btn" href="vacanze_condivisioni.php?id=<?= $id ?>">Scegli scenari e genera link</a></div>
  <div class="vw-panel"><h2>Link condivisi</h2><?php foreach($shared as $share): ?><p><b><?= vwEsc($share['scenari'] ?: 'Nessuno scenario') ?></b><span class="vw-muted"> · <?= vwEsc($share['revocato_il']?'Revocato':(strtotime($share['scade_il'].' UTC')<=time()?'Scaduto':'Attivo')) ?> · scade <?= vwEsc($share['scade_il']) ?> UTC</span></p><?php endforeach; ?><?php if(!$shared): ?><p class="vw-muted">Nessun link creato.</p><?php endif; ?></div>
+ <?php elseif($tab==='reviews'): ?>
+ <div class="vw-section-head"><h2>Recensioni e domande</h2><a class="vw-btn" href="<?= vwUrl($id,'overview') ?>">Torna alla vacanza</a></div>
+ <div class="vw-panel"><p class="vw-muted">Valutazione media: <b><?= (int)($reviewStats['num'] ?? 0)>0?number_format((float)$reviewStats['media'],1,',','.').' / 10':'Non disponibile' ?></b> · <?= (int)($reviewStats['num'] ?? 0) ?> voti</p>
+ <?php if(has_permission($conn,'ajax:add_viaggi_feedback','insert')): ?>
+ <form method="post" class="d-flex flex-column gap-2">
+ <input type="hidden" name="vacanze_csrf" value="<?= vwEsc($_SESSION['vacanze_csrf']) ?>">
+ <input type="hidden" name="vw_action" value="add_review">
+ <label for="vwRating">Voto (facoltativo, da 0 a 10)</label><input id="vwRating" class="vw-input" name="voto" type="number" min="0" max="10" style="max-width:130px">
+ <label for="vwReviewText">Recensione o domanda</label><textarea id="vwReviewText" class="vw-input w-100" rows="3" name="commento" maxlength="5000"></textarea>
+ <button class="vw-btn vw-btn-primary align-self-start" type="submit">Pubblica</button>
+ </form><?php endif; ?>
+ </div>
+ <?php foreach($reviews as $review): ?><article class="vw-panel"><b><?= vwEsc($review['username'] ?: 'Utente') ?></b> <span class="vw-muted"><?= vwEsc($review['creato_il']) ?></span> <?php if($review['voto']!==null): ?><span class="vw-pill"><?= (int)$review['voto'] ?>/10</span><?php endif; ?><p class="mt-2"><?= nl2br(vwEsc($review['commento'])) ?></p></article><?php endforeach; ?>
+ <?php if(!$reviews): ?><div class="vw-panel vw-muted">Non ci sono ancora recensioni o domande.</div><?php endif; ?>
  <?php elseif($tab==='map'): ?>
  <div class="vw-section-head"><h2>Mappa della vacanza</h2><a class="vw-btn" href="<?= vwUrl($id,'overview') ?>">Torna al riepilogo</a></div>
  <div class="vw-panel">
@@ -285,7 +318,7 @@ include 'includes/header.php';
  <nav class="vw-mobile-nav" aria-label="Navigazione mobile">
  <?php foreach(['overview'=>['bi-house','Riepilogo'],'compare'=>['bi-bar-chart','Confronta'],'catalog'=>['bi-receipt','Spese'],'checklist'=>['bi-check2-square','Checklist']] as $key=>$spec): ?><a href="<?= vwUrl($id,$key) ?>" class="<?= $tab===$key?'active':'' ?>"><i class="bi <?= $spec[0] ?>"></i><?= $spec[1] ?></a><?php endforeach; ?>
  <button type="button" id="vwMoreButton" aria-expanded="false"><i class="bi bi-three-dots"></i>Altro</button></nav>
- <div class="vw-mobile-more" id="vwMobileMore"><?php foreach(['notes'=>'Note e documenti','photos'=>'Foto','sharing'=>'Condivisione','map'=>'Mappa'] as $key=>$label): ?><a href="<?= vwUrl($id,$key) ?>"><?= vwEsc($label) ?></a><?php endforeach; ?></div>
+ <div class="vw-mobile-more" id="vwMobileMore"><?php foreach(['notes'=>'Note e documenti','photos'=>'Foto','sharing'=>'Condivisione','map'=>'Mappa','reviews'=>'Recensioni'] as $key=>$label): ?><a href="<?= vwUrl($id,$key) ?>"><?= vwEsc($label) ?></a><?php endforeach; ?></div>
 </main>
 <script>
 (function(){
