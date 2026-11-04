@@ -26,3 +26,33 @@ SELECT * FROM v_totali_alternative ORDER BY id_viaggio,id_viaggio_alternativa;
 -- 8) Ricollegare a B, eliminare B: la spesa rimane non assegnata.
 -- 9) Provare pagamento e cancellazione definitiva della spesa.
 -- 10) Verificare lista vacanze, dettagli, checklist e altre sezioni di GestioneFamiglia.
+
+
+-- Gli scenari senza tratte devono comunque comparire nella nuova vista.
+-- Prima della fase 2 questa query identifica i casi da verificare dopo il rilascio.
+SELECT a.id_viaggio, a.id_viaggio_alternativa, a.breve_descrizione
+FROM viaggi_alternative a
+WHERE NOT EXISTS (
+ SELECT 1 FROM viaggi_tratte_alternative l
+ WHERE l.id_viaggio_alternativa=a.id_viaggio_alternativa
+)
+ORDER BY a.id_viaggio, a.id_viaggio_alternativa;
+
+-- Integrita del puntatore legacy: deve essere NULL o un collegamento presente.
+-- La verifica puo rilevare dati preesistenti non ancora riallineati.
+SELECT 'tratte' categoria, COUNT(*) anomalie FROM viaggi_tratte e
+WHERE e.id_viaggio_alternativa IS NOT NULL AND NOT EXISTS (
+ SELECT 1 FROM viaggi_tratte_alternative l WHERE l.id_tratta=e.id_tratta AND l.id_viaggio_alternativa=e.id_viaggio_alternativa
+)
+UNION ALL SELECT 'alloggi', COUNT(*) FROM viaggi_alloggi e
+WHERE e.id_viaggio_alternativa IS NOT NULL AND NOT EXISTS (
+ SELECT 1 FROM viaggi_alloggi_alternative l WHERE l.id_alloggio=e.id_alloggio AND l.id_viaggio_alternativa=e.id_viaggio_alternativa
+)
+UNION ALL SELECT 'pasti', COUNT(*) FROM viaggi_pasti e
+WHERE e.id_viaggio_alternativa IS NOT NULL AND NOT EXISTS (
+ SELECT 1 FROM viaggi_pasti_alternative l WHERE l.id_pasto=e.id_pasto AND l.id_viaggio_alternativa=e.id_viaggio_alternativa
+)
+UNION ALL SELECT 'altri_costi', COUNT(*) FROM viaggi_altri_costi e
+WHERE e.id_viaggio_alternativa IS NOT NULL AND NOT EXISTS (
+ SELECT 1 FROM viaggi_altri_costi_alternative l WHERE l.id_costo=e.id_costo AND l.id_viaggio_alternativa=e.id_viaggio_alternativa
+);
