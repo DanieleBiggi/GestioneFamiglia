@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 89.46.111.63:3306
--- Creato il: Nov 04, 2026 alle 09:28
+-- Creato il: Nov 04, 2026 alle 14:46
 -- Versione del server: 5.6.51-91.0-log
 -- Versione PHP: 8.0.7
 
@@ -1425,6 +1425,17 @@ CREATE TABLE `viaggi_alloggi` (
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `viaggi_alloggi_alternative`
+--
+
+CREATE TABLE `viaggi_alloggi_alternative` (
+  `id_alloggio` int(11) NOT NULL,
+  `id_viaggio_alternativa` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `viaggi_alternative`
 --
 
@@ -1454,6 +1465,17 @@ CREATE TABLE `viaggi_altri_costi` (
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `viaggi_altri_costi_alternative`
+--
+
+CREATE TABLE `viaggi_altri_costi_alternative` (
+  `id_costo` int(11) NOT NULL,
+  `id_viaggio_alternativa` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `viaggi_checklist`
 --
 
@@ -1477,6 +1499,50 @@ CREATE TABLE `viaggi_checklist_messaggi` (
   `id_utente` int(11) NOT NULL,
   `messaggio` text NOT NULL,
   `creato_il` datetime DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `viaggi_commenti`
+--
+
+CREATE TABLE `viaggi_commenti` (
+  `id_commento` bigint(20) UNSIGNED NOT NULL,
+  `id_viaggio` int(11) NOT NULL,
+  `id_viaggio_alternativa` int(11) DEFAULT NULL,
+  `id_utente` int(11) NOT NULL,
+  `visibilita` enum('pubblico','interno') NOT NULL DEFAULT 'interno',
+  `testo` text NOT NULL,
+  `creato_il` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `modificato_il` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `viaggi_condivisioni`
+--
+
+CREATE TABLE `viaggi_condivisioni` (
+  `id_condivisione` bigint(20) UNSIGNED NOT NULL,
+  `id_viaggio` int(11) NOT NULL,
+  `token_sha256` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `creato_da` int(11) NOT NULL,
+  `creato_il` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `scade_il` datetime NOT NULL,
+  `revocato_il` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `viaggi_condivisioni_alternative`
+--
+
+CREATE TABLE `viaggi_condivisioni_alternative` (
+  `id_condivisione` bigint(20) UNSIGNED NOT NULL,
+  `id_viaggio_alternativa` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -1565,6 +1631,17 @@ CREATE TABLE `viaggi_pasti` (
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `viaggi_pasti_alternative`
+--
+
+CREATE TABLE `viaggi_pasti_alternative` (
+  `id_pasto` int(11) NOT NULL,
+  `id_viaggio_alternativa` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `viaggi_tratte`
 --
 
@@ -1591,6 +1668,17 @@ CREATE TABLE `viaggi_tratte` (
   `altri_costi_eur` decimal(10,2) DEFAULT NULL,
   `note` text,
   `pagato` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `viaggi_tratte_alternative`
+--
+
+CREATE TABLE `viaggi_tratte_alternative` (
+  `id_tratta` int(11) NOT NULL,
+  `id_viaggio_alternativa` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -2986,6 +3074,13 @@ ALTER TABLE `viaggi_alloggi`
   ADD KEY `fk_viaggi_alloggi_alternativa` (`id_viaggio_alternativa`);
 
 --
+-- Indici per le tabelle `viaggi_alloggi_alternative`
+--
+ALTER TABLE `viaggi_alloggi_alternative`
+  ADD PRIMARY KEY (`id_alloggio`,`id_viaggio_alternativa`),
+  ADD KEY `idx_vaa_alternativa` (`id_viaggio_alternativa`);
+
+--
 -- Indici per le tabelle `viaggi_alternative`
 --
 ALTER TABLE `viaggi_alternative`
@@ -2999,6 +3094,13 @@ ALTER TABLE `viaggi_altri_costi`
   ADD PRIMARY KEY (`id_costo`),
   ADD KEY `id_viaggio` (`id_viaggio`),
   ADD KEY `id_viaggio_alternativa` (`id_viaggio_alternativa`);
+
+--
+-- Indici per le tabelle `viaggi_altri_costi_alternative`
+--
+ALTER TABLE `viaggi_altri_costi_alternative`
+  ADD PRIMARY KEY (`id_costo`,`id_viaggio_alternativa`),
+  ADD KEY `idx_vaca_alternativa` (`id_viaggio_alternativa`);
 
 --
 -- Indici per le tabelle `viaggi_checklist`
@@ -3015,6 +3117,32 @@ ALTER TABLE `viaggi_checklist_messaggi`
   ADD PRIMARY KEY (`id_messaggio`),
   ADD KEY `id_checklist` (`id_checklist`),
   ADD KEY `id_utente` (`id_utente`);
+
+--
+-- Indici per le tabelle `viaggi_commenti`
+--
+ALTER TABLE `viaggi_commenti`
+  ADD PRIMARY KEY (`id_commento`),
+  ADD KEY `idx_vcommenti_viaggio_visibilita` (`id_viaggio`,`visibilita`,`creato_il`),
+  ADD KEY `idx_vcommenti_alternativa` (`id_viaggio_alternativa`),
+  ADD KEY `fk_vcommenti_autore` (`id_utente`);
+
+--
+-- Indici per le tabelle `viaggi_condivisioni`
+--
+ALTER TABLE `viaggi_condivisioni`
+  ADD PRIMARY KEY (`id_condivisione`),
+  ADD UNIQUE KEY `uq_vc_token` (`token_sha256`),
+  ADD KEY `idx_vc_viaggio` (`id_viaggio`),
+  ADD KEY `idx_vc_scadenza` (`scade_il`),
+  ADD KEY `fk_vc_autore` (`creato_da`);
+
+--
+-- Indici per le tabelle `viaggi_condivisioni_alternative`
+--
+ALTER TABLE `viaggi_condivisioni_alternative`
+  ADD PRIMARY KEY (`id_condivisione`,`id_viaggio_alternativa`),
+  ADD KEY `idx_vca_alternativa` (`id_viaggio_alternativa`);
 
 --
 -- Indici per le tabelle `viaggi_etichette`
@@ -3053,12 +3181,26 @@ ALTER TABLE `viaggi_pasti`
   ADD KEY `id_viaggio_alternativa` (`id_viaggio_alternativa`);
 
 --
+-- Indici per le tabelle `viaggi_pasti_alternative`
+--
+ALTER TABLE `viaggi_pasti_alternative`
+  ADD PRIMARY KEY (`id_pasto`,`id_viaggio_alternativa`),
+  ADD KEY `idx_vpa_alternativa` (`id_viaggio_alternativa`);
+
+--
 -- Indici per le tabelle `viaggi_tratte`
 --
 ALTER TABLE `viaggi_tratte`
   ADD PRIMARY KEY (`id_tratta`),
   ADD KEY `id_viaggio` (`id_viaggio`),
   ADD KEY `fk_viaggi_tratte_alternativa` (`id_viaggio_alternativa`);
+
+--
+-- Indici per le tabelle `viaggi_tratte_alternative`
+--
+ALTER TABLE `viaggi_tratte_alternative`
+  ADD PRIMARY KEY (`id_tratta`,`id_viaggio_alternativa`),
+  ADD KEY `idx_vta_alternativa` (`id_viaggio_alternativa`);
 
 --
 -- Indici per le tabelle `webauthn_credentials`
@@ -3575,6 +3717,18 @@ ALTER TABLE `viaggi_checklist`
 --
 ALTER TABLE `viaggi_checklist_messaggi`
   MODIFY `id_messaggio` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `viaggi_commenti`
+--
+ALTER TABLE `viaggi_commenti`
+  MODIFY `id_commento` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `viaggi_condivisioni`
+--
+ALTER TABLE `viaggi_condivisioni`
+  MODIFY `id_condivisione` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT per la tabella `viaggi_etichette`
@@ -4191,6 +4345,13 @@ ALTER TABLE `viaggi_alloggi`
   ADD CONSTRAINT `viaggi_alloggi_ibfk_1` FOREIGN KEY (`id_viaggio`) REFERENCES `viaggi` (`id_viaggio`);
 
 --
+-- Limiti per la tabella `viaggi_alloggi_alternative`
+--
+ALTER TABLE `viaggi_alloggi_alternative`
+  ADD CONSTRAINT `fk_vaa_alloggio` FOREIGN KEY (`id_alloggio`) REFERENCES `viaggi_alloggi` (`id_alloggio`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_vaa_alternativa` FOREIGN KEY (`id_viaggio_alternativa`) REFERENCES `viaggi_alternative` (`id_viaggio_alternativa`) ON DELETE CASCADE;
+
+--
 -- Limiti per la tabella `viaggi_alternative`
 --
 ALTER TABLE `viaggi_alternative`
@@ -4202,6 +4363,13 @@ ALTER TABLE `viaggi_alternative`
 ALTER TABLE `viaggi_altri_costi`
   ADD CONSTRAINT `viaggi_altri_costi_ibfk_1` FOREIGN KEY (`id_viaggio`) REFERENCES `viaggi` (`id_viaggio`),
   ADD CONSTRAINT `viaggi_altri_costi_ibfk_2` FOREIGN KEY (`id_viaggio_alternativa`) REFERENCES `viaggi_alternative` (`id_viaggio_alternativa`);
+
+--
+-- Limiti per la tabella `viaggi_altri_costi_alternative`
+--
+ALTER TABLE `viaggi_altri_costi_alternative`
+  ADD CONSTRAINT `fk_vaca_alternativa` FOREIGN KEY (`id_viaggio_alternativa`) REFERENCES `viaggi_alternative` (`id_viaggio_alternativa`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_vaca_costo` FOREIGN KEY (`id_costo`) REFERENCES `viaggi_altri_costi` (`id_costo`) ON DELETE CASCADE;
 
 --
 -- Limiti per la tabella `viaggi_checklist`
@@ -4216,6 +4384,28 @@ ALTER TABLE `viaggi_checklist`
 ALTER TABLE `viaggi_checklist_messaggi`
   ADD CONSTRAINT `viaggi_checklist_messaggi_ibfk_1` FOREIGN KEY (`id_checklist`) REFERENCES `viaggi_checklist` (`id_checklist`) ON DELETE CASCADE,
   ADD CONSTRAINT `viaggi_checklist_messaggi_ibfk_2` FOREIGN KEY (`id_utente`) REFERENCES `utenti` (`id`) ON DELETE CASCADE;
+
+--
+-- Limiti per la tabella `viaggi_commenti`
+--
+ALTER TABLE `viaggi_commenti`
+  ADD CONSTRAINT `fk_vcommenti_alternativa` FOREIGN KEY (`id_viaggio_alternativa`) REFERENCES `viaggi_alternative` (`id_viaggio_alternativa`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_vcommenti_autore` FOREIGN KEY (`id_utente`) REFERENCES `utenti` (`id`),
+  ADD CONSTRAINT `fk_vcommenti_viaggio` FOREIGN KEY (`id_viaggio`) REFERENCES `viaggi` (`id_viaggio`) ON DELETE CASCADE;
+
+--
+-- Limiti per la tabella `viaggi_condivisioni`
+--
+ALTER TABLE `viaggi_condivisioni`
+  ADD CONSTRAINT `fk_vc_autore` FOREIGN KEY (`creato_da`) REFERENCES `utenti` (`id`),
+  ADD CONSTRAINT `fk_vc_viaggio` FOREIGN KEY (`id_viaggio`) REFERENCES `viaggi` (`id_viaggio`) ON DELETE CASCADE;
+
+--
+-- Limiti per la tabella `viaggi_condivisioni_alternative`
+--
+ALTER TABLE `viaggi_condivisioni_alternative`
+  ADD CONSTRAINT `fk_vca_alternativa` FOREIGN KEY (`id_viaggio_alternativa`) REFERENCES `viaggi_alternative` (`id_viaggio_alternativa`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_vca_condivisione` FOREIGN KEY (`id_condivisione`) REFERENCES `viaggi_condivisioni` (`id_condivisione`) ON DELETE CASCADE;
 
 --
 -- Limiti per la tabella `viaggi_feedback`
@@ -4238,11 +4428,25 @@ ALTER TABLE `viaggi_pasti`
   ADD CONSTRAINT `viaggi_pasti_ibfk_2` FOREIGN KEY (`id_viaggio_alternativa`) REFERENCES `viaggi_alternative` (`id_viaggio_alternativa`);
 
 --
+-- Limiti per la tabella `viaggi_pasti_alternative`
+--
+ALTER TABLE `viaggi_pasti_alternative`
+  ADD CONSTRAINT `fk_vpa_alternativa` FOREIGN KEY (`id_viaggio_alternativa`) REFERENCES `viaggi_alternative` (`id_viaggio_alternativa`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_vpa_pasto` FOREIGN KEY (`id_pasto`) REFERENCES `viaggi_pasti` (`id_pasto`) ON DELETE CASCADE;
+
+--
 -- Limiti per la tabella `viaggi_tratte`
 --
 ALTER TABLE `viaggi_tratte`
   ADD CONSTRAINT `fk_viaggi_tratte_alternativa` FOREIGN KEY (`id_viaggio_alternativa`) REFERENCES `viaggi_alternative` (`id_viaggio_alternativa`),
   ADD CONSTRAINT `viaggi_tratte_ibfk_1` FOREIGN KEY (`id_viaggio`) REFERENCES `viaggi` (`id_viaggio`);
+
+--
+-- Limiti per la tabella `viaggi_tratte_alternative`
+--
+ALTER TABLE `viaggi_tratte_alternative`
+  ADD CONSTRAINT `fk_vta_alternativa` FOREIGN KEY (`id_viaggio_alternativa`) REFERENCES `viaggi_alternative` (`id_viaggio_alternativa`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_vta_tratta` FOREIGN KEY (`id_tratta`) REFERENCES `viaggi_tratte` (`id_tratta`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
