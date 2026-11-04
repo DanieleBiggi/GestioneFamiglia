@@ -10,6 +10,7 @@ $alt = (int)($_GET['alt'] ?? 0);
 $id_alloggio = (int)($_GET['id_alloggio'] ?? 0);
 $duplica = isset($_GET['duplica']);
 
+if (!has_permission($conn, 'table:viaggi', 'view')) { http_response_code(403); exit('Accesso negato'); }
 // I permessi vanno verificati anche lato server, non solo nascondendo i pulsanti.
 $canViewSpesa = has_permission($conn, 'table:viaggi_alloggi', 'view');
 $canInsertSpesa = has_permission($conn, 'table:viaggi_alloggi', 'insert');
