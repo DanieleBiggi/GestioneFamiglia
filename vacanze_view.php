@@ -84,7 +84,7 @@ $docRes = $docStmt->get_result();
     <?php endif; ?>
   </div>
 
-  <div class="mb-3"><a class="btn btn-sm btn-outline-light" href="vacanze_spese_non_assegnate.php?id=<?= $id ?>">Spese non assegnate</a></div>
+  <div class="mb-3 d-flex gap-2 flex-wrap"><a class="btn btn-sm btn-outline-light" href="vacanze_spese_non_assegnate.php?id=<?= $id ?>">Spese non assegnate</a><a class="btn btn-sm btn-outline-light" href="vacanze_commenti.php?id=<?= $id ?>">Commenti</a></div>
   <div class="mb-4">
     <div class="d-flex justify-content-between mb-3 align-items-center">
       <h5 class="m-0">Alternative</h5>
