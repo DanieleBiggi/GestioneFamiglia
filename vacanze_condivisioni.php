@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
    else {
     $raw=bin2hex(random_bytes(32)); $hash=hash('sha256',$raw);
     $uid=(int)$_SESSION['utente_id'];
-    $host=(string)($_SERVER['HTTP_HOST'] ?? '');
+    $host=(string)($_SERVER['SERVER_NAME'] ?? '');
     if (!preg_match('/^[a-z0-9.-]+(?::[0-9]{1,5})?$/iD', $host)) { http_response_code(400); exit('Host non valido'); }
     $conn->begin_transaction();
     try {
