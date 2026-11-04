@@ -121,7 +121,7 @@ if ($id > 0) {
   <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="vacanze.php">Vacanze</a></li>
+      <li class="breadcrumb-item"><a href="vacanze_lista.php">Vacanze</a></li>
       <?php if ($id > 0): ?>
         <li class="breadcrumb-item"><a href="vacanze_view.php?id=<?= $id ?>"><?= htmlspecialchars($data['titolo']) ?></a></li>
         <li class="breadcrumb-item active" aria-current="page">Modifica</li>
