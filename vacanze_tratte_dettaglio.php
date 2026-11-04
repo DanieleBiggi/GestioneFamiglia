@@ -39,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['delete']) && !$canDeleteSpesa) { http_response_code(403); exit('Accesso negato'); }
     if (!isset($_POST['delete']) && !($id_tratta && !$duplica ? $canUpdateSpesa : $canInsertSpesa)) { http_response_code(403); exit('Accesso negato'); }
     if (!hash_equals($_SESSION['vacanze_csrf'] ?? '', (string)($_POST['vacanze_csrf'] ?? '')) || empty($_SESSION['vacanze_csrf'])) { http_response_code(403); exit('Token non valido'); }
+    if (isset($_POST['delete']) && $duplica) { http_response_code(400); exit('Operazione non valida'); }
     $postedSpesaId = (int)($_POST['id_tratta'] ?? 0);
     if ($postedSpesaId !== ($duplica ? 0 : $id_tratta)) { http_response_code(400); exit('Identificativo spesa non valido'); }
     $selectedAltIds = array_map('intval', (array)($_POST['id_alternative'] ?? []));
@@ -65,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $conn->begin_transaction();
     try {
-    if (isset($_POST['delete']) && $id_tratta) {
+    if (isset($_POST['delete']) && $id_tratta && !$duplica) {
         $del = $conn->prepare('DELETE FROM viaggi_tratte WHERE id_tratta=? AND id_viaggio=?');
         $del->bind_param('ii', $id_tratta, $id);
         if (!$del->execute()) { throw new RuntimeException('Eliminazione fallita'); }
