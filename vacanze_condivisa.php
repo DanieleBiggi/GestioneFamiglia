@@ -44,7 +44,7 @@ function h($value) { return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'
 <?php
 $categories = [
  ['Viaggi e trasporti','viaggi_tratte','viaggi_tratte_alternative','id_tratta','descrizione','COALESCE(distanza_km,0)*COALESCE(consumo_litri_100km,0)/100*COALESCE(prezzo_carburante_eur_litro,0)+COALESCE(pedaggi_eur,0)+COALESCE(costo_traghetto_eur,0)+COALESCE(costo_volo_eur,0)+COALESCE(costo_noleggio_eur,0)+COALESCE(altri_costi_eur,0)'],
- ['Alloggi','viaggi_alloggi','viaggi_alloggi_alternative','id_alloggio','nome_alloggio','DATEDIFF(data_checkout,data_checkin)*COALESCE(costo_notte_eur,0)'],
+ ['Alloggi','viaggi_alloggi','viaggi_alloggi_alternative','id_alloggio','nome_alloggio','COALESCE(costo_totale_eur,DATEDIFF(data_checkout,data_checkin)*COALESCE(costo_notte_eur,0))'],
  ['Pasti','viaggi_pasti','viaggi_pasti_alternative','id_pasto','nome_locale','COALESCE(costo_medio_eur,0)'],
  ['Altri costi','viaggi_altri_costi','viaggi_altri_costi_alternative','id_costo','descrizione','COALESCE(importo_eur,0)']
 ];
