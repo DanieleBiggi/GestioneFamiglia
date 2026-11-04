@@ -11,6 +11,12 @@ $allowedTables = [
     'viaggi_altri_costi' => ['id' => 'id_costo', 'perm' => 'table:viaggi_altri_costi'],
 ];
 
+if (empty($_SESSION['vacanze_csrf']) || !hash_equals($_SESSION['vacanze_csrf'], (string)($_POST['vacanze_csrf'] ?? ''))) {
+ http_response_code(403);
+ echo json_encode(['success'=>false,'error'=>'Token non valido']);
+ exit;
+}
+
 $table = $_POST['table'] ?? '';
 if (!isset($allowedTables[$table])) {
     http_response_code(400);
