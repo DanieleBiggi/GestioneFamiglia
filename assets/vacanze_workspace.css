@@ -24,3 +24,27 @@
 .vw-map-scopes a.active{background:var(--vw-button-primary);outline:2px solid #aac0d3}
 .vw-map-legend{display:flex;flex-wrap:wrap;gap:14px;color:var(--vw-dim);font-size:.86rem;margin:12px 0}
 .vw-map-legend i{font-style:normal;font-size:15px}
+
+/* Card bianche nel tema chiaro, senza alterare il tema scuro.
+   Il colore di testo è esplicito per garantire contrasto anche con gli override Bootstrap. */
+.vw .vw-panel,.vw .vw-scenario,.vw .vw-trip,.vw .vw-card-mobile article{
+ background:var(--vac-card-bg,var(--vw-surface))!important;
+ color:var(--vac-card-fg,var(--vw-fg))!important;
+ --vw-dim:color-mix(in srgb,var(--vac-card-fg,var(--vw-fg)) 68%,transparent);
+ --vw-line:color-mix(in srgb,var(--vac-card-fg,var(--vw-fg)) 19%,transparent);
+}
+.vw .vw-panel .vw-muted,.vw .vw-scenario .vw-muted,.vw .vw-trip .vw-muted,
+.vw .vw-card-mobile article .vw-muted,.vw .vw-trip-meta,.vw .vw-stat-label,
+.vw .vw-panel .vw-split span,.vw .vw-scenario .vw-split span{
+ color:color-mix(in srgb,var(--vac-card-fg,var(--vw-fg)) 70%,transparent)!important;
+}
+.vw .vw-panel a:not(.vw-btn),.vw .vw-scenario a:not(.vw-btn),.vw .vw-trip a:not(.vw-btn){
+ color:var(--vac-card-fg,var(--vw-fg));
+}
+.vw .vw-panel .vw-table th,.vw .vw-panel .vw-table td{border-color:var(--vw-line)}
+.vw .vw-panel .vw-input,.vw .vw-scenario .vw-input{
+ background:var(--bg-color,#fff);
+ color:var(--text-color,#202b36);
+ border-color:var(--vw-line);
+}
+.vw .vw-panel .vw-input::placeholder{color:color-mix(in srgb,var(--text-color,#202b36) 65%,transparent)}
