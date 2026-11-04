@@ -3,5 +3,5 @@
 include 'includes/session_check.php';
 $id=(int)($_GET['id'] ?? 0);
 if($id<=0){header('Location: vacanze_lista.php',true,302);exit;}
-header('Location: vacanze_workspace.php?id='.$id.'&tab=reviews',true,302);
+header('Location: vacanze_workspace.php?id='.$id.'&tab=sharing#recensioni',true,302);
 exit;
