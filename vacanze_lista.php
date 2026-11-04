@@ -106,7 +106,7 @@ include 'includes/header.php';
 <article class="vw-trip">
  <div class="d-flex justify-content-between gap-2 align-items-start">
   <h2><a href="vacanze_workspace.php?id=<?= $tripId ?>"><?= vacanzeH($v['titolo']) ?></a></h2>
-  <span class="vw-pill"><?= vacanzeH(ucfirst((string)$v['stato'])) ?></span>
+  <span class="vw-status vw-status-<?= vacanzeH($v['stato']) ?>"><?= vacanzeH(ucfirst((string)$v['stato'])) ?></span>
  </div>
  <?php if($v['breve_descrizione']): ?><div class="vw-trip-meta"><?= vacanzeH($v['breve_descrizione']) ?></div><?php endif; ?>
  <div class="vw-trip-meta"><i class="bi bi-geo-alt"></i> <?= vacanzeH($v['luogo_nome'] ?: ($v['citta'] ?: 'Destinazione da definire')) ?></div>
