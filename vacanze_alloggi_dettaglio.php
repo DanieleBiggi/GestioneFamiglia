@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         http_response_code(400);exit('Inserisci un importo valido');
     }
     $importo=(float)$rawCosto;
-    $costo=$tipoCosto==='notte'?$importo:null;
+    $costo=$tipoCosto==='notte'?$importo:0.0;
     $costoTotale=$tipoCosto==='totale'?$importo:null;
     $note = $_POST['note'] ?? null;
     $pagato = isset($_POST['pagato']) ? 1 : 0;
