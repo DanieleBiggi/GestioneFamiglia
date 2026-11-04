@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const fd = new FormData(form);
       fd.append('id_viaggio_alternativa', altId);
+      fd.append('vacanze_csrf', document.querySelector('meta[name="vacanze-csrf"]')?.content || '');
       fetch('ajax/update_viaggi_alternativa.php', { method:'POST', body: fd })
         .then(r => r.json())
         .then(res => {
