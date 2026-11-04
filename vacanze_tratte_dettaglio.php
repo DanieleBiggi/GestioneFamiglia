@@ -245,7 +245,7 @@ $alt_desc = $alternative[$alt] ?? '';
     </div>
     <div class="d-flex justify-content-between mt-3">
       <button type="submit" class="btn btn-primary">Salva</button>
-      <?php if ($id_tratta && !$duplica): ?>
+      <?php if ($id_tratta && !$duplica && $canDeleteSpesa): ?>
         <button type="submit" name="delete" value="1" class="btn btn-danger">Elimina</button>
       <?php endif; ?>
     </div>
