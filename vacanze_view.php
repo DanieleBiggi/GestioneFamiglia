@@ -1,7 +1,7 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
 include 'includes/db.php';
-include 'includes/header.php';
+require_once 'includes/permissions.php';
 
 if (!has_permission($conn, 'table:viaggi', 'view')) { http_response_code(403); exit('Accesso negato'); }
 $canUpdateViaggio = has_permission($conn, 'table:viaggi', 'update');
@@ -15,11 +15,7 @@ $stmt->bind_param('i', $id);
 $stmt->execute();
 $res = $stmt->get_result();
 $viaggio = $res->fetch_assoc();
-if (!$viaggio) {
-    echo '<p class="text-danger">Viaggio non trovato</p>';
-    include 'includes/footer.php';
-    exit;
-}
+if (!$viaggio) { http_response_code(404); exit('Vacanza non trovata'); }
 
 
 $totStmt = $conn->prepare('SELECT * FROM v_totali_alternative WHERE id_viaggio=?');
@@ -53,6 +49,7 @@ $docStmt = $conn->prepare('SELECT vc.id_caricamento, oc.nome_file, oc.descrizion
 $docStmt->bind_param('i', $id);
 $docStmt->execute();
 $docRes = $docStmt->get_result();
+include 'includes/header.php';
 ?>
 <div class="container text-white">
   <a href="vacanze.php" class="btn btn-outline-light mb-3">← Indietro</a>
