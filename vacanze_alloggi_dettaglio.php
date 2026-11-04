@@ -44,8 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $giorno = (int)($_POST['giorno_indice'] ?? 0);
     $nome = $_POST['nome_alloggio'] ?? null;
     $indirizzo = $_POST['indirizzo'] ?? null;
-    $lat = $_POST['lat'] !== '' ? (float)$_POST['lat'] : null;
-    $lng = $_POST['lng'] !== '' ? (float)$_POST['lng'] : null;
+    $lat = (($_POST['lat'] ?? '') !== '') ? (float)$_POST['lat'] : null;
+    $lng = (($_POST['lng'] ?? '') !== '') ? (float)$_POST['lng'] : null;
     $checkin = $_POST['data_checkin'] ?: null;
     $checkout = $_POST['data_checkout'] ?: null;
     $costo = (float)($_POST['costo_notte_eur'] ?? 0);
