@@ -48,11 +48,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tipo = $_POST['tipo_tratta'] ?? 'auto';
     $descrizione = $_POST['descrizione'] ?? null;
     $origine = $_POST['origine_testo'] ?? null;
-    $origine_lat = $_POST['origine_lat'] !== '' ? (float)$_POST['origine_lat'] : null;
-    $origine_lng = $_POST['origine_lng'] !== '' ? (float)$_POST['origine_lng'] : null;
+    $origine_lat = (($_POST['origine_lat'] ?? '') !== '') ? (float)$_POST['origine_lat'] : null;
+    $origine_lng = (($_POST['origine_lng'] ?? '') !== '') ? (float)$_POST['origine_lng'] : null;
     $destinazione = $_POST['destinazione_testo'] ?? null;
-    $destinazione_lat = $_POST['destinazione_lat'] !== '' ? (float)$_POST['destinazione_lat'] : null;
-    $destinazione_lng = $_POST['destinazione_lng'] !== '' ? (float)$_POST['destinazione_lng'] : null;
+    $destinazione_lat = (($_POST['destinazione_lat'] ?? '') !== '') ? (float)$_POST['destinazione_lat'] : null;
+    $destinazione_lng = (($_POST['destinazione_lng'] ?? '') !== '') ? (float)$_POST['destinazione_lng'] : null;
     $distanza = (float)($_POST['distanza_km'] ?? 0);
     $durata = (float)($_POST['durata_ore'] ?? 0);
     $consumo = (float)($_POST['consumo_litri_100km'] ?? 0);
