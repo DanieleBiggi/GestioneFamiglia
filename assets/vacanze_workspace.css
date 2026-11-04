@@ -48,3 +48,36 @@
  border-color:var(--vw-line);
 }
 .vw .vw-panel .vw-input::placeholder{color:color-mix(in srgb,var(--text-color,#202b36) 65%,transparent)}
+
+/* Campi e tendine coerenti con le card: bianchi nel tema chiaro,
+   scuri nel tema scuro. Include menu nativi, placeholder e icone. */
+.vw .vw-list-select,
+.vw .vw-input,
+.vw .vw-panel .vw-input,
+.vw .vw-scenario .vw-input,
+.vw select.form-select,
+.vw input.form-control,
+.vw textarea.form-control {
+  background-color:var(--vac-card-bg,var(--vw-surface))!important;
+  color:var(--vac-card-fg,var(--vw-fg))!important;
+  border:1px solid color-mix(in srgb,var(--vac-card-fg,var(--vw-fg)) 28%,transparent)!important;
+  color-scheme:var(--vac-control-scheme,dark);
+}
+.vw select option,
+.vw .vw-list-select option,
+.vw .vw-input option {
+  background-color:var(--vac-card-bg,var(--vw-surface));
+  color:var(--vac-card-fg,var(--vw-fg));
+}
+.vw .vw-input::placeholder,
+.vw input.form-control::placeholder,
+.vw textarea.form-control::placeholder {
+  color:color-mix(in srgb,var(--vac-card-fg,var(--vw-fg)) 65%,transparent)!important;
+  opacity:1;
+}
+.vw .vw-list-select:focus-visible,
+.vw .vw-input:focus-visible,
+.vw .form-select:focus-visible {
+  outline:2px solid #718da8;
+  outline-offset:2px;
+}
