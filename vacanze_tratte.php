@@ -44,14 +44,14 @@ $allRes = $allStmt->get_result();
 $alloggi = $allRes->fetch_all(MYSQLI_ASSOC);
 
 // Recupera pasti
-$paStmt = $conn->prepare('SELECT e.* FROM viaggi_pasti e JOIN viaggi_pasti_alternative l ON l.id_pasto=e.id_pasto JOIN viaggi_alternative a ON a.id_viaggio_alternativa=l.id_viaggio_alternativa AND a.id_viaggio=e.id_viaggio WHERE e.id_viaggio=? AND l.id_viaggio_alternativa=? ORDER BY e.giorno_indice, id_pasto');
+$paStmt = $conn->prepare('SELECT e.* FROM viaggi_pasti e JOIN viaggi_pasti_alternative l ON l.id_pasto=e.id_pasto JOIN viaggi_alternative a ON a.id_viaggio_alternativa=l.id_viaggio_alternativa AND a.id_viaggio=e.id_viaggio WHERE e.id_viaggio=? AND l.id_viaggio_alternativa=? ORDER BY e.giorno_indice, e.id_pasto');
 $paStmt->bind_param('ii', $id, $alt);
 $paStmt->execute();
 $paRes = $paStmt->get_result();
 $pasti = $paRes->fetch_all(MYSQLI_ASSOC);
 
 // Recupera altri costi
-$coStmt = $conn->prepare('SELECT e.* FROM viaggi_altri_costi e JOIN viaggi_altri_costi_alternative l ON l.id_costo=e.id_costo JOIN viaggi_alternative a ON a.id_viaggio_alternativa=l.id_viaggio_alternativa AND a.id_viaggio=e.id_viaggio WHERE e.id_viaggio=? AND l.id_viaggio_alternativa=? ORDER BY e.data, id_costo');
+$coStmt = $conn->prepare('SELECT e.* FROM viaggi_altri_costi e JOIN viaggi_altri_costi_alternative l ON l.id_costo=e.id_costo JOIN viaggi_alternative a ON a.id_viaggio_alternativa=l.id_viaggio_alternativa AND a.id_viaggio=e.id_viaggio WHERE e.id_viaggio=? AND l.id_viaggio_alternativa=? ORDER BY e.data, e.id_costo');
 $coStmt->bind_param('ii', $id, $alt);
 $coStmt->execute();
 $coRes = $coStmt->get_result();
