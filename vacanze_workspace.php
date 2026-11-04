@@ -96,6 +96,15 @@ if ($tab==='sharing') {
  $q=$conn->prepare('SELECT c.id_condivisione,c.creato_il,c.scade_il,c.revocato_il,GROUP_CONCAT(a.breve_descrizione SEPARATOR ", ") AS scenari FROM viaggi_condivisioni c LEFT JOIN viaggi_condivisioni_alternative ca ON ca.id_condivisione=c.id_condivisione LEFT JOIN viaggi_alternative a ON a.id_viaggio_alternativa=ca.id_viaggio_alternativa AND a.id_viaggio=c.id_viaggio WHERE c.id_viaggio=? GROUP BY c.id_condivisione ORDER BY c.id_condivisione DESC');
  $q->bind_param('i',$id);$q->execute();$shared=$q->get_result()->fetch_all(MYSQLI_ASSOC);$q->close();
 }
+$weatherDays=[];
+if($tab==='overview' && !empty($trip['meteo_previsto_json'])){
+ $rawWeather=json_decode((string)$trip['meteo_previsto_json'],true);
+ if(is_array($rawWeather) && !empty($rawWeather['daily']['time']) && is_array($rawWeather['daily']['time'])){
+  foreach(array_slice($rawWeather['daily']['time'],0,10) as $ix=>$day){
+   $weatherDays[]=['date'=>$day,'min'=>$rawWeather['daily']['temperature_2m_min'][$ix] ?? null,'max'=>$rawWeather['daily']['temperature_2m_max'][$ix] ?? null,'code'=>$rawWeather['daily']['weathercode'][$ix] ?? null];
+  }
+ }
+}
 $reviews=[];
 $reviewStats=['media'=>null,'num'=>0];
 if($tab==='reviews'){
@@ -212,6 +221,13 @@ include 'includes/header.php';
  <div class="vw-panel"><div class="vw-section-head"><h2>Spese ancora da assegnare</h2><a class="vw-btn" href="<?= vwUrl($id,'catalog') ?>&filter=unassigned">Apri catalogo</a></div>
  <?php if(!$unassigned): ?><p class="vw-muted">Tutte le spese sono assegnate.</p><?php endif; ?>
  <?php foreach(array_slice($unassigned,0,5) as $e): ?><p><a href="<?= vwEsc($e['page']) ?>?id=<?= $id ?>&<?= vwEsc($e['key']) ?>=<?= (int)$e['id_spesa'] ?>"><?= vwEsc($e['voce'] ?: $e['categoria']) ?></a> · <?= vwEuro($e['totale']) ?></p><?php endforeach; ?></div>
+ <?php if($weatherDays): ?><section class="vw-panel">
+ <h2>Meteo previsto</h2><div class="vw-grid">
+ <?php foreach($weatherDays as $day): ?><div class="vw-note">
+ <b><?= vwEsc($day['date']) ?></b><div class="vw-muted">Codice meteo: <?= vwEsc($day['code']===null?'n.d.':$day['code']) ?></div>
+ <div><?= $day['min']===null?'—':number_format((float)$day['min'],1,',','.') ?>° / <?= $day['max']===null?'—':number_format((float)$day['max'],1,',','.') ?>°</div>
+ </div><?php endforeach; ?>
+ </div></section><?php endif; ?>
  <?php elseif($tab==='compare'): ?>
  <div class="vw-section-head"><h2>Confronto dei budget</h2><a class="vw-btn" href="<?= vwUrl($id,'catalog') ?>">Gestisci le spese</a></div>
  <div class="vw-panel"><div class="vw-table-wrap"><table class="vw-table"><thead><tr><th>Scenario</th><th>Trasporti</th><th>Alloggi</th><th>Pasti</th><th>Altri costi</th><th class="vw-money">Totale</th></tr></thead><tbody>
