@@ -1,6 +1,11 @@
 <?php
 // Public read-only vacation preview. Never include the authenticated header.
 require_once 'includes/db.php';
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$conn->set_charset('utf8mb4');
+header('Cache-Control: no-store, private');
+header('Referrer-Policy: no-referrer');
+header('X-Robots-Tag: noindex, nofollow');
 $token = (string)($_GET['token'] ?? '');
 if (!preg_match('/^[a-f0-9]{64}$/D', $token)) {
     http_response_code(404); exit('Link non valido');
@@ -23,9 +28,6 @@ $comments->bind_param('ii', $share['id_viaggio'], $shareId);
 $comments->execute();
 $publicComments = $comments->get_result()->fetch_all(MYSQLI_ASSOC);
 $comments->close();
-header('Cache-Control: no-store, private');
-header('Referrer-Policy: no-referrer');
-header('X-Robots-Tag: noindex, nofollow');
 function h($value) { return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'); }
 ?>
 <!doctype html>
