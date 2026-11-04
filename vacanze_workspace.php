@@ -88,7 +88,7 @@ $totals=$conn->prepare('SELECT * FROM v_totali_alternative WHERE id_viaggio=? OR
 $totals->bind_param('i',$id);$totals->execute();$scenarios=$totals->get_result()->fetch_all(MYSQLI_ASSOC);$totals->close();
 $expenseTypes=[
  ['label'=>'Trasporti','table'=>'viaggi_tratte','link'=>'viaggi_tratte_alternative','key'=>'id_tratta','name'=>'descrizione','formula'=>'COALESCE(e.distanza_km,0)*COALESCE(e.consumo_litri_100km,0)/100*COALESCE(e.prezzo_carburante_eur_litro,0)+COALESCE(e.pedaggi_eur,0)+COALESCE(e.costo_traghetto_eur,0)+COALESCE(e.costo_volo_eur,0)+COALESCE(e.costo_noleggio_eur,0)+COALESCE(e.altri_costi_eur,0)','page'=>'vacanze_tratte_dettaglio.php'],
- ['label'=>'Alloggi','table'=>'viaggi_alloggi','link'=>'viaggi_alloggi_alternative','key'=>'id_alloggio','name'=>'nome_alloggio','formula'=>'DATEDIFF(e.data_checkout,e.data_checkin)*COALESCE(e.costo_notte_eur,0)','page'=>'vacanze_alloggi_dettaglio.php'],
+ ['label'=>'Alloggi','table'=>'viaggi_alloggi','link'=>'viaggi_alloggi_alternative','key'=>'id_alloggio','name'=>'nome_alloggio','formula'=>'COALESCE(e.costo_totale_eur,DATEDIFF(e.data_checkout,e.data_checkin)*COALESCE(e.costo_notte_eur,0))','page'=>'vacanze_alloggi_dettaglio.php'],
  ['label'=>'Pasti','table'=>'viaggi_pasti','link'=>'viaggi_pasti_alternative','key'=>'id_pasto','name'=>'nome_locale','formula'=>'COALESCE(e.costo_medio_eur,0)','page'=>'vacanze_pasti_dettaglio.php'],
  ['label'=>'Altri costi','table'=>'viaggi_altri_costi','link'=>'viaggi_altri_costi_alternative','key'=>'id_costo','name'=>'descrizione','formula'=>'COALESCE(e.importo_eur,0)','page'=>'vacanze_altri_costi_dettaglio.php']
 ];
