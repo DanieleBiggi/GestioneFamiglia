@@ -43,22 +43,27 @@ $links = [
     'viaggi_altri_costi' => 'viaggi_altri_costi_alternative'
 ];
 $link = $links[$table];
-// Aggiorna la spesa una sola volta, verificando l'appartenenza allo scenario.
-$sql = sprintf(
-    'UPDATE %s e SET e.pagato=? WHERE e.%s=? AND e.id_viaggio=? AND EXISTS (SELECT 1 FROM %s l JOIN viaggi_alternative a ON a.id_viaggio_alternativa=l.id_viaggio_alternativa WHERE l.%s=e.%s AND l.id_viaggio_alternativa=? AND a.id_viaggio=e.id_viaggio)',
-    $table, $tableInfo['id'], $link, $tableInfo['id'], $tableInfo['id']
-);
-$stmt = $conn->prepare($sql);
-$stmt->bind_param('iiii', $value, $id, $viaggioId, $altId);
-$success = $stmt->execute();
-
-if (!$success) {
+$key = $tableInfo['id'];
+// Distinguere una spesa già nello stato richiesto da un ID non autorizzato.
+$check = $conn->prepare("SELECT e.pagato FROM `$table` e JOIN `$link` l ON l.`$key`=e.`$key` JOIN viaggi_alternative a ON a.id_viaggio_alternativa=l.id_viaggio_alternativa AND a.id_viaggio=e.id_viaggio WHERE e.`$key`=? AND e.id_viaggio=? AND l.id_viaggio_alternativa=?");
+$check->bind_param('iii', $id, $viaggioId, $altId);
+$check->execute();
+$row = $check->get_result()->fetch_assoc();
+$check->close();
+if (!$row) {
+    http_response_code(404);
+    echo json_encode(['success' => false, 'error' => 'Spesa non trovata nello scenario']);
+    exit;
+}
+if ((int)$row['pagato'] === $value) {
+    echo json_encode(['success' => true, 'already_set' => true]);
+    exit;
+}
+$upd = $conn->prepare("UPDATE `$table` SET pagato=? WHERE `$key`=? AND id_viaggio=?");
+$upd->bind_param('iii', $value, $id, $viaggioId);
+if (!$upd->execute()) {
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Impossibile aggiornare il pagamento']);
     exit;
-}
-
-if ($stmt->affected_rows === 0) {
-    // Nessuna modifica potrebbe anche significare valore già uguale: verificare il collegamento in UI.
 }
 echo json_encode(['success' => true]);
