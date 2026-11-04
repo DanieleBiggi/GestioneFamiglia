@@ -31,6 +31,8 @@ jobs:
           set -euo pipefail
           files=(
             vacanze_view.php
+            vacanze_lista.php
+            vacanze.php
             vacanze_workspace.php
             vacanze_tratte.php
             vacanze_tratte_dettaglio.php
