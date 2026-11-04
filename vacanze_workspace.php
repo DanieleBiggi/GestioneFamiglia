@@ -7,9 +7,9 @@ if (!has_permission($conn, 'table:viaggi', 'view')) { http_response_code(403); e
 $conn->set_charset('utf8mb4');
 $id=(int)($_GET['id'] ?? 0);
 $tab=(string)($_GET['tab'] ?? 'overview');
-$tabs=['overview'=>'Riepilogo','compare'=>'Confronta scenari','catalog'=>'Catalogo spese','notes'=>'Note e documenti','photos'=>'Foto','checklist'=>'Checklist','sharing'=>'Condivisione'];
+$tabs=['overview'=>'Riepilogo','compare'=>'Confronta scenari','catalog'=>'Catalogo spese','notes'=>'Note e documenti','photos'=>'Foto','checklist'=>'Checklist','sharing'=>'Condivisione','map'=>'Mappa'];
 if (!isset($tabs[$tab])) $tab='overview';
-$stmt=$conn->prepare('SELECT v.*,l.nome AS luogo_nome FROM viaggi v LEFT JOIN viaggi_luoghi l ON l.id_luogo=v.id_luogo WHERE v.id_viaggio=?');
+$stmt=$conn->prepare('SELECT v.*,l.nome AS luogo_nome,l.lat AS luogo_lat,l.lng AS luogo_lng FROM viaggi v LEFT JOIN viaggi_luoghi l ON l.id_luogo=v.id_luogo WHERE v.id_viaggio=?');
 $stmt->bind_param('i',$id);$stmt->execute();$trip=$stmt->get_result()->fetch_assoc();$stmt->close();
 if (!$trip) { http_response_code(404); exit('Vacanza non trovata'); }
 function vwEsc($v) { return htmlspecialchars((string)$v,ENT_QUOTES,'UTF-8'); }
@@ -58,6 +58,48 @@ if($tab==='notes'){
  $q=$conn->prepare('SELECT oc.nome_file,oc.descrizione FROM viaggi2caricamenti vc JOIN ocr_caricamenti oc ON oc.id_caricamento=vc.id_caricamento WHERE vc.id_viaggio=? ORDER BY vc.id_caricamento DESC');
  $q->bind_param('i',$id);$q->execute();$docs=$q->get_result()->fetch_all(MYSQLI_ASSOC);$q->close();
 }
+
+// La mappa usa le associazioni multi-scenario, non il vecchio campo legacy.
+$mapAlternative=(int)($_GET['alt'] ?? 0);
+$mapPoints=[];
+$mapScenarios=[];
+if ($tab==='map') {
+  $q=$conn->prepare('SELECT id_viaggio_alternativa,breve_descrizione FROM viaggi_alternative WHERE id_viaggio=? ORDER BY id_viaggio_alternativa');
+  $q->bind_param('i',$id);$q->execute();$mapScenarios=$q->get_result()->fetch_all(MYSQLI_ASSOC);$q->close();
+  $validIds=array_map('intval',array_column($mapScenarios,'id_viaggio_alternativa'));
+  if (!in_array($mapAlternative,$validIds,true)) $mapAlternative=$validIds[0] ?? 0;
+  $addMapPoint=function($lat,$lng,$name,$kind) use (&$mapPoints) {
+    if ($lat===null||$lng===null||!is_numeric($lat)||!is_numeric($lng)) return;
+    $lat=(float)$lat;$lng=(float)$lng;
+    if ($lat < -90||$lat > 90||$lng < -180||$lng > 180) return;
+    $mapPoints[]=['lat'=>$lat,'lng'=>$lng,'title'=>(string)$name,'kind'=>$kind];
+  };
+  $addMapPoint($trip['luogo_lat'],$trip['luogo_lng'],$trip['luogo_nome'] ?: $trip['titolo'],'destination');
+  if ($mapAlternative>0) {
+    if (has_permission($conn,'table:viaggi_alloggi','view')) {
+      $q=$conn->prepare('SELECT e.nome_alloggio,e.lat,e.lng FROM viaggi_alloggi e JOIN viaggi_alloggi_alternative a ON a.id_alloggio=e.id_alloggio WHERE e.id_viaggio=? AND a.id_viaggio_alternativa=?');
+      $q->bind_param('ii',$id,$mapAlternative);$q->execute();
+      foreach($q->get_result()->fetch_all(MYSQLI_ASSOC) as $v) $addMapPoint($v['lat'],$v['lng'],$v['nome_alloggio'],'lodging');
+      $q->close();
+    }
+    if (has_permission($conn,'table:viaggi_tratte','view')) {
+      $q=$conn->prepare('SELECT e.origine_testo,e.origine_lat,e.origine_lng,e.destinazione_testo,e.destinazione_lat,e.destinazione_lng FROM viaggi_tratte e JOIN viaggi_tratte_alternative a ON a.id_tratta=e.id_tratta WHERE e.id_viaggio=? AND a.id_viaggio_alternativa=?');
+      $q->bind_param('ii',$id,$mapAlternative);$q->execute();
+      foreach($q->get_result()->fetch_all(MYSQLI_ASSOC) as $v){
+        $addMapPoint($v['origine_lat'],$v['origine_lng'],$v['origine_testo'],'origin');
+        $addMapPoint($v['destinazione_lat'],$v['destinazione_lng'],$v['destinazione_testo'],'arrival');
+      }
+      $q->close();
+    }
+    if (has_permission($conn,'table:viaggi_pasti','view')) {
+      $q=$conn->prepare('SELECT e.nome_locale,e.lat,e.lng FROM viaggi_pasti e JOIN viaggi_pasti_alternative a ON a.id_pasto=e.id_pasto WHERE e.id_viaggio=? AND a.id_viaggio_alternativa=?');
+      $q->bind_param('ii',$id,$mapAlternative);$q->execute();
+      foreach($q->get_result()->fetch_all(MYSQLI_ASSOC) as $v) $addMapPoint($v['lat'],$v['lng'],$v['nome_locale'],'meal');
+      $q->close();
+    }
+  }
+}
+
 include 'includes/header.php';
 ?>
 <link rel="stylesheet" href="assets/vacanze_workspace.css?v=2">
@@ -108,11 +150,27 @@ include 'includes/header.php';
  <div class="vw-section-head"><h2>Condividi scenari</h2><a class="vw-btn vw-btn-primary" href="vacanze_condivisioni.php?id=<?= $id ?>">+ Nuovo link</a></div>
  <div class="vw-panel"><h2>Link temporanei, in sola lettura, validi 7 giorni</h2><p class="vw-muted">Puoi selezionare uno o più scenari. Documenti e note interne non vengono pubblicati.</p><a class="vw-btn" href="vacanze_condivisioni.php?id=<?= $id ?>">Scegli scenari e genera link</a></div>
  <div class="vw-panel"><h2>Link condivisi</h2><?php foreach($shared as $share): ?><p><b><?= vwEsc($share['scenari'] ?: 'Nessuno scenario') ?></b><span class="vw-muted"> · <?= vwEsc($share['revocato_il']?'Revocato':(strtotime($share['scade_il'].' UTC')<=time()?'Scaduto':'Attivo')) ?> · scade <?= vwEsc($share['scade_il']) ?> UTC</span></p><?php endforeach; ?><?php if(!$shared): ?><p class="vw-muted">Nessun link creato.</p><?php endif; ?></div>
+ <?php elseif($tab==='map'): ?>
+ <div class="vw-section-head"><h2>Mappa della vacanza</h2><a class="vw-btn" href="<?= vwUrl($id,'overview') ?>">Torna al riepilogo</a></div>
+ <div class="vw-panel">
+ <p class="vw-muted">Seleziona uno scenario per visualizzare le tappe, gli alloggi e i locali collegati. La mappa regola automaticamente l'inquadratura.</p>
+ <nav class="vw-map-scopes" aria-label="Scenario sulla mappa">
+ <?php foreach($mapScenarios as $ms): ?><a class="<?= (int)$ms['id_viaggio_alternativa']===$mapAlternative?'active':'' ?>" href="<?= vwUrl($id,'map') ?>&alt=<?= (int)$ms['id_viaggio_alternativa'] ?>"><?= vwEsc($ms['breve_descrizione']) ?></a><?php endforeach; ?>
+ </nav>
+ <?php if(empty($config['GOOGLE_MAPS_API'])): ?>
+ <p class="vw-empty">La chiave Google Maps non è configurata per questa installazione.</p>
+ <?php elseif(!$mapPoints): ?>
+ <p class="vw-empty">Aggiungi coordinate alla destinazione o alle spese per visualizzarle sulla mappa.</p>
+ <?php else: ?>
+ <div id="vacanzeMap" class="vw-map" role="region" aria-label="Mappa delle tappe della vacanza"></div>
+ <div class="vw-map-legend"><span><i>●</i> Destinazione</span><span><i>●</i> Alloggi</span><span><i>●</i> Partenza</span><span><i>●</i> Arrivo</span><span><i>●</i> Ristoranti</span></div>
+ <?php endif; ?>
+ </div>
  <?php endif; ?>
  <nav class="vw-mobile-nav" aria-label="Navigazione mobile">
  <?php foreach(['overview'=>['bi-house','Riepilogo'],'compare'=>['bi-bar-chart','Confronta'],'catalog'=>['bi-receipt','Spese'],'checklist'=>['bi-check2-square','Checklist']] as $key=>$spec): ?><a href="<?= vwUrl($id,$key) ?>" class="<?= $tab===$key?'active':'' ?>"><i class="bi <?= $spec[0] ?>"></i><?= $spec[1] ?></a><?php endforeach; ?>
  <button type="button" id="vwMoreButton" aria-expanded="false"><i class="bi bi-three-dots"></i>Altro</button></nav>
- <div class="vw-mobile-more" id="vwMobileMore"><?php foreach(['notes'=>'Note e documenti','photos'=>'Foto','sharing'=>'Condivisione'] as $key=>$label): ?><a href="<?= vwUrl($id,$key) ?>"><?= vwEsc($label) ?></a><?php endforeach; ?></div>
+ <div class="vw-mobile-more" id="vwMobileMore"><?php foreach(['notes'=>'Note e documenti','photos'=>'Foto','sharing'=>'Condivisione','map'=>'Mappa'] as $key=>$label): ?><a href="<?= vwUrl($id,$key) ?>"><?= vwEsc($label) ?></a><?php endforeach; ?></div>
 </main>
 <script>
 (function(){
@@ -123,4 +181,37 @@ include 'includes/header.php';
  if(more&&menu)more.addEventListener('click',()=>{const open=menu.classList.toggle('open');more.setAttribute('aria-expanded',String(open));});
 })();
 </script>
+<?php if($tab==='map' && $mapPoints && !empty($config['GOOGLE_MAPS_API'])): ?>
+<script>
+window.vacanzeMapPoints = <?= json_encode($mapPoints, JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) ?>;
+window.initVacanzeMap = function(){
+ const node=document.getElementById('vacanzeMap');
+ if(!node || !window.google || !google.maps) return;
+ const map=new google.maps.Map(node,{center:{lat:41.9,lng:12.5},zoom:6,mapTypeControl:false,streetViewControl:false,fullscreenControl:true,gestureHandling:'cooperative'});
+ const bounds=new google.maps.LatLngBounds();
+ const palette={destination:'#435f86',lodging:'#648c63',origin:'#c28c3e',arrival:'#c76a55',meal:'#8b6cac'};
+ const unique=new Set();
+ let count=0;
+ (window.vacanzeMapPoints||[]).forEach(point=>{
+   const key=point.kind+'|'+point.lat+'|'+point.lng+'|'+point.title;
+   if(unique.has(key))return;unique.add(key);
+   const pos={lat:Number(point.lat),lng:Number(point.lng)};
+   if(!Number.isFinite(pos.lat)||!Number.isFinite(pos.lng))return;
+   const marker=new google.maps.Marker({map,position:pos,title:point.title||'Tappa',icon:{
+     path:google.maps.SymbolPath.CIRCLE,scale:7,fillColor:palette[point.kind]||'#687481',fillOpacity:1,
+     strokeColor:'#ffffff',strokeWeight:2}});
+   const info=new google.maps.InfoWindow({content:document.createElement('div')});
+   const title=document.createElement('span');title.textContent=point.title||'Tappa';
+   info.setContent(title);
+   marker.addListener('click',()=>info.open(map,marker));
+   bounds.extend(pos);count++;
+ });
+ if(count>1){
+   map.fitBounds(bounds,55);
+   google.maps.event.addListenerOnce(map,'idle',()=>{if(map.getZoom()>13)map.setZoom(13);});
+ } else if(count===1){map.setCenter(bounds.getCenter());map.setZoom(11);}
+};
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=<?= rawurlencode((string)$config['GOOGLE_MAPS_API']) ?>&callback=initVacanzeMap&loading=async" async defer></script>
+<?php endif; ?>
 <?php include 'includes/footer.php'; ?>
