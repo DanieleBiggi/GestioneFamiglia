@@ -40,8 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($postedSpesaId !== ($duplica ? 0 : $id_costo)) { http_response_code(400); exit('Identificativo spesa non valido'); }
     $selectedAltIds = array_map('intval', (array)($_POST['id_alternative'] ?? []));
     $id_alt = $selectedAltIds[0] ?? null;
-    $data = $_POST['data'] ?: null;
-    $importo = $_POST['importo_eur'] !== '' ? (float)$_POST['importo_eur'] : null;
+    $data = ($_POST['data'] ?? '') ?: null;
+    $importo = (($_POST['importo_eur'] ?? '') !== '') ? (float)$_POST['importo_eur'] : null;
     $descrizione = $_POST['descrizione'] ?? null;
     $note = $_POST['note'] ?? null;
     $pagato = isset($_POST['pagato']) ? 1 : 0;
