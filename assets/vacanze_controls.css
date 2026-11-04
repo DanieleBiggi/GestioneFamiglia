@@ -1,0 +1,31 @@
+/* Vacanze: pulsanti leggibili e distinguibili su tutti i temi utente.
+   Applicato solo alle pagine vacanze, non al resto del gestionale. */
+:root{--vac-btn:#687481;--vac-btn-hover:#7d8996;--vac-btn-primary:#516f89;--vac-btn-primary-hover:#6685a0}
+body .container .btn:not(.btn-danger):not(.btn-outline-danger):not(.btn-close),
+body .modal .btn:not(.btn-danger):not(.btn-outline-danger):not(.btn-close),
+body .container .btn-outline-light,
+body .container .btn-outline-secondary{
+ background:var(--vac-btn)!important;
+ border:1px solid #9aa6b2!important;
+ color:#fff!important;
+ border-radius:8px;
+ box-shadow:0 2px 0 #0002;
+ text-decoration:none;
+ font-weight:600
+}
+body .container .btn-primary,
+body .modal .btn-primary{
+ background:var(--vac-btn-primary)!important;
+ border-color:#93afc5!important;
+ color:#fff!important
+}
+body .container .btn:not(.btn-danger):not(.btn-outline-danger):not(.btn-close):hover,
+body .modal .btn:not(.btn-danger):not(.btn-outline-danger):not(.btn-close):hover{
+ background:var(--vac-btn-hover)!important;color:#fff!important
+}
+body .container .btn-primary:hover,body .modal .btn-primary:hover{background:var(--vac-btn-primary-hover)!important;color:#fff!important}
+body .container .btn-danger,body .modal .btn-danger{color:#fff!important}
+body .container .card,body .container .list-group-item,body .container form.bg-dark{
+ border:1px solid color-mix(in srgb,var(--text-color,#fff) 24%,transparent);
+}
+body .container .form-control:focus,body .container .form-select:focus{box-shadow:0 0 0 3px #8396a94d}
