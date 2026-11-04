@@ -113,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const fd = new FormData();
       fd.append('id_viaggio', viaggioId);
       fd.append('id_viaggio_alternativa', altId);
+      fd.append('vacanze_csrf', document.querySelector('meta[name="vacanze-csrf"]')?.content || '');
       fetch('ajax/delete_viaggi_alternativa.php', { method:'POST', body: fd })
         .then(r => r.json())
         .then(res => {
