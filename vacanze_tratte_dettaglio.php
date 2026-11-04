@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $del = $conn->prepare('DELETE FROM viaggi_tratte WHERE id_tratta=? AND id_viaggio=?');
         $del->bind_param('ii', $id_tratta, $id);
         if (!$del->execute()) { throw new RuntimeException('Eliminazione fallita'); }
-    } elseif ($id_tratta) {
+    } elseif ($id_tratta && !$duplica) {
         $upd = $conn->prepare('UPDATE viaggi_tratte SET id_viaggio_alternativa=?, tipo_tratta=?, descrizione=?, origine_testo=?, origine_lat=?, origine_lng=?, destinazione_testo=?, destinazione_lat=?, destinazione_lng=?, distanza_km=?, durata_ore=?, consumo_litri_100km=?, prezzo_carburante_eur_litro=?, pedaggi_eur=?, costo_traghetto_eur=?, costo_volo_eur=?, costo_noleggio_eur=?, altri_costi_eur=?, note=?, pagato=? WHERE id_tratta=? AND id_viaggio=?');
         $upd->bind_param('isssddsdddddddddddsiii', $id_alt, $tipo, $descrizione, $origine, $origine_lat, $origine_lng, $destinazione, $destinazione_lat, $destinazione_lng, $distanza, $durata, $consumo, $prezzo, $pedaggi, $traghetto, $volo, $noleggio, $altri, $note, $pagato, $id_tratta, $id);
         if (!$upd->execute()) { throw new RuntimeException('Aggiornamento fallito'); }
