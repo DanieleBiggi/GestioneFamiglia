@@ -157,7 +157,7 @@ $summaryOverall = combineSummaries([$summaryTratte, $summaryAlloggi, $summaryPas
   <a href="vacanze_view.php?id=<?= $id ?>" class="btn btn-outline-light mb-3">← Indietro</a>
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="vacanze.php">Vacanze</a></li>
+      <li class="breadcrumb-item"><a href="vacanze_lista.php">Vacanze</a></li>
         <li class="breadcrumb-item"><a href="vacanze_view.php?id=<?= $id ?>"><?= htmlspecialchars($viaggio['titolo']) ?></a></li>
         <li class="breadcrumb-item active" aria-current="page"><?= htmlspecialchars($alt_desc) ?></li>
     </ol>
