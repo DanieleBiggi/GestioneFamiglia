@@ -73,7 +73,7 @@ if(isset($_GET['count'])){
 }
 include 'includes/header.php';
 ?>
-<link rel="stylesheet" href="assets/vacanze_workspace.css?v=4">
+<link rel="stylesheet" href="assets/vacanze_workspace.css?v=5">
 <style>
 .vw-list-actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
 .vw-trip{display:flex;flex-direction:column;gap:11px;text-decoration:none;color:inherit;border-radius:12px;border:1px solid var(--vw-line);background:var(--vw-surface);padding:18px;min-height:195px}
