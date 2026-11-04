@@ -1,6 +1,8 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
 include 'includes/db.php';
+require_once 'includes/permissions.php';
+if (!has_permission($conn, 'table:viaggi', 'view')) { http_response_code(403); exit('Accesso negato'); }
 if (empty($_SESSION['vacanze_csrf'])) { $_SESSION['vacanze_csrf'] = bin2hex(random_bytes(32)); }
 $vacanzeTokenTag = '<meta name="vacanze-csrf" content="' . htmlspecialchars($_SESSION['vacanze_csrf'], ENT_QUOTES, 'UTF-8') . '">';
 include 'includes/header.php';
