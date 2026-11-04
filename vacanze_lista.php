@@ -1,210 +1,122 @@
-<?php include 'includes/session_check.php'; ?>
 <?php
+include 'includes/session_check.php';
 include 'includes/db.php';
+require_once 'includes/permissions.php';
 
-$search = $_GET['q'] ?? '';
-$notti = $_GET['notti'] ?? '';
-$prezzoMin = $_GET['prezzo_min'] ?? '';
-$prezzoMax = $_GET['prezzo_max'] ?? '';
-$stato = $_GET['stato'] ?? '';
+if (!has_permission($conn, 'table:viaggi', 'view') && !has_permission($conn, 'page:vacanze.php', 'view')) {
+    http_response_code(403); exit('Accesso negato');
+}
+$conn->set_charset('utf8mb4');
+function vacanzeH($value): string { return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'); }
+function vacanzeEuro($value): string { return '€ '.number_format((float)$value,2,',','.'); }
+$stati = ['idea','shortlist','pianificato','prenotato','fatto','scartato'];
+$ordinamenti = [
+ 'data_desc'=>'Data inizio: più recenti',
+ 'data_asc'=>'Data inizio: meno recenti',
+ 'titolo_asc'=>'Titolo: A-Z',
+ 'titolo_desc'=>'Titolo: Z-A',
+ 'prezzo_asc'=>'Budget: crescente',
+ 'prezzo_desc'=>'Budget: decrescente',
+ 'stato_asc'=>'Stato',
+ 'creazione_desc'=>'Ultime aggiunte'
+];
+$ordiniSql = [
+ 'data_desc'=>'v.data_inizio DESC, v.id_viaggio DESC',
+ 'data_asc'=>'v.data_inizio ASC, v.id_viaggio ASC',
+ 'titolo_asc'=>'v.titolo ASC, v.id_viaggio DESC',
+ 'titolo_desc'=>'v.titolo DESC, v.id_viaggio DESC',
+ 'prezzo_asc'=>'min_totale IS NULL ASC, min_totale ASC, v.id_viaggio DESC',
+ 'prezzo_desc'=>'min_totale IS NULL ASC, min_totale DESC, v.id_viaggio DESC',
+ 'stato_asc'=>'v.stato ASC, v.data_inizio DESC',
+ 'creazione_desc'=>'v.id_viaggio DESC'
+];
+$search=trim((string)($_GET['q'] ?? ''));
+$stato=(string)($_GET['stato'] ?? '');
+$notti=(string)($_GET['notti'] ?? '');
+$prezzoMin=(string)($_GET['prezzo_min'] ?? '');
+$prezzoMax=(string)($_GET['prezzo_max'] ?? ($_GET['budget_max'] ?? ''));
+$ordine=(string)($_GET['ordine'] ?? 'data_desc');
+if (!isset($ordiniSql[$ordine])) $ordine='data_desc';
+if (!in_array($stato,$stati,true)) $stato='';
+$canInsert=has_permission($conn,'table:viaggi','insert');
+$canUpdate=has_permission($conn,'table:viaggi','update');
 
-$statiDisponibili = ['idea','shortlist','pianificato','prenotato','fatto','scartato'];
-
-$query = "SELECT v.id_viaggio, v.titolo, v.breve_descrizione, v.stato, v.data_inizio, v.meteo_previsto_json, lf.photo_reference as foto_url, t.min_totale FROM viaggi v LEFT JOIN (SELECT id_viaggio, MIN(totale_viaggio) AS min_totale FROM v_totali_alternative GROUP BY id_viaggio) t ON v.id_viaggio=t.id_viaggio LEFT JOIN viaggi_luoghi l ON v.id_luogo=l.id_luogo LEFT JOIN viaggi_luogo_foto lf ON v.id_foto=lf.id_foto WHERE 1=1";
-$params = [];
-$types = '';
-if ($search !== '') {
-    $query .= " AND (l.nome LIKE ? OR l.citta LIKE ? OR l.regione LIKE ? OR l.paese LIKE ?)";
-    $searchLike = "%$search%";
-    $types .= 'ssss';
-    $params[] = $searchLike;
-    $params[] = $searchLike;
-    $params[] = $searchLike;
-    $params[] = $searchLike;
+$sql="SELECT v.id_viaggio,v.titolo,v.breve_descrizione,v.stato,v.data_inizio,v.data_fine,v.notti,v.persone,
+ l.nome AS luogo_nome,l.citta,l.regione,l.paese,
+ (SELECT MIN(t.totale_viaggio) FROM v_totali_alternative t WHERE t.id_viaggio=v.id_viaggio) AS min_totale,
+ (SELECT COUNT(*) FROM viaggi_alternative a WHERE a.id_viaggio=v.id_viaggio) AS num_alternative
+ FROM viaggi v LEFT JOIN viaggi_luoghi l ON l.id_luogo=v.id_luogo WHERE 1=1";
+$types='';$params=[];
+if($search!==''){
+ $sql.=" AND (v.titolo LIKE ? OR v.breve_descrizione LIKE ? OR l.nome LIKE ? OR l.citta LIKE ? OR l.regione LIKE ? OR l.paese LIKE ?)";
+ $like='%'.$search.'%';$types.='ssssss';
+ for($i=0;$i<6;$i++)$params[]=$like;
 }
-if ($stato !== '') {
-    $query .= " AND v.stato = ?";
-    $types .= 's';
-    $params[] = $stato;
-} elseif ($search === '') {
-    $query .= " AND v.stato NOT IN ('fatto','scartato')";
+if($stato!==''){$sql.=" AND v.stato=?";$types.='s';$params[]=$stato;}
+if($notti!=='' && ctype_digit($notti)){$sql.=" AND v.notti=?";$types.='i';$params[]=(int)$notti;}
+if($prezzoMin!=='' && is_numeric($prezzoMin)){
+ $sql.=" AND (SELECT MIN(t.totale_viaggio) FROM v_totali_alternative t WHERE t.id_viaggio=v.id_viaggio)>=?";
+ $types.='d';$params[]=(float)$prezzoMin;
 }
-if ($notti !== '') {
-    $query .= " AND v.notti = ?";
-    $types .= 'i';
-    $params[] = $notti;
+if($prezzoMax!=='' && is_numeric($prezzoMax)){
+ $sql.=" AND (SELECT MIN(t.totale_viaggio) FROM v_totali_alternative t WHERE t.id_viaggio=v.id_viaggio)<=?";
+ $types.='d';$params[]=(float)$prezzoMax;
 }
-if ($prezzoMin !== '') {
-    $query .= " AND (t.min_totale IS NULL OR t.min_totale >= ?)";
-    $types .= 'd';
-    $params[] = $prezzoMin;
+$sql.=" ORDER BY ".$ordiniSql[$ordine];
+$stmt=$conn->prepare($sql);
+if($types) $stmt->bind_param($types,...$params);
+$stmt->execute();$vacanze=$stmt->get_result()->fetch_all(MYSQLI_ASSOC);$stmt->close();
+$count=count($vacanze);
+if(isset($_GET['count'])){
+ header('Content-Type: application/json; charset=utf-8');
+ echo json_encode(['count'=>$count]);exit;
 }
-if ($prezzoMax !== '') {
-    $query .= " AND (t.min_totale IS NULL OR t.min_totale <= ?)";
-    $types .= 'd';
-    $params[] = $prezzoMax;
-}
-$query .= " ORDER BY v.data_inizio DESC";
-$stmt = $conn->prepare($query);
-if ($types) { $stmt->bind_param($types, ...$params); }
-$stmt->execute();
-$res = $stmt->get_result();
-$count = $res->num_rows;
-
-if (isset($_GET['count'])) {
-    header('Content-Type: application/json');
-    echo json_encode(['count' => $count]);
-    exit;
-}
-
-// Distinct notti
-$nottiRes = $conn->query("SELECT DISTINCT notti FROM viaggi WHERE notti IS NOT NULL ORDER BY notti");
+include 'includes/header.php';
 ?>
-<?php include 'includes/header.php'; ?>
-<div class="container my-3 text-white">
-  <form method="get" class="mb-3" id="searchForm">
-    <div class="input-group">
-      <input type="text" class="form-control" name="q" placeholder="cerca una destinazione" value="<?= htmlspecialchars($search) ?>">
-      <button class="btn btn-primary">Cerca</button>
-    </div>
-    <input type="hidden" name="notti" value="<?= htmlspecialchars($notti) ?>">
-    <input type="hidden" name="stato" value="<?= htmlspecialchars($stato) ?>">
-    <input type="hidden" name="prezzo_min" value="<?= htmlspecialchars($prezzoMin) ?>">
-    <input type="hidden" name="prezzo_max" value="<?= htmlspecialchars($prezzoMax) ?>">
-  </form>
-  <div class="d-flex justify-content-end mb-3 gap-2">
-    <?php if (has_permission($conn, 'page:vacanze.php', 'insert')): ?>
-    <a href="vacanze.php" class="btn btn-outline-light">Gestisci vacanze</a>
-    <?php endif; ?>
-    <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#filtersModal"><i class="bi bi-sliders"></i> Filtri</button>
-  </div>
-  <div class="row g-3">
-    <?php while($row = $res->fetch_assoc()): 
-      $badgeClass = 'bg-secondary';
-      $badgeText = 'Da fare';
-      if($row['stato'] === 'prenotato'){
-        $badgeClass = 'bg-success';
-        $badgeText = 'Prenotato';
-      } elseif($row['stato'] === 'fatto') {
-        $badgeClass = 'bg-dark';
-        $badgeText = 'Fatto';
-      } elseif($row['stato'] === 'scartato') {
-        $badgeClass = 'bg-danger';
-        $badgeText = 'Scartato';
-      }
-      $weatherIcon = null;
-      if($row['stato'] === 'prenotato' && !empty($row['meteo_previsto_json'])){
-        $meteo = json_decode($row['meteo_previsto_json'], true);
-        if(isset($meteo['daily']['time'], $meteo['daily']['weathercode'])){
-          $idx = array_search($row['data_inizio'], $meteo['daily']['time']);
-          if($idx === false) $idx = 0;
-          $code = (int)($meteo['daily']['weathercode'][$idx] ?? -1);
-          $icons = [
-            0=>'sun',1=>'sun',2=>'cloud-sun',3=>'cloud',45=>'cloud-fog2',48=>'cloud-fog2',
-            51=>'cloud-drizzle',53=>'cloud-drizzle',55=>'cloud-drizzle',
-            61=>'cloud-rain',63=>'cloud-rain',65=>'cloud-rain-heavy',
-            71=>'cloud-snow',73=>'cloud-snow',75=>'cloud-snow',77=>'cloud-snow',
-            80=>'cloud-rain',81=>'cloud-rain',82=>'cloud-rain-heavy',
-            95=>'cloud-lightning',96=>'cloud-lightning-rain',99=>'cloud-lightning-rain'
-          ];
-          if(isset($icons[$code])) $weatherIcon = 'bi-' . $icons[$code];
-        }
-      }
-    ?>
-    <div class="col-12 col-md-6 d-flex">
-      <a href="vacanze_lista_dettaglio.php?id=<?= (int)$row['id_viaggio'] ?>" class="text-decoration-none text-dark w-100 h-100">
-        <div class="card h-100">
-          <?php if ($row['foto_url']): ?>
-          <?php $url = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photo_reference=' . urlencode($row['foto_url']) . '&key=' . $config['GOOGLE_PLACES_FOTO_API']; ?>
-
-          <img src="<?= htmlspecialchars($url) ?>" class="card-img-top" alt="">
-          <?php endif; ?>
-          <div class="card-body d-flex justify-content-between">
-            <div>
-              <h5 class="card-title mb-1"><?= htmlspecialchars($row['titolo']) ?></h5>
-              <p class="card-text small mb-0 text-muted"><?= htmlspecialchars($row['breve_descrizione']) ?></p>
-              <div class="mt-1">
-                <span class="badge <?= $badgeClass ?>"><?= $badgeText ?></span>
-                <?php if($weatherIcon): ?>
-                <i class="<?= $weatherIcon ?> ms-1"></i>
-                <?php endif; ?>
-              </div>
-            </div>
-            <?php if(isset($row['min_totale'])): ?>
-            <div class="text-end">
-              <small class="text-muted">a partire da</small><br>
-              <span class="fw-bold">€<?= number_format($row['min_totale'],2,',','.') ?></span>
-            </div>
-            <?php endif; ?>
-          </div>
-        </div>
-      </a>
-    </div>
-    <?php endwhile; ?>
-  </div>
+<link rel="stylesheet" href="assets/vacanze_workspace.css?v=2">
+<style>
+.vw-list-actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.vw-trip{display:flex;flex-direction:column;gap:11px;text-decoration:none;color:inherit;border-radius:12px;border:1px solid var(--vw-line);background:var(--vw-surface);padding:18px;min-height:195px}
+.vw-trip:hover{color:inherit;outline:2px solid var(--vw-line)}
+.vw-trip h2{margin:0;font-size:1.15rem}.vw-trip-meta{color:var(--vw-dim);font-size:.9rem}
+.vw-trip-bottom{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-top:auto}
+.vw-list-select{background:var(--vw-surface);color:var(--vw-fg);border:1px solid var(--vw-line);border-radius:8px;padding:9px}
+.vw-card-actions{display:flex;gap:8px}.vw-filter-bar{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}
+.vw-filter-bar>*{flex:1 1 160px}.vw-list-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+</style>
+<main class="vw">
+<div class="vw-list-head"><div><h1>Vacanze</h1><p class="vw-muted">Tutte le vacanze, dalla prima idea a quelle già concluse.</p></div>
+<?php if($canInsert): ?><a class="vw-btn vw-btn-primary" href="vacanze_modifica.php"><i class="bi bi-plus-lg"></i> Nuova vacanza</a><?php endif; ?></div>
+<form method="get" class="vw-panel" aria-label="Cerca, filtra e ordina le vacanze">
+<div class="vw-filter-bar">
+ <div style="flex:2 1 240px"><label for="vacSearch" class="form-label">Ricerca</label><input id="vacSearch" name="q" class="vw-input w-100" value="<?= vacanzeH($search) ?>" placeholder="Titolo, destinazione, descrizione…"></div>
+ <div><label for="vacStato" class="form-label">Stato</label><select id="vacStato" name="stato" class="vw-list-select w-100"><option value="">Tutti gli stati</option><?php foreach($stati as $s): ?><option value="<?= vacanzeH($s) ?>" <?= $s===$stato?'selected':'' ?>><?= vacanzeH(ucfirst($s)) ?></option><?php endforeach; ?></select></div>
+ <div><label for="vacOrdine" class="form-label">Ordina per</label><select id="vacOrdine" name="ordine" class="vw-list-select w-100"><?php foreach($ordinamenti as $value=>$label): ?><option value="<?= vacanzeH($value) ?>" <?= $value===$ordine?'selected':'' ?>><?= vacanzeH($label) ?></option><?php endforeach; ?></select></div>
 </div>
-
-<div class="modal fade" id="filtersModal" tabindex="-1">
-  <div class="modal-dialog">
-    <form class="modal-content bg-dark text-white" method="get" id="filtersForm">
-      <input type="hidden" name="q" value="<?= htmlspecialchars($search) ?>">
-      <div class="modal-header">
-        <h5 class="modal-title">Filtri</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div class="mb-3">
-          <label class="form-label">Stato</label>
-          <select class="form-select bg-dark text-white border-secondary" name="stato">
-            <option value="" <?= $stato===''?'selected':'' ?>>Tutti (esclude fatti e scartati)</option>
-            <?php foreach($statiDisponibili as $statoOpzione): ?>
-              <option value="<?= htmlspecialchars($statoOpzione) ?>" <?= $stato===$statoOpzione?'selected':'' ?>><?= htmlspecialchars(ucfirst($statoOpzione)) ?></option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Notti</label>
-          <?php while($n = $nottiRes->fetch_assoc()): ?>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="notti" id="notti<?= $n['notti'] ?>" value="<?= $n['notti'] ?>" <?= $notti===$n['notti']?'checked':'' ?>>
-              <label class="form-check-label" for="notti<?= $n['notti'] ?>"><?= $n['notti'] ?></label>
-            </div>
-          <?php endwhile; ?>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Prezzo</label>
-          <div class="d-flex">
-            <input type="number" class="form-control me-2" name="prezzo_min" placeholder="Min" value="<?= htmlspecialchars($prezzoMin) ?>">
-            <input type="number" class="form-control" name="prezzo_max" placeholder="Max" value="<?= htmlspecialchars($prezzoMax) ?>">
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer justify-content-between">
-        <button type="button" class="btn btn-outline-light" id="resetFilters">Cancella tutto</button>
-        <button type="submit" class="btn btn-primary" id="applyBtn">Vedi <?= $count ?> vacanze</button>
-      </div>
-    </form>
-  </div>
+<details <?= ($notti!==''||$prezzoMin!==''||$prezzoMax!=='')?'open':'' ?>><summary class="mb-3" style="cursor:pointer">Filtri avanzati</summary>
+<div class="vw-filter-bar"><div><label for="vacNotti" class="form-label">Notti</label><input id="vacNotti" class="vw-input w-100" type="number" min="0" name="notti" value="<?= vacanzeH($notti) ?>"></div>
+<div><label for="vacMin" class="form-label">Budget minimo (€)</label><input id="vacMin" class="vw-input w-100" type="number" step="0.01" min="0" name="prezzo_min" value="<?= vacanzeH($prezzoMin) ?>"></div>
+<div><label for="vacMax" class="form-label">Budget massimo (€)</label><input id="vacMax" class="vw-input w-100" type="number" step="0.01" min="0" name="prezzo_max" value="<?= vacanzeH($prezzoMax) ?>"></div></div>
+</details>
+<div class="vw-list-actions"><button type="submit" class="vw-btn vw-btn-primary"><i class="bi bi-search"></i> Applica</button><a href="vacanze_lista.php" class="vw-btn">Azzera filtri</a><span class="vw-muted ms-auto"><?= $count ?> <?= $count===1?'vacanza trovata':'vacanze trovate' ?></span></div>
+</form>
+<?php if(!$vacanze): ?><div class="vw-panel vw-empty">Nessuna vacanza corrisponde ai filtri. <a href="vacanze_lista.php">Mostra tutte</a></div><?php endif; ?>
+<div class="vw-grid">
+<?php foreach($vacanze as $v): $tripId=(int)$v['id_viaggio']; ?>
+<article class="vw-trip">
+ <div class="d-flex justify-content-between gap-2 align-items-start">
+  <h2><a href="vacanze_workspace.php?id=<?= $tripId ?>"><?= vacanzeH($v['titolo']) ?></a></h2>
+  <span class="vw-pill"><?= vacanzeH(ucfirst((string)$v['stato'])) ?></span>
+ </div>
+ <?php if($v['breve_descrizione']): ?><div class="vw-trip-meta"><?= vacanzeH($v['breve_descrizione']) ?></div><?php endif; ?>
+ <div class="vw-trip-meta"><i class="bi bi-geo-alt"></i> <?= vacanzeH($v['luogo_nome'] ?: ($v['citta'] ?: 'Destinazione da definire')) ?></div>
+ <div class="vw-trip-meta"><i class="bi bi-calendar3"></i> <?= vacanzeH($v['data_inizio'] ?: 'Date da definire') ?><?= $v['data_fine']?' · '.vacanzeH($v['data_fine']):'' ?><?= $v['notti']!==null?' · '.(int)$v['notti'].' notti':'' ?></div>
+ <div class="vw-trip-bottom">
+ <div><div class="vw-trip-meta"><?= (int)$v['num_alternative'] ?> <?= (int)$v['num_alternative']===1?'scenario':'scenari' ?> · Budget da</div><strong><?= $v['min_totale']!==null?vacanzeEuro($v['min_totale']):'Da definire' ?></strong></div>
+ <div class="vw-card-actions"><a class="vw-btn" href="vacanze_workspace.php?id=<?= $tripId ?>">Apri</a><?php if($canUpdate): ?><a class="vw-btn" href="vacanze_modifica.php?id=<?= $tripId ?>" aria-label="Modifica <?= vacanzeH($v['titolo']) ?>" title="Modifica vacanza"><i class="bi bi-pencil"></i></a><?php endif; ?></div>
+ </div>
+</article>
+<?php endforeach; ?>
 </div>
-
-<script>
-function updateCount(){
-  const form=document.getElementById('filtersForm');
-  const params=new URLSearchParams(new FormData(form));
-  params.set('count','1');
-  fetch('vacanze_lista.php?'+params.toString())
-    .then(r=>r.json())
-    .then(d=>{document.getElementById('applyBtn').innerText='Vedi '+d.count+' vacanze';});
-}
-document.getElementById('filtersModal').addEventListener('shown.bs.modal',updateCount);
-Array.from(document.querySelectorAll('#filtersForm input, #filtersForm select')).forEach(el=>{
-  el.addEventListener('input',updateCount);
-  el.addEventListener('change',updateCount);
-});
-document.getElementById('resetFilters').addEventListener('click',()=>{
-  const form=document.getElementById('filtersForm');
-  form.reset();
-  updateCount();
-});
-</script>
+</main>
 <?php include 'includes/footer.php'; ?>
