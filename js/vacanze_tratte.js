@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const deleteBtn = document.getElementById('deleteAltBtn');
   if(deleteBtn){
     deleteBtn.addEventListener('click', () => {
-      if(!confirm('Confermi l\'eliminazione dell\'alternativa? Tutti i dati associati saranno rimossi.')) return;
+      if(!confirm('Confermi l\'eliminazione dell\'alternativa? Le spese rimarranno nella vacanza.')) return;
       deleteBtn.disabled = true;
       const fd = new FormData();
       fd.append('id_viaggio', viaggioId);
