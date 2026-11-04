@@ -13,6 +13,12 @@ if (!has_permission($conn, 'ajax:delete_viaggi_alternativa', 'delete')) {
 $idViaggio = (int)($_POST['id_viaggio'] ?? 0);
 $idAlt = (int)($_POST['id_viaggio_alternativa'] ?? 0);
 
+if (empty($_SESSION['vacanze_csrf']) || !hash_equals($_SESSION['vacanze_csrf'], (string)($_POST['vacanze_csrf'] ?? ''))) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Token di sicurezza non valido']);
+    exit;
+}
+
 if (!$idViaggio || !$idAlt) {
     echo json_encode(['success' => false, 'error' => 'Dati mancanti']);
     exit;
@@ -60,7 +66,7 @@ try {
 
     $conn->commit();
     echo json_encode(['success' => true]);
-} catch (Exception $ex) {
+} catch (Throwable $ex) {
     if (!empty($transactionStarted)) {
         $conn->rollback();
     }
