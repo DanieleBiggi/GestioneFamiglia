@@ -2,12 +2,22 @@
 <?php
 include 'includes/db.php';
 require_once 'includes/vacanze_spese_assoc.php';
+require_once 'includes/permissions.php';
 
 
 $id = (int)($_GET['id'] ?? 0);
 $alt = (int)($_GET['alt'] ?? 0);
 $id_alloggio = (int)($_GET['id_alloggio'] ?? 0);
 $duplica = isset($_GET['duplica']);
+
+// I permessi vanno verificati anche lato server, non solo nascondendo i pulsanti.
+$canViewSpesa = has_permission($conn, 'table:viaggi_alloggi', 'view');
+$canInsertSpesa = has_permission($conn, 'table:viaggi_alloggi', 'insert');
+$canUpdateSpesa = has_permission($conn, 'table:viaggi_alloggi', 'update');
+$canDeleteSpesa = has_permission($conn, 'table:viaggi_alloggi', 'delete');
+if (!$canViewSpesa || ($duplica && !$canInsertSpesa) || ($id_alloggio && !$duplica && !$canUpdateSpesa) || (!$id_alloggio && !$canInsertSpesa)) {
+    http_response_code(403); exit('Accesso negato');
+}
 
 // Recupera info viaggio per breadcrumb
 $stmt = $conn->prepare('SELECT titolo FROM viaggi WHERE id_viaggio=?');
@@ -22,6 +32,9 @@ if (!$viaggio) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['delete']) && !$canDeleteSpesa) { http_response_code(403); exit('Accesso negato'); }
+    if (!isset($_POST['delete']) && !($id_alloggio ? $canUpdateSpesa : $canInsertSpesa)) { http_response_code(403); exit('Accesso negato'); }
+    if (!hash_equals($_SESSION['vacanze_csrf'] ?? '', (string)($_POST['vacanze_csrf'] ?? '')) || empty($_SESSION['vacanze_csrf'])) { http_response_code(403); exit('Token non valido'); }
     $id_alloggio = (int)($_POST['id_alloggio'] ?? 0);
     $selectedAltIds = array_map('intval', (array)($_POST['id_alternative'] ?? []));
     $id_alt = $selectedAltIds[0] ?? null;
@@ -86,7 +99,7 @@ if ($id_alloggio) {
         include 'includes/footer.php';
         exit;
     }
-    $alt = (int)$alloggio['id_viaggio_alternativa'];
+    if (!$alt) { $alt = (int)$alloggio['id_viaggio_alternativa']; }
     if ($duplica) {
         $id_alloggio = 0;
         $alloggio['pagato'] = 0;
@@ -102,11 +115,13 @@ while ($row = $altRes->fetch_assoc()) { $alternative[$row['id_viaggio_alternativ
 $selectedAlternativeIds = $id_alloggio && !$duplica ? vacanze_spesa_alternative($conn, 'viaggi_alloggi_alternative', 'id_alloggio', $id_alloggio) : [($alt ?: 0)];
 $alt_desc = $alternative[$alt] ?? '';
 ?>
+<?php if (empty($_SESSION['vacanze_csrf'])) { $_SESSION['vacanze_csrf'] = bin2hex(random_bytes(32)); } ?>
 <?php include 'includes/header.php'; ?>
 <div class="container text-white">
   <a href="vacanze_tratte.php?id=<?= $id ?>&alt=<?= $alt ?>" class="btn btn-outline-light mb-3">← Indietro</a>
   <h4 class="mb-3"><?= $duplica ? 'Duplica' : ($id_alloggio ? 'Modifica' : 'Nuovo') ?> alloggio</h4>
   <form method="post">
+    <input type="hidden" name="vacanze_csrf" value="<?= htmlspecialchars($_SESSION['vacanze_csrf'], ENT_QUOTES, 'UTF-8') ?>">
     <input type="hidden" name="id_alloggio" value="<?= (int)$id_alloggio ?>">
     <div class="mb-3">
       <label class="form-label">Alternativa</label>
