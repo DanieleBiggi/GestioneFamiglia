@@ -40,7 +40,9 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
      foreach ($ids as $altId) { $link->bind_param('ii',$shareId,$altId); $link->execute(); }
      $link->close(); $conn->commit();
      $base=dirname($_SERVER['SCRIPT_NAME']); $base=$base==='/'?'':rtrim($base,'/');
-     $createdUrl=(!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS']!=='off'?'https':'http').'://'.$_SERVER['HTTP_HOST'].$base.'/vacanze_condivisa.php?token='.$raw;
+     $host=(string)($_SERVER['HTTP_HOST'] ?? '');
+     if (!preg_match('/^[a-z0-9.-]+(?::[0-9]{1,5})?$/iD', $host)) { throw new RuntimeException('Host non valido'); }
+     $createdUrl='https://'.$host.$base.'/vacanze_condivisa.php?token='.$raw;
     } catch (Throwable $e) { $conn->rollback(); $error='Impossibile creare la condivisione.'; }
    }
   }
