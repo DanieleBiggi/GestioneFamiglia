@@ -110,7 +110,7 @@ $alt_desc = $alternative[$alt] ?? '';
 ?>
 <?php if (empty($_SESSION['vacanze_csrf'])) { $_SESSION['vacanze_csrf'] = bin2hex(random_bytes(32)); } ?>
 <?php include 'includes/header.php'; ?>
-<div class="container text-white">
+<div class="container text-white vw">
   <a href="vacanze_tratte.php?id=<?= $id ?>&alt=<?= $alt ?>" class="btn btn-outline-light mb-3">← Indietro</a>
   <h4 class="mb-3"><?= $duplica ? 'Duplica' : ($id_costo ? 'Modifica' : 'Nuovo') ?> costo</h4>
   <form method="post">
