@@ -41,6 +41,7 @@ header('Content-Type: text/css');
   --text-color-rgb: <?= $textRgb ?>;
   --vac-card-bg: <?= htmlspecialchars($vacCardBg, ENT_QUOTES, 'UTF-8') ?>;
   --vac-card-fg: <?= htmlspecialchars($vacCardFg, ENT_QUOTES, 'UTF-8') ?>;
+  --vac-control-scheme: <?= $themeIsLight ? 'light' : 'dark' ?>;
 }
 
 body {
