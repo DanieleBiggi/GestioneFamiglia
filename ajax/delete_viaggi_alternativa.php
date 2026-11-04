@@ -13,6 +13,12 @@ if (!has_permission($conn, 'ajax:delete_viaggi_alternativa', 'delete')) {
 $idViaggio = (int)($_POST['id_viaggio'] ?? 0);
 $idAlt = (int)($_POST['id_viaggio_alternativa'] ?? 0);
 
+if (empty($_SESSION['vacanze_csrf']) || !hash_equals($_SESSION['vacanze_csrf'], (string)($_POST['vacanze_csrf'] ?? ''))) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Token di sicurezza non valido']);
+    exit;
+}
+
 if (!$idViaggio || !$idAlt) {
     echo json_encode(['success' => false, 'error' => 'Dati mancanti']);
     exit;
@@ -36,26 +42,17 @@ try {
     }
     $transactionStarted = true;
 
-    $tables = [
-        'viaggi_tratte' => 'DELETE FROM viaggi_tratte WHERE id_viaggio=? AND id_viaggio_alternativa=?',
-        'viaggi_alloggi' => 'DELETE FROM viaggi_alloggi WHERE id_viaggio=? AND id_viaggio_alternativa=?',
-        'viaggi_pasti' => 'DELETE FROM viaggi_pasti WHERE id_viaggio=? AND id_viaggio_alternativa=?',
-        'viaggi_altri_costi' => 'DELETE FROM viaggi_altri_costi WHERE id_viaggio=? AND id_viaggio_alternativa=?'
-    ];
-
-    foreach ($tables as $sql) {
-        $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            throw new Exception('Errore durante la preparazione della query');
-        }
+    // Le spese appartengono alla vacanza e non devono essere eliminate.
+    // La FK legacy verso l'alternativa impedirebbe la cancellazione:
+    // la azzeriamo, conservando tutte le spese e le nuove associazioni.
+    foreach (['viaggi_tratte', 'viaggi_alloggi', 'viaggi_pasti', 'viaggi_altri_costi'] as $table) {
+        $stmt = $conn->prepare("UPDATE `$table` SET id_viaggio_alternativa=NULL WHERE id_viaggio=? AND id_viaggio_alternativa=?");
+        if (!$stmt) { throw new Exception('Preparazione aggiornamento fallita'); }
         $stmt->bind_param('ii', $idViaggio, $idAlt);
-        if (!$stmt->execute()) {
-            $stmt->close();
-            throw new Exception('Errore durante l\'eliminazione dei dati collegati');
-        }
+        if (!$stmt->execute()) { throw new Exception('Impossibile scollegare le spese'); }
         $stmt->close();
     }
-
+    // Le FK ON DELETE CASCADE eliminano i collegamenti, non le spese.
     $delAlt = $conn->prepare('DELETE FROM viaggi_alternative WHERE id_viaggio_alternativa=? AND id_viaggio=?');
     if (!$delAlt) {
         throw new Exception('Errore durante la preparazione della query di eliminazione');
@@ -67,9 +64,21 @@ try {
     }
     $delAlt->close();
 
+    // Dopo la cascata, riallinea il campo legacy al primo scenario superstite.
+    foreach ([
+        ['viaggi_tratte', 'viaggi_tratte_alternative', 'id_tratta'],
+        ['viaggi_alloggi', 'viaggi_alloggi_alternative', 'id_alloggio'],
+        ['viaggi_pasti', 'viaggi_pasti_alternative', 'id_pasto'],
+        ['viaggi_altri_costi', 'viaggi_altri_costi_alternative', 'id_costo']
+    ] as [$table, $link, $key]) {
+        $sync = $conn->prepare("UPDATE `$table` e SET e.id_viaggio_alternativa=(SELECT MIN(l.id_viaggio_alternativa) FROM `$link` l WHERE l.`$key`=e.`$key`) WHERE e.id_viaggio=?");
+        $sync->bind_param('i', $idViaggio);
+        $sync->execute();
+        $sync->close();
+    }
     $conn->commit();
     echo json_encode(['success' => true]);
-} catch (Exception $ex) {
+} catch (Throwable $ex) {
     if (!empty($transactionStarted)) {
         $conn->rollback();
     }

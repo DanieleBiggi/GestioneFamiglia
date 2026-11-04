@@ -30,6 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const fd = new FormData(form);
       fd.append('id_viaggio_alternativa', altId);
+      fd.append('vacanze_csrf', document.querySelector('meta[name="vacanze-csrf"]')?.content || '');
+      fd.append('vacanze_csrf', document.querySelector('meta[name="vacanze-csrf"]')?.content || '');
       fetch('ajax/update_viaggi_alternativa.php', { method:'POST', body: fd })
         .then(r => r.json())
         .then(res => {
@@ -74,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fd.append('value', checked ? '1' : '0');
       fd.append('id_viaggio', viaggioId);
       fd.append('id_viaggio_alternativa', altId);
+      fd.append('vacanze_csrf', document.querySelector('meta[name="vacanze-csrf"]')?.content || '');
       toggle.disabled = true;
       fetch('ajax/update_viaggi_pagamento.php', { method: 'POST', body: fd })
         .then(r => r.json())
@@ -106,11 +109,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const deleteBtn = document.getElementById('deleteAltBtn');
   if(deleteBtn){
     deleteBtn.addEventListener('click', () => {
-      if(!confirm('Confermi l\'eliminazione dell\'alternativa? Tutti i dati associati saranno rimossi.')) return;
+      if(!confirm('Confermi l\'eliminazione dell\'alternativa? Le spese rimarranno nella vacanza.')) return;
       deleteBtn.disabled = true;
       const fd = new FormData();
       fd.append('id_viaggio', viaggioId);
       fd.append('id_viaggio_alternativa', altId);
+      fd.append('vacanze_csrf', document.querySelector('meta[name="vacanze-csrf"]')?.content || '');
       fetch('ajax/delete_viaggi_alternativa.php', { method:'POST', body: fd })
         .then(r => r.json())
         .then(res => {

@@ -15,6 +15,17 @@ if (!$theme) {
         'secondary_color' => '#2b2b2b'
     ];
 }
+// Cards remain white for light backgrounds, while dark themes retain their surfaces.
+$themeBg = (string)$theme['background_color'];
+$themeIsLight = false;
+if (preg_match('/^#[0-9a-f]{6}$/i', $themeBg)) {
+    $red = hexdec(substr($themeBg, 1, 2));
+    $green = hexdec(substr($themeBg, 3, 2));
+    $blue = hexdec(substr($themeBg, 5, 2));
+    $themeIsLight = (0.299 * $red + 0.587 * $green + 0.114 * $blue) >= 155;
+}
+$vacCardBg = $themeIsLight ? '#ffffff' : $theme['primary_color'];
+$vacCardFg = $themeIsLight ? '#202b36' : $theme['text_color'];
 $rgb = sscanf($theme['text_color'], "#%02x%02x%02x");
 $textRgb = implode(',', $rgb);
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -28,6 +39,9 @@ header('Content-Type: text/css');
   --primary-color: <?= htmlspecialchars($theme['primary_color']) ?>;
   --secondary-color: <?= htmlspecialchars($theme['secondary_color']) ?>;
   --text-color-rgb: <?= $textRgb ?>;
+  --vac-card-bg: <?= htmlspecialchars($vacCardBg, ENT_QUOTES, 'UTF-8') ?>;
+  --vac-card-fg: <?= htmlspecialchars($vacCardFg, ENT_QUOTES, 'UTF-8') ?>;
+  --vac-control-scheme: <?= $themeIsLight ? 'light' : 'dark' ?>;
 }
 
 body {

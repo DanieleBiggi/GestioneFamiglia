@@ -1,11 +1,24 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
 include 'includes/db.php';
+require_once 'includes/vacanze_spese_assoc.php';
+require_once 'includes/permissions.php';
+
 
 $id = (int)($_GET['id'] ?? 0);
 $alt = (int)($_GET['alt'] ?? 0);
 $id_alloggio = (int)($_GET['id_alloggio'] ?? 0);
 $duplica = isset($_GET['duplica']);
+
+if (!has_permission($conn, 'table:viaggi', 'view')) { http_response_code(403); exit('Accesso negato'); }
+// I permessi vanno verificati anche lato server, non solo nascondendo i pulsanti.
+$canViewSpesa = has_permission($conn, 'table:viaggi_alloggi', 'view');
+$canInsertSpesa = has_permission($conn, 'table:viaggi_alloggi', 'insert');
+$canUpdateSpesa = has_permission($conn, 'table:viaggi_alloggi', 'update');
+$canDeleteSpesa = has_permission($conn, 'table:viaggi_alloggi', 'delete');
+if (!$canViewSpesa || ($duplica && !$canInsertSpesa) || ($id_alloggio && !$duplica && !$canUpdateSpesa) || (!$id_alloggio && !$canInsertSpesa)) {
+    http_response_code(403); exit('Accesso negato');
+}
 
 // Recupera info viaggio per breadcrumb
 $stmt = $conn->prepare('SELECT titolo FROM viaggi WHERE id_viaggio=?');
@@ -20,33 +33,49 @@ if (!$viaggio) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id_alloggio = (int)($_POST['id_alloggio'] ?? 0);
-    $id_alt = (int)($_POST['id_viaggio_alternativa'] ?? $alt);
+    if (isset($_POST['delete']) && !$canDeleteSpesa) { http_response_code(403); exit('Accesso negato'); }
+    if (!isset($_POST['delete']) && !($id_alloggio && !$duplica ? $canUpdateSpesa : $canInsertSpesa)) { http_response_code(403); exit('Accesso negato'); }
+    if (!hash_equals($_SESSION['vacanze_csrf'] ?? '', (string)($_POST['vacanze_csrf'] ?? '')) || empty($_SESSION['vacanze_csrf'])) { http_response_code(403); exit('Token non valido'); }
+    if (isset($_POST['delete']) && $duplica) { http_response_code(400); exit('Operazione non valida'); }
+    $postedSpesaId = (int)($_POST['id_alloggio'] ?? 0);
+    if ($postedSpesaId !== ($duplica ? 0 : $id_alloggio)) { http_response_code(400); exit('Identificativo spesa non valido'); }
+    $selectedAltIds = array_map('intval', (array)($_POST['id_alternative'] ?? []));
+    $id_alt = $selectedAltIds[0] ?? null;
     $giorno = (int)($_POST['giorno_indice'] ?? 0);
     $nome = $_POST['nome_alloggio'] ?? null;
     $indirizzo = $_POST['indirizzo'] ?? null;
-    $lat = $_POST['lat'] !== '' ? (float)$_POST['lat'] : null;
-    $lng = $_POST['lng'] !== '' ? (float)$_POST['lng'] : null;
+    $lat = (($_POST['lat'] ?? '') !== '') ? (float)$_POST['lat'] : null;
+    $lng = (($_POST['lng'] ?? '') !== '') ? (float)$_POST['lng'] : null;
     $checkin = $_POST['data_checkin'] ?: null;
     $checkout = $_POST['data_checkout'] ?: null;
     $costo = (float)($_POST['costo_notte_eur'] ?? 0);
     $note = $_POST['note'] ?? null;
     $pagato = isset($_POST['pagato']) ? 1 : 0;
 
-    if (isset($_POST['delete']) && $id_alloggio) {
+    $conn->begin_transaction();
+    try {
+    if (isset($_POST['delete']) && $id_alloggio && !$duplica) {
         $del = $conn->prepare('DELETE FROM viaggi_alloggi WHERE id_alloggio=? AND id_viaggio=?');
         $del->bind_param('ii', $id_alloggio, $id);
-        $del->execute();
-    } elseif ($id_alloggio) {
+        if (!$del->execute()) { throw new RuntimeException('Eliminazione fallita'); }
+    } elseif ($id_alloggio && !$duplica) {
         $upd = $conn->prepare('UPDATE viaggi_alloggi SET id_viaggio_alternativa=?, giorno_indice=?, nome_alloggio=?, indirizzo=?, lat=?, lng=?, data_checkin=?, data_checkout=?, costo_notte_eur=?, note=?, pagato=? WHERE id_alloggio=? AND id_viaggio=?');
-        $upd->bind_param('iissddsssdsiii', $id_alt, $giorno, $nome, $indirizzo, $lat, $lng, $checkin, $checkout, $costo, $note, $pagato, $id_alloggio, $id);
-        $upd->execute();
+        $upd->bind_param('iissddssdsiii', $id_alt, $giorno, $nome, $indirizzo, $lat, $lng, $checkin, $checkout, $costo, $note, $pagato, $id_alloggio, $id);
+        if (!$upd->execute()) { throw new RuntimeException('Aggiornamento fallito'); }
+        vacanze_sync_spesa_alternative($conn, 'viaggi_alloggi', $id_alloggio, $id, $selectedAltIds);
     } else {
         $ins = $conn->prepare('INSERT INTO viaggi_alloggi (id_viaggio, id_viaggio_alternativa, giorno_indice, nome_alloggio, indirizzo, lat, lng, data_checkin, data_checkout, costo_notte_eur, note, pagato) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
         $ins->bind_param('iiissddssdsi', $id, $id_alt, $giorno, $nome, $indirizzo, $lat, $lng, $checkin, $checkout, $costo, $note, $pagato);
-        $ins->execute();
+        if (!$ins->execute()) { throw new RuntimeException('Inserimento fallito'); }
+        vacanze_sync_spesa_alternative($conn, 'viaggi_alloggi', (int)$conn->insert_id, $id, $selectedAltIds);
     }
-    header('Location: vacanze_tratte.php?id=' . $id . '&alt=' . $id_alt);
+    $conn->commit();
+    } catch (Throwable $e) {
+        $conn->rollback();
+        http_response_code(400);
+        exit('Impossibile salvare la spesa: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
+    }
+    header('Location: ' . (($alt ?: (int)$id_alt) > 0 ? 'vacanze_tratte.php?id=' . $id . '&alt=' . ($alt ?: (int)$id_alt) : 'vacanze_spese_non_assegnate.php?id=' . $id));
     exit;
 }
 $alloggio = [
@@ -73,7 +102,7 @@ if ($id_alloggio) {
         include 'includes/footer.php';
         exit;
     }
-    $alt = (int)$alloggio['id_viaggio_alternativa'];
+    if (!$alt) { $alt = (int)$alloggio['id_viaggio_alternativa']; }
     if ($duplica) {
         $id_alloggio = 0;
         $alloggio['pagato'] = 0;
@@ -86,21 +115,25 @@ $altStmt->execute();
 $altRes = $altStmt->get_result();
 $alternative = [];
 while ($row = $altRes->fetch_assoc()) { $alternative[$row['id_viaggio_alternativa']] = $row['breve_descrizione']; }
+$selectedAlternativeIds = $id_alloggio && !$duplica ? vacanze_spesa_alternative($conn, 'viaggi_alloggi_alternative', 'id_alloggio', $id_alloggio) : [($alt ?: 0)];
 $alt_desc = $alternative[$alt] ?? '';
 ?>
+<?php if (empty($_SESSION['vacanze_csrf'])) { $_SESSION['vacanze_csrf'] = bin2hex(random_bytes(32)); } ?>
 <?php include 'includes/header.php'; ?>
-<div class="container text-white">
+<div class="container text-white vw">
   <a href="vacanze_tratte.php?id=<?= $id ?>&alt=<?= $alt ?>" class="btn btn-outline-light mb-3">← Indietro</a>
   <h4 class="mb-3"><?= $duplica ? 'Duplica' : ($id_alloggio ? 'Modifica' : 'Nuovo') ?> alloggio</h4>
   <form method="post">
+    <input type="hidden" name="vacanze_csrf" value="<?= htmlspecialchars($_SESSION['vacanze_csrf'], ENT_QUOTES, 'UTF-8') ?>">
     <input type="hidden" name="id_alloggio" value="<?= (int)$id_alloggio ?>">
     <div class="mb-3">
       <label class="form-label">Alternativa</label>
-      <select class="form-select" name="id_viaggio_alternativa">
+      <div class="border border-secondary rounded p-2">
         <?php foreach ($alternative as $aid => $descr): ?>
-          <option value="<?= $aid ?>"<?= $alloggio['id_viaggio_alternativa']==$aid ? ' selected' : '' ?>><?= htmlspecialchars($descr) ?></option>
+          <label class="d-block mb-1"><input type="checkbox" name="id_alternative[]" value="<?= (int)$aid ?>" <?= in_array((int)$aid, $selectedAlternativeIds, true) ? 'checked' : '' ?>> <?= htmlspecialchars($descr) ?></label>
         <?php endforeach; ?>
-      </select>
+        <small class="text-muted">Puoi scegliere più scenari o nessuno (spesa non assegnata).</small>
+      </div>
     </div>
     <div class="mb-3">
       <label class="form-label">Giorno indice</label>
@@ -137,7 +170,7 @@ $alt_desc = $alternative[$alt] ?? '';
     </div>
     <div class="d-flex justify-content-between mt-3">
       <button type="submit" class="btn btn-primary">Salva</button>
-      <?php if ($id_alloggio && !$duplica): ?>
+      <?php if ($id_alloggio && !$duplica && $canDeleteSpesa): ?>
         <button type="submit" name="delete" value="1" class="btn btn-danger">Elimina</button>
       <?php endif; ?>
     </div>

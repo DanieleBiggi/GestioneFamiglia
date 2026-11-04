@@ -1,0 +1,50 @@
+name: Vacanze PHP syntax checks
+on:
+  pull_request:
+    paths:
+      - 'vacanze_*.php'
+      - 'includes/vacanze_spese_assoc.php'
+      - 'ajax/delete_viaggi_alternativa.php'
+      - 'ajax/update_viaggi_pagamento.php'
+      - '.github/workflows/vacanze-php-lint.yml'
+  push:
+    branches:
+      - 'feature/vacanze-spese-condivise'
+    paths:
+      - 'vacanze_*.php'
+      - 'includes/vacanze_spese_assoc.php'
+      - 'ajax/delete_viaggi_alternativa.php'
+      - 'ajax/update_viaggi_pagamento.php'
+      - '.github/workflows/vacanze-php-lint.yml'
+permissions:
+  contents: read
+jobs:
+  php-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check PHP availability
+        run: php --version
+      - name: Lint vacation PHP files
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            vacanze_view.php
+            vacanze_lista.php
+            vacanze.php
+            vacanze_workspace.php
+            vacanze_tratte.php
+            vacanze_tratte_dettaglio.php
+            vacanze_alloggi_dettaglio.php
+            vacanze_pasti_dettaglio.php
+            vacanze_altri_costi_dettaglio.php
+            vacanze_spese_non_assegnate.php
+            vacanze_commenti.php
+            vacanze_condivisioni.php
+            vacanze_condivisa.php
+            includes/vacanze_spese_assoc.php
+            ajax/delete_viaggi_alternativa.php
+            ajax/update_viaggi_pagamento.php
+          )
+          for file in "${files[@]}"; do php -l "$file"; done

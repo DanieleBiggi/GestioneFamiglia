@@ -1,8 +1,9 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+// Error display is controlled by the server configuration.
+// ini_set('display_errors', 1);
+// ini_set('display_startup_errors', 1);
+// error_reporting(E_ALL);
 include 'includes/db.php';
 
 // Default carburante modificabili qui
@@ -86,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   $stmt->execute();
   $id = $id ?: $stmt->insert_id;
-  header('Location: vacanze_modifica.php?id=' . $id);
+  header('Location: vacanze_workspace.php?id=' . $id);
   exit;
 }
 
@@ -117,13 +118,13 @@ if ($id > 0) {
 }
 ?>
 <?php include 'includes/header.php'; ?>
-<div class="container text-white">
-  <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
+<div class="container text-white vw">
+  <a href="<?= $id>0 ? 'vacanze_workspace.php?id='.$id : 'vacanze_lista.php' ?>" class="btn btn-outline-light mb-3">← Indietro</a>
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="vacanze.php">Vacanze</a></li>
+      <li class="breadcrumb-item"><a href="vacanze_lista.php">Vacanze</a></li>
       <?php if ($id > 0): ?>
-        <li class="breadcrumb-item"><a href="vacanze_view.php?id=<?= $id ?>"><?= htmlspecialchars($data['titolo']) ?></a></li>
+        <li class="breadcrumb-item"><a href="vacanze_workspace.php?id=<?= $id ?>"><?= htmlspecialchars($data['titolo']) ?></a></li>
         <li class="breadcrumb-item active" aria-current="page">Modifica</li>
       <?php else: ?>
         <li class="breadcrumb-item active" aria-current="page">Nuovo viaggio</li>
@@ -131,7 +132,7 @@ if ($id > 0) {
     </ol>
   </nav>
   <h4 class="mb-3"><?= $id > 0 ? 'Modifica viaggio' : 'Nuovo viaggio' ?></h4>
-    <form method="post" class="bg-dark p-3 rounded">
+    <form method="post" class="vw-panel">
     <input type="hidden" name="id_viaggio" value="<?= (int)$id ?>">
     <div class="mb-3">
       <label class="form-label">Titolo</label>

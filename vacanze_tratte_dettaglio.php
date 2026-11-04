@@ -1,18 +1,28 @@
 <?php 
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
 include 'includes/session_check.php'; ?>
 <?php
 
 include 'includes/db.php';
+require_once 'includes/vacanze_spese_assoc.php';
+require_once 'includes/permissions.php';
+
 
 
 $id = (int)($_GET['id'] ?? 0);
 $alt = (int)($_GET['alt'] ?? 0);
 $id_tratta = (int)($_GET['id_tratta'] ?? 0);
 $duplica = isset($_GET['duplica']);
+
+if (!has_permission($conn, 'table:viaggi', 'view')) { http_response_code(403); exit('Accesso negato'); }
+// I permessi vanno verificati anche lato server, non solo nascondendo i pulsanti.
+$canViewSpesa = has_permission($conn, 'table:viaggi_tratte', 'view');
+$canInsertSpesa = has_permission($conn, 'table:viaggi_tratte', 'insert');
+$canUpdateSpesa = has_permission($conn, 'table:viaggi_tratte', 'update');
+$canDeleteSpesa = has_permission($conn, 'table:viaggi_tratte', 'delete');
+if (!$canViewSpesa || ($duplica && !$canInsertSpesa) || ($id_tratta && !$duplica && !$canUpdateSpesa) || (!$id_tratta && !$canInsertSpesa)) {
+    http_response_code(403); exit('Accesso negato');
+}
 
 // Recupera info viaggio per breadcrumb
 $stmt = $conn->prepare('SELECT titolo FROM viaggi WHERE id_viaggio=?');
@@ -27,16 +37,22 @@ if (!$viaggio) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id_tratta = (int)($_POST['id_tratta'] ?? 0);
-    $id_alt = (int)($_POST['id_viaggio_alternativa'] ?? $alt);
+    if (isset($_POST['delete']) && !$canDeleteSpesa) { http_response_code(403); exit('Accesso negato'); }
+    if (!isset($_POST['delete']) && !($id_tratta && !$duplica ? $canUpdateSpesa : $canInsertSpesa)) { http_response_code(403); exit('Accesso negato'); }
+    if (!hash_equals($_SESSION['vacanze_csrf'] ?? '', (string)($_POST['vacanze_csrf'] ?? '')) || empty($_SESSION['vacanze_csrf'])) { http_response_code(403); exit('Token non valido'); }
+    if (isset($_POST['delete']) && $duplica) { http_response_code(400); exit('Operazione non valida'); }
+    $postedSpesaId = (int)($_POST['id_tratta'] ?? 0);
+    if ($postedSpesaId !== ($duplica ? 0 : $id_tratta)) { http_response_code(400); exit('Identificativo spesa non valido'); }
+    $selectedAltIds = array_map('intval', (array)($_POST['id_alternative'] ?? []));
+    $id_alt = $selectedAltIds[0] ?? null;
     $tipo = $_POST['tipo_tratta'] ?? 'auto';
     $descrizione = $_POST['descrizione'] ?? null;
     $origine = $_POST['origine_testo'] ?? null;
-    $origine_lat = $_POST['origine_lat'] !== '' ? (float)$_POST['origine_lat'] : null;
-    $origine_lng = $_POST['origine_lng'] !== '' ? (float)$_POST['origine_lng'] : null;
+    $origine_lat = (($_POST['origine_lat'] ?? '') !== '') ? (float)$_POST['origine_lat'] : null;
+    $origine_lng = (($_POST['origine_lng'] ?? '') !== '') ? (float)$_POST['origine_lng'] : null;
     $destinazione = $_POST['destinazione_testo'] ?? null;
-    $destinazione_lat = $_POST['destinazione_lat'] !== '' ? (float)$_POST['destinazione_lat'] : null;
-    $destinazione_lng = $_POST['destinazione_lng'] !== '' ? (float)$_POST['destinazione_lng'] : null;
+    $destinazione_lat = (($_POST['destinazione_lat'] ?? '') !== '') ? (float)$_POST['destinazione_lat'] : null;
+    $destinazione_lng = (($_POST['destinazione_lng'] ?? '') !== '') ? (float)$_POST['destinazione_lng'] : null;
     $distanza = (float)($_POST['distanza_km'] ?? 0);
     $durata = (float)($_POST['durata_ore'] ?? 0);
     $consumo = (float)($_POST['consumo_litri_100km'] ?? 0);
@@ -49,20 +65,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $note = $_POST['note'] ?? null;
     $pagato = isset($_POST['pagato']) ? 1 : 0;
 
-    if (isset($_POST['delete']) && $id_tratta) {
+    $conn->begin_transaction();
+    try {
+    if (isset($_POST['delete']) && $id_tratta && !$duplica) {
         $del = $conn->prepare('DELETE FROM viaggi_tratte WHERE id_tratta=? AND id_viaggio=?');
         $del->bind_param('ii', $id_tratta, $id);
-        $del->execute();
-    } elseif ($id_tratta) {
+        if (!$del->execute()) { throw new RuntimeException('Eliminazione fallita'); }
+    } elseif ($id_tratta && !$duplica) {
         $upd = $conn->prepare('UPDATE viaggi_tratte SET id_viaggio_alternativa=?, tipo_tratta=?, descrizione=?, origine_testo=?, origine_lat=?, origine_lng=?, destinazione_testo=?, destinazione_lat=?, destinazione_lng=?, distanza_km=?, durata_ore=?, consumo_litri_100km=?, prezzo_carburante_eur_litro=?, pedaggi_eur=?, costo_traghetto_eur=?, costo_volo_eur=?, costo_noleggio_eur=?, altri_costi_eur=?, note=?, pagato=? WHERE id_tratta=? AND id_viaggio=?');
         $upd->bind_param('isssddsdddddddddddsiii', $id_alt, $tipo, $descrizione, $origine, $origine_lat, $origine_lng, $destinazione, $destinazione_lat, $destinazione_lng, $distanza, $durata, $consumo, $prezzo, $pedaggi, $traghetto, $volo, $noleggio, $altri, $note, $pagato, $id_tratta, $id);
-        $upd->execute();
+        if (!$upd->execute()) { throw new RuntimeException('Aggiornamento fallito'); }
+        vacanze_sync_spesa_alternative($conn, 'viaggi_tratte', $id_tratta, $id, $selectedAltIds);
     } else {
         $ins = $conn->prepare('INSERT INTO viaggi_tratte (id_viaggio, id_viaggio_alternativa, tipo_tratta, descrizione, origine_testo, origine_lat, origine_lng, destinazione_testo, destinazione_lat, destinazione_lng, distanza_km, durata_ore, consumo_litri_100km, prezzo_carburante_eur_litro, pedaggi_eur, costo_traghetto_eur, costo_volo_eur, costo_noleggio_eur, altri_costi_eur, note, pagato) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
         $ins->bind_param('iisssddsdddddddddddsi', $id, $id_alt, $tipo, $descrizione, $origine, $origine_lat, $origine_lng, $destinazione, $destinazione_lat, $destinazione_lng, $distanza, $durata, $consumo, $prezzo, $pedaggi, $traghetto, $volo, $noleggio, $altri, $note, $pagato);
-        $ins->execute();
+        if (!$ins->execute()) { throw new RuntimeException('Inserimento fallito'); }
+        vacanze_sync_spesa_alternative($conn, 'viaggi_tratte', (int)$conn->insert_id, $id, $selectedAltIds);
     }
-    header('Location: vacanze_tratte.php?id=' . $id . '&alt=' . $id_alt);
+    $conn->commit();
+    } catch (Throwable $e) {
+        $conn->rollback();
+        http_response_code(400);
+        exit('Impossibile salvare la spesa: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
+    }
+    header('Location: ' . (($alt ?: (int)$id_alt) > 0 ? 'vacanze_tratte.php?id=' . $id . '&alt=' . ($alt ?: (int)$id_alt) : 'vacanze_spese_non_assegnate.php?id=' . $id));
     exit;
 }
 
@@ -99,7 +125,7 @@ if ($id_tratta) {
         include 'includes/footer.php';
         exit;
     }
-    $alt = (int)$tratta['id_viaggio_alternativa'];
+    if (!$alt) { $alt = (int)$tratta['id_viaggio_alternativa']; }
     if ($duplica) {
         $id_tratta = 0;
         $tratta['pagato'] = 0;
@@ -112,21 +138,25 @@ $altStmt->execute();
 $altRes = $altStmt->get_result();
 $alternative = [];
 while ($row = $altRes->fetch_assoc()) { $alternative[$row['id_viaggio_alternativa']] = $row['breve_descrizione']; }
+$selectedAlternativeIds = $id_tratta && !$duplica ? vacanze_spesa_alternative($conn, 'viaggi_tratte_alternative', 'id_tratta', $id_tratta) : [($alt ?: 0)];
 $alt_desc = $alternative[$alt] ?? '';
 ?>
+<?php if (empty($_SESSION['vacanze_csrf'])) { $_SESSION['vacanze_csrf'] = bin2hex(random_bytes(32)); } ?>
 <?php include 'includes/header.php'; ?>
-<div class="container text-white">
+<div class="container text-white vw">
   <a href="vacanze_tratte.php?id=<?= $id ?>&alt=<?= $alt ?>" class="btn btn-outline-light mb-3">← Indietro</a>
   <h4 class="mb-3"><?= $duplica ? 'Duplica' : ($id_tratta ? 'Modifica' : 'Nuova') ?> tratta</h4>
   <form method="post">
+    <input type="hidden" name="vacanze_csrf" value="<?= htmlspecialchars($_SESSION['vacanze_csrf'], ENT_QUOTES, 'UTF-8') ?>">
     <input type="hidden" name="id_tratta" value="<?= (int)$id_tratta ?>">
     <div class="mb-3">
       <label class="form-label">Alternativa</label>
-      <select class="form-select" name="id_viaggio_alternativa">
+      <div class="border border-secondary rounded p-2">
         <?php foreach ($alternative as $aid => $descr): ?>
-          <option value="<?= $aid ?>"<?= $tratta['id_viaggio_alternativa']==$aid ? ' selected' : '' ?>><?= htmlspecialchars($descr) ?></option>
+          <label class="d-block mb-1"><input type="checkbox" name="id_alternative[]" value="<?= (int)$aid ?>" <?= in_array((int)$aid, $selectedAlternativeIds, true) ? 'checked' : '' ?>> <?= htmlspecialchars($descr) ?></label>
         <?php endforeach; ?>
-      </select>
+        <small class="text-muted">Puoi scegliere più scenari o nessuno (spesa non assegnata).</small>
+      </div>
     </div>
     <div class="mb-3">
       <label class="form-label">Tipo tratta</label>
@@ -214,7 +244,7 @@ $alt_desc = $alternative[$alt] ?? '';
     </div>
     <div class="d-flex justify-content-between mt-3">
       <button type="submit" class="btn btn-primary">Salva</button>
-      <?php if ($id_tratta && !$duplica): ?>
+      <?php if ($id_tratta && !$duplica && $canDeleteSpesa): ?>
         <button type="submit" name="delete" value="1" class="btn btn-danger">Elimina</button>
       <?php endif; ?>
     </div>

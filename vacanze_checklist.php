@@ -27,12 +27,12 @@ $canInsert = has_permission($conn, 'ajax:add_viaggi_checklist', 'insert');
 $canUpdate = has_permission($conn, 'ajax:update_viaggi_checklist', 'update');
 $canChat = has_permission($conn, 'ajax:add_viaggi_checklist_message', 'insert');
 ?>
-<div class="container text-white">
-  <a href="vacanze_view.php?id=<?= $id ?>" class="btn btn-outline-light mb-3">← Indietro</a>
+<div class="container text-white vw">
+  <a href="vacanze_workspace.php?id=<?= $id ?>" class="btn btn-outline-light mb-3">← Indietro</a>
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="vacanze.php">Vacanze</a></li>
-      <li class="breadcrumb-item"><a href="vacanze_view.php?id=<?= $id ?>"><?= htmlspecialchars($viaggio['titolo']) ?></a></li>
+      <li class="breadcrumb-item"><a href="vacanze_lista.php">Vacanze</a></li>
+      <li class="breadcrumb-item"><a href="vacanze_workspace.php?id=<?= $id ?>"><?= htmlspecialchars($viaggio['titolo']) ?></a></li>
       <li class="breadcrumb-item active" aria-current="page">Checklist</li>
     </ol>
   </nav>
