@@ -23,7 +23,7 @@ foreach ($categories as [$table,$link,$pk,$name,$title,$page]) {
 include 'includes/header.php';
 ?>
 <div class="container text-white my-3">
- <a class="btn btn-outline-light mb-3" href="vacanze_view.php?id=<?= $id ?>">← Vacanza</a>
+ <a class="btn btn-outline-light mb-3" href="vacanze_workspace.php?id=<?= $id ?>">← Vacanza</a>
  <h4>Spese non assegnate: <?= htmlspecialchars($viaggio['titolo'],ENT_QUOTES,'UTF-8') ?></h4>
  <p class="text-muted">Le spese qui presenti non contribuiscono ai totali degli scenari. Apri una spesa per assegnarla a uno o più scenari.</p>
  <?php foreach ($groups as $group): ?>
