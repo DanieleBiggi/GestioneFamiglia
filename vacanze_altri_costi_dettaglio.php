@@ -1,6 +1,7 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
 include 'includes/db.php';
+require_once 'includes/vacanze_spese_assoc.php';
 
 $id = (int)($_GET['id'] ?? 0);
 $alt = (int)($_GET['alt'] ?? 0);
@@ -21,27 +22,38 @@ if (!$viaggio) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id_costo = (int)($_POST['id_costo'] ?? 0);
-    $id_alt = (int)($_POST['id_viaggio_alternativa'] ?? $alt);
+    $selectedAltIds = array_map('intval', (array)($_POST['id_alternative'] ?? []));
+    $id_alt = $selectedAltIds[0] ?? null;
     $data = $_POST['data'] ?: null;
     $importo = $_POST['importo_eur'] !== '' ? (float)$_POST['importo_eur'] : null;
     $descrizione = $_POST['descrizione'] ?? null;
     $note = $_POST['note'] ?? null;
     $pagato = isset($_POST['pagato']) ? 1 : 0;
 
+    $conn->begin_transaction();
+    try {
     if (isset($_POST['delete']) && $id_costo) {
         $del = $conn->prepare('DELETE FROM viaggi_altri_costi WHERE id_costo=? AND id_viaggio=?');
         $del->bind_param('ii', $id_costo, $id);
-        $del->execute();
+        if (!$del->execute()) { throw new RuntimeException('Eliminazione fallita'); }
     } elseif ($id_costo) {
         $upd = $conn->prepare('UPDATE viaggi_altri_costi SET id_viaggio_alternativa=?, data=?, importo_eur=?, descrizione=?, note=?, pagato=? WHERE id_costo=? AND id_viaggio=?');
         $upd->bind_param('isdssiii', $id_alt, $data, $importo, $descrizione, $note, $pagato, $id_costo, $id);
-        $upd->execute();
+        if (!$upd->execute()) { throw new RuntimeException('Aggiornamento fallito'); }
+        vacanze_sync_spesa_alternative($conn, 'viaggi_altri_costi', $id_costo, $id, $selectedAltIds);
     } else {
         $ins = $conn->prepare('INSERT INTO viaggi_altri_costi (id_viaggio, id_viaggio_alternativa, data, importo_eur, descrizione, note, pagato) VALUES (?,?,?,?,?,?,?)');
         $ins->bind_param('iisdssi', $id, $id_alt, $data, $importo, $descrizione, $note, $pagato);
-        $ins->execute();
+        if (!$ins->execute()) { throw new RuntimeException('Inserimento fallito'); }
+        vacanze_sync_spesa_alternative($conn, 'viaggi_altri_costi', (int)$conn->insert_id, $id, $selectedAltIds);
     }
-    header('Location: vacanze_tratte.php?id=' . $id . '&alt=' . $id_alt);
+    $conn->commit();
+    } catch (Throwable $e) {
+        $conn->rollback();
+        http_response_code(400);
+        exit('Impossibile salvare la spesa: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
+    }
+    header('Location: vacanze_tratte.php?id=' . $id . '&alt=' . ($alt ?: (int)$id_alt));
     exit;
 }
 
@@ -77,6 +89,7 @@ $altStmt->execute();
 $altRes = $altStmt->get_result();
 $alternative = [];
 while ($row = $altRes->fetch_assoc()) { $alternative[$row['id_viaggio_alternativa']] = $row['breve_descrizione']; }
+$selectedAlternativeIds = $id_costo && !$duplica ? vacanze_spesa_alternative($conn, 'viaggi_altri_costi_alternative', 'id_costo', $id_costo) : [($alt ?: 0)];
 $alt_desc = $alternative[$alt] ?? '';
 ?>
 <?php include 'includes/header.php'; ?>
@@ -87,11 +100,7 @@ $alt_desc = $alternative[$alt] ?? '';
     <input type="hidden" name="id_costo" value="<?= (int)$id_costo ?>">
     <div class="mb-3">
       <label class="form-label">Alternativa</label>
-      <select class="form-select" name="id_viaggio_alternativa">
-        <?php foreach ($alternative as $aid => $descr): ?>
-          <option value="<?= $aid ?>"<?= $costo['id_viaggio_alternativa']==$aid ? ' selected' : '' ?>><?= htmlspecialchars($descr) ?></option>
-        <?php endforeach; ?>
-      </select>
+      <div class="border border-secondary rounded p-2"><?php foreach ($alternative as $aid => $descr): ?><label class="d-block mb-1"><input type="checkbox" name="id_alternative[]" value="<?= (int)$aid ?>" <?= in_array((int)$aid, $selectedAlternativeIds, true) ? 'checked' : '' ?>> <?= htmlspecialchars($descr) ?></label><?php endforeach; ?><small class="text-muted">Seleziona più scenari oppure nessuno (spesa non assegnata).</small></div>
     </div>
     <div class="mb-3">
       <label class="form-label">Data</label>
