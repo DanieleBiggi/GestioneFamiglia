@@ -56,10 +56,10 @@ include 'includes/header.php';
     <span>Nuova interfaccia Vacanze V2 basata sul prototipo approvato.</span>
     <a class="btn btn-primary" href="vacanze_workspace.php?id=<?= $id ?>">Apri Vacanze V2</a>
   </div>
-  <a href="vacanze.php" class="btn btn-outline-light mb-3">← Indietro</a>
+  <a href="vacanze_lista.php" class="btn btn-outline-light mb-3">← Indietro</a>
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="vacanze.php">Vacanze</a></li>
+      <li class="breadcrumb-item"><a href="vacanze_lista.php">Vacanze</a></li>
       <li class="breadcrumb-item active" aria-current="page"><?= htmlspecialchars($viaggio['titolo']) ?></li>
     </ol>
   </nav>
