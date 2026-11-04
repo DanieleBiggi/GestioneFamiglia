@@ -7,7 +7,7 @@ if (!has_permission($conn, 'table:viaggi', 'view')) { http_response_code(403); e
 $conn->set_charset('utf8mb4');
 $id=(int)($_GET['id'] ?? 0);
 $tab=(string)($_GET['tab'] ?? 'overview');
-$tabs=['overview'=>'Riepilogo','compare'=>'Confronta scenari','catalog'=>'Catalogo spese','notes'=>'Note e documenti','photos'=>'Foto','checklist'=>'Checklist','sharing'=>'Condivisione','map'=>'Mappa'];
+$tabs=['overview'=>'Riepilogo','compare'=>'Confronta scenari','scenario'=>'Dettaglio scenario','catalog'=>'Catalogo spese','notes'=>'Note e documenti','photos'=>'Foto','checklist'=>'Checklist','sharing'=>'Condivisione','map'=>'Mappa'];
 if (!isset($tabs[$tab])) $tab='overview';
 $stmt=$conn->prepare('SELECT v.*,l.nome AS luogo_nome,l.lat AS luogo_lat,l.lng AS luogo_lng FROM viaggi v LEFT JOIN viaggi_luoghi l ON l.id_luogo=v.id_luogo WHERE v.id_viaggio=?');
 $stmt->bind_param('i',$id);$stmt->execute();$trip=$stmt->get_result()->fetch_assoc();$stmt->close();
@@ -92,6 +92,24 @@ if($tab==='notes'){
 }
 
 // La mappa usa le associazioni multi-scenario, non il vecchio campo legacy.
+$scenarioId=(int)($_GET['alt'] ?? 0);
+$scenarioData=null;
+$scenarioExpenses=[];
+if ($tab==='scenario' && $scenarioId>0) {
+ $q=$conn->prepare('SELECT id_viaggio_alternativa,breve_descrizione FROM viaggi_alternative WHERE id_viaggio=? AND id_viaggio_alternativa=?');
+ $q->bind_param('ii',$id,$scenarioId);$q->execute();$scenarioData=$q->get_result()->fetch_assoc();$q->close();
+ if(!$scenarioData){http_response_code(404);exit('Scenario non trovato');}
+ foreach($expenseTypes as $type){
+  if(!has_permission($conn,'table:'.$type['table'],'view'))continue;
+  $table=$type['table'];$link=$type['link'];$key=$type['key'];$name=$type['name'];$formula=$type['formula'];
+  $q=$conn->prepare("SELECT e.`$key` AS id_spesa,e.`$name` AS voce,e.pagato,($formula) AS totale FROM `$table` e JOIN `$link` a ON a.`$key`=e.`$key` WHERE e.id_viaggio=? AND a.id_viaggio_alternativa=? ORDER BY e.`$key`");
+  $q->bind_param('ii',$id,$scenarioId);$q->execute();
+  $items=$q->get_result()->fetch_all(MYSQLI_ASSOC);$q->close();
+  foreach($items as &$item){$item['categoria']=$type['label'];$item['table']=$table;$item['key']=$key;$item['page']=$type['page'];$item['canEdit']=has_permission($conn,'table:'.$table,'update');$item['canCopy']=has_permission($conn,'table:'.$table,'insert');}
+  unset($item);
+  $scenarioExpenses=array_merge($scenarioExpenses,$items);
+ }
+}
 $mapAlternative=(int)($_GET['alt'] ?? 0);
 $mapPoints=[];
 $mapScenarios=[];
@@ -135,7 +153,7 @@ if ($tab==='map') {
 include 'includes/header.php';
 ?>
 <link rel="stylesheet" href="assets/vacanze_workspace.css?v=2">
-<main class="vw" id="vacanzeWorkspace" data-viaggio-id="<?= $id ?>">
+<main class="vw" id="vacanzeWorkspace" data-viaggio-id="<?= $id ?>" data-scenario-id="<?= $scenarioId ?>" data-csrf="<?= vwEsc($_SESSION['vacanze_csrf']) ?>">
  <?php if($workspaceError): ?><div class="alert alert-danger"><?= vwEsc($workspaceError) ?></div><?php endif; ?>
  <div class="vw-crumb"><a href="vacanze_lista.php">Vacanze</a> / <strong><?= vwEsc($trip['titolo']) ?></strong></div>
  <div class="vw-hero"><div><h1><?= vwEsc($trip['titolo']) ?></h1><div class="vw-muted"><?= vwEsc($trip['data_inizio'] ?: 'Date da definire') ?> – <?= vwEsc($trip['data_fine'] ?: 'Da definire') ?> · <?= (int)$trip['notti'] ?> notti · <?= (int)$trip['persone'] ?> persone · <?= vwEsc(ucfirst((string)$trip['stato'])) ?></div></div>
@@ -155,7 +173,7 @@ include 'includes/header.php';
  <div class="flex-grow-1"><label class="form-label" for="newScenario">Nuovo scenario</label><input class="vw-input w-100" id="newScenario" name="breve_descrizione" maxlength="100" placeholder="Es. Auto + appartamento" required></div>
  <button class="vw-btn vw-btn-primary" type="submit">+ Aggiungi scenario</button></form><?php endif; ?>
  <div class="vw-grid"><?php foreach($scenarios as $s): ?>
- <article class="vw-scenario"><h3><?= vwEsc($s['breve_descrizione']) ?></h3><div class="vw-price"><?= vwEuro($s['totale_viaggio']) ?></div><div class="vw-split"><span>Trasporti</span><b><?= vwEuro($s['totale_trasporti']) ?></b><span>Alloggi</span><b><?= vwEuro($s['totale_alloggi']) ?></b><span>Pasti</span><b><?= vwEuro($s['totale_pasti']) ?></b><span>Altri costi</span><b><?= vwEuro($s['totale_altri_costi']) ?></b></div><a class="vw-btn" href="vacanze_tratte.php?id=<?= $id ?>&alt=<?= (int)$s['id_viaggio_alternativa'] ?>">Gestisci spese</a>
+ <article class="vw-scenario"><h3><?= vwEsc($s['breve_descrizione']) ?></h3><div class="vw-price"><?= vwEuro($s['totale_viaggio']) ?></div><div class="vw-split"><span>Trasporti</span><b><?= vwEuro($s['totale_trasporti']) ?></b><span>Alloggi</span><b><?= vwEuro($s['totale_alloggi']) ?></b><span>Pasti</span><b><?= vwEuro($s['totale_pasti']) ?></b><span>Altri costi</span><b><?= vwEuro($s['totale_altri_costi']) ?></b></div><a class="vw-btn" href="<?= vwUrl($id,'scenario') ?>&alt=<?= (int)$s['id_viaggio_alternativa'] ?>">Gestisci spese</a>
  <?php if($canEditScenario): ?><form method="post" class="d-flex flex-wrap gap-2 mt-3">
  <input type="hidden" name="vacanze_csrf" value="<?= vwEsc($_SESSION['vacanze_csrf']) ?>">
  <input type="hidden" name="vw_action" value="edit_scenario">
@@ -173,6 +191,17 @@ include 'includes/header.php';
  <?php foreach($scenarios as $s): ?><tr><td><?= vwEsc($s['breve_descrizione']) ?></td><td><?= vwEuro($s['totale_trasporti']) ?></td><td><?= vwEuro($s['totale_alloggi']) ?></td><td><?= vwEuro($s['totale_pasti']) ?></td><td><?= vwEuro($s['totale_altri_costi']) ?></td><td class="vw-money"><b><?= vwEuro($s['totale_viaggio']) ?></b></td></tr><?php endforeach; ?></tbody></table></div>
  <div class="vw-card-mobile"><?php foreach($scenarios as $s): ?><article><h3><?= vwEsc($s['breve_descrizione']) ?></h3><div class="vw-price"><?= vwEuro($s['totale_viaggio']) ?></div><div class="vw-split"><span>Trasporti</span><b><?= vwEuro($s['totale_trasporti']) ?></b><span>Alloggi</span><b><?= vwEuro($s['totale_alloggi']) ?></b><span>Pasti</span><b><?= vwEuro($s['totale_pasti']) ?></b><span>Altri costi</span><b><?= vwEuro($s['totale_altri_costi']) ?></b></div></article><?php endforeach; ?></div></div>
  <div class="vw-panel"><h2>Come funzionano le spese condivise</h2><p>Una spesa può appartenere a più scenari senza essere duplicata. Se cambi il costo, la modifica si riflette in tutte le alternative collegate.</p></div>
+ <?php elseif($tab==='scenario'): ?>
+ <div class="vw-section-head"><h2>Scenario: <?= vwEsc($scenarioData['breve_descrizione'] ?? 'Seleziona uno scenario') ?></h2><div class="d-flex gap-2 flex-wrap"><a class="vw-btn" href="<?= vwUrl($id,'overview') ?>">Tutti gli scenari</a><a class="vw-btn" href="<?= vwUrl($id,'map') ?>&alt=<?= $scenarioId ?>">Mostra sulla mappa</a></div></div>
+ <?php if($scenarioData): ?>
+ <div class="vw-panel"><h3>Spese associate</h3>
+ <?php if(!$scenarioExpenses): ?><p class="vw-empty">Questo scenario non ha ancora spese assegnate.</p><?php endif; ?>
+ <div class="vw-table-wrap"><table class="vw-table"><thead><tr><th>Voce</th><th>Categoria</th><th>Pagamento</th><th class="vw-money">Importo</th><th>Azioni</th></tr></thead><tbody>
+ <?php foreach($scenarioExpenses as $e): ?><tr><td><?= vwEsc($e['voce'] ?: $e['categoria']) ?></td><td><?= vwEsc($e['categoria']) ?></td><td><?php if($e['canEdit']): ?><label><input type="checkbox" class="vw-payment" data-table="<?= vwEsc($e['table']) ?>" data-id="<?= (int)$e['id_spesa'] ?>" <?= (int)$e['pagato']?'checked':'' ?>> Pagata</label><?php else: ?><?= (int)$e['pagato']?'Pagata':'Da pagare' ?><?php endif; ?></td><td class="vw-money"><?= vwEuro($e['totale']) ?></td><td class="d-flex gap-2 flex-wrap"><?php if($e['canEdit']): ?><a class="vw-btn" href="<?= vwEsc($e['page']) ?>?id=<?= $id ?>&alt=<?= $scenarioId ?>&<?= vwEsc($e['key']) ?>=<?= (int)$e['id_spesa'] ?>">Modifica</a><?php endif; ?><?php if($e['canCopy']): ?><a class="vw-btn" href="<?= vwEsc($e['page']) ?>?id=<?= $id ?>&alt=<?= $scenarioId ?>&<?= vwEsc($e['key']) ?>=<?= (int)$e['id_spesa'] ?>&duplica=1">Duplica</a><?php endif; ?></td></tr><?php endforeach; ?></tbody></table></div>
+ <div class="vw-card-mobile"><?php foreach($scenarioExpenses as $e): ?><article><h3><?= vwEsc($e['voce'] ?: $e['categoria']) ?></h3><p class="vw-muted"><?= vwEsc($e['categoria']) ?> · <?= (int)$e['pagato']?'Pagata':'Da pagare' ?></p><div class="vw-price"><?= vwEuro($e['totale']) ?></div><div class="d-flex gap-2"><?php if($e['canEdit']): ?><a class="vw-btn" href="<?= vwEsc($e['page']) ?>?id=<?= $id ?>&alt=<?= $scenarioId ?>&<?= vwEsc($e['key']) ?>=<?= (int)$e['id_spesa'] ?>">Modifica</a><?php endif; ?><?php if($e['canCopy']): ?><a class="vw-btn" href="<?= vwEsc($e['page']) ?>?id=<?= $id ?>&alt=<?= $scenarioId ?>&<?= vwEsc($e['key']) ?>=<?= (int)$e['id_spesa'] ?>&duplica=1">Duplica</a><?php endif; ?></div></article><?php endforeach; ?></div>
+ </div>
+ <div class="vw-panel"><h3>Aggiungi una spesa allo scenario</h3><div class="d-flex flex-wrap gap-2"><?php foreach($expenseTypes as $type): ?><?php if(has_permission($conn,'table:'.$type['table'],'insert')): ?><a class="vw-btn" href="<?= vwEsc($type['page']) ?>?id=<?= $id ?>&alt=<?= $scenarioId ?>"><?= vwEsc($type['label']) ?></a><?php endif; ?><?php endforeach; ?></div></div>
+ <?php endif; ?>
  <?php elseif($tab==='catalog'): ?>
  <div class="vw-section-head"><h2>Catalogo delle spese</h2><a class="vw-btn vw-btn-primary" href="vacanze_spese_non_assegnate.php?id=<?= $id ?>">Spese non assegnate</a></div>
  <div class="vw-panel"><div class="vw-filter"><input class="vw-input" id="vwSearch" placeholder="Cerca una voce o una nota"><select class="vw-input" id="vwCategory"><option value="">Tutte le categorie</option><?php foreach($expenseTypes as $type): ?><option><?= vwEsc($type['label']) ?></option><?php endforeach; ?></select><select class="vw-input" id="vwAssigned"><option value="">Tutte le associazioni</option><option value="assigned">Assegnate</option><option value="unassigned">Non assegnate</option></select></div>
@@ -244,6 +273,18 @@ include 'includes/header.php';
  const search=document.getElementById('vwSearch'),category=document.getElementById('vwCategory'),assigned=document.getElementById('vwAssigned');
  function filter(){ document.querySelectorAll('.vw-expense').forEach(row=>{const ok=(!search||row.dataset.search.includes(search.value.toLocaleLowerCase('it-IT')))&&(!category||!category.value||row.dataset.category===category.value)&&(!assigned||!assigned.value||row.dataset.assigned===assigned.value);row.hidden=!ok;row.style.display=ok?'':'none';});}
  [search,category,assigned].forEach(el=>{if(el)el.addEventListener(el===search?'input':'change',filter)});
+ const toggles=document.querySelectorAll('.vw-payment');
+ toggles.forEach(toggle=>toggle.addEventListener('change',async()=>{
+ const value=toggle.checked?1:0;toggle.disabled=true;
+ const data=new FormData();data.set('table',toggle.dataset.table);data.set('id',toggle.dataset.id);
+ data.set('id_viaggio',document.getElementById('vacanzeWorkspace').dataset.viaggioId);
+ data.set('id_viaggio_alternativa',document.getElementById('vacanzeWorkspace').dataset.scenarioId);
+ data.set('value',String(value));data.set('vacanze_csrf',document.getElementById('vacanzeWorkspace').dataset.csrf);
+ try{const resp=await fetch('ajax/update_viaggi_pagamento.php',{method:'POST',body:data});const json=await resp.json();
+ if(!resp.ok||!json.success)throw new Error(json.error||'Errore');
+ }catch(err){toggle.checked=!toggle.checked;alert(err.message||'Impossibile aggiornare');}
+ finally{toggle.disabled=false;}
+ }));
  const docs=document.getElementById('vwDocForm');
  if(docs)docs.addEventListener('submit',async e=>{
   e.preventDefault();const status=document.getElementById('vwDocResult');status.textContent='Salvataggio…';
