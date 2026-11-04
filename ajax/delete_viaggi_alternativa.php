@@ -64,6 +64,18 @@ try {
     }
     $delAlt->close();
 
+    // Dopo la cascata, riallinea il campo legacy al primo scenario superstite.
+    foreach ([
+        ['viaggi_tratte', 'viaggi_tratte_alternative', 'id_tratta'],
+        ['viaggi_alloggi', 'viaggi_alloggi_alternative', 'id_alloggio'],
+        ['viaggi_pasti', 'viaggi_pasti_alternative', 'id_pasto'],
+        ['viaggi_altri_costi', 'viaggi_altri_costi_alternative', 'id_costo']
+    ] as [$table, $link, $key]) {
+        $sync = $conn->prepare("UPDATE `$table` e SET e.id_viaggio_alternativa=(SELECT MIN(l.id_viaggio_alternativa) FROM `$link` l WHERE l.`$key`=e.`$key`) WHERE e.id_viaggio=?");
+        $sync->bind_param('i', $idViaggio);
+        $sync->execute();
+        $sync->close();
+    }
     $conn->commit();
     echo json_encode(['success' => true]);
 } catch (Throwable $ex) {
