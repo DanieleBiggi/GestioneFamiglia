@@ -52,6 +52,10 @@ $docRes = $docStmt->get_result();
 include 'includes/header.php';
 ?>
 <div class="container text-white">
+  <div class="alert alert-info d-flex justify-content-between align-items-center gap-2 flex-wrap">
+    <span>Nuova interfaccia Vacanze V2 basata sul prototipo approvato.</span>
+    <a class="btn btn-primary" href="vacanze_workspace.php?id=<?= $id ?>">Apri Vacanze V2</a>
+  </div>
   <a href="vacanze.php" class="btn btn-outline-light mb-3">← Indietro</a>
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
