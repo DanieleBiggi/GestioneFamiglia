@@ -72,7 +72,7 @@ $comments->close();
 include 'includes/header.php';
 ?>
 <div class="container text-white my-3">
-  <a class="btn btn-outline-light mb-3" href="vacanze_view.php?id=<?= $id ?>">← Vacanza</a>
+  <a class="btn btn-outline-light mb-3" href="vacanze_workspace.php?id=<?= $id ?>">← Vacanza</a>
   <h4>Commenti: <?= htmlspecialchars($viaggio['titolo'], ENT_QUOTES, 'UTF-8') ?></h4>
   <?php if ($error): ?><div class="alert alert-danger"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
   <?php if ($canComment): ?>
