@@ -42,7 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['delete']) && !$canDeleteSpesa) { http_response_code(403); exit('Accesso negato'); }
     if (!isset($_POST['delete']) && !($id_tratta ? $canUpdateSpesa : $canInsertSpesa)) { http_response_code(403); exit('Accesso negato'); }
     if (!hash_equals($_SESSION['vacanze_csrf'] ?? '', (string)($_POST['vacanze_csrf'] ?? '')) || empty($_SESSION['vacanze_csrf'])) { http_response_code(403); exit('Token non valido'); }
-    $id_tratta = (int)($_POST['id_tratta'] ?? 0);
+    $postedSpesaId = (int)($_POST['id_tratta'] ?? 0);
+    if ($postedSpesaId !== $id_tratta) { http_response_code(400); exit('Identificativo spesa non valido'); }
     $selectedAltIds = array_map('intval', (array)($_POST['id_alternative'] ?? []));
     $id_alt = $selectedAltIds[0] ?? null;
     $tipo = $_POST['tipo_tratta'] ?? 'auto';
