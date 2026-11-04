@@ -61,16 +61,26 @@ $coStmt->execute();
 $coRes = $coStmt->get_result();
 $altri_costi = $coRes->fetch_all(MYSQLI_ASSOC);
 
+// Never render a category unless this user may view its records.
+$canViewTratta = has_permission($conn, 'table:viaggi_tratte', 'view');
+$canViewAlloggio = has_permission($conn, 'table:viaggi_alloggi', 'view');
+$canViewPasto = has_permission($conn, 'table:viaggi_pasti', 'view');
+$canViewCosto = has_permission($conn, 'table:viaggi_altri_costi', 'view');
+if (!$canViewTratta) { $tratte = []; }
+if (!$canViewAlloggio) { $alloggi = []; }
+if (!$canViewPasto) { $pasti = []; }
+if (!$canViewCosto) { $altri_costi = []; }
+
 $canEditAlt = has_permission($conn, 'ajax:update_viaggi_alternativa', 'update');
-$canInsertTratta = has_permission($conn, 'table:viaggi_tratte', 'insert');
-$canUpdateTratta = has_permission($conn, 'table:viaggi_tratte', 'update');
+$canInsertTratta = $canViewTratta && has_permission($conn, 'table:viaggi_tratte', 'insert');
+$canUpdateTratta = $canViewTratta && has_permission($conn, 'table:viaggi_tratte', 'update');
 $canDeleteAlt = has_permission($conn, 'ajax:delete_viaggi_alternativa', 'delete');
-$canInsertAlloggio = has_permission($conn, 'table:viaggi_alloggi', 'insert');
-$canUpdateAlloggio = has_permission($conn, 'table:viaggi_alloggi', 'update');
-$canInsertPasto = has_permission($conn, 'table:viaggi_pasti', 'insert');
-$canUpdatePasto = has_permission($conn, 'table:viaggi_pasti', 'update');
-$canInsertCosto = has_permission($conn, 'table:viaggi_altri_costi', 'insert');
-$canUpdateCosto = has_permission($conn, 'table:viaggi_altri_costi', 'update');
+$canInsertAlloggio = $canViewAlloggio && has_permission($conn, 'table:viaggi_alloggi', 'insert');
+$canUpdateAlloggio = $canViewAlloggio && has_permission($conn, 'table:viaggi_alloggi', 'update');
+$canInsertPasto = $canViewPasto && has_permission($conn, 'table:viaggi_pasti', 'insert');
+$canUpdatePasto = $canViewPasto && has_permission($conn, 'table:viaggi_pasti', 'update');
+$canInsertCosto = $canViewCosto && has_permission($conn, 'table:viaggi_altri_costi', 'insert');
+$canUpdateCosto = $canViewCosto && has_permission($conn, 'table:viaggi_altri_costi', 'update');
 
 function computeSummary(array $items, string $field): array {
     $total = 0.0;
