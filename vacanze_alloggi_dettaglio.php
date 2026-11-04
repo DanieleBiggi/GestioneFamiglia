@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$del->execute()) { throw new RuntimeException('Eliminazione fallita'); }
     } elseif ($id_alloggio) {
         $upd = $conn->prepare('UPDATE viaggi_alloggi SET id_viaggio_alternativa=?, giorno_indice=?, nome_alloggio=?, indirizzo=?, lat=?, lng=?, data_checkin=?, data_checkout=?, costo_notte_eur=?, note=?, pagato=? WHERE id_alloggio=? AND id_viaggio=?');
-        $upd->bind_param('iissddsssdsiii', $id_alt, $giorno, $nome, $indirizzo, $lat, $lng, $checkin, $checkout, $costo, $note, $pagato, $id_alloggio, $id);
+        $upd->bind_param('iissddssdsiii', $id_alt, $giorno, $nome, $indirizzo, $lat, $lng, $checkin, $checkout, $costo, $note, $pagato, $id_alloggio, $id);
         if (!$upd->execute()) { throw new RuntimeException('Aggiornamento fallito'); }
         vacanze_sync_spesa_alternative($conn, 'viaggi_alloggi', $id_alloggio, $id, $selectedAltIds);
     } else {
