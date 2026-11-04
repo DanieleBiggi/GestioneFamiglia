@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $del = $conn->prepare('DELETE FROM viaggi_altri_costi WHERE id_costo=? AND id_viaggio=?');
         $del->bind_param('ii', $id_costo, $id);
         if (!$del->execute()) { throw new RuntimeException('Eliminazione fallita'); }
-    } elseif ($id_costo) {
+    } elseif ($id_costo && !$duplica) {
         $upd = $conn->prepare('UPDATE viaggi_altri_costi SET id_viaggio_alternativa=?, data=?, importo_eur=?, descrizione=?, note=?, pagato=? WHERE id_costo=? AND id_viaggio=?');
         $upd->bind_param('isdssiii', $id_alt, $data, $importo, $descrizione, $note, $pagato, $id_costo, $id);
         if (!$upd->execute()) { throw new RuntimeException('Aggiornamento fallito'); }
