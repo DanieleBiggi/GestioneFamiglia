@@ -33,7 +33,7 @@ if (!$viaggio) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['delete']) && !$canDeleteSpesa) { http_response_code(403); exit('Accesso negato'); }
-    if (!isset($_POST['delete']) && !($id_alloggio ? $canUpdateSpesa : $canInsertSpesa)) { http_response_code(403); exit('Accesso negato'); }
+    if (!isset($_POST['delete']) && !($id_alloggio && !$duplica ? $canUpdateSpesa : $canInsertSpesa)) { http_response_code(403); exit('Accesso negato'); }
     if (!hash_equals($_SESSION['vacanze_csrf'] ?? '', (string)($_POST['vacanze_csrf'] ?? '')) || empty($_SESSION['vacanze_csrf'])) { http_response_code(403); exit('Token non valido'); }
     $postedSpesaId = (int)($_POST['id_alloggio'] ?? 0);
     if ($postedSpesaId !== ($duplica ? 0 : $id_alloggio)) { http_response_code(400); exit('Identificativo spesa non valido'); }
