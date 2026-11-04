@@ -85,6 +85,12 @@ if ($tab==='sharing') {
  $q=$conn->prepare('SELECT c.id_condivisione,c.creato_il,c.scade_il,c.revocato_il,GROUP_CONCAT(a.breve_descrizione SEPARATOR ", ") AS scenari FROM viaggi_condivisioni c LEFT JOIN viaggi_condivisioni_alternative ca ON ca.id_condivisione=c.id_condivisione LEFT JOIN viaggi_alternative a ON a.id_viaggio_alternativa=ca.id_viaggio_alternativa AND a.id_viaggio=c.id_viaggio WHERE c.id_viaggio=? GROUP BY c.id_condivisione ORDER BY c.id_condivisione DESC');
  $q->bind_param('i',$id);$q->execute();$shared=$q->get_result()->fetch_all(MYSQLI_ASSOC);$q->close();
 }
+$tripPhotos=[];
+if($tab==='photos'){
+ $q=$conn->prepare('SELECT id_foto,photo_reference FROM viaggi_luogo_foto WHERE id_luogo=? ORDER BY id_foto');
+ $placeId=(int)($trip['id_luogo'] ?? 0);
+ $q->bind_param('i',$placeId);$q->execute();$tripPhotos=$q->get_result()->fetch_all(MYSQLI_ASSOC);$q->close();
+}
 $docs=[];
 if($tab==='notes'){
  $q=$conn->prepare('SELECT oc.nome_file,oc.descrizione FROM viaggi2caricamenti vc JOIN ocr_caricamenti oc ON oc.id_caricamento=vc.id_caricamento WHERE vc.id_viaggio=? ORDER BY vc.id_caricamento DESC');
@@ -241,7 +247,15 @@ include 'includes/header.php';
  </div>
  <div class="vw-panel"><h2>Note e preventivi delle singole spese</h2><p class="vw-muted">Apri la spesa dal catalogo: note e preventivi appartengono alla voce, non al singolo scenario.</p><a class="vw-btn" href="<?= vwUrl($id,'catalog') ?>">Apri catalogo</a></div>
  <?php elseif($tab==='photos'): ?>
- <div class="vw-panel"><h2>Foto della vacanza</h2><p class="vw-muted">La copertina e le fotografie disponibili si gestiscono attualmente dalla modifica della vacanza.</p><a class="vw-btn" href="vacanze_modifica.php?id=<?= $id ?>">Gestisci foto e copertina</a></div>
+ <div class="vw-panel"><div class="vw-section-head"><h2>Foto della vacanza</h2><?php if($canEdit): ?><a class="vw-btn" href="vacanze_modifica.php?id=<?= $id ?>">Modifica copertina</a><?php endif; ?></div>
+ <?php if(!$tripPhotos): ?><p class="vw-muted">Nessuna foto disponibile per la destinazione selezionata.</p><?php endif; ?>
+ <div class="vw-grid">
+ <?php foreach($tripPhotos as $photo): ?>
+ <?php $photoRef=(string)$photo['photo_reference'];$apiKey=(string)($config['GOOGLE_PLACES_FOTO_API'] ?? ''); ?>
+ <?php if($apiKey!==''): ?><figure class="vw-scenario" style="padding:6px;margin:0"><img loading="lazy" style="width:100%;height:210px;object-fit:cover;border-radius:8px" alt="Foto della destinazione" src="https://maps.googleapis.com/maps/api/place/photo?maxwidth=700&amp;photo_reference=<?= rawurlencode($photoRef) ?>&amp;key=<?= rawurlencode($apiKey) ?>"></figure><?php endif; ?>
+ <?php endforeach; ?>
+ </div>
+ </div>
  <?php elseif($tab==='checklist'): ?>
  <div class="vw-section-head"><h2>Checklist della vacanza</h2><a class="vw-btn vw-btn-primary" href="vacanze_checklist.php?id=<?= $id ?>">+ Nuova voce</a></div>
  <?php $complete=count(array_filter($checklist,fn($v)=>(int)$v['completata']===1)); ?>
