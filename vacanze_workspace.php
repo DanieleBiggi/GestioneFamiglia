@@ -188,7 +188,7 @@ if ($tab==='map') {
 
 include 'includes/header.php';
 ?>
-<link rel="stylesheet" href="assets/vacanze_workspace.css?v=4">
+<link rel="stylesheet" href="assets/vacanze_workspace.css?v=5">
 <main class="vw" id="vacanzeWorkspace" data-viaggio-id="<?= $id ?>" data-scenario-id="<?= $scenarioId ?>" data-csrf="<?= vwEsc($_SESSION['vacanze_csrf']) ?>">
  <?php if($workspaceError): ?><div class="alert alert-danger"><?= vwEsc($workspaceError) ?></div><?php endif; ?>
  <div class="vw-crumb"><a href="vacanze_lista.php">Vacanze</a> / <strong><?= vwEsc($trip['titolo']) ?></strong></div>
