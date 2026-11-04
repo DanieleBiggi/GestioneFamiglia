@@ -2,6 +2,9 @@
 include 'includes/session_check.php';
 include 'includes/db.php';
 require_once 'includes/permissions.php';
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$conn->set_charset('utf8mb4');
+header('Cache-Control: no-store, private');
 if (!has_permission($conn,'table:viaggi','view')) { http_response_code(403); exit('Accesso negato'); }
 $id=(int)($_GET['id'] ?? 0);
 $canManage=has_permission($conn,'table:viaggi','update');
@@ -32,6 +35,8 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
    else {
     $raw=bin2hex(random_bytes(32)); $hash=hash('sha256',$raw);
     $uid=(int)$_SESSION['utente_id'];
+    $host=(string)($_SERVER['HTTP_HOST'] ?? '');
+    if (!preg_match('/^[a-z0-9.-]+(?::[0-9]{1,5})?$/iD', $host)) { http_response_code(400); exit('Host non valido'); }
     $conn->begin_transaction();
     try {
      $ins=$conn->prepare('INSERT INTO viaggi_condivisioni (id_viaggio,token_sha256,creato_da,scade_il) VALUES (?,?,?,UTC_TIMESTAMP() + INTERVAL 7 DAY)');
@@ -40,8 +45,6 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
      foreach ($ids as $altId) { $link->bind_param('ii',$shareId,$altId); $link->execute(); }
      $link->close(); $conn->commit();
      $base=dirname($_SERVER['SCRIPT_NAME']); $base=$base==='/'?'':rtrim($base,'/');
-     $host=(string)($_SERVER['HTTP_HOST'] ?? '');
-     if (!preg_match('/^[a-z0-9.-]+(?::[0-9]{1,5})?$/iD', $host)) { throw new RuntimeException('Host non valido'); }
      $createdUrl='https://'.$host.$base.'/vacanze_condivisa.php?token='.$raw;
     } catch (Throwable $e) { $conn->rollback(); $error='Impossibile creare la condivisione.'; }
    }
