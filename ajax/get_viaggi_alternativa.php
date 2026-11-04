@@ -29,7 +29,7 @@ while ($row = $trRes->fetch_assoc()) {
     ];
 }
 
-$allStmt = $conn->prepare('SELECT nome_alloggio, data_checkin, data_checkout, DATEDIFF(data_checkout, data_checkin) * COALESCE(costo_notte_eur,0) AS totale FROM viaggi_alloggi WHERE id_viaggio=? AND id_viaggio_alternativa=? ORDER BY id_alloggio');
+$allStmt = $conn->prepare('SELECT nome_alloggio, data_checkin, data_checkout, COALESCE(costo_totale_eur,DATEDIFF(data_checkout, data_checkin) * COALESCE(costo_notte_eur,0)) AS totale FROM viaggi_alloggi WHERE id_viaggio=? AND id_viaggio_alternativa=? ORDER BY id_alloggio');
 $allStmt->bind_param('ii', $idViaggio, $idAlt);
 $allStmt->execute();
 $allRes = $allStmt->get_result();

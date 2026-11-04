@@ -48,7 +48,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $lng = (($_POST['lng'] ?? '') !== '') ? (float)$_POST['lng'] : null;
     $checkin = $_POST['data_checkin'] ?: null;
     $checkout = $_POST['data_checkout'] ?: null;
-    $costo = (float)($_POST['costo_notte_eur'] ?? 0);
+    $tipoCosto=(string)($_POST['tipo_costo'] ?? 'notte');
+    if (!in_array($tipoCosto,['notte','totale'],true)) { http_response_code(400); exit('Tipo di costo non valido'); }
+    $rawCosto=(string)($_POST['importo_alloggio_eur'] ?? '');
+    if(!isset($_POST['delete']) && ($rawCosto==='' || !is_numeric($rawCosto) || (float)$rawCosto<0)){
+        http_response_code(400);exit('Inserisci un importo valido');
+    }
+    $importo=(float)$rawCosto;
+    $costo=$tipoCosto==='notte'?$importo:0.0;
+    $costoTotale=$tipoCosto==='totale'?$importo:null;
     $note = $_POST['note'] ?? null;
     $pagato = isset($_POST['pagato']) ? 1 : 0;
 
@@ -59,13 +67,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $del->bind_param('ii', $id_alloggio, $id);
         if (!$del->execute()) { throw new RuntimeException('Eliminazione fallita'); }
     } elseif ($id_alloggio && !$duplica) {
-        $upd = $conn->prepare('UPDATE viaggi_alloggi SET id_viaggio_alternativa=?, giorno_indice=?, nome_alloggio=?, indirizzo=?, lat=?, lng=?, data_checkin=?, data_checkout=?, costo_notte_eur=?, note=?, pagato=? WHERE id_alloggio=? AND id_viaggio=?');
-        $upd->bind_param('iissddssdsiii', $id_alt, $giorno, $nome, $indirizzo, $lat, $lng, $checkin, $checkout, $costo, $note, $pagato, $id_alloggio, $id);
+        $upd = $conn->prepare('UPDATE viaggi_alloggi SET id_viaggio_alternativa=?, giorno_indice=?, nome_alloggio=?, indirizzo=?, lat=?, lng=?, data_checkin=?, data_checkout=?, costo_notte_eur=?, costo_totale_eur=?, note=?, pagato=? WHERE id_alloggio=? AND id_viaggio=?');
+        $upd->bind_param('iissddssddsiii', $id_alt, $giorno, $nome, $indirizzo, $lat, $lng, $checkin, $checkout, $costo, $costoTotale, $note, $pagato, $id_alloggio, $id);
         if (!$upd->execute()) { throw new RuntimeException('Aggiornamento fallito'); }
         vacanze_sync_spesa_alternative($conn, 'viaggi_alloggi', $id_alloggio, $id, $selectedAltIds);
     } else {
-        $ins = $conn->prepare('INSERT INTO viaggi_alloggi (id_viaggio, id_viaggio_alternativa, giorno_indice, nome_alloggio, indirizzo, lat, lng, data_checkin, data_checkout, costo_notte_eur, note, pagato) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
-        $ins->bind_param('iiissddssdsi', $id, $id_alt, $giorno, $nome, $indirizzo, $lat, $lng, $checkin, $checkout, $costo, $note, $pagato);
+        $ins = $conn->prepare('INSERT INTO viaggi_alloggi (id_viaggio, id_viaggio_alternativa, giorno_indice, nome_alloggio, indirizzo, lat, lng, data_checkin, data_checkout, costo_notte_eur, costo_totale_eur, note, pagato) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
+        $ins->bind_param('iiissddssddsi', $id, $id_alt, $giorno, $nome, $indirizzo, $lat, $lng, $checkin, $checkout, $costo, $costoTotale, $note, $pagato);
         if (!$ins->execute()) { throw new RuntimeException('Inserimento fallito'); }
         vacanze_sync_spesa_alternative($conn, 'viaggi_alloggi', (int)$conn->insert_id, $id, $selectedAltIds);
     }
@@ -88,6 +96,7 @@ $alloggio = [
     'data_checkin' => '',
     'data_checkout' => '',
     'costo_notte_eur' => '',
+    'costo_totale_eur' => null,
     'note' => '',
     'pagato' => 0,
 ];
@@ -156,9 +165,18 @@ $alt_desc = $alternative[$alt] ?? '';
         <input type="date" class="form-control" name="data_checkout" id="data_checkout" value="<?= htmlspecialchars($alloggio['data_checkout']) ?>">
       </div>
     </div>
-    <div class="mb-3 mt-2">
-      <label class="form-label">Costo notte €</label>
-      <input type="number" step="0.01" class="form-control" name="costo_notte_eur" value="<?= htmlspecialchars($alloggio['costo_notte_eur']) ?>">
+    <?php $tipoCostoAttuale=isset($alloggio['costo_totale_eur']) && $alloggio['costo_totale_eur']!==null ? 'totale' : 'notte'; ?>
+    <fieldset class="mb-3 mt-3">
+      <legend class="fs-6">Come vuoi inserire il prezzo?</legend>
+      <div class="d-flex flex-wrap gap-3">
+        <label><input type="radio" name="tipo_costo" value="notte" <?= $tipoCostoAttuale==='notte'?'checked':'' ?>> Prezzo per notte</label>
+        <label><input type="radio" name="tipo_costo" value="totale" <?= $tipoCostoAttuale==='totale'?'checked':'' ?>> Totale soggiorno</label>
+      </div>
+    </fieldset>
+    <div class="mb-3">
+      <label class="form-label" for="importo_alloggio_eur" id="labelImportoAlloggio">Prezzo per notte (€)</label>
+      <input id="importo_alloggio_eur" type="number" min="0" step="0.01" required class="form-control" name="importo_alloggio_eur" value="<?= htmlspecialchars((string)($tipoCostoAttuale==='totale' ? $alloggio['costo_totale_eur'] : $alloggio['costo_notte_eur']), ENT_QUOTES, 'UTF-8') ?>">
+      <div class="form-text" id="riepilogoCostoAlloggio" aria-live="polite"></div>
     </div>
     <div class="form-check form-switch mb-3">
       <input class="form-check-input" type="checkbox" name="pagato" id="pagato_alloggio" <?= !empty($alloggio['pagato']) ? 'checked' : '' ?>>
@@ -187,6 +205,21 @@ function updateCheckoutMin() {
 }
 checkinInput.addEventListener('change', updateCheckoutMin);
 updateCheckoutMin();
+const costoInput=document.getElementById('importo_alloggio_eur');
+const labelCosto=document.getElementById('labelImportoAlloggio');
+const riepilogoCosto=document.getElementById('riepilogoCostoAlloggio');
+function aggiornaCostoAlloggio(){
+ const tipo=document.querySelector('input[name="tipo_costo"]:checked')?.value || 'notte';
+ labelCosto.textContent=tipo==='totale'?'Totale soggiorno (€)':'Prezzo per notte (€)';
+ const start=checkinInput.value,end=checkoutInput.value;
+ const notti=start&&end?Math.round((new Date(end+'T12:00:00')-new Date(start+'T12:00:00'))/86400000):0;
+ const val=parseFloat(costoInput.value);
+ if(tipo==='notte')riepilogoCosto.textContent=notti>0&&Number.isFinite(val)?`Totale stimato: € ${ (notti*val).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}) } per ${notti} notti`:'Il totale sarà calcolato dalle date di check-in e check-out.';
+ else riepilogoCosto.textContent=Number.isFinite(val)?`Totale del soggiorno: € ${val.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})}`:'L’importo indicato sarà il totale, senza moltiplicazione per le notti.';
+}
+document.querySelectorAll('input[name="tipo_costo"]').forEach(el=>el.addEventListener('change',aggiornaCostoAlloggio));
+[costoInput,checkinInput,checkoutInput].forEach(el=>el.addEventListener('input',aggiornaCostoAlloggio));
+aggiornaCostoAlloggio();
 
 let autocomplete;
 async function initAutocomplete() {
