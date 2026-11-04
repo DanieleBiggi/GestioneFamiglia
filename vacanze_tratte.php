@@ -2,6 +2,7 @@
 <?php
 include 'includes/db.php';
 if (empty($_SESSION['vacanze_csrf'])) { $_SESSION['vacanze_csrf'] = bin2hex(random_bytes(32)); }
+$vacanzeTokenTag = '<meta name="vacanze-csrf" content="' . htmlspecialchars($_SESSION['vacanze_csrf'], ENT_QUOTES, 'UTF-8') . '">';
 include 'includes/header.php';
 
 $id = (int)($_GET['id'] ?? 0);
@@ -139,6 +140,7 @@ $summaryPasti = computeSummary($pasti, 'costo_medio_eur');
 $summaryAltri = computeSummary($altri_costi, 'importo_eur');
 $summaryOverall = combineSummaries([$summaryTratte, $summaryAlloggi, $summaryPasti, $summaryAltri]);
 ?>
+<?= $vacanzeTokenTag ?>
 <div class="container text-white">
   <a href="vacanze_view.php?id=<?= $id ?>" class="btn btn-outline-light mb-3">← Indietro</a>
   <nav aria-label="breadcrumb">
