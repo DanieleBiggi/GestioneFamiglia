@@ -3,6 +3,7 @@
 include 'includes/db.php';
 include 'includes/header.php';
 
+if (!has_permission($conn, 'table:viaggi', 'view')) { http_response_code(403); exit('Accesso negato'); }
 $canUpdateViaggio = has_permission($conn, 'table:viaggi', 'update');
 $canAddAlternativa = has_permission($conn, 'ajax:add_viaggi_alternativa', 'insert');
 $canAddDocumento = has_permission($conn, 'ajax:add_viaggi_documento', 'insert');
@@ -78,7 +79,7 @@ $docRes = $docStmt->get_result();
       <?php if (trim($viaggio['note'] ?? '') === ''): ?>
         <p class="text-muted">Nessuna nota.</p>
       <?php else: ?>
-        <div><?= $viaggio['note'] ?></div>
+        <div><?= nl2br(htmlspecialchars($viaggio['note'], ENT_QUOTES, 'UTF-8')) ?></div>
       <?php endif; ?>
     <?php endif; ?>
   </div>
