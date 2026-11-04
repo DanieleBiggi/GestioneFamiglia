@@ -160,6 +160,7 @@ include 'includes/header.php';
  <div class="d-flex flex-wrap gap-2"><?php if($canEdit): ?><a class="vw-btn" href="vacanze_modifica.php?id=<?= $id ?>">Modifica vacanza</a><?php endif; ?><a class="vw-btn vw-btn-primary" href="<?= vwUrl($id,'catalog') ?>">+ Nuova spesa</a></div></div>
  <nav class="vw-tabs" aria-label="Sezioni della vacanza"><?php foreach($tabs as $key=>$label): ?><a class="vw-tab <?= $tab===$key?'active':'' ?>" href="<?= vwUrl($id,$key) ?>"><?= vwEsc($label) ?></a><?php endforeach; ?></nav>
  <?php if($tab==='overview'): ?>
+ <div class="d-flex flex-wrap gap-2 mb-3"><a class="vw-btn" href="<?= vwUrl($id,'map') ?>"><i class="bi bi-geo-alt"></i> Apri mappa</a><a class="vw-btn" href="<?= vwUrl($id,'notes') ?>">Note e documenti</a></div>
  <div class="vw-note">Le spese condivise si aggiornano in tutti gli scenari collegati. Le spese non assegnate rimangono nel catalogo e non entrano nei totali.</div>
  <div class="vw-grid">
   <div class="vw-panel"><div class="vw-stat-label">Scenari a confronto</div><div class="vw-stat-num"><?= count($scenarios) ?></div><div class="vw-muted">Combinazioni disponibili</div></div>
@@ -182,7 +183,7 @@ include 'includes/header.php';
  <button class="vw-btn" type="submit">Rinomina</button>
  </form><?php endif; ?></article>
  <?php endforeach; ?><?php if(!$scenarios): ?><p class="vw-empty">Nessuno scenario.</p><?php endif; ?></div>
- <div class="vw-panel"><div class="vw-section-head"><h2>Spese ancora da assegnare</h2><a class="vw-btn" href="<?= vwUrl($id,'catalog') ?>">Apri catalogo</a></div>
+ <div class="vw-panel"><div class="vw-section-head"><h2>Spese ancora da assegnare</h2><a class="vw-btn" href="<?= vwUrl($id,'catalog') ?>&filter=unassigned">Apri catalogo</a></div>
  <?php if(!$unassigned): ?><p class="vw-muted">Tutte le spese sono assegnate.</p><?php endif; ?>
  <?php foreach(array_slice($unassigned,0,5) as $e): ?><p><a href="<?= vwEsc($e['page']) ?>?id=<?= $id ?>&<?= vwEsc($e['key']) ?>=<?= (int)$e['id_spesa'] ?>"><?= vwEsc($e['voce'] ?: $e['categoria']) ?></a> · <?= vwEuro($e['totale']) ?></p><?php endforeach; ?></div>
  <?php elseif($tab==='compare'): ?>
@@ -206,7 +207,7 @@ include 'includes/header.php';
  <div class="vw-panel"><h3>Aggiungi una spesa allo scenario</h3><div class="d-flex flex-wrap gap-2"><?php foreach($expenseTypes as $type): ?><?php if(has_permission($conn,'table:'.$type['table'],'insert')): ?><a class="vw-btn" href="<?= vwEsc($type['page']) ?>?id=<?= $id ?>&alt=<?= $scenarioId ?>"><?= vwEsc($type['label']) ?></a><?php endif; ?><?php endforeach; ?></div></div>
  <?php endif; ?>
  <?php elseif($tab==='catalog'): ?>
- <div class="vw-section-head"><h2>Catalogo delle spese</h2><a class="vw-btn vw-btn-primary" href="vacanze_spese_non_assegnate.php?id=<?= $id ?>">Spese non assegnate</a></div>
+ <div class="vw-section-head"><h2>Catalogo delle spese</h2><a class="vw-btn vw-btn-primary" href="<?= vwUrl($id,'catalog') ?>&filter=unassigned">Spese non assegnate</a></div>
  <div class="vw-panel"><div class="vw-filter"><input class="vw-input" id="vwSearch" placeholder="Cerca una voce o una nota"><select class="vw-input" id="vwCategory"><option value="">Tutte le categorie</option><?php foreach($expenseTypes as $type): ?><option><?= vwEsc($type['label']) ?></option><?php endforeach; ?></select><select class="vw-input" id="vwAssigned"><option value="">Tutte le associazioni</option><option value="assigned">Assegnate</option><option value="unassigned">Non assegnate</option></select></div>
  <div class="vw-table-wrap"><table class="vw-table"><thead><tr><th>Voce</th><th>Categoria</th><th>Scenari collegati</th><th>Stato</th><th class="vw-money">Importo</th><th></th></tr></thead><tbody>
  <?php foreach($expenses as $e): ?><tr class="vw-expense" data-category="<?= vwEsc($e['categoria']) ?>" data-assigned="<?= (int)$e['num_scenari']?'assigned':'unassigned' ?>" data-search="<?= vwEsc(mb_strtolower((string)$e['voce'].' '.(string)$e['note'])) ?>"><td><?= vwEsc($e['voce'] ?: $e['categoria']) ?></td><td><?= vwEsc($e['categoria']) ?></td><td><?= vwEsc($e['scenari'] ?: 'Non assegnata') ?></td><td><?= (int)$e['pagato']?'Pagata':'Da pagare' ?></td><td class="vw-money"><?= vwEuro($e['totale']) ?></td><td><a class="vw-btn" href="<?= vwEsc($e['page']) ?>?id=<?= $id ?>&<?= vwEsc($e['key']) ?>=<?= (int)$e['id_spesa'] ?>">Apri</a></td></tr><?php endforeach; ?>
@@ -275,6 +276,7 @@ include 'includes/header.php';
 (function(){
  const search=document.getElementById('vwSearch'),category=document.getElementById('vwCategory'),assigned=document.getElementById('vwAssigned');
  function filter(){ document.querySelectorAll('.vw-expense').forEach(row=>{const ok=(!search||row.dataset.search.includes(search.value.toLocaleLowerCase('it-IT')))&&(!category||!category.value||row.dataset.category===category.value)&&(!assigned||!assigned.value||row.dataset.assigned===assigned.value);row.hidden=!ok;row.style.display=ok?'':'none';});}
+ if(assigned && new URLSearchParams(location.search).get('filter')==='unassigned'){assigned.value='unassigned';filter();}
  [search,category,assigned].forEach(el=>{if(el)el.addEventListener(el===search?'input':'change',filter)});
  const deleteScenario=document.querySelector('.vw-delete-scenario');
  if(deleteScenario)deleteScenario.addEventListener('click',async()=>{
