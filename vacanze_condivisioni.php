@@ -59,7 +59,7 @@ function esc($v) { return htmlspecialchars((string)$v,ENT_QUOTES,'UTF-8'); }
 include 'includes/header.php';
 ?>
 <div class="container text-white my-3">
-<a class="btn btn-outline-light mb-3" href="vacanze_view.php?id=<?= $id ?>">← Vacanza</a>
+<a class="btn btn-outline-light mb-3" href="vacanze_workspace.php?id=<?= $id ?>">← Vacanza</a>
 <h4>Condivisioni: <?= esc($trip['titolo']) ?></h4>
 <p class="text-secondary">I link sono validi per 7 giorni. Il link completo viene mostrato solo alla creazione.</p>
 <?php if ($error): ?><div class="alert alert-danger"><?= esc($error) ?></div><?php endif; ?>
