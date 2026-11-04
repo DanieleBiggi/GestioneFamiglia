@@ -1,6 +1,7 @@
 <?php include 'includes/session_check.php'; ?>
 <?php
 include 'includes/db.php';
+if (empty($_SESSION['vacanze_csrf'])) { $_SESSION['vacanze_csrf'] = bin2hex(random_bytes(32)); }
 include 'includes/header.php';
 
 $id = (int)($_GET['id'] ?? 0);
