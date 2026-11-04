@@ -93,6 +93,7 @@ if($tab==='notes'){
 
 // La mappa usa le associazioni multi-scenario, non il vecchio campo legacy.
 $scenarioId=(int)($_GET['alt'] ?? 0);
+if($tab==='scenario' && $scenarioId<=0 && $scenarios) $scenarioId=(int)$scenarios[0]['id_viaggio_alternativa'];
 $scenarioData=null;
 $scenarioExpenses=[];
 if ($tab==='scenario' && $scenarioId>0) {
