@@ -36,10 +36,17 @@ if ($id <= 0 || $viaggioId <= 0 || $altId <= 0) {
     exit;
 }
 
+$links = [
+    'viaggi_tratte' => 'viaggi_tratte_alternative',
+    'viaggi_alloggi' => 'viaggi_alloggi_alternative',
+    'viaggi_pasti' => 'viaggi_pasti_alternative',
+    'viaggi_altri_costi' => 'viaggi_altri_costi_alternative'
+];
+$link = $links[$table];
+// Aggiorna la spesa una sola volta, verificando l'appartenenza allo scenario.
 $sql = sprintf(
-    'UPDATE %s SET pagato=? WHERE %s=? AND id_viaggio=? AND id_viaggio_alternativa=?',
-    $table,
-    $tableInfo['id']
+    'UPDATE %s e SET e.pagato=? WHERE e.%s=? AND e.id_viaggio=? AND EXISTS (SELECT 1 FROM %s l JOIN viaggi_alternative a ON a.id_viaggio_alternativa=l.id_viaggio_alternativa WHERE l.%s=e.%s AND l.id_viaggio_alternativa=? AND a.id_viaggio=e.id_viaggio)',
+    $table, $tableInfo['id'], $link, $tableInfo['id'], $tableInfo['id']
 );
 $stmt = $conn->prepare($sql);
 $stmt->bind_param('iiii', $value, $id, $viaggioId, $altId);
@@ -51,4 +58,7 @@ if (!$success) {
     exit;
 }
 
+if ($stmt->affected_rows === 0) {
+    // Nessuna modifica potrebbe anche significare valore già uguale: verificare il collegamento in UI.
+}
 echo json_encode(['success' => true]);
