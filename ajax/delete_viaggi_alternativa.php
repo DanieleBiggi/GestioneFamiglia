@@ -36,26 +36,17 @@ try {
     }
     $transactionStarted = true;
 
-    $tables = [
-        'viaggi_tratte' => 'DELETE FROM viaggi_tratte WHERE id_viaggio=? AND id_viaggio_alternativa=?',
-        'viaggi_alloggi' => 'DELETE FROM viaggi_alloggi WHERE id_viaggio=? AND id_viaggio_alternativa=?',
-        'viaggi_pasti' => 'DELETE FROM viaggi_pasti WHERE id_viaggio=? AND id_viaggio_alternativa=?',
-        'viaggi_altri_costi' => 'DELETE FROM viaggi_altri_costi WHERE id_viaggio=? AND id_viaggio_alternativa=?'
-    ];
-
-    foreach ($tables as $sql) {
-        $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            throw new Exception('Errore durante la preparazione della query');
-        }
+    // Le spese appartengono alla vacanza e non devono essere eliminate.
+    // La FK legacy verso l'alternativa impedirebbe la cancellazione:
+    // la azzeriamo, conservando tutte le spese e le nuove associazioni.
+    foreach (['viaggi_tratte', 'viaggi_alloggi', 'viaggi_pasti', 'viaggi_altri_costi'] as $table) {
+        $stmt = $conn->prepare("UPDATE `$table` SET id_viaggio_alternativa=NULL WHERE id_viaggio=? AND id_viaggio_alternativa=?");
+        if (!$stmt) { throw new Exception('Preparazione aggiornamento fallita'); }
         $stmt->bind_param('ii', $idViaggio, $idAlt);
-        if (!$stmt->execute()) {
-            $stmt->close();
-            throw new Exception('Errore durante l\'eliminazione dei dati collegati');
-        }
+        if (!$stmt->execute()) { throw new Exception('Impossibile scollegare le spese'); }
         $stmt->close();
     }
-
+    // Le FK ON DELETE CASCADE eliminano i collegamenti, non le spese.
     $delAlt = $conn->prepare('DELETE FROM viaggi_alternative WHERE id_viaggio_alternativa=? AND id_viaggio=?');
     if (!$delAlt) {
         throw new Exception('Errore durante la preparazione della query di eliminazione');
