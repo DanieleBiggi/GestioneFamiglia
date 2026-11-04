@@ -135,7 +135,7 @@ if ($tab==='map') {
 include 'includes/header.php';
 ?>
 <link rel="stylesheet" href="assets/vacanze_workspace.css?v=2">
-<main class="vw" id="vacanzeWorkspace">
+<main class="vw" id="vacanzeWorkspace" data-viaggio-id="<?= $id ?>">
  <?php if($workspaceError): ?><div class="alert alert-danger"><?= vwEsc($workspaceError) ?></div><?php endif; ?>
  <div class="vw-crumb"><a href="vacanze_lista.php">Vacanze</a> / <strong><?= vwEsc($trip['titolo']) ?></strong></div>
  <div class="vw-hero"><div><h1><?= vwEsc($trip['titolo']) ?></h1><div class="vw-muted"><?= vwEsc($trip['data_inizio'] ?: 'Date da definire') ?> – <?= vwEsc($trip['data_fine'] ?: 'Da definire') ?> · <?= (int)$trip['notti'] ?> notti · <?= (int)$trip['persone'] ?> persone · <?= vwEsc(ucfirst((string)$trip['stato'])) ?></div></div>
@@ -189,7 +189,22 @@ include 'includes/header.php';
  <button class="vw-btn vw-btn-primary" type="submit">Salva note</button>
  </form><?php else: ?><div><?= nl2br(vwEsc($trip['note'] ?? '')) ?></div><?php endif; ?>
  </div>
- <div class="vw-panel"><div class="vw-section-head"><h2>Documenti della vacanza</h2><a class="vw-btn" href="vacanze_view.php?id=<?= $id ?>">Gestisci documenti</a></div><?php foreach($docs as $d): ?><p><?= vwEsc($d['descrizione'] ?: $d['nome_file']) ?></p><?php endforeach; ?><?php if(!$docs): ?><p class="vw-muted">Nessun documento.</p><?php endif; ?></div>
+ <div class="vw-panel"><h2>Documenti della vacanza</h2>
+ <?php foreach($docs as $d): ?>
+ <?php $docIsUrl=filter_var($d['nome_file'],FILTER_VALIDATE_URL);$docHref=$docIsUrl?$d['nome_file']:'files/vacanze/'.rawurlencode((string)$d['nome_file']); ?>
+ <p><a href="<?= vwEsc($docHref) ?>" target="_blank" rel="noopener noreferrer"><?= vwEsc($d['descrizione'] ?: $d['nome_file']) ?></a></p>
+ <?php endforeach; ?>
+ <?php if(!$docs): ?><p class="vw-muted">Nessun documento.</p><?php endif; ?>
+ <?php if(has_permission($conn,'ajax:add_viaggi_documento','insert')): ?>
+ <form id="vwDocForm" class="d-flex flex-column gap-2 mt-3" enctype="multipart/form-data">
+ <label class="form-label">Aggiungi documento o link</label>
+ <input type="file" name="file" class="vw-input">
+ <input type="url" name="link" class="vw-input" placeholder="In alternativa, URL del documento">
+ <input type="text" name="descrizione" class="vw-input" maxlength="255" placeholder="Descrizione">
+ <button type="submit" class="vw-btn vw-btn-primary align-self-start">Aggiungi documento</button>
+ <p id="vwDocResult" role="status" class="vw-muted"></p>
+ </form><?php endif; ?>
+ </div>
  <div class="vw-panel"><h2>Note e preventivi delle singole spese</h2><p class="vw-muted">Apri la spesa dal catalogo: note e preventivi appartengono alla voce, non al singolo scenario.</p><a class="vw-btn" href="<?= vwUrl($id,'catalog') ?>">Apri catalogo</a></div>
  <?php elseif($tab==='photos'): ?>
  <div class="vw-panel"><h2>Foto della vacanza</h2><p class="vw-muted">La copertina e le fotografie disponibili si gestiscono attualmente dalla modifica della vacanza.</p><a class="vw-btn" href="vacanze_modifica.php?id=<?= $id ?>">Gestisci foto e copertina</a></div>
@@ -229,6 +244,14 @@ include 'includes/header.php';
  const search=document.getElementById('vwSearch'),category=document.getElementById('vwCategory'),assigned=document.getElementById('vwAssigned');
  function filter(){ document.querySelectorAll('.vw-expense').forEach(row=>{const ok=(!search||row.dataset.search.includes(search.value.toLocaleLowerCase('it-IT')))&&(!category||!category.value||row.dataset.category===category.value)&&(!assigned||!assigned.value||row.dataset.assigned===assigned.value);row.hidden=!ok;row.style.display=ok?'':'none';});}
  [search,category,assigned].forEach(el=>{if(el)el.addEventListener(el===search?'input':'change',filter)});
+ const docs=document.getElementById('vwDocForm');
+ if(docs)docs.addEventListener('submit',async e=>{
+  e.preventDefault();const status=document.getElementById('vwDocResult');status.textContent='Salvataggio…';
+  const fd=new FormData(docs);fd.append('id_viaggio',Number(document.getElementById('vacanzeWorkspace')?.dataset.viaggioId||0));
+  try{const resp=await fetch('ajax/add_viaggi_documento.php',{method:'POST',body:fd});const result=await resp.json();
+  if(!resp.ok||!result.success)throw new Error(result.error||'Errore nel salvataggio');location.reload();
+  }catch(err){status.textContent=err.message||'Impossibile salvare il documento';}
+ });
  const more=document.getElementById('vwMoreButton'),menu=document.getElementById('vwMobileMore');
  if(more&&menu)more.addEventListener('click',()=>{const open=menu.classList.toggle('open');more.setAttribute('aria-expanded',String(open));});
 })();
