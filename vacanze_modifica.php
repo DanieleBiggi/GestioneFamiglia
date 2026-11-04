@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   $stmt->execute();
   $id = $id ?: $stmt->insert_id;
-  header('Location: vacanze_modifica.php?id=' . $id);
+  header('Location: vacanze_workspace.php?id=' . $id);
   exit;
 }
 
@@ -119,7 +119,7 @@ if ($id > 0) {
 ?>
 <?php include 'includes/header.php'; ?>
 <div class="container text-white vw">
-  <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
+  <a href="<?= $id>0 ? 'vacanze_workspace.php?id='.$id : 'vacanze_lista.php' ?>" class="btn btn-outline-light mb-3">← Indietro</a>
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="vacanze_lista.php">Vacanze</a></li>
