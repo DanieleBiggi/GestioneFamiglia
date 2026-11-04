@@ -194,6 +194,9 @@ include 'includes/header.php';
  <?php elseif($tab==='scenario'): ?>
  <div class="vw-section-head"><h2>Scenario: <?= vwEsc($scenarioData['breve_descrizione'] ?? 'Seleziona uno scenario') ?></h2><div class="d-flex gap-2 flex-wrap"><a class="vw-btn" href="<?= vwUrl($id,'overview') ?>">Tutti gli scenari</a><a class="vw-btn" href="<?= vwUrl($id,'map') ?>&alt=<?= $scenarioId ?>">Mostra sulla mappa</a></div></div>
  <?php if($scenarioData): ?>
+ <?php if(has_permission($conn,'ajax:delete_viaggi_alternativa','delete')): ?>
+ <button type="button" class="vw-btn vw-delete-scenario mb-3" data-alt="<?= $scenarioId ?>" style="background:#925a5a!important;border-color:#bd8b8b!important">Elimina scenario senza eliminare le spese</button>
+ <?php endif; ?>
  <div class="vw-panel"><h3>Spese associate</h3>
  <?php if(!$scenarioExpenses): ?><p class="vw-empty">Questo scenario non ha ancora spese assegnate.</p><?php endif; ?>
  <div class="vw-table-wrap"><table class="vw-table"><thead><tr><th>Voce</th><th>Categoria</th><th>Pagamento</th><th class="vw-money">Importo</th><th>Azioni</th></tr></thead><tbody>
@@ -273,6 +276,18 @@ include 'includes/header.php';
  const search=document.getElementById('vwSearch'),category=document.getElementById('vwCategory'),assigned=document.getElementById('vwAssigned');
  function filter(){ document.querySelectorAll('.vw-expense').forEach(row=>{const ok=(!search||row.dataset.search.includes(search.value.toLocaleLowerCase('it-IT')))&&(!category||!category.value||row.dataset.category===category.value)&&(!assigned||!assigned.value||row.dataset.assigned===assigned.value);row.hidden=!ok;row.style.display=ok?'':'none';});}
  [search,category,assigned].forEach(el=>{if(el)el.addEventListener(el===search?'input':'change',filter)});
+ const deleteScenario=document.querySelector('.vw-delete-scenario');
+ if(deleteScenario)deleteScenario.addEventListener('click',async()=>{
+ if(!confirm('Eliminare questo scenario? Le spese resteranno disponibili negli altri scenari o nel catalogo.'))return;
+ deleteScenario.disabled=true;
+ const data=new FormData();data.set('id_viaggio',document.getElementById('vacanzeWorkspace').dataset.viaggioId);
+ data.set('id_viaggio_alternativa',deleteScenario.dataset.alt);
+ data.set('vacanze_csrf',document.getElementById('vacanzeWorkspace').dataset.csrf);
+ try{const resp=await fetch('ajax/delete_viaggi_alternativa.php',{method:'POST',body:data});const json=await resp.json();
+ if(!resp.ok||!json.success)throw new Error(json.error||'Errore durante l’eliminazione');
+ location.href='vacanze_workspace.php?id='+encodeURIComponent(data.get('id_viaggio'))+'&tab=overview';
+ }catch(err){alert(err.message||'Impossibile eliminare lo scenario');deleteScenario.disabled=false;}
+ });
  const toggles=document.querySelectorAll('.vw-payment');
  toggles.forEach(toggle=>toggle.addEventListener('change',async()=>{
  const value=toggle.checked?1:0;toggle.disabled=true;
