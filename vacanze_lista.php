@@ -73,7 +73,7 @@ if(isset($_GET['count'])){
 }
 include 'includes/header.php';
 ?>
-<link rel="stylesheet" href="assets/vacanze_workspace.css?v=5">
+<link rel="stylesheet" href="assets/vacanze_workspace.css?v=6">
 <style>
 .vw-list-actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
 .vw-trip{display:flex;flex-direction:column;gap:11px;text-decoration:none;color:inherit;border-radius:12px;border:1px solid var(--vw-line);background:var(--vw-surface);padding:18px;min-height:195px}
@@ -106,7 +106,7 @@ include 'includes/header.php';
 <article class="vw-trip">
  <div class="d-flex justify-content-between gap-2 align-items-start">
   <h2><a href="vacanze_workspace.php?id=<?= $tripId ?>"><?= vacanzeH($v['titolo']) ?></a></h2>
-  <span class="vw-pill"><?= vacanzeH(ucfirst((string)$v['stato'])) ?></span>
+  <span class="vw-status vw-status-<?= vacanzeH($v['stato']) ?>"><?= vacanzeH(ucfirst((string)$v['stato'])) ?></span>
  </div>
  <?php if($v['breve_descrizione']): ?><div class="vw-trip-meta"><?= vacanzeH($v['breve_descrizione']) ?></div><?php endif; ?>
  <div class="vw-trip-meta"><i class="bi bi-geo-alt"></i> <?= vacanzeH($v['luogo_nome'] ?: ($v['citta'] ?: 'Destinazione da definire')) ?></div>

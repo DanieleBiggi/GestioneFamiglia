@@ -81,3 +81,17 @@
   outline:2px solid #718da8;
   outline-offset:2px;
 }
+
+/* Stati vacanza: colori semantici stabili sia nel tema chiaro sia nel tema scuro. */
+.vw .vw-status {
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:5px 11px;border-radius:999px;white-space:nowrap;
+  font-size:.79rem;font-weight:750;line-height:1.25;
+  background:#e5e7eb;color:#374151;border:1px solid #cbd5e1;
+}
+.vw .vw-status-fatto{background:#205b41;color:#fff;border-color:#194832}
+.vw .vw-status-prenotato{background:#c8f1d4;color:#17582b;border-color:#86d6a0}
+.vw .vw-status-pianificato{background:#d0edff;color:#145479;border-color:#8bc6eb}
+.vw .vw-status-scartato{background:#ffe0e0;color:#8c2222;border-color:#f3a7a7}
+.vw .vw-status-idea{background:#fff0b5;color:#765500;border-color:#e6cb75}
+.vw .vw-status-shortlist{background:#ebe3fa;color:#5d3b87;border-color:#c7b1eb}

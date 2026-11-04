@@ -19,6 +19,7 @@ function vwUrl($id,$tab) { return 'vacanze_workspace.php?id='.$id.'&tab='.rawurl
 $canEdit=has_permission($conn,'table:viaggi','update');
 $canAddScenario=has_permission($conn,'ajax:add_viaggi_alternativa','insert');
 $canEditScenario=has_permission($conn,'ajax:update_viaggi_alternativa','update');
+$canAddPublicNote=has_permission($conn,'table:viaggi_commenti','insert');
 if(empty($_SESSION['vacanze_csrf'])) $_SESSION['vacanze_csrf']=bin2hex(random_bytes(32));
 $workspaceError='';
 if($_SERVER['REQUEST_METHOD']==='POST'){
@@ -29,6 +30,29 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    $q=$conn->prepare('UPDATE viaggi SET note=? WHERE id_viaggio=?');
    $q->bind_param('si',$note,$id);$q->execute();$q->close();
    header('Location: '.vwUrl($id,'notes'));exit;
+ } elseif($action==='public_note' && $canAddPublicNote){
+   $publicNote=trim((string)($_POST['testo'] ?? ''));
+   $noteAlt=(int)($_POST['id_viaggio_alternativa'] ?? 0);
+   if($publicNote==='' || mb_strlen($publicNote,'UTF-8')>5000){
+     $workspaceError='La nota pubblica deve contenere da 1 a 5000 caratteri.';
+   } else {
+     if($noteAlt>0){
+       $valid=$conn->prepare('SELECT 1 FROM viaggi_alternative WHERE id_viaggio=? AND id_viaggio_alternativa=?');
+       $valid->bind_param('ii',$id,$noteAlt);$valid->execute();
+       $validNoteAlt=(bool)$valid->get_result()->fetch_row();$valid->close();
+       if(!$validNoteAlt) $workspaceError='Scenario non valido per questa vacanza.';
+     }
+     if($workspaceError===''){
+       $userId=(int)($_SESSION['utente_id'] ?? 0);
+       if(!$userId){http_response_code(403);exit('Utente non valido');}
+       $nullableAlt=$noteAlt>0?$noteAlt:null;
+       $visibility='pubblico';
+       $q=$conn->prepare('INSERT INTO viaggi_commenti (id_viaggio,id_viaggio_alternativa,id_utente,visibilita,testo) VALUES (?,?,?,?,?)');
+       $q->bind_param('iiiss',$id,$nullableAlt,$userId,$visibility,$publicNote);
+       $q->execute();$q->close();
+       header('Location: '.vwUrl($id,'sharing').'#note-condivise');exit;
+     }
+   }
  } elseif($action==='add_scenario' && $canAddScenario){
    $desc=trim((string)($_POST['breve_descrizione'] ?? ''));
    if($desc==='' || mb_strlen($desc,'UTF-8')>100) $workspaceError='Inserisci un nome scenario (massimo 100 caratteri).';
@@ -91,6 +115,11 @@ $checklist=[];
 if ($tab==='checklist' || $tab==='overview') {
  $q=$conn->prepare('SELECT c.id_checklist,c.voce,c.completata,u.username FROM viaggi_checklist c LEFT JOIN utenti u ON u.id=c.id_utente WHERE c.id_viaggio=? ORDER BY c.id_checklist');
  $q->bind_param('i',$id);$q->execute();$checklist=$q->get_result()->fetch_all(MYSQLI_ASSOC);$q->close();
+}
+$publicNotes=[];
+if($tab==='sharing'){
+  $q=$conn->prepare("SELECT c.testo,c.creato_il,c.id_viaggio_alternativa,u.username,a.breve_descrizione FROM viaggi_commenti c LEFT JOIN utenti u ON u.id=c.id_utente LEFT JOIN viaggi_alternative a ON a.id_viaggio_alternativa=c.id_viaggio_alternativa AND a.id_viaggio=c.id_viaggio WHERE c.id_viaggio=? AND c.visibilita='pubblico' ORDER BY c.creato_il DESC,c.id_commento DESC");
+  $q->bind_param('i',$id);$q->execute();$publicNotes=$q->get_result()->fetch_all(MYSQLI_ASSOC);$q->close();
 }
 $shared=[];
 if ($tab==='sharing') {
@@ -188,11 +217,11 @@ if ($tab==='map') {
 
 include 'includes/header.php';
 ?>
-<link rel="stylesheet" href="assets/vacanze_workspace.css?v=5">
+<link rel="stylesheet" href="assets/vacanze_workspace.css?v=6">
 <main class="vw" id="vacanzeWorkspace" data-viaggio-id="<?= $id ?>" data-scenario-id="<?= $scenarioId ?>" data-csrf="<?= vwEsc($_SESSION['vacanze_csrf']) ?>">
  <?php if($workspaceError): ?><div class="alert alert-danger"><?= vwEsc($workspaceError) ?></div><?php endif; ?>
  <div class="vw-crumb"><a href="vacanze_lista.php">Vacanze</a> / <strong><?= vwEsc($trip['titolo']) ?></strong></div>
- <div class="vw-hero"><div><h1><?= vwEsc($trip['titolo']) ?></h1><div class="vw-muted"><?= vwEsc($trip['data_inizio'] ?: 'Date da definire') ?> – <?= vwEsc($trip['data_fine'] ?: 'Da definire') ?> · <?= (int)$trip['notti'] ?> notti · <?= (int)$trip['persone'] ?> persone · <?= vwEsc(ucfirst((string)$trip['stato'])) ?></div></div>
+ <div class="vw-hero"><div><h1><?= vwEsc($trip['titolo']) ?></h1><div class="vw-muted"><?= vwEsc($trip['data_inizio'] ?: 'Date da definire') ?> – <?= vwEsc($trip['data_fine'] ?: 'Da definire') ?> · <?= (int)$trip['notti'] ?> notti · <?= (int)$trip['persone'] ?> persone · <span class="vw-status vw-status-<?= vwEsc($trip['stato']) ?>"><?= vwEsc(ucfirst((string)$trip['stato'])) ?></span></div></div>
  <div class="d-flex flex-wrap gap-2"><?php if($canEdit): ?><a class="vw-btn" href="vacanze_modifica.php?id=<?= $id ?>">Modifica vacanza</a><?php endif; ?><a class="vw-btn vw-btn-primary" href="<?= vwUrl($id,'catalog') ?>">+ Nuova spesa</a></div></div>
  <nav class="vw-tabs" aria-label="Sezioni della vacanza"><?php foreach($tabs as $key=>$label): ?><a class="vw-tab <?= $tab===$key?'active':'' ?>" href="<?= vwUrl($id,$key) ?>"><?= vwEsc($label) ?></a><?php endforeach; ?></nav>
  <?php if($tab==='overview'): ?>
@@ -300,6 +329,31 @@ include 'includes/header.php';
  <?php elseif($tab==='sharing'): ?>
  <div class="vw-section-head"><h2>Condividi scenari</h2><a class="vw-btn vw-btn-primary" href="vacanze_condivisioni.php?id=<?= $id ?>">+ Nuovo link</a></div>
  <div class="vw-panel"><h2>Link temporanei, in sola lettura, validi 7 giorni</h2><p class="vw-muted">Puoi selezionare uno o più scenari. Documenti e note interne non vengono pubblicati.</p><a class="vw-btn" href="vacanze_condivisioni.php?id=<?= $id ?>">Scegli scenari e genera link</a></div>
+ <section class="vw-panel" id="note-condivise">
+ <h2>Note visibili nei link condivisi</h2>
+ <p class="vw-muted">Le note generali della vacanza restano private. Le note inserite qui saranno leggibili da chi possiede un link valido che include lo scenario selezionato. Una nota riferita all'intera vacanza sarà visibile in tutti i link validi.</p>
+ <?php if($canAddPublicNote): ?>
+ <form method="post" class="d-flex flex-column gap-2 mb-3">
+ <input type="hidden" name="vacanze_csrf" value="<?= vwEsc($_SESSION['vacanze_csrf']) ?>">
+ <input type="hidden" name="vw_action" value="public_note">
+ <label for="vwPublicNote">Nuova nota condivisibile</label>
+ <textarea id="vwPublicNote" name="testo" class="vw-input w-100" maxlength="5000" rows="4" required placeholder="Informazioni da mostrare a chi riceve il link…"><?= vwEsc((string)($_POST['vw_action'] ?? '')==='public_note'?($_POST['testo'] ?? ''):'') ?></textarea>
+ <label for="vwPublicNoteAlt">Visibile per</label>
+ <select class="vw-input w-100" id="vwPublicNoteAlt" name="id_viaggio_alternativa">
+ <option value="0">Intera vacanza (tutti i link validi)</option>
+ <?php foreach($scenarios as $s): ?><option value="<?= (int)$s['id_viaggio_alternativa'] ?>"><?= vwEsc($s['breve_descrizione']) ?></option><?php endforeach; ?>
+ </select>
+ <button class="vw-btn vw-btn-primary align-self-start" type="submit">Pubblica nota nel link</button>
+ </form>
+ <?php else: ?>
+ <p class="vw-muted">Per aggiungere note condivise serve il permesso di inserimento dei commenti.</p>
+ <?php endif; ?>
+ <h3>Note già condivisibili</h3>
+ <?php if(!$publicNotes): ?><p class="vw-muted">Nessuna nota pubblica inserita.</p><?php endif; ?>
+ <?php foreach($publicNotes as $note): ?>
+ <article class="vw-note"><div class="vw-muted mb-2"><?= vwEsc($note['username'] ?? 'Utente') ?> · <?= vwEsc($note['creato_il']) ?> · <?= $note['id_viaggio_alternativa']===null?'Intera vacanza':vwEsc($note['breve_descrizione'] ?? 'Scenario') ?></div><div><?= nl2br(vwEsc($note['testo'])) ?></div></article>
+ <?php endforeach; ?>
+ </section>
  <div class="vw-panel"><h2>Link condivisi</h2><?php foreach($shared as $share): ?><p><b><?= vwEsc($share['scenari'] ?: 'Nessuno scenario') ?></b><span class="vw-muted"> · <?= vwEsc($share['revocato_il']?'Revocato':(strtotime($share['scade_il'].' UTC')<=time()?'Scaduto':'Attivo')) ?> · scade <?= vwEsc($share['scade_il']) ?> UTC</span></p><?php endforeach; ?><?php if(!$shared): ?><p class="vw-muted">Nessun link creato.</p><?php endif; ?></div>
  
  <div class="vw-section-head" id="recensioni"><h2>Recensioni e domande</h2></div>

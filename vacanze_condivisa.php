@@ -65,7 +65,7 @@ foreach ($categories as [$label,$table,$link,$key,$description,$formula]) {
 <div class="fw-bold mt-3">Totale scenario: € <?= number_format($grandTotal,2,',','.') ?></div>
 </section>
 <?php endforeach; ?>
-<h2 class="h5 mt-4">Commenti condivisi</h2>
+<h2 class="h5 mt-4">Note e commenti condivisi</h2>
 <?php if (!$publicComments): ?><p class="text-secondary">Nessun commento pubblico.</p><?php endif; ?>
 <?php foreach ($publicComments as $c): ?>
 <div class="border rounded p-3 mb-2"><div class="small text-secondary"><?= h($c['username']) ?> · <?= h($c['creato_il']) ?><?= $c['breve_descrizione'] !== null ? ' · '.h($c['breve_descrizione']) : '' ?></div>
