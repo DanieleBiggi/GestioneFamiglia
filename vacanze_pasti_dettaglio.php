@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $del = $conn->prepare('DELETE FROM viaggi_pasti WHERE id_pasto=? AND id_viaggio=?');
         $del->bind_param('ii', $id_pasto, $id);
         if (!$del->execute()) { throw new RuntimeException('Eliminazione fallita'); }
-    } elseif ($id_pasto) {
+    } elseif ($id_pasto && !$duplica) {
         $upd = $conn->prepare('UPDATE viaggi_pasti SET id_viaggio_alternativa=?, giorno_indice=?, tipo_pasto=?, nome_locale=?, indirizzo=?, lat=?, lng=?, tipologia=?, costo_medio_eur=?, note=?, pagato=? WHERE id_pasto=? AND id_viaggio=?');
         $upd->bind_param('iisssddsdsiii', $id_alt, $giorno, $tipo, $nome, $indirizzo, $lat, $lng, $tipologia, $costo, $note, $pagato, $id_pasto, $id);
         if (!$upd->execute()) { throw new RuntimeException('Aggiornamento fallito'); }
