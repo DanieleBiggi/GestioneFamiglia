@@ -1,6 +1,8 @@
 <?php
 include 'includes/session_check.php';
 include 'includes/db.php';
+require_once 'includes/permissions.php';
+if (!has_permission($conn, 'table:viaggi', 'view')) { http_response_code(403); exit('Accesso negato'); }
 $id = (int)($_GET['id'] ?? 0);
 $q = $conn->prepare('SELECT id_viaggio,titolo FROM viaggi WHERE id_viaggio=?');
 $q->bind_param('i',$id);$q->execute();$viaggio=$q->get_result()->fetch_assoc();
@@ -13,6 +15,7 @@ $categories = [
 ];
 $groups=[];
 foreach ($categories as [$table,$link,$pk,$name,$title,$page]) {
+ if (!has_permission($conn, 'table:' . $table, 'view')) { continue; }
  $stmt=$conn->prepare("SELECT e.`$pk` AS id_spesa, e.`$name` AS nome FROM `$table` e WHERE e.id_viaggio=? AND NOT EXISTS (SELECT 1 FROM `$link` l WHERE l.`$pk`=e.`$pk`) ORDER BY e.`$pk`");
  $stmt->bind_param('i',$id);$stmt->execute();
  $groups[]=['title'=>$title,'page'=>$page,'key'=>$pk,'items'=>$stmt->get_result()->fetch_all(MYSQLI_ASSOC)];
