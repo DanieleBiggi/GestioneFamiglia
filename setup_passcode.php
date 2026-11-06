@@ -9,6 +9,46 @@ if (!isset($_SESSION['utente_id'])) {
 
 $error = '';
 
+// Un login completo (username, password e 2FA) non deve richiedere
+// nuovamente la scelta del passcode se questo è già stato configurato.
+$existingStmt = $conn->prepare('SELECT passcode FROM utenti WHERE id = ? AND attivo = 1 LIMIT 1');
+$existingStmt->bind_param('i', $_SESSION['utente_id']);
+$existingStmt->execute();
+$existingUser = $existingStmt->get_result()->fetch_assoc();
+$existingStmt->close();
+if (!$existingUser) {
+    session_unset();
+    session_destroy();
+    header('Location: login.php?scelta_login=1');
+    exit;
+}
+
+function registerTrustedDevice($conn, $userId) {
+    $token = bin2hex(random_bytes(32));
+    $ua = $_SERVER['HTTP_USER_AGENT'] ?? ''; // Solo informativo, non vincola l'accesso.
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    $now = date('Y-m-d H:i:s');
+    $longDuration = 60 * 60 * 24 * 365 * 10;
+    $exp = date('Y-m-d H:i:s', time() + $longDuration);
+    $ins = $conn->prepare('INSERT INTO dispositivi_riconosciuti (id_utente, token_dispositivo, user_agent, ip, data_attivazione, scadenza) VALUES (?, ?, ?, ?, ?, ?)');
+    $ins->bind_param('isssss', $userId, $token, $ua, $ip, $now, $exp);
+    $ins->execute();
+    $ins->close();
+    setcookie('device_token', $token, [
+        'expires' => time() + $longDuration,
+        'path' => '/',
+        'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+}
+
+if (!empty($existingUser['passcode'])) {
+    registerTrustedDevice($conn, (int)$_SESSION['utente_id']);
+    header('Location: index.php');
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pass1 = $_POST['passcode'] ?? '';
     $pass2 = $_POST['confirm'] ?? '';
@@ -23,17 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $upd->bind_param('si', $hash, $_SESSION['utente_id']);
         $upd->execute();
 
-        $token = bin2hex(random_bytes(32));
-        $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
-        $now = date('Y-m-d H:i:s');
-        $longDuration = 60*60*24*365*10; // 10 anni
-        $exp = date('Y-m-d H:i:s', time() + $longDuration);
-        $ins = $conn->prepare('INSERT INTO dispositivi_riconosciuti (id_utente, token_dispositivo, user_agent, ip, data_attivazione, scadenza) VALUES (?, ?, ?, ?, ?, ?)');
-        $ins->bind_param('isssss', $_SESSION['utente_id'], $token, $ua, $ip, $now, $exp);
-        $ins->execute();
-
-        setcookie('device_token', $token, time()+$longDuration, '/', '', !empty($_SERVER['HTTPS']), true);
+        registerTrustedDevice($conn, (int)$_SESSION['utente_id']);
         header('Location: index.php');
         exit;
     }
