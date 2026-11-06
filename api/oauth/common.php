@@ -55,7 +55,7 @@ function gf_oauth_scope(string $scope): bool {
 function gf_oauth_access(mysqli $conn, string $token, int $familyId): ?array {
     if (!preg_match('/^[a-zA-Z0-9_-]{32,128}$/D', $token)) return null;
     $hash = gf_oauth_hash($token);
-    $stmt = $conn->prepare("SELECT id_utente, id_famiglia, resource, scope, expires_at FROM gf_oauth_access_tokens WHERE token_hash=? AND revoked_at IS NULL AND expires_at>UTC_TIMESTAMP() LIMIT 1");
+    $stmt = $conn->prepare("SELECT t.id_utente, t.id_famiglia, t.resource, t.scope, t.expires_at FROM gf_oauth_access_tokens t INNER JOIN utenti u ON u.id=t.id_utente AND u.attivo=1 WHERE t.token_hash=? AND t.revoked_at IS NULL AND t.expires_at>UTC_TIMESTAMP() LIMIT 1");
     $stmt->bind_param('s',$hash);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
