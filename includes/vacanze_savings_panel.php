@@ -8,29 +8,39 @@
  <?php if(!empty($planning['id_salvadanaio'])): ?>
   <p><strong><?= vwEsc($planning['nome_salvadanaio']) ?></strong> · Accantonato <?= vwEuro($planning['importo_attuale']) ?></p>
   <?php
-    $hasSavingsGoal=$planning['obiettivo_salvadanaio']!==null;
-    $goal=$hasSavingsGoal?(float)$planning['obiettivo_salvadanaio']:null;
+    $hasOneBudget=count($linkedBudgetRows)===1;
+    $budgetAmount=$hasOneBudget?(float)$linkedBudgetRows[0]['importo']:null;
     $hasRemaining=$confirmedRemaining!==null;
-    $goalMismatch=$hasRemaining && (!$hasSavingsGoal || abs($goal-$confirmedRemaining)>0.009);
+    $budgetMismatch=$hasRemaining && $hasOneBudget && abs($budgetAmount-$confirmedRemaining)>0.009;
   ?>
-  <?php if($hasSavingsGoal): ?>
-   <p>Obiettivo <?= vwEuro($goal) ?> · <?= $goal>0?number_format(min(100,100*(float)$planning['importo_attuale']/$goal),1,',','.').'%':'Obiettivo da definire' ?></p>
-  <?php else: ?><p class="vw-muted">Obiettivo del salvadanaio per questa vacanza non impostato.</p><?php endif; ?>
-  <?php if($goalMismatch): ?>
+  <?php if($hasOneBudget): ?>
+   <p><strong>Importo Budget:</strong> <?= vwEuro($budgetAmount) ?>
+    <a href="salvadanaio_dettaglio.php?id=<?= (int)$planning['id_salvadanaio'] ?>">Apri la voce</a>
+   </p>
+  <?php elseif(count($linkedBudgetRows)>1): ?>
+   <div class="vw-savings-warning" role="alert"><div class="vw-savings-warning-title"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Più voci Budget collegate</div>
+   <p>Questo salvadanaio contiene <?= count($linkedBudgetRows) ?> voci Budget: non posso scegliere automaticamente quale importo aggiornare.</p>
+   <a class="vw-btn" href="salvadanaio_dettaglio.php?id=<?= (int)$planning['id_salvadanaio'] ?>">Gestisci le voci Budget</a></div>
+  <?php else: ?>
+   <div class="vw-savings-warning" role="alert"><div class="vw-savings-warning-title"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Nessuna voce Budget collegata</div>
+   <p>Aggiungi una voce Budget nel dettaglio del salvadanaio per poter sincronizzare l'importo.</p>
+   <a class="vw-btn" href="salvadanaio_dettaglio.php?id=<?= (int)$planning['id_salvadanaio'] ?>">Apri salvadanaio</a></div>
+  <?php endif; ?>
+  <?php if($budgetMismatch): ?>
    <div class="vw-savings-warning" role="alert" aria-live="polite">
-    <div class="vw-savings-warning-title"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Attenzione: salvadanaio non allineato alla vacanza</div>
-    <p>L'obiettivo <?= $hasSavingsGoal?vwEuro($goal):'non è impostato' ?>, mentre il residuo da pagare dello scenario confermato è <strong><?= vwEuro($confirmedRemaining) ?></strong>.</p>
-    <?php if($canEdit): ?>
+    <div class="vw-savings-warning-title"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Attenzione: importo Budget non allineato alla vacanza</div>
+    <p>La voce Budget indica <strong><?= vwEuro($budgetAmount) ?></strong>, mentre il residuo da pagare dello scenario confermato è <strong><?= vwEuro($confirmedRemaining) ?></strong>.</p>
+    <?php if($canEdit && has_permission($conn,'table:budget','update')): ?>
     <form method="post" class="mt-2">
      <input type="hidden" name="vacanze_csrf" value="<?= vwEsc($_SESSION['vacanze_csrf']) ?>">
      <input type="hidden" name="vw_action" value="sync_salvadanaio_goal">
-     <button type="submit" class="vw-btn vw-btn-primary"><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Aggiorna importo salvadanaio a <?= vwEuro($confirmedRemaining) ?></button>
+     <button type="submit" class="vw-btn vw-btn-primary"><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Aggiorna importo Budget a <?= vwEuro($confirmedRemaining) ?></button>
     </form>
     <?php endif; ?>
-    <div class="vw-muted mt-2">Si aggiorna solo l'obiettivo collegato alla vacanza, non il denaro già accantonato.</div>
+    <div class="vw-muted mt-2">Sarà modificato il campo Importo della voce Budget. Il saldo già accantonato non verrà toccato.</div>
    </div>
-  <?php elseif($hasRemaining): ?>
-   <p class="vw-savings-aligned"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Obiettivo allineato al residuo da pagare (<?= vwEuro($confirmedRemaining) ?>).</p>
+  <?php elseif($hasRemaining && $hasOneBudget): ?>
+   <p class="vw-savings-aligned"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Importo Budget allineato al residuo da pagare (<?= vwEuro($confirmedRemaining) ?>).</p>
   <?php endif; ?>
   <div class="d-flex flex-wrap gap-2">
    <a class="vw-btn" href="salvadanaio_dettaglio.php?id=<?= (int)$planning['id_salvadanaio'] ?>">Apri salvadanaio</a>
