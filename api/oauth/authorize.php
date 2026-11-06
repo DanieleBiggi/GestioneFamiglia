@@ -6,7 +6,7 @@ header('X-Frame-Options: DENY');
 // La pagina puo' essere stata aperta senza www e poi reindirizzata da Aruba.
 // Il POST deve andare sempre all'origine canonica: alcuni browser bloccano
 // la navigazione di form-action 'self' quando il redirect cambia hostname.
-header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; form-action https://www.gestionefamiglia.it; base-uri 'none'");
+header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; form-action https://www.gestionefamiglia.it https://chatgpt.com; base-uri 'none'");
 if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') { http_response_code(403); exit('HTTPS richiesto'); }
 session_start();
 $configFile = __DIR__ . '/../../includes/api_v1_config.php';
