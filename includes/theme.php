@@ -42,6 +42,7 @@ header('Content-Type: text/css');
   --vac-card-bg: <?= htmlspecialchars($vacCardBg, ENT_QUOTES, 'UTF-8') ?>;
   --vac-card-fg: <?= htmlspecialchars($vacCardFg, ENT_QUOTES, 'UTF-8') ?>;
   --vac-control-scheme: <?= $themeIsLight ? 'light' : 'dark' ?>;
+  --passcode-login-link-color: <?= $themeIsLight ? '#334155' : '#ffffff' ?>;
 }
 
 body {

@@ -14,14 +14,14 @@ $error = "";
 
 if (isset($_COOKIE['device_token'])) {
     $token = $_COOKIE['device_token'];
-    $stmt = $conn->prepare("SELECT user_agent, ip FROM dispositivi_riconosciuti WHERE token_dispositivo = ? AND scadenza >= NOW() LIMIT 1");
+    $stmt = $conn->prepare("SELECT id FROM dispositivi_riconosciuti WHERE token_dispositivo = ? AND scadenza >= NOW() LIMIT 1");
     $stmt->bind_param("s", $token);
     $stmt->execute();
     $res = $stmt->get_result();
     if ($res->num_rows === 1) {
-        $row = $res->fetch_assoc();
-        // && ($row['ip'] ?? '') === ($_SERVER['REMOTE_ADDR'] ?? '')
-        if (!isset($_GET['scelta_login']) && ($row['user_agent'] ?? '') === ($_SERVER['HTTP_USER_AGENT'] ?? '')) {
+        // Il token e la scadenza identificano il dispositivo. Lo User-Agent può
+        // cambiare quando il browser viene aggiornato e non va usato come blocco.
+        if (!isset($_GET['scelta_login'])) {
             header('Location: /Gestionale25/login_passcode.php?from=login');
             exit;
         }
