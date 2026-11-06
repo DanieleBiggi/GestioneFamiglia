@@ -11,6 +11,17 @@ $configFile=__DIR__.'/../../includes/api_v1_config.php';
 $config=is_file($configFile) ? require $configFile : [];
 if (($config['enabled'] ?? false) !== true || ($config['mcp_oauth_enabled'] ?? false) !== true) gf_oauth_error('temporarily_unavailable',503);
 require_once __DIR__.'/../../includes/db.php';
+function gf_oauth_trace(mysqli $conn, string $stage): void {
+    // Non memorizza code, state, token, client ID, indirizzi IP o redirect.
+    try {
+        $q = $conn->prepare('INSERT INTO gf_oauth_diagnostics (endpoint, stage) VALUES (?,?)');
+        $endpoint = 'token';
+        $q->bind_param('ss', $endpoint, $stage);
+        $q->execute();
+        $q->close();
+    } catch (Throwable $ignored) { /* Tabella diagnostica facoltativa. */ }
+}
+gf_oauth_trace($conn, 'request_received');
 $family=(int)($config['family_id'] ?? 0);
 $grant=$_POST['grant_type'] ?? '';
 $client=$_POST['client_id'] ?? '';
@@ -51,9 +62,11 @@ try {
         $tokens=gf_oauth_issue($conn,(int)$row['id_utente'],$family,$client,$resource,(string)$row['scope']);
     } else gf_oauth_error('unsupported_grant_type');
     $conn->commit();
+    gf_oauth_trace($conn, 'token_issued');
     gf_oauth_json(200,$tokens);
 } catch (Throwable $e) {
     $conn->rollback();
-    error_log('GF OAuth token endpoint error: '. $e->getMessage());
+    gf_oauth_trace($conn, 'server_error');
+    error_log('GF OAuth token endpoint: server_error (' . get_class($e) . ')');
     gf_oauth_error('server_error',500);
 }
