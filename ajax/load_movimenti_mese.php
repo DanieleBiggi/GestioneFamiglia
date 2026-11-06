@@ -2,7 +2,7 @@
 include '../includes/session_check.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/render_movimento.php';
-setlocale(LC_TIME, 'it_IT.UTF-8');
+require_once __DIR__ . '/../includes/date_it.php';
 
 $mese = $_GET['mese'] ?? date('Y-m');
 
@@ -57,7 +57,7 @@ $result = $stmt->get_result();
 echo '<div class="month-section" data-mese="' . htmlspecialchars($mese, ENT_QUOTES) . '">';
 $giorno_corrente = '';
 while ($mov = $result->fetch_assoc()) {
-    $giorno = strftime('%A %e %B', strtotime($mov['data_operazione']));
+    $giorno = gf_day_label_it(strtotime($mov['data_operazione']));
     if ($giorno !== $giorno_corrente) {
         echo '<div class="day-header mt-3 mb-1 fw-bold">' . ucfirst($giorno) . '</div>';
         $giorno_corrente = $giorno;
