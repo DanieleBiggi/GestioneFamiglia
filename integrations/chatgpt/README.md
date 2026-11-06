@@ -29,6 +29,15 @@ La seconda deve indicare `resource: https://www.gestionefamiglia.it/Gestionale25
 
 Non attivare OAuth prima di aver verificato questo punto e la stabilità dell'app dopo la pubblicazione del nuovo `.htaccess`.
 
+Il branch include un file di diagnostica **temporaneo**, `api/oauth/check_aruba.php`. Finché non viene rimosso, per testare l'header senza mostrarne il valore puoi eseguire in PowerShell (nella finestra con il tuo token API in `$token`):
+
+```powershell
+Invoke-RestMethod -Uri "https://www.gestionefamiglia.it/Gestionale25/api/oauth/check_aruba.php" -Method Get -Headers @{"X-GF-Api-Key"=$token; "Authorization"="Bearer test-header-only"}
+```
+
+Il risultato atteso è `success=True`, `authorization_header_received=True`. Se è `False`, il passaggio del bearer da Apache a PHP è ancora bloccato e **non bisogna attivare OAuth**. Il test non crea né modifica dati e non restituisce alcun valore di header. **Eliminare `check_aruba.php` dal branch e dal server una volta verificato**, prima di fare il merge.
+
+
 ## Configurazione privata: solo dopo i test di discovery e database
 
 Nel file server `includes/api_v1_config.php` aggiungere:
