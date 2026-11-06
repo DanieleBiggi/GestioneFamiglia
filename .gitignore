@@ -2,3 +2,5 @@ includes/db_config.php
 config/*
 !config/.htaccess
 vendor/
+
+includes/api_v1_config.php
