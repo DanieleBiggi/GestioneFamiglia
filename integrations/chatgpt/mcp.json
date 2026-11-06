@@ -7,9 +7,15 @@
       "extensions": {
         "com.openai": {
           "auth": {
-            "type": "api_key",
-            "headerScheme": "custom_header",
-            "headerName": "X-GF-Api-Key"
+            "type": "oauth",
+            "client": {
+              "mode": "cimd"
+            },
+            "resource": "https://www.gestionefamiglia.it/Gestionale25/api/mcp.php",
+            "baseScopes": [
+              "family:read",
+              "family:write"
+            ]
           }
         }
       }
