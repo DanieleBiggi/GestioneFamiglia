@@ -90,21 +90,36 @@ try {
             $stmt=$conn->prepare('INSERT INTO viaggi_tratte (id_viaggio,id_viaggio_alternativa,tipo_tratta,descrizione,origine_testo,destinazione_testo,costo_volo_eur,costo_traghetto_eur,altri_costi_eur,note) VALUES (?,?,?,?,?,?,?,?,?,?)');
             $stmt->bind_param('iissssddds',$tripId,$sid,$type,$description,$origin,$destination,$flight,$ferry,$other,$routeNotes);
             $stmt->execute();
+            $expenseId = $conn->insert_id;
             $stmt->close();
+            $link = $conn->prepare('INSERT INTO viaggi_tratte_alternative (id_tratta, id_viaggio_alternativa) VALUES (?,?)');
+            $link->bind_param('ii', $expenseId, $sid);
+            $link->execute();
+            $link->close();
         }
         foreach ($s['alloggi'] as $a) {
             [$name,$address,$checkin,$checkout,$nightCost,$lodgingNotes]=$a;
             $stmt=$conn->prepare('INSERT INTO viaggi_alloggi (id_viaggio,id_viaggio_alternativa,nome_alloggio,indirizzo,data_checkin,data_checkout,costo_notte_eur,note) VALUES (?,?,?,?,?,?,?,?)');
             $stmt->bind_param('iissssds',$tripId,$sid,$name,$address,$checkin,$checkout,$nightCost,$lodgingNotes);
             $stmt->execute();
+            $expenseId = $conn->insert_id;
             $stmt->close();
+            $link = $conn->prepare('INSERT INTO viaggi_alloggi_alternative (id_alloggio, id_viaggio_alternativa) VALUES (?,?)');
+            $link->bind_param('ii', $expenseId, $sid);
+            $link->execute();
+            $link->close();
         }
         foreach ($s['altri_costi'] as $c) {
             [$label,$amount,$costNotes]=$c;
             $stmt=$conn->prepare('INSERT INTO viaggi_altri_costi (id_viaggio,id_viaggio_alternativa,descrizione,importo_eur,note) VALUES (?,?,?,?,?)');
             $stmt->bind_param('iisds',$tripId,$sid,$label,$amount,$costNotes);
             $stmt->execute();
+            $expenseId = $conn->insert_id;
             $stmt->close();
+            $link = $conn->prepare('INSERT INTO viaggi_altri_costi_alternative (id_costo, id_viaggio_alternativa) VALUES (?,?)');
+            $link->bind_param('ii', $expenseId, $sid);
+            $link->execute();
+            $link->close();
         }
     }
     $conn->commit();
