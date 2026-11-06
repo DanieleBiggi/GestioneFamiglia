@@ -64,24 +64,29 @@ function api_json_error(Throwable $e): void {
     api_error(500, 'Errore interno');
 }
 
-// Token statico configurato su hosting. Memorizzare SOLO SHA-256 e ruotarlo se compromesso.
-$expected = getenv('GF_API_TOKEN_SHA256') ?: '';
-$authorization = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
-if ($authorization === '' && function_exists('getallheaders')) {
-    foreach (getallheaders() as $key => $value) {
-        if (strcasecmp($key, 'Authorization') === 0) $authorization = $value;
-    }
+// Le credenziali sono solo sul server Aruba, mai nel repository.
+if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
+    api_error(403, 'HTTPS richiesto');
 }
-if (!preg_match('/^Bearer ([A-Za-z0-9_\-]{32,256})$/', $authorization, $matches)
-    || !preg_match('/^[a-f0-9]{64}$/i', $expected)
-    || !hash_equals(strtolower($expected), hash('sha256', $matches[1]))) {
-    header('WWW-Authenticate: Bearer');
+$configFile = __DIR__ . '/../../includes/api_v1_config.php';
+if (!is_file($configFile)) api_error(503, 'API non configurata');
+define('GF_API_INTERNAL', true);
+$apiConfig = require $configFile;
+if (!is_array($apiConfig) || ($apiConfig['enabled'] ?? false) !== true) {
+    api_error(503, 'API disabilitata');
+}
+$expected = $apiConfig['token_sha256'] ?? '';
+$provided = $_SERVER['HTTP_X_GF_API_KEY'] ?? '';
+if (!is_string($provided) || !preg_match('/^[A-Za-z0-9_-]{32,256}$/D', $provided)
+    || !is_string($expected) || !preg_match('/^[a-f0-9]{64}$/Di', $expected)
+    || !hash_equals(strtolower($expected), hash('sha256', $provided))) {
     api_error(401, 'Token non valido');
 }
-unset($matches, $authorization, $expected);
+unset($provided, $expected, $configFile);
+
+$familyId = filter_var($apiConfig['family_id'] ?? null, FILTER_VALIDATE_INT, ['options'=>['min_range'=>1]]);
+if (!$familyId) api_error(503, 'Famiglia API non configurata');
+$allowVacations = ($apiConfig['allow_vacations'] ?? false) === true;
 
 require_once __DIR__ . '/../../includes/db.php';
 $conn->set_charset('utf8mb4');
-$familyId = filter_var(getenv('GF_API_FAMILY_ID'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-if (!$familyId) api_error(503, 'Famiglia API non configurata');
-$allowVacations = getenv('GF_API_ALLOW_VACATIONS') === '1';
