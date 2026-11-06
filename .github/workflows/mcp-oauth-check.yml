@@ -1,0 +1,26 @@
+name: Controlli OAuth MCP PHP 8.3
+on:
+  pull_request:
+    paths:
+      - 'api/oauth/**'
+      - 'api/mcp.php'
+      - 'api/v1/bootstrap.php'
+      - 'tests/oauth_php83.php'
+      - '.github/workflows/mcp-oauth-check.yml'
+jobs:
+  php:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: Lint PHP OAuth
+        run: |
+          set -euo pipefail
+          php -l api/mcp.php
+          php -l api/v1/bootstrap.php
+          find api/oauth -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Test helper OAuth
+        run: php tests/oauth_php83.php
