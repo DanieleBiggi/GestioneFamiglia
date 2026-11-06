@@ -27,8 +27,22 @@ $grant=$_POST['grant_type'] ?? '';
 $client=$_POST['client_id'] ?? '';
 $resource=$_POST['resource'] ?? '';
 
-if (!is_string($grant) || !is_string($client) || !is_string($resource) || $family < 1) {
-    gf_oauth_trace($conn, 'invalid_request_format');
+// Traccia solo quale campo ha il tipo inatteso; non registrare mai valori
+// o corpo della richiesta. I campi token OAuth devono essere stringhe.
+if (!is_string($grant)) {
+    gf_oauth_trace($conn, 'format_grant_type');
+    gf_oauth_error('invalid_request');
+}
+if (!is_string($client)) {
+    gf_oauth_trace($conn, 'format_client_id');
+    gf_oauth_error('invalid_request');
+}
+if (!is_string($resource)) {
+    gf_oauth_trace($conn, 'format_resource');
+    gf_oauth_error('invalid_request');
+}
+if ($family < 1) {
+    gf_oauth_trace($conn, 'family_not_configured');
     gf_oauth_error('invalid_request');
 }
 if (!hash_equals(GF_OAUTH_RESOURCE, $resource)) {
