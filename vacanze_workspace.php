@@ -94,6 +94,14 @@ if($canEdit && has_permission($conn,'page:salvadanai.php','view')){
  $available=$conn->prepare('SELECT s.id_salvadanaio,s.nome_salvadanaio,s.importo_attuale FROM salvadanai s LEFT JOIN viaggi_pianificazione p ON p.id_salvadanaio=s.id_salvadanaio WHERE p.id_viaggio IS NULL ORDER BY s.nome_salvadanaio');
  $available->execute();$savingsOptions=$available->get_result()->fetch_all(MYSQLI_ASSOC);$available->close();
 }
+$linkedBudgetRows=[];
+if(!empty($planning['id_salvadanaio'])){
+ $savingIdForBudget=(int)$planning['id_salvadanaio'];
+ $familyIdForBudget=(int)($_SESSION['id_famiglia_gestione'] ?? 0);
+ $budgetRowsStmt=$conn->prepare('SELECT id_budget,descrizione,importo FROM budget WHERE id_salvadanaio=? AND id_famiglia=? ORDER BY id_budget');
+ $budgetRowsStmt->bind_param('ii',$savingIdForBudget,$familyIdForBudget);
+ $budgetRowsStmt->execute();$linkedBudgetRows=$budgetRowsStmt->get_result()->fetch_all(MYSQLI_ASSOC);$budgetRowsStmt->close();
+}
 $confirmedTotal=null;$confirmedName=null;
 $totals=$conn->prepare('SELECT * FROM v_totali_alternative WHERE id_viaggio=? ORDER BY id_viaggio_alternativa');
 $totals->bind_param('i',$id);$totals->execute();$scenarios=$totals->get_result()->fetch_all(MYSQLI_ASSOC);$totals->close();
