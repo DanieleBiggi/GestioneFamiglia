@@ -134,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <button type="button" class="pin-key" id="backspace"><i class="bi bi-backspace"></i></button>
     </div>
   </form>
-  <a href="/Gestionale25/login.php?scelta_login=1" class="btn mt-3" style="background-color:#334155;color:#fff;border:1px solid #334155;">Login con utente e password</a>
+  <a href="/Gestionale25/login.php?scelta_login=1" class="btn btn-link mt-3" style="color:var(--passcode-login-link-color);">Login con utente e password</a>
   <script>
     const input = document.getElementById('passcode');
     const dots = document.querySelectorAll('#pin-dots .dot');
