@@ -1,46 +1,43 @@
-# API v1 Gestione Famiglia (prima versione)
+# Gestione Famiglia: API REST v1 (PHP 8.3, Aruba Basic Linux)
 
-Queste API PHP sono separate dalle pagine esistenti. Non richiedono MCP e non usano la sessione del browser.
+**Non fare merge/deploy prima dei test.** Nessun file configura o attiva automaticamente le API sul server.
 
-## Prima di attivarle
+## Setup manuale dopo backup
 
-Sono **disabilitate** finché non sono impostate queste variabili d'ambiente sul server:
+1. Pubblicare la cartella `api/v1` e la configurazione `includes/.htaccess` (senza il vecchio file di diagnostica).
+2. Eseguire sul database, dopo backup, `sql/api_v1_famiglie.sql`, che crea due tabelle: `viaggi_api_famiglie` e `api_v1_richieste`. Non modifica i viaggi già presenti.
+3. Verificare su Aruba che `https://www.gestionefamiglia.it/Gestionale25/includes/api_v1_config.php` non sia accessibile pubblicamente (403/404). Non inserire credenziali fino a quando il blocco non è verificato.
+4. Sul solo server Aruba copiare `includes/api_v1_config.example.php` in `includes/api_v1_config.php`. Questo file è ignorato da Git: non inserirlo nel repository.
+5. Generare un token casuale con `openssl rand -hex 32` (oppure un generatore crittografico affidabile); calcolarne l'hash SHA-256 con `printf '%s' 'TOKEN' | sha256sum`. Conservare il token in un gestore di password; nel PHP salvare **solo l'hash**.
+6. Configurare `family_id` con l'ID famiglia corretto, `enabled=>true` e, solo quando la migrazione è completata, `allow_vacations=>true`. Non inserire l'ID famiglia ricevuto da una chiamata: lo decide il server.
 
-- `GF_API_TOKEN_SHA256`: SHA-256 esadecimale di un token casuale (almeno 32 caratteri).
-- `GF_API_FAMILY_ID`: ID numerico della famiglia autorizzata per la lista spesa.
-- `GF_API_ALLOW_VACATIONS=1`: abilita esplicitamente le API vacanze.
+Il token va fornito SOLO nell'header HTTPS `X-GF-Api-Key`, mai in query string o JSON, log, screenshot o chat. Aruba è stata verificata con questo header. Non sono previsti header CORS permissivi.
 
-**Attenzione:** attualmente le tabelle `viaggi` non hanno `id_famiglia`. Attivare le vacanze SOLO se il catalogo viaggi è condiviso da tutti gli utenti autorizzati. Altrimenti serve prima una migrazione dei dati per associare ogni vacanza a una famiglia.
+## Endpoint
 
-Non salvare il token in GitHub, JavaScript, URL, chat o file pubblici. Per creare un token: `openssl rand -hex 32`; per ottenere l'hash: `printf '%s' 'TOKEN' | sha256sum`. Configurare l'hash e custodire il token in un gestore di segreti. Su hosting condivisi verificare se è possibile impostare variabili d'ambiente a livello PHP: se non possibile, integrare una configurazione privata NON accessibile dal web, prima del deploy.
+| Metodo | URL | Funzione |
+|---|---|---|
+| GET | `/api/v1/spesa.php` | Legge la spesa della famiglia autorizzata |
+| POST | `/api/v1/spesa.php` | Aggiunge più elementi alla spesa |
+| GET | `/api/v1/vacanze.php` | Legge le vacanze **associate alla famiglia nella tabella API** |
+| GET | `/api/v1/vacanze.php?id=123` | Legge scenari, tratte, alloggi e altri costi |
+| POST | `/api/v1/vacanze.php` | Crea una vacanza con scenari e costi |
 
-Le API richiedono HTTPS e header `Authorization: Bearer <token>`. Non rispondono a chiamate anonime né consentono CORS cross-origin.
+Le vacanze esistenti **non vengono rese visibili automaticamente** tramite API. Per associare un viaggio precedente serve una procedura di migrazione con verifica del proprietario.
 
-## Endpoints implementati
+## Test sicuri: prima dry_run, poi scrittura
 
-| Metodo | URL | Operazione |
-| --- | --- | --- |
-| GET | `/api/v1/spesa.php` | Legge la lista della famiglia configurata |
-| POST | `/api/v1/spesa.php` | Aggiunge più elementi |
-| GET | `/api/v1/vacanze.php` | Ultime 100 vacanze |
-| GET | `/api/v1/vacanze.php?id=123` | Vacanza con scenari, tratte, alloggi e altri costi |
-| POST | `/api/v1/vacanze.php` | Crea una vacanza con più scenari |
+Le richieste POST accettano JSON e `"dry_run": true` per controllare il contenuto senza salvare niente. Per i POST reali serve l'header `X-GF-Request-Id`, un identificativo casuale di 16-64 caratteri nuovo per ogni salvataggio. Ripetendo lo stesso ID la richiesta viene respinta con HTTP 409 anziché creare duplicati.
 
-POST accetta JSON con `Content-Type: application/json`; inserire `"dry_run": true` per validare senza scrivere. La creazione usa una transazione per evitare salvataggi parziali.
+Esempio PowerShell (sostituire il token SOLO sul proprio PC):
 
-### Esempio lista spesa
-
-```json
-{
-  "dry_run": true,
-  "items": [
-    {"nome": "Pomodori", "quantita": "500 g", "note": "Pasta, lunedì"},
-    {"nome": "Latte", "quantita": "1 litro"}
-  ]
-}
+```powershell
+$headers = @{ 'X-GF-Api-Key' = '<TOKEN_PRIVATO>'; 'X-GF-Request-Id' = [guid]::NewGuid().ToString('N') }
+$body = @{ dry_run = $true; items = @(@{ nome = 'Latte'; quantita = '1 litro' }) } | ConvertTo-Json -Depth 6
+Invoke-RestMethod -Method Post -Uri 'https://www.gestionefamiglia.it/Gestionale25/api/v1/spesa.php' -Headers $headers -ContentType 'application/json' -Body $body
 ```
 
-### Esempio vacanza
+Esempio payload vacanza:
 
 ```json
 {
@@ -49,28 +46,22 @@ POST accetta JSON con `Content-Type: application/json`; inserire `"dry_run": tru
   "data_inizio": "2027-05-08",
   "data_fine": "2027-05-11",
   "persone": 4,
-  "breve_descrizione": "Visita a Cnosso",
-  "scenari": [
-    {
-      "nome": "Volo da Bergamo",
-      "trasporti": [
-        {"tipo": "aereo", "origine": "Bergamo", "destinazione": "Creta", "costo_volo_eur": 367}
-      ],
-      "alloggi": [{"nome": "Casa in centro", "checkin": "2027-05-08", "checkout": "2027-05-11"}],
-      "altri_costi": [{"descrizione": "Museo e altri costi", "importo_eur": 100}]
-    }
-  ]
+  "scenari": [{
+    "nome": "Bergamo",
+    "trasporti": [{"tipo":"aereo","origine":"Bergamo","destinazione":"Creta","costo_volo_eur":367}],
+    "alloggi": [{"nome":"Casa in centro","checkin":"2027-05-08","checkout":"2027-05-11","costo_notte_eur":100}],
+    "altri_costi": [{"descrizione":"Museo","importo_eur":30}]
+  }]
 }
 ```
 
-Gli esempi sono illustrativi, non dati da importare automaticamente. Non sommare totali generici alle singole spese se ciò porta a doppio conteggio.
+Gli importi sono esempi. L'API non inventa dati mancanti e crea il viaggio con stato iniziale `idea`. I costi per notte vengono calcolati dal gestionale secondo le regole disponibili nel database.
 
-## Limiti di questa prima versione
+## Limiti e verifiche necessarie
 
-- La configurazione hosting e il database di produzione **non sono stati modificati**.
-- Nessun token è stato creato né pubblicato.
-- Nessuna integrazione ChatGPT/Gemini è già collegata.
-- Le API POST **aggiungono** record, non fanno ancora upsert e non eliminano duplicati. Evitare retry automatici su timeout.
-- Non sono ancora disponibili modifica vacanze, paginazione, idempotency key, rate limiting, gestione dei permessi per singolo utente o revoca centralizzata dei token.
-- I costi alloggio supportano il costo per notte; prima dell'uso completo occorre verificare la compatibilità del calcolo totale nella versione del database distribuita.
-- Prima di un utilizzo reale servono test su un database di prova e verifiche di sicurezza, comprese le autorizzazioni di tutte le operazioni.
+- Non è ancora un plugin ChatGPT/Gemini e non abilita le chat a chiamare direttamente il sito.
+- Si possono **creare** vacanze e leggere quelle importate dall'API, non ancora modificare viaggi già esistenti.
+- Il token è unico per la famiglia configurata; per più famiglie o utenti indipendenti servirà una gestione di token e permessi separata.
+- I due endpoint non hanno rate limiting per IP: usare un token lungo, HTTPS e ulteriori protezioni prima di una distribuzione ampia.
+- Prima di abilitare la scrittura occorre collaudare SQL, totalizzazione alloggi, autorizzazioni, transazioni, errori e scenari su un DB di test.
+- Eliminare `api/v1/diagnostica_aruba.php` dal branch **prima del merge** e non pubblicarlo nuovamente.
