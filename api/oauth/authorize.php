@@ -6,7 +6,7 @@ header('X-Frame-Options: DENY');
 header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'");
 if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') { http_response_code(403); exit('HTTPS richiesto'); }
 session_start();
-$configFile = __DIR__ . '/../../../includes/api_v1_config.php';
+$configFile = __DIR__ . '/../../includes/api_v1_config.php';
 if (!is_file($configFile)) { http_response_code(503); exit('API non configurata'); }
 if (!defined('GF_API_INTERNAL')) define('GF_API_INTERNAL', true);
 $config = require $configFile;
@@ -70,7 +70,7 @@ if (($_POST['decision'] ?? '') !== 'approve') {
     $url=$pending['redirect'].'?'.http_build_query(['error'=>'access_denied','state'=>$pending['state'],'iss'=>GF_OAUTH_ISSUER],'','&',PHP_QUERY_RFC3986);
     header('Location: '.$url, true,302); exit;
 }
-require_once __DIR__ . '/../../../includes/db.php';
+require_once __DIR__ . '/../../includes/db.php';
 $code=gf_oauth_random();
 $hash=gf_oauth_hash($code);
 $uid=(int)$_SESSION['utente_id'];
