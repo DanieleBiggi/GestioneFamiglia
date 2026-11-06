@@ -75,22 +75,48 @@ $apiConfig = require $configFile;
 if (!is_array($apiConfig) || ($apiConfig['enabled'] ?? false) !== true) {
     api_error(503, 'API disabilitata');
 }
-$expected = $apiConfig['token_sha256'] ?? '';
-$provided = $_SERVER['HTTP_X_GF_API_KEY'] ?? '';
-if (!is_string($provided) || !preg_match('/^[A-Za-z0-9_-]{32,256}$/D', $provided)
-    || !is_string($expected) || !preg_match('/^[a-f0-9]{64}$/Di', $expected)
-    || !hash_equals(strtolower($expected), hash('sha256', $provided))) {
-    api_error(401, 'Token non valido');
-}
-unset($provided, $expected, $configFile);
-
 $familyId = filter_var($apiConfig['family_id'] ?? null, FILTER_VALIDATE_INT, ['options'=>['min_range'=>1]]);
 if (!$familyId) api_error(503, 'Famiglia API non configurata');
 $allowVacations = ($apiConfig['allow_vacations'] ?? false) === true;
 
+$expected = $apiConfig['token_sha256'] ?? '';
+$provided = $_SERVER['HTTP_X_GF_API_KEY'] ?? '';
+$apiKeyValid = is_string($provided) && preg_match('/^[A-Za-z0-9_-]{32,256}$/D', $provided)
+    && is_string($expected) && preg_match('/^[a-f0-9]{64}$/Di', $expected)
+    && hash_equals(strtolower($expected), hash('sha256',$provided));
+unset($expected,$provided);
+
+$internalValid = false;
+$internalKey = $apiConfig['mcp_internal_key'] ?? '';
+$timeHeader = $_SERVER['HTTP_X_GF_INTERNAL_TIME'] ?? '';
+$signature = $_SERVER['HTTP_X_GF_INTERNAL_SIGNATURE'] ?? '';
+if (is_string($internalKey) && preg_match('/^[a-f0-9]{64}$/Di',$internalKey)
+    && is_string($timeHeader) && preg_match('/^[0-9]{10}$/D',$timeHeader)
+    && abs(time()-(int)$timeHeader) <= 30 && is_string($signature)
+    && preg_match('/^[a-f0-9]{64}$/Di',$signature)) {
+    $uriPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+    $raw = file_get_contents('php://input');
+    $base = $timeHeader . "\n" . ($_SERVER['REQUEST_METHOD'] ?? '') . "\n" . $uriPath . "\n" . hash('sha256', $raw === false ? '' : $raw);
+    $expectedSignature=hash_hmac('sha256',$base,hex2bin($internalKey));
+    $internalValid=hash_equals($expectedSignature,strtolower($signature));
+    unset($raw,$base,$expectedSignature);
+}
+unset($internalKey,$timeHeader,$signature);
 require_once __DIR__ . '/../../includes/db.php';
 $conn->set_charset('utf8mb4');
 
+$oauthAccess = null;
+if (!$apiKeyValid && !$internalValid && defined('GF_MCP_CONTEXT') && GF_MCP_CONTEXT
+    && ($apiConfig['mcp_oauth_enabled'] ?? false) === true) {
+    require_once __DIR__ . '/../oauth/common.php';
+    $oauthAccess = gf_oauth_access($conn,gf_oauth_bearer(),(int)$familyId);
+}
+if (!$apiKeyValid && !$internalValid && !$oauthAccess) {
+    if (defined('GF_MCP_CONTEXT') && GF_MCP_CONTEXT && ($apiConfig['mcp_oauth_enabled'] ?? false) === true) {
+        gf_oauth_challenge();
+    }
+    api_error(401, 'Token non valido');
+}
 function api_request_id(): string {
     $requestId = $_SERVER['HTTP_X_GF_REQUEST_ID'] ?? '';
     if (!is_string($requestId) || !preg_match('/^[A-Za-z0-9_-]{16,64}$/D', $requestId)) {
