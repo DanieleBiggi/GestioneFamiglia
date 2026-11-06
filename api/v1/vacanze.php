@@ -19,6 +19,23 @@ try {
             $stmt->execute();
             $trip['scenari'] = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
             $stmt->close();
+            $categories = [
+                'trasporti'=>['table'=>'viaggi_tratte','link'=>'viaggi_tratte_alternative','key'=>'id_tratta'],
+                'alloggi'=>['table'=>'viaggi_alloggi','link'=>'viaggi_alloggi_alternative','key'=>'id_alloggio'],
+                'altri_costi'=>['table'=>'viaggi_altri_costi','link'=>'viaggi_altri_costi_alternative','key'=>'id_costo']
+            ];
+            foreach ($trip['scenari'] as &$scenario) {
+                $sid = (int)$scenario['id_viaggio_alternativa'];
+                foreach ($categories as $name => $cat) {
+                    $table = $cat['table']; $link = $cat['link']; $key = $cat['key'];
+                    $q = $conn->prepare("SELECT e.* FROM `$table` e INNER JOIN `$link` x ON e.`$key`=x.`$key` WHERE e.id_viaggio=? AND x.id_viaggio_alternativa=? ORDER BY e.`$key`");
+                    $q->bind_param('ii', $id, $sid);
+                    $q->execute();
+                    $scenario[$name] = $q->get_result()->fetch_all(MYSQLI_ASSOC);
+                    $q->close();
+                }
+            }
+            unset($scenario);
             api_reply(200, ['success'=>true, 'vacanza'=>$trip]);
         }
         $result = $conn->query('SELECT id_viaggio, titolo, data_inizio, data_fine, persone, stato FROM viaggi ORDER BY id_viaggio DESC LIMIT 100');
