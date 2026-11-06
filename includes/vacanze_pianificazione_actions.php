@@ -74,7 +74,6 @@ function vacanzePlanningAction(mysqli $conn, int $tripId, string $action, bool $
             $goal=(float)$amounts[$savingId]['importo_residuo'];
             $familyId=(int)($_SESSION['id_famiglia_gestione'] ?? 0);
             if($familyId<=0) throw new RuntimeException('Famiglia non valida.');
-            if(!has_permission($conn,'table:budget','update')) throw new RuntimeException('Non autorizzato a modificare il budget.');
             // Non indovinare quale voce modificare se il salvadanaio ne ha più di una.
             $q=$conn->prepare('SELECT id_budget,importo FROM budget WHERE id_salvadanaio=? AND id_famiglia=? FOR UPDATE');
             $q->bind_param('ii',$savingId,$familyId);$q->execute();
