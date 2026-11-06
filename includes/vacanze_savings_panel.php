@@ -30,7 +30,7 @@
    <div class="vw-savings-warning" role="alert" aria-live="polite">
     <div class="vw-savings-warning-title"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Attenzione: importo Budget non allineato alla vacanza</div>
     <p>La voce Budget indica <strong><?= vwEuro($budgetAmount) ?></strong>, mentre il residuo da pagare dello scenario confermato è <strong><?= vwEuro($confirmedRemaining) ?></strong>.</p>
-    <?php if($canEdit && has_permission($conn,'table:budget','update')): ?>
+    <?php if($canEdit): ?>
     <form method="post" class="mt-2">
      <input type="hidden" name="vacanze_csrf" value="<?= vwEsc($_SESSION['vacanze_csrf']) ?>">
      <input type="hidden" name="vw_action" value="sync_salvadanaio_goal">
