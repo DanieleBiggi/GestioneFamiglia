@@ -12,6 +12,7 @@ $q=$conn->prepare('SELECT * FROM viaggi WHERE id_viaggio=?');
 $q->bind_param('i',$id);$q->execute();$trip=$q->get_result()->fetch_assoc();$q->close();
 if (!$trip) { http_response_code(404); exit('Vacanza non trovata'); }
 if(empty($_SESSION['vacanze_csrf'])) $_SESSION['vacanze_csrf']=bin2hex(random_bytes(32));
+if(empty($_SESSION['vacanze_duplicate_nonce'])) $_SESSION['vacanze_duplicate_nonce']=bin2hex(random_bytes(16));
 function duplicateVacationColumns(mysqli $conn, string $table): array {
     $result=$conn->query('SHOW COLUMNS FROM `'.$table.'`');
     return array_column($result->fetch_all(MYSQLI_ASSOC),'Field');
@@ -30,6 +31,8 @@ function duplicateVacationRows(mysqli $conn, string $table, string $pk, int $old
             if ($col==='id_viaggio') $expressions[]=(string)$newTrip;
             elseif ($col==='id_viaggio_alternativa') $expressions[]=isset($scenarioIds[$legacyAlt])?(string)$scenarioIds[$legacyAlt]:'NULL';
             elseif ($col==='pagato') $expressions[]='0';
+            elseif ($table==='viaggi_alloggi' && $col==='costo_totale_eur' && in_array('costo_totale_eur',$columns,true))
+                $expressions[]='COALESCE(costo_totale_eur,GREATEST(COALESCE(DATEDIFF(data_checkout,data_checkin),0),0)*COALESCE(costo_notte_eur,0))';
             elseif (in_array($col,['data','data_checkin','data_checkout','data_prenotazione','data_pagamento'],true)) $expressions[]='NULL';
             else $expressions[]='`'.$col.'`';
         }
@@ -42,6 +45,8 @@ function duplicateVacationRows(mysqli $conn, string $table, string $pk, int $old
 $error='';
 if($_SERVER['REQUEST_METHOD']==='POST'){
  if(!hash_equals($_SESSION['vacanze_csrf'],(string)($_POST['vacanze_csrf'] ?? ''))) { http_response_code(403); exit('Token non valido'); }
+ $nonce=(string)($_POST['duplica_nonce'] ?? '');
+ if(!hash_equals((string)$_SESSION['vacanze_duplicate_nonce'],$nonce)){ http_response_code(409); exit('Richiesta già inviata. Riapri la vacanza per una nuova duplicazione.'); }
  $title=trim((string)($_POST['titolo'] ?? ''));
  if($title==='' || mb_strlen($title,'UTF-8')>150) $error='Inserisci un titolo di massimo 150 caratteri.';
  else {
@@ -82,6 +87,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
       // Non duplicare viaggi_pianificazione, prenotazioni confermate, commenti,
       // feedback, condivisioni, messaggi, importazioni o movimenti finanziari.
       $conn->commit();
+      $_SESSION['vacanze_duplicate_nonce']=bin2hex(random_bytes(16));
       header('Location: vacanze_workspace.php?id='.$newTrip.'&tab=overview');exit;
     } catch(Throwable $e) {
       $conn->rollback();
@@ -99,6 +105,7 @@ include 'includes/header.php';
   <?php if($error!==''): ?><p role="alert" class="vw-empty"><?= htmlspecialchars($error,ENT_QUOTES,'UTF-8') ?></p><?php endif; ?>
   <form method="post">
    <input type="hidden" name="id_viaggio" value="<?= $id ?>">
+   <input type="hidden" name="duplica_nonce" value="<?= htmlspecialchars($_SESSION['vacanze_duplicate_nonce'],ENT_QUOTES,'UTF-8') ?>">
    <input type="hidden" name="vacanze_csrf" value="<?= htmlspecialchars($_SESSION['vacanze_csrf'],ENT_QUOTES,'UTF-8') ?>">
    <label class="form-label" for="newTripTitle">Nome nuova vacanza</label>
    <input class="vw-input w-100 mb-3" id="newTripTitle" name="titolo" maxlength="150" required value="<?= htmlspecialchars($_POST['titolo'] ?? ($trip['titolo'].' (Copia)'),ENT_QUOTES,'UTF-8') ?>">
