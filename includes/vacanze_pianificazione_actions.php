@@ -61,6 +61,19 @@ function vacanzePlanningAction(mysqli $conn, int $tripId, string $action, bool $
             }
             $q = $conn->prepare('UPDATE viaggi_pianificazione SET id_salvadanaio=?,obiettivo_salvadanaio=? WHERE id_viaggio=?');
             $q->bind_param('idi', $savingId, $goal, $tripId); $q->execute(); $q->close();
+        } elseif ($action === 'sync_salvadanaio_goal') {
+            if (empty($planning['id_salvadanaio']) || empty($planning['id_alternativa_confermata'])) {
+                throw new RuntimeException('Conferma uno scenario e collega un salvadanaio prima di sincronizzare.');
+            }
+            require_once __DIR__ . '/vacanze_budget_residui.php';
+            $amounts=vacanzeBudgetResidui($conn);
+            $savingId=(int)$planning['id_salvadanaio'];
+            if (!isset($amounts[$savingId]) || (int)$amounts[$savingId]['id_viaggio']!==$tripId) {
+                throw new RuntimeException('Impossibile calcolare il residuo dello scenario confermato.');
+            }
+            $goal=(float)$amounts[$savingId]['importo_residuo'];
+            $q=$conn->prepare('UPDATE viaggi_pianificazione SET obiettivo_salvadanaio=? WHERE id_viaggio=? AND id_salvadanaio=?');
+            $q->bind_param('dii',$goal,$tripId,$savingId);$q->execute();$q->close();
         } elseif ($action === 'update_salvadanaio_goal') {
             if (empty($planning['id_salvadanaio'])) throw new RuntimeException('Nessun salvadanaio collegato.');
             $raw = (string)($_POST['obiettivo_salvadanaio'] ?? '');
