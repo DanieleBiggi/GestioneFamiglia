@@ -25,7 +25,7 @@ function api_body(): array {
     $raw = file_get_contents('php://input', false, null, 0, 131073);
     if ($raw === false || strlen($raw) > 131072) api_error(413, 'Richiesta troppo grande');
     $data = json_decode($raw, true);
-    if (!is_array($data) || array_is_list($data)) api_error(400, 'Inviare un oggetto JSON');
+    if (!is_array($data) || array_values($data) === $data) api_error(400, 'Inviare un oggetto JSON');
     return $data;
 }
 function api_str($value, int $max = 255, bool $required = false): ?string {
@@ -52,11 +52,11 @@ function api_date($value): ?string {
     return $value;
 }
 function api_list($value, int $max = 50): array {
-    if (!is_array($value) || !array_is_list($value) || count($value) > $max) api_error(422, 'Elenco non valido');
+    if (!is_array($value) || array_values($value) !== $value || count($value) > $max) api_error(422, 'Elenco non valido');
     return $value;
 }
 function api_assoc($value): array {
-    if (!is_array($value) || array_is_list($value)) api_error(422, 'Elemento non valido');
+    if (!is_array($value) || array_values($value) === $value) api_error(422, 'Elemento non valido');
     return $value;
 }
 function api_json_error(Throwable $e): void {
