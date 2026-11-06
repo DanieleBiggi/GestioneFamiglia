@@ -90,3 +90,22 @@ $allowVacations = ($apiConfig['allow_vacations'] ?? false) === true;
 
 require_once __DIR__ . '/../../includes/db.php';
 $conn->set_charset('utf8mb4');
+
+function api_request_id(): string {
+    $requestId = $_SERVER['HTTP_X_GF_REQUEST_ID'] ?? '';
+    if (!is_string($requestId) || !preg_match('/^[A-Za-z0-9_-]{16,64}$/D', $requestId)) {
+        api_error(422, 'Inviare X-GF-Request-Id unico per ogni salvataggio');
+    }
+    return $requestId;
+}
+function api_claim_request(mysqli $conn, int $familyId, string $resource, string $requestId): void {
+    try {
+        $q = $conn->prepare('INSERT INTO api_v1_richieste (id_famiglia, risorsa, richiesta_id) VALUES (?,?,?)');
+        $q->bind_param('iss', $familyId, $resource, $requestId);
+        $q->execute();
+        $q->close();
+    } catch (mysqli_sql_exception $e) {
+        if ((int)$e->getCode() === 1062) api_error(409, 'Richiesta già inviata, non ripetere il salvataggio');
+        throw $e;
+    }
+}
