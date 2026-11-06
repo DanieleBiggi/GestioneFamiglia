@@ -1,0 +1,27 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "gestione-famiglia",
+  "version": "0.1.0",
+  "description": "Integra Gestione Famiglia con ChatGPT tramite MCP, per leggere e aggiungere vacanze e prodotti alla lista della spesa.",
+  "repository": "https://github.com/DanieleBiggi/GestioneFamiglia",
+  "keywords": [
+    "family",
+    "vacations",
+    "shopping",
+    "productivity"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Gestione Famiglia",
+        "shortDescription": "Vacanze e lista della spesa dal tuo gestionale",
+        "category": "Productivity",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "websiteURL": "https://www.gestionefamiglia.it/"
+      }
+    }
+  }
+}
