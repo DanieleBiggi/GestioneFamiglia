@@ -41,5 +41,7 @@ echo json_encode([
         'getenv' => function_exists('getenv')
     ],
     'authorization_header_received' => is_string($auth) && $auth !== '',
-    'authorization_source' => $source
+    'authorization_source' => $source,
+    // Si controlla solo la presenza, non il contenuto del valore.
+    'custom_header_received' => isset($_SERVER['HTTP_X_GF_API_KEY']) && $_SERVER['HTTP_X_GF_API_KEY'] !== ''
 ], JSON_UNESCAPED_SLASHES);
