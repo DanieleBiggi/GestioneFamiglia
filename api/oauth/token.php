@@ -10,6 +10,8 @@ if (!defined('GF_API_INTERNAL')) define('GF_API_INTERNAL',true);
 $configFile=__DIR__.'/../../includes/api_v1_config.php';
 $oauthConfig=is_file($configFile) ? require $configFile : [];
 if (($oauthConfig['enabled'] ?? false) !== true || ($oauthConfig['mcp_oauth_enabled'] ?? false) !== true) gf_oauth_error('temporarily_unavailable',503);
+// Calcolare l'ID prima di includere db.php (che definisce variabili globali).
+$family=(int)($oauthConfig['family_id'] ?? 0);
 require_once __DIR__.'/../../includes/db.php';
 function gf_oauth_trace(mysqli $conn, string $stage): void {
     // Non memorizza code, state, token, client ID, indirizzi IP o redirect.
@@ -21,8 +23,8 @@ function gf_oauth_trace(mysqli $conn, string $stage): void {
         $q->close();
     } catch (Throwable $ignored) { /* Tabella diagnostica facoltativa. */ }
 }
+gf_oauth_trace($conn, 'token_build_2');
 gf_oauth_trace($conn, 'request_received');
-$family=(int)($oauthConfig['family_id'] ?? 0);
 $grant=$_POST['grant_type'] ?? '';
 $client=$_POST['client_id'] ?? '';
 $resource=$_POST['resource'] ?? '';
