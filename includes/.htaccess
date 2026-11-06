@@ -1,0 +1,4 @@
+# Impedisce accesso HTTP alle configurazioni private delle API.
+<Files "api_v1_config.php">
+    Require all denied
+</Files>
