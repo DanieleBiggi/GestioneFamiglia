@@ -10,3 +10,7 @@ RewriteBase /Gestionale25/
 # Entry point (apri /Gestionale25/ -> login.php)
 DirectoryIndex login.php
 RewriteRule ^$ login.php [L]
+
+# OAuth MCP: inoltra Authorization al PHP CGI/FastCGI (da verificare su Aruba).
+SetEnvIfNoCase Authorization "(.+)" HTTP_AUTHORIZATION=$1
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
