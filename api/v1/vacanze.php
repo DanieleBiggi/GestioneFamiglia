@@ -90,7 +90,9 @@ try {
     if (($body['dry_run'] ?? false) === true) api_reply(200, ['success'=>true, 'dry_run'=>true,'vacanza'=>['titolo'=>$title,'data_inizio'=>$start,'data_fine'=>$end,'persone'=>$people,'scenari'=>$validated]]);
     $state = 'idea';
     $nights = $start && $end ? (new DateTimeImmutable($start))->diff(new DateTimeImmutable($end))->days : null;
+    $requestId = api_request_id();
     $conn->begin_transaction();
+    api_claim_request($conn, $familyId, 'vacanze', $requestId);
     $stmt = $conn->prepare('INSERT INTO viaggi (titolo, data_inizio, data_fine, notti, persone, stato, visibilita, breve_descrizione, note) VALUES (?,?,?,?,?,?,"private",?,?)');
     $stmt->bind_param('sssiisss', $title,$start,$end,$nights,$people,$state,$desc,$notes);
     $stmt->execute();
