@@ -54,7 +54,10 @@ function vacanzePlanningAction(mysqli $conn, int $tripId, string $action, bool $
                 $q->bind_param('i', $savingId); $q->execute();
                 $valid = (bool)$q->get_result()->fetch_row(); $q->close();
                 if (!$valid) throw new RuntimeException('Salvadanaio non trovato.');
-                $goal = null; // Non alterare l'obiettivo di un salvadanaio preesistente.
+                // Obiettivo di questa vacanza: nessuna modifica al saldo o ai dati del salvadanaio.
+                $amountRaw = trim((string)($_POST['obiettivo_salvadanaio'] ?? ''));
+                if ($amountRaw !== '' && (!is_numeric($amountRaw) || (float)$amountRaw < 0 || (float)$amountRaw > 99999999.99)) throw new RuntimeException('Obiettivo economico non valido.');
+                $goal = $amountRaw === '' ? null : round((float)$amountRaw,2);
             }
             $q = $conn->prepare('UPDATE viaggi_pianificazione SET id_salvadanaio=?,obiettivo_salvadanaio=? WHERE id_viaggio=?');
             $q->bind_param('idi', $savingId, $goal, $tripId); $q->execute(); $q->close();
