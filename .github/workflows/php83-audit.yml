@@ -22,3 +22,5 @@ jobs:
         run: |
           set -euo pipefail
           find . -type f -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -r -n1 php -l
+      - name: Test nomi delle date italiane
+        run: php tests/php83_dates.php
