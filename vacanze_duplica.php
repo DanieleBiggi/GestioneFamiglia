@@ -47,6 +47,11 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
  if(!hash_equals($_SESSION['vacanze_csrf'],(string)($_POST['vacanze_csrf'] ?? ''))) { http_response_code(403); exit('Token non valido'); }
  $nonce=(string)($_POST['duplica_nonce'] ?? '');
  if(!hash_equals((string)$_SESSION['vacanze_duplicate_nonce'],$nonce)){ http_response_code(409); exit('Richiesta già inviata. Riapri la vacanza per una nuova duplicazione.'); }
+ // La duplicazione crea copie reali: occorrono i permessi di inserimento.
+ foreach(['viaggi_tratte','viaggi_alloggi','viaggi_pasti','viaggi_altri_costi','viaggi_checklist'] as $resource){
+   if(!has_permission($conn,'table:'.$resource,'insert')) { http_response_code(403); exit('Permessi insufficienti per duplicare le voci della vacanza.'); }
+ }
+ if(!has_permission($conn,'ajax:add_viaggi_alternativa','insert')) { http_response_code(403); exit('Permessi insufficienti per duplicare gli scenari.'); }
  $title=trim((string)($_POST['titolo'] ?? ''));
  if($title==='' || mb_strlen($title,'UTF-8')>150) $error='Inserisci un titolo di massimo 150 caratteri.';
  else {
