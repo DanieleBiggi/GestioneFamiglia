@@ -8,8 +8,8 @@ header('Pragma: no-cache');
 header('Access-Control-Allow-Origin: none');
 if (!defined('GF_API_INTERNAL')) define('GF_API_INTERNAL',true);
 $configFile=__DIR__.'/../../includes/api_v1_config.php';
-$config=is_file($configFile) ? require $configFile : [];
-if (($config['enabled'] ?? false) !== true || ($config['mcp_oauth_enabled'] ?? false) !== true) gf_oauth_error('temporarily_unavailable',503);
+$oauthConfig=is_file($configFile) ? require $configFile : [];
+if (($oauthConfig['enabled'] ?? false) !== true || ($oauthConfig['mcp_oauth_enabled'] ?? false) !== true) gf_oauth_error('temporarily_unavailable',503);
 require_once __DIR__.'/../../includes/db.php';
 function gf_oauth_trace(mysqli $conn, string $stage): void {
     // Non memorizza code, state, token, client ID, indirizzi IP o redirect.
@@ -22,7 +22,7 @@ function gf_oauth_trace(mysqli $conn, string $stage): void {
     } catch (Throwable $ignored) { /* Tabella diagnostica facoltativa. */ }
 }
 gf_oauth_trace($conn, 'request_received');
-$family=(int)($config['family_id'] ?? 0);
+$family=(int)($oauthConfig['family_id'] ?? 0);
 $grant=$_POST['grant_type'] ?? '';
 $client=$_POST['client_id'] ?? '';
 $resource=$_POST['resource'] ?? '';
