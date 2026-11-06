@@ -53,7 +53,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
        header('Location: '.vwUrl($id,'sharing').'#note-condivise');exit;
      }
    }
- } elseif(in_array($action,['confirm_scenario','create_salvadanaio','link_salvadanaio','unlink_salvadanaio','update_salvadanaio_goal'],true)) {
+ } elseif(in_array($action,['confirm_scenario','create_salvadanaio','link_salvadanaio','unlink_salvadanaio','update_salvadanaio_goal','sync_salvadanaio_goal'],true)) {
    require_once 'includes/vacanze_pianificazione_actions.php';
    $workspaceError=vacanzePlanningAction($conn,$id,$action,$canEdit);
  } elseif($action==='add_scenario' && $canAddScenario){
