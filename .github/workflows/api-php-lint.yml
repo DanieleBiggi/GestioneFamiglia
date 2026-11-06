@@ -1,0 +1,25 @@
+name: API PHP lint
+on:
+  pull_request:
+    paths:
+      - 'api/v1/**'
+      - '.github/workflows/api-php-lint.yml'
+  push:
+    paths:
+      - 'api/v1/**'
+      - '.github/workflows/api-php-lint.yml'
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.0', '8.2']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+      - name: Lint API PHP
+        run: |
+          set -eu
+          find api/v1 -name '*.php' -print -exec php -l {} \;
