@@ -37,7 +37,9 @@
     <input type="hidden" name="vacanze_csrf" value="<?= vwEsc($_SESSION['vacanze_csrf']) ?>"><input type="hidden" name="vw_action" value="link_salvadanaio">
     <div><label class="form-label">Salvadanaio</label><select name="id_salvadanaio" class="vw-input" required>
     <?php foreach($savingsOptions as $saving): ?><option value="<?= (int)$saving['id_salvadanaio'] ?>"><?= vwEsc($saving['nome_salvadanaio']) ?> · <?= vwEuro($saving['importo_attuale']) ?></option><?php endforeach; ?>
-    </select></div><button type="submit" class="vw-btn vw-btn-primary">Collega</button>
+    </select></div>
+    <div><label class="form-label">Obiettivo per la vacanza (€)</label><input class="vw-input" type="number" step="0.01" min="0" name="obiettivo_salvadanaio" value="<?= vwEsc(number_format($confirmedTotal,2,'.','')) ?>"></div>
+    <button type="submit" class="vw-btn vw-btn-primary">Collega</button>
    </form>
   </details><?php endif; ?>
  <?php endif; ?>
