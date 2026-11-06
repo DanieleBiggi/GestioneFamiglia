@@ -161,27 +161,6 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
     <a href="budget_anno.php" class="btn btn-outline-light w-100 ms-1">Vai a Anno</a>
   </div>
 </form>
-<?php if($tripSavings): ?>
-<section class="mb-4" aria-label="Salvadanai delle vacanze">
- <h5>Salvadanai collegati alle vacanze</h5>
- <div class="row g-2">
- <?php foreach($tripSavings as $saving): ?>
- <div class="col-12 col-md-6 col-xl-4"><div class="card p-3 h-100">
-  <div class="fw-semibold"><?= htmlspecialchars($saving['nome_salvadanaio'],ENT_QUOTES,'UTF-8') ?></div>
-  <div class="small"><?= htmlspecialchars($saving['titolo'],ENT_QUOTES,'UTF-8') ?></div>
-  <div class="my-2">Accantonato: <strong><?= number_format((float)$saving['importo_attuale'],2,',','.') ?> €</strong>
-  <?php if($saving['obiettivo_salvadanaio']!==null): ?>
-  di <?= number_format((float)$saving['obiettivo_salvadanaio'],2,',','.') ?> €
-  <?php endif; ?></div>
-  <div class="d-flex gap-2 flex-wrap">
-   <a href="vacanze_workspace.php?id=<?= (int)$saving['id_viaggio'] ?>" class="btn btn-outline-secondary btn-sm">Apri vacanza</a>
-   <a href="salvadanaio_dettaglio.php?id=<?= (int)$saving['id_salvadanaio'] ?>" class="btn btn-outline-secondary btn-sm">Apri salvadanaio</a>
-  </div>
- </div></div>
- <?php endforeach; ?>
- </div>
-</section>
-<?php endif; ?>
 <div class="row">
   <div class="col-12 col-lg-8">
     <h5>Importi stimati attuali per salvadanaio</h5>
@@ -289,4 +268,26 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
     </table>
   </div>
 </div>
+<?php if($tripSavings): ?>
+<section class="mb-4" aria-label="Salvadanai delle vacanze">
+ <h5>Salvadanai collegati alle vacanze</h5>
+ <div class="row g-2">
+ <?php foreach($tripSavings as $saving): ?>
+ <div class="col-12 col-md-6 col-xl-4"><div class="card p-3 h-100">
+  <div class="fw-semibold"><?= htmlspecialchars($saving['nome_salvadanaio'],ENT_QUOTES,'UTF-8') ?></div>
+  <div class="small"><?= htmlspecialchars($saving['titolo'],ENT_QUOTES,'UTF-8') ?></div>
+  <div class="my-2">Accantonato: <strong><?= number_format((float)$saving['importo_attuale'],2,',','.') ?> €</strong>
+  <?php if($saving['obiettivo_salvadanaio']!==null): ?>
+  di <?= number_format((float)$saving['obiettivo_salvadanaio'],2,',','.') ?> €
+  <?php endif; ?></div>
+  <div class="d-flex gap-2 flex-wrap">
+   <a href="vacanze_workspace.php?id=<?= (int)$saving['id_viaggio'] ?>" class="btn btn-outline-secondary btn-sm">Apri vacanza</a>
+   <a href="salvadanaio_dettaglio.php?id=<?= (int)$saving['id_salvadanaio'] ?>" class="btn btn-outline-secondary btn-sm">Apri salvadanaio</a>
+  </div>
+ </div></div>
+ <?php endforeach; ?>
+ </div>
+</section>
+<?php endif; ?>
+
 <?php include 'includes/footer.php'; ?>
