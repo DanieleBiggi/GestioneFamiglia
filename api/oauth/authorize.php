@@ -81,21 +81,35 @@ $pending = is_string($requestKey) && preg_match('/^[a-f0-9]{48}$/D', $requestKey
 if (!is_array($pending) || (int)($pending['created_at'] ?? 0) + 600 < time()) {
     gf_auth_page('Richiesta scaduta','<p>La richiesta è scaduta o è già stata utilizzata. Chiudi questa scheda e riavvia il collegamento da ChatGPT.</p>',403);
 }
-// Consumo monouso: il pulsante non può inviare due volte lo stesso consenso.
-unset($_SESSION['gf_oauth_pending_requests'][$requestKey]);
+// Non consumare il consenso finché il codice OAuth non è stato salvato con successo.
+// In caso di errore DB deve essere possibile riprovare, senza perdere la richiesta.
 if (($_POST['decision'] ?? '') !== 'approve') {
     $url=$pending['redirect'].'?'.http_build_query(['error'=>'access_denied','state'=>$pending['state'],'iss'=>GF_OAUTH_ISSUER],'','&',PHP_QUERY_RFC3986);
     header('Location: '.$url, true,302); exit;
 }
-require_once __DIR__ . '/../../includes/db.php';
-$code=gf_oauth_random();
-$hash=gf_oauth_hash($code);
-$uid=(int)$_SESSION['utente_id'];
-$stmt=$conn->prepare("INSERT INTO gf_oauth_codes (code_hash,id_utente,id_famiglia,client_id,redirect_uri,resource,scope,code_challenge,expires_at) VALUES (?,?,?,?,?,?,?,?,DATE_ADD(UTC_TIMESTAMP(), INTERVAL 5 MINUTE))");
-$stmt->bind_param('siisssss',$hash,$uid,$family,$pending['client'],$pending['redirect'],$pending['resource'],$pending['scope'],$pending['challenge']);
-$stmt->execute();
-$stmt->close();
+try {
+    require_once __DIR__ . '/../../includes/db.php';
+    $code = gf_oauth_random();
+    $hash = gf_oauth_hash($code);
+    $uid = (int)$_SESSION['utente_id'];
+    $stmt = $conn->prepare("INSERT INTO gf_oauth_codes (code_hash,id_utente,id_famiglia,client_id,redirect_uri,resource,scope,code_challenge,expires_at) VALUES (?,?,?,?,?,?,?,?,DATE_ADD(UTC_TIMESTAMP(), INTERVAL 5 MINUTE))");
+    $stmt->bind_param('siisssss', $hash, $uid, $family, $pending['client'], $pending['redirect'], $pending['resource'], $pending['scope'], $pending['challenge']);
+    $stmt->execute();
+    $stmt->close();
+} catch (Throwable $e) {
+    $errorId = bin2hex(random_bytes(4));
+    // Log tecnico lato server: mai includere codice OAuth, token, state o redirect URI.
+    error_log('GF OAuth consent ' . $errorId . ': ' . get_class($e) . ' code=' . (int)$e->getCode());
+    gf_auth_page('Errore di autorizzazione',
+        '<p>Non è stato possibile registrare il consenso. Nessuna autorizzazione è stata completata.</p>'
+        . '<p>Codice errore: <strong>' . $errorId . '</strong></p>'
+        . '<p>Verifica che le tabelle OAuth siano presenti, poi riprova con il pulsante.</p>',500);
+}
+// Il consenso è consumato solo dopo un INSERT riuscito.
+unset($_SESSION['gf_oauth_pending_requests'][$requestKey]);
 session_write_close();
-$url=$pending['redirect'].'?'.http_build_query(['code'=>$code,'state'=>$pending['state'],'iss'=>GF_OAUTH_ISSUER],'','&',PHP_QUERY_RFC3986);
-header('Location: '.$url,true,302);
+$url = $pending['redirect'] . '?' . http_build_query([
+    'code'=>$code, 'state'=>$pending['state'], 'iss'=>GF_OAUTH_ISSUER
+], '', '&', PHP_QUERY_RFC3986);
+header('Location: ' . $url, true, 302);
 exit;
