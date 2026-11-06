@@ -95,3 +95,11 @@
 .vw .vw-status-scartato{background:#ffe0e0;color:#8c2222;border-color:#f3a7a7}
 .vw .vw-status-idea{background:#fff0b5;color:#765500;border-color:#e6cb75}
 .vw .vw-status-shortlist{background:#ebe3fa;color:#5d3b87;border-color:#c7b1eb}
+
+/* Stato di allineamento del salvadanaio: leggibile su entrambi i temi. */
+.vw .vw-savings-warning{border:2px solid #b78227;background:color-mix(in srgb,#eab54e 16%,var(--vw-surface));color:var(--vw-fg);border-radius:11px;padding:15px;margin:12px 0}
+.vw .vw-savings-warning-title{display:flex;align-items:center;gap:9px;font-weight:750;font-size:1.03rem;margin-bottom:8px}
+.vw .vw-savings-warning-title .bi{color:#b78227}
+.vw .vw-savings-warning p{margin:0 0 9px}
+.vw .vw-savings-aligned{border:1px solid #3d9266;background:color-mix(in srgb,#51ad78 12%,var(--vw-surface));border-radius:9px;padding:11px 13px;display:flex;align-items:center;gap:8px}
+.vw .vw-savings-aligned .bi{color:#27965b}

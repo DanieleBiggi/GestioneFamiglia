@@ -84,8 +84,16 @@ if ($id > 0) {
 }
 
 include 'includes/header.php';
+if ($id > 0) {
+    $travelLink=$conn->prepare('SELECT p.id_viaggio,v.titolo FROM viaggi_pianificazione p JOIN viaggi v ON v.id_viaggio=p.id_viaggio WHERE p.id_salvadanaio=?');
+    $travelLink->bind_param('i',$id);$travelLink->execute();
+    $linkedTrip=$travelLink->get_result()->fetch_assoc();$travelLink->close();
+} else { $linkedTrip=null; }
 if ($id > 0): ?>
 <div class="container text-white">
+  <?php if(!empty($linkedTrip) && has_permission($conn,'table:viaggi','view')): ?>
+  <p><a class="btn btn-outline-secondary btn-sm" href="vacanze_workspace.php?id=<?= (int)$linkedTrip['id_viaggio'] ?>">Vacanza collegata: <?= htmlspecialchars($linkedTrip['titolo'],ENT_QUOTES,'UTF-8') ?></a></p>
+  <?php endif; ?>
   <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
   <h4 class="mb-3">
     <span id="salvadanaioNome"><?= htmlspecialchars($data['nome_salvadanaio']) ?></span>

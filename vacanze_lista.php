@@ -113,7 +113,7 @@ include 'includes/header.php';
  <div class="vw-trip-meta"><i class="bi bi-calendar3"></i> <?= vacanzeH($v['data_inizio'] ?: 'Date da definire') ?><?= $v['data_fine']?' · '.vacanzeH($v['data_fine']):'' ?><?= $v['notti']!==null?' · '.(int)$v['notti'].' notti':'' ?></div>
  <div class="vw-trip-bottom">
  <div><div class="vw-trip-meta"><?= (int)$v['num_alternative'] ?> <?= (int)$v['num_alternative']===1?'scenario':'scenari' ?> · Budget da</div><strong><?= $v['min_totale']!==null?vacanzeEuro($v['min_totale']):'Da definire' ?></strong></div>
- <div class="vw-card-actions"><a class="vw-btn" href="vacanze_workspace.php?id=<?= $tripId ?>">Apri</a><?php if($canUpdate): ?><a class="vw-btn" href="vacanze_modifica.php?id=<?= $tripId ?>" aria-label="Modifica <?= vacanzeH($v['titolo']) ?>" title="Modifica vacanza"><i class="bi bi-pencil"></i></a><?php endif; ?></div>
+ <div class="vw-card-actions"><a class="vw-btn" href="vacanze_workspace.php?id=<?= $tripId ?>">Apri</a><?php if($canInsert): ?><a class="vw-btn" href="vacanze_duplica.php?id=<?= $tripId ?>" title="Duplica vacanza" aria-label="Duplica <?= vacanzeH($v['titolo']) ?>"><i class="bi bi-files" aria-hidden="true"></i></a><?php endif; ?><?php if($canUpdate): ?><a class="vw-btn" href="vacanze_modifica.php?id=<?= $tripId ?>" aria-label="Modifica <?= vacanzeH($v['titolo']) ?>" title="Modifica vacanza"><i class="bi bi-pencil"></i></a><?php endif; ?></div>
  </div>
 </article>
 <?php endforeach; ?>

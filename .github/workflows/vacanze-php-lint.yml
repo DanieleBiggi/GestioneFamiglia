@@ -3,6 +3,12 @@ on:
   pull_request:
     paths:
       - 'vacanze_*.php'
+      - 'includes/vacanze_pianificazione_actions.php'
+      - 'includes/vacanze_savings_panel.php'
+      - 'budget_dashboard.php'
+      - 'budget.php'
+      - 'includes/vacanze_budget_residui.php'
+      - 'salvadanaio_dettaglio.php'
       - 'includes/vacanze_spese_assoc.php'
       - 'ajax/delete_viaggi_alternativa.php'
       - 'ajax/update_viaggi_pagamento.php'
@@ -34,6 +40,13 @@ jobs:
             vacanze_lista.php
             vacanze.php
             vacanze_workspace.php
+            vacanze_duplica.php
+            includes/vacanze_pianificazione_actions.php
+            includes/vacanze_savings_panel.php
+            budget_dashboard.php
+            budget.php
+            includes/vacanze_budget_residui.php
+            salvadanaio_dettaglio.php
             vacanze_tratte.php
             vacanze_tratte_dettaglio.php
             vacanze_alloggi_dettaglio.php

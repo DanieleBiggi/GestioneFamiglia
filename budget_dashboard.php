@@ -2,6 +2,7 @@
 <?php
 require_once 'includes/db.php';
 require_once 'includes/utility.php';
+require_once 'includes/permissions.php';
 include 'includes/header.php';
 
 $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
@@ -133,6 +134,13 @@ while ($row = $resAnnuali->fetch_assoc()) {
 }
 $annualiStmt->close();
 
+// Salvadanaio collegato a vacanza: vista additiva, fuori dai totali di budget.
+// Evita di generare budget fittizi soltanto per mostrarlo in dashboard.
+$tripSavings=[];
+if (has_permission($conn,'table:viaggi','view')) {
+ $qTripSavings=$conn->prepare('SELECT v.id_viaggio,v.titolo,s.id_salvadanaio,s.nome_salvadanaio,s.importo_attuale,p.obiettivo_salvadanaio FROM viaggi_pianificazione p JOIN viaggi v ON v.id_viaggio=p.id_viaggio JOIN salvadanai s ON s.id_salvadanaio=p.id_salvadanaio WHERE p.id_salvadanaio IS NOT NULL ORDER BY v.titolo');
+ $qTripSavings->execute();$tripSavings=$qTripSavings->get_result()->fetch_all(MYSQLI_ASSOC);$qTripSavings->close();
+}
 // 5. Margine mensile
 $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMensile);
 ?>
@@ -260,4 +268,26 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
     </table>
   </div>
 </div>
+<?php if($tripSavings): ?>
+<section class="mb-4" aria-label="Salvadanai delle vacanze">
+ <h5>Salvadanai collegati alle vacanze</h5>
+ <div class="row g-2">
+ <?php foreach($tripSavings as $saving): ?>
+ <div class="col-12 col-md-6 col-xl-4"><div class="card p-3 h-100">
+  <div class="fw-semibold"><?= htmlspecialchars($saving['nome_salvadanaio'],ENT_QUOTES,'UTF-8') ?></div>
+  <div class="small"><?= htmlspecialchars($saving['titolo'],ENT_QUOTES,'UTF-8') ?></div>
+  <div class="my-2">Accantonato: <strong><?= number_format((float)$saving['importo_attuale'],2,',','.') ?> €</strong>
+  <?php if($saving['obiettivo_salvadanaio']!==null): ?>
+  di <?= number_format((float)$saving['obiettivo_salvadanaio'],2,',','.') ?> €
+  <?php endif; ?></div>
+  <div class="d-flex gap-2 flex-wrap">
+   <a href="vacanze_workspace.php?id=<?= (int)$saving['id_viaggio'] ?>" class="btn btn-outline-secondary btn-sm">Apri vacanza</a>
+   <a href="salvadanaio_dettaglio.php?id=<?= (int)$saving['id_salvadanaio'] ?>" class="btn btn-outline-secondary btn-sm">Apri salvadanaio</a>
+  </div>
+ </div></div>
+ <?php endforeach; ?>
+ </div>
+</section>
+<?php endif; ?>
+
 <?php include 'includes/footer.php'; ?>
