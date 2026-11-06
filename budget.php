@@ -2,9 +2,12 @@
 <?php
 include 'includes/db.php';
 require_once 'includes/render_budget.php';
+require_once 'includes/permissions.php';
+require_once 'includes/vacanze_budget_residui.php';
 include 'includes/header.php';
 
 $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
+$vacanzeResidui = has_permission($conn,'table:viaggi','view') ? vacanzeBudgetResidui($conn) : [];
 
 function getEnumValues(mysqli $conn, string $table, string $field): array {
     $values = [];
@@ -44,6 +47,25 @@ $res = $stmt->get_result();
     <i class="bi bi-funnel"></i>
   </button>
 </div>
+<?php if($vacanzeResidui): ?>
+<section class="mb-4" aria-label="Budget delle vacanze collegate">
+ <h5>Vacanze collegate ai salvadanai</h5>
+ <p class="small text-muted">Importi da pagare aggiornati automaticamente dalle spese dello scenario confermato. Sono valori di riferimento: non creano nuove uscite e non sovrascrivono i budget inseriti manualmente.</p>
+ <div class="list-group">
+ <?php foreach($vacanzeResidui as $vacanzaBudget): ?>
+ <div class="list-group-item bg-dark text-white d-flex justify-content-between gap-2 align-items-center flex-wrap">
+   <div><strong><?= htmlspecialchars($vacanzaBudget['titolo'],ENT_QUOTES,'UTF-8') ?></strong>
+    <div class="small text-muted"><?= htmlspecialchars($vacanzaBudget['nome_salvadanaio'],ENT_QUOTES,'UTF-8') ?></div>
+   </div>
+   <div class="d-flex gap-3 align-items-center flex-wrap">
+    <div><span class="small">Importo da pagare</span><div class="fw-semibold"><?= number_format($vacanzaBudget['importo_residuo'],2,',','.') ?> €</div></div>
+    <a class="btn btn-outline-secondary btn-sm" href="vacanze_workspace.php?id=<?= (int)$vacanzaBudget['id_viaggio'] ?>">Apri vacanza</a>
+   </div>
+ </div>
+ <?php endforeach; ?>
+ </div>
+</section>
+<?php endif; ?>
 <div id="budgetList" class="list-group">
 <?php while ($row = $res->fetch_assoc()): ?>
   <?php render_budget($row); ?>
