@@ -72,6 +72,22 @@ function vacanzePlanningAction(mysqli $conn, int $tripId, string $action, bool $
                 throw new RuntimeException('Impossibile calcolare il residuo dello scenario confermato.');
             }
             $goal=(float)$amounts[$savingId]['importo_residuo'];
+            $familyId=(int)($_SESSION['id_famiglia_gestione'] ?? 0);
+            if($familyId<=0) throw new RuntimeException('Famiglia non valida.');
+            if(!has_permission($conn,'table:budget','update')) throw new RuntimeException('Non autorizzato a modificare il budget.');
+            // Non indovinare quale voce modificare se il salvadanaio ne ha più di una.
+            $q=$conn->prepare('SELECT id_budget,importo FROM budget WHERE id_salvadanaio=? AND id_famiglia=? FOR UPDATE');
+            $q->bind_param('ii',$savingId,$familyId);$q->execute();
+            $budgets=$q->get_result()->fetch_all(MYSQLI_ASSOC);$q->close();
+            if(count($budgets)!==1){
+                throw new RuntimeException(count($budgets)===0
+                    ? 'Questo salvadanaio non ha una voce Budget. Creala prima dal dettaglio del salvadanaio.'
+                    : 'Questo salvadanaio contiene più voci Budget: scegli prima quale collegare alla vacanza.');
+            }
+            $budgetId=(int)$budgets[0]['id_budget'];
+            $q=$conn->prepare('UPDATE budget SET importo=? WHERE id_budget=? AND id_salvadanaio=? AND id_famiglia=?');
+            $q->bind_param('diii',$goal,$budgetId,$savingId,$familyId);$q->execute();$q->close();
+            // Mantieni coerente anche la precedente informazione di pianificazione.
             $q=$conn->prepare('UPDATE viaggi_pianificazione SET obiettivo_salvadanaio=? WHERE id_viaggio=? AND id_salvadanaio=?');
             $q->bind_param('dii',$goal,$tripId,$savingId);$q->execute();$q->close();
         } elseif ($action === 'update_salvadanaio_goal') {
