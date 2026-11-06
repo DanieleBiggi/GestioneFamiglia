@@ -7,3 +7,12 @@ CREATE TABLE IF NOT EXISTS viaggi_api_famiglie (
   PRIMARY KEY (id_viaggio),
   KEY idx_viaggi_api_famiglie_famiglia (id_famiglia, id_viaggio)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Chiave univoca per impedire duplicazioni se un assistente ripete una richiesta.
+CREATE TABLE IF NOT EXISTS api_v1_richieste (
+  id_famiglia INT(11) NOT NULL,
+  risorsa VARCHAR(30) NOT NULL,
+  richiesta_id VARCHAR(64) NOT NULL,
+  creata_il TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_famiglia, risorsa, richiesta_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
