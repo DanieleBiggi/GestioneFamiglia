@@ -105,7 +105,10 @@ function api_claim_request(mysqli $conn, int $familyId, string $resource, string
         $q->execute();
         $q->close();
     } catch (mysqli_sql_exception $e) {
-        if ((int)$e->getCode() === 1062) api_error(409, 'Richiesta già inviata, non ripetere il salvataggio');
+        if ((int)$e->getCode() === 1062) {
+            $conn->rollback();
+            api_error(409, 'Richiesta già inviata, non ripetere il salvataggio');
+        }
         throw $e;
     }
 }
