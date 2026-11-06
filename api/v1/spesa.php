@@ -23,7 +23,9 @@ try {
         ];
     }
     if (($body['dry_run'] ?? false) === true) api_reply(200, ['success'=>true,'dry_run'=>true,'items'=>$validated]);
+    $requestId = api_request_id();
     $conn->begin_transaction();
+    api_claim_request($conn, $familyId, 'spesa', $requestId);
     $stmt = $conn->prepare('INSERT INTO lista_spesa (id_famiglia, nome, quantita, note) VALUES (?, ?, ?, ?)');
     $nome = $quantita = $note = null;
     $stmt->bind_param('isss', $familyId, $nome, $quantita, $note);
