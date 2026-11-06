@@ -11,7 +11,7 @@ if (!isset($_COOKIE['device_token'])) {
 }
 
 $token = $_COOKIE['device_token'];
-$stmt = $conn->prepare('SELECT id_utente, user_agent FROM dispositivi_riconosciuti WHERE token_dispositivo = ? AND scadenza >= NOW() LIMIT 1');
+$stmt = $conn->prepare('SELECT id_utente FROM dispositivi_riconosciuti WHERE token_dispositivo = ? AND scadenza >= NOW() LIMIT 1');
 $stmt->bind_param('s', $token);
 $stmt->execute();
 $res = $stmt->get_result();
@@ -20,11 +20,6 @@ if ($res->num_rows !== 1) {
     exit;
 }
 $device = $res->fetch_assoc();
-if (($device['user_agent'] ?? '') !== ($_SERVER['HTTP_USER_AGENT'] ?? '')) {
-    header('Location: /Gestionale25/login.php?scelta_login=1');
-    exit;
-}
-
 $userName = '';
 $userStmt = $conn->prepare('SELECT nome FROM utenti WHERE id = ? LIMIT 1');
 $userStmt->bind_param('i', $device['id_utente']);
@@ -85,7 +80,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $upd->bind_param('ss', $newExp, $token);
                 $upd->execute();
 
-                setcookie('device_token', $token, time()+$longDuration, '/', '', !empty($_SERVER['HTTPS']), true);
+                setcookie('device_token', $token, [
+                    'expires' => time() + $longDuration,
+                    'path' => '/',
+                    'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+                    'httponly' => true,
+                    'samesite' => 'Lax',
+                ]);
                 header('Location: /Gestionale25/index.php');
                 exit;
             } else {
@@ -133,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <button type="button" class="pin-key" id="backspace"><i class="bi bi-backspace"></i></button>
     </div>
   </form>
-  <a href="/Gestionale25/login.php?scelta_login=1" class="btn btn-link text-light mt-3">Login con utente e password</a>
+  <a href="/Gestionale25/login.php?scelta_login=1" class="btn mt-3" style="background-color:#334155;color:#fff;border:1px solid #334155;">Login con utente e password</a>
   <script>
     const input = document.getElementById('passcode');
     const dots = document.querySelectorAll('#pin-dots .dot');
