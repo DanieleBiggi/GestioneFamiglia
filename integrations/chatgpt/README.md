@@ -91,3 +91,24 @@ Il token OAuth restituito a ChatGPT ha scadenza 1 ora; il refresh token (ruotato
 **Attenzione:** `confirm:true` nei parametri MCP è solo una protezione applicativa, non prova crittografica della conferma umana; il prompt di autorizzazione ChatGPT rimane necessario.
 
 In caso di 500, 401 continui o problemi di login, ripristinare il backup dei file modificati e mantenere `mcp_oauth_enabled=false`. Non esporre password, token, hash o sessioni nei log condivisi.
+
+## Diagnostica flusso di collegamento (solo durante il collaudo)
+
+Se il consenso genera il codice ma ChatGPT rimane con "Connetti" in caricamento e `gf_oauth_codes.used_at` rimane NULL, **non ripetere il clic sullo stesso consenso**.
+
+Questa PR include la tabella `gf_oauth_diagnostics`, con sole fasi e orari, senza dati privati. Dopo averla creata (script SQL aggiornato) e aver pubblicato `api/oauth/authorize.php` e `api/oauth/token.php`, avvia **una sola nuova connessione** da ChatGPT.
+
+In phpMyAdmin:
+
+```sql
+SELECT recorded_at, endpoint, stage
+FROM gf_oauth_diagnostics
+ORDER BY id DESC LIMIT 15;
+```
+
+Interpretazione:
+- `authorize / redirect_issued`, senza `token / request_received`: consenso e redirect dal gestionale avvenuti, ma richiesta al token endpoint non osservata. Controllare in ChatGPT il callback o la connessione, senza ripetere il consenso.
+- `token / request_received`, senza `token / token_issued`: ChatGPT ha raggiunto il token endpoint, ma è stata rifiutata o è fallita la richiesta. Esaminare il solo status HTTP e il tipo di errore (non parametri, codici o token).
+- `token / token_issued`: token rilasciato, il problema è nell'uso successivo da ChatGPT.
+
+Non eliminare prematuramente la diagnostica prima di aver concluso i test; successivamente si può rimuovere il codice di tracing e la tabella in una PR di pulizia.
