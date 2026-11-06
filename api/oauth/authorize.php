@@ -48,9 +48,23 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'GET') {
         !gf_oauth_client($client,$redirect)) {
         gf_auth_page('Richiesta non valida','<p>Il collegamento OAuth è stato rifiutato. Ricontrolla la configurazione in ChatGPT.</p>',400);
     }
-    $_SESSION['gf_oauth_pending'] = compact('client','redirect','resource','challenge','state','scope');
-    $_SESSION['gf_oauth_csrf'] = bin2hex(random_bytes(24));
-    $nonce = htmlspecialchars($_SESSION['gf_oauth_csrf'], ENT_QUOTES, 'UTF-8');
+    // Ogni pagina di consenso mantiene il proprio identificativo. Un'altra scheda
+    // o un secondo tentativo OAuth non può sovrascrivere la prima richiesta.
+    $now = time();
+    if (!isset($_SESSION['gf_oauth_pending_requests']) || !is_array($_SESSION['gf_oauth_pending_requests'])) {
+        $_SESSION['gf_oauth_pending_requests'] = [];
+    }
+    foreach ($_SESSION['gf_oauth_pending_requests'] as $key => $entry) {
+        if (!is_array($entry) || (int)($entry['created_at'] ?? 0) + 600 < $now) {
+            unset($_SESSION['gf_oauth_pending_requests'][$key]);
+        }
+    }
+    if (count($_SESSION['gf_oauth_pending_requests']) >= 5) {
+        gf_auth_page('Troppe richieste','<p>Chiudi le altre schede di autorizzazione e riprova da ChatGPT.</p>',429);
+    }
+    $requestKey = bin2hex(random_bytes(24));
+    $_SESSION['gf_oauth_pending_requests'][$requestKey] = compact('client','redirect','resource','challenge','state','scope') + ['created_at'=>$now];
+    $nonce = htmlspecialchars($requestKey, ENT_QUOTES, 'UTF-8');
     gf_auth_page('Autorizza ChatGPT',
         '<p>ChatGPT richiede accesso ai dati della famiglia configurata in Gestione Famiglia.</p>'
         . '<p>Permessi richiesti: <strong>' . htmlspecialchars($scope,ENT_QUOTES,'UTF-8') . '</strong>.</p>'
@@ -60,12 +74,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'GET') {
         . '<button name="decision" value="deny" type="submit">Annulla</button></form>');
 }
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') gf_auth_page('Metodo non valido','',405);
-$pending = $_SESSION['gf_oauth_pending'] ?? null;
-$csrf = $_SESSION['gf_oauth_csrf'] ?? '';
-if (!is_array($pending) || !is_string($csrf) || !hash_equals($csrf, (string)($_POST['csrf'] ?? ''))) {
-    gf_auth_page('Richiesta scaduta','<p>Riprova il collegamento da ChatGPT.</p>',403);
+$requestKey = $_POST['csrf'] ?? '';
+$pendingRequests = $_SESSION['gf_oauth_pending_requests'] ?? [];
+$pending = is_string($requestKey) && preg_match('/^[a-f0-9]{48}$/D', $requestKey)
+    && is_array($pendingRequests) ? ($pendingRequests[$requestKey] ?? null) : null;
+if (!is_array($pending) || (int)($pending['created_at'] ?? 0) + 600 < time()) {
+    gf_auth_page('Richiesta scaduta','<p>La richiesta è scaduta o è già stata utilizzata. Chiudi questa scheda e riavvia il collegamento da ChatGPT.</p>',403);
 }
-unset($_SESSION['gf_oauth_pending'],$_SESSION['gf_oauth_csrf']);
+// Consumo monouso: il pulsante non può inviare due volte lo stesso consenso.
+unset($_SESSION['gf_oauth_pending_requests'][$requestKey]);
 if (($_POST['decision'] ?? '') !== 'approve') {
     $url=$pending['redirect'].'?'.http_build_query(['error'=>'access_denied','state'=>$pending['state'],'iss'=>GF_OAUTH_ISSUER],'','&',PHP_QUERY_RFC3986);
     header('Location: '.$url, true,302); exit;
