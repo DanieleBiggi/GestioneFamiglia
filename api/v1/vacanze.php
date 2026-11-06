@@ -1,15 +1,14 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
 api_method('GET', 'POST');
-// Lo schema attuale di viaggi NON ha id_famiglia: l'accesso va abilitato
-// esplicitamente solo in installazioni dove tutto il catalogo viaggi è condivisibile.
+// Le vacanze sono visibili soltanto se associate alla famiglia del token.
 if (!$allowVacations) api_error(403, 'Accesso alle vacanze non abilitato');
 try {
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
         if ($id) {
-            $stmt = $conn->prepare('SELECT id_viaggio, titolo, data_inizio, data_fine, persone, stato, breve_descrizione, note FROM viaggi WHERE id_viaggio=?');
-            $stmt->bind_param('i', $id);
+            $stmt = $conn->prepare('SELECT v.id_viaggio, v.titolo, v.data_inizio, v.data_fine, v.persone, v.stato, v.breve_descrizione, v.note FROM viaggi v INNER JOIN viaggi_api_famiglie f ON f.id_viaggio=v.id_viaggio WHERE v.id_viaggio=? AND f.id_famiglia=?');
+            $stmt->bind_param('ii', $id, $familyId);
             $stmt->execute();
             $trip = $stmt->get_result()->fetch_assoc();
             $stmt->close();
@@ -38,8 +37,12 @@ try {
             unset($scenario);
             api_reply(200, ['success'=>true, 'vacanza'=>$trip]);
         }
-        $result = $conn->query('SELECT id_viaggio, titolo, data_inizio, data_fine, persone, stato FROM viaggi ORDER BY id_viaggio DESC LIMIT 100');
-        api_reply(200, ['success'=>true, 'vacanze'=>$result->fetch_all(MYSQLI_ASSOC)]);
+        $stmt = $conn->prepare('SELECT v.id_viaggio, v.titolo, v.data_inizio, v.data_fine, v.persone, v.stato FROM viaggi v INNER JOIN viaggi_api_famiglie f ON f.id_viaggio=v.id_viaggio WHERE f.id_famiglia=? ORDER BY v.id_viaggio DESC LIMIT 100');
+        $stmt->bind_param('i', $familyId);
+        $stmt->execute();
+        $vacanze = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        api_reply(200, ['success'=>true, 'vacanze'=>$vacanze]);
     }
 
     $body = api_body();
@@ -92,6 +95,10 @@ try {
     $stmt->bind_param('sssiisss', $title,$start,$end,$nights,$people,$state,$desc,$notes);
     $stmt->execute();
     $tripId = $conn->insert_id;
+    $stmt->close();
+    $stmt = $conn->prepare('INSERT INTO viaggi_api_famiglie (id_viaggio, id_famiglia) VALUES (?,?)');
+    $stmt->bind_param('ii', $tripId, $familyId);
+    $stmt->execute();
     $stmt->close();
     $scenarioIds = [];
     foreach ($validated as $s) {
