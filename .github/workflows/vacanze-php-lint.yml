@@ -6,6 +6,8 @@ on:
       - 'includes/vacanze_pianificazione_actions.php'
       - 'includes/vacanze_savings_panel.php'
       - 'budget_dashboard.php'
+      - 'budget.php'
+      - 'includes/vacanze_budget_residui.php'
       - 'salvadanaio_dettaglio.php'
       - 'includes/vacanze_spese_assoc.php'
       - 'ajax/delete_viaggi_alternativa.php'
@@ -42,6 +44,8 @@ jobs:
             includes/vacanze_pianificazione_actions.php
             includes/vacanze_savings_panel.php
             budget_dashboard.php
+            budget.php
+            includes/vacanze_budget_residui.php
             salvadanaio_dettaglio.php
             vacanze_tratte.php
             vacanze_tratte_dettaglio.php
