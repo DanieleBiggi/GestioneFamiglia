@@ -9,7 +9,7 @@
   <p><strong><?= vwEsc($planning['nome_salvadanaio']) ?></strong> · Accantonato <?= vwEuro($planning['importo_attuale']) ?></p>
   <?php if($planning['obiettivo_salvadanaio']!==null): $goal=(float)$planning['obiettivo_salvadanaio']; ?>
    <p>Obiettivo <?= vwEuro($goal) ?> · <?= $goal>0?number_format(min(100,100*(float)$planning['importo_attuale']/$goal),1,',','.').'%':'Obiettivo da definire' ?></p>
-   <?php if($confirmedTotal!==null && abs($goal-$confirmedTotal)>0.009 && $canEdit): ?>
+   <?php if($confirmedTotal!==null && abs($goal-$confirmedRemaining)>0.009 && $canEdit): ?>
    <form method="post" class="d-flex gap-2 flex-wrap align-items-center">
     <input type="hidden" name="vacanze_csrf" value="<?= vwEsc($_SESSION['vacanze_csrf']) ?>"><input type="hidden" name="vw_action" value="update_salvadanaio_goal">
     <input type="hidden" name="obiettivo_salvadanaio" value="<?= vwEsc(number_format($confirmedRemaining,2,'.','')) ?>">
