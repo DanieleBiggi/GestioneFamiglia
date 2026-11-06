@@ -4,6 +4,7 @@ require_once 'includes/db.php';
 require_once 'includes/permissions.php';
 if (!has_permission($conn, 'page:turni.php', 'view')) { http_response_code(403); exit('Accesso negato'); }
 include 'includes/header.php';
+require_once __DIR__ . '/includes/date_it.php';
 
 $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 $tipiRes = $conn->query("SELECT id, descrizione, colore_bg, colore_testo FROM turni_tipi WHERE attivo = 1 ORDER BY descrizione");
@@ -19,10 +20,9 @@ $famiglie = $famRes ? $famRes->fetch_all(MYSQLI_ASSOC) : [];
 $famigliaDefault = $idFamiglia;
 $unsyncedMonths = [];
 if ($syncRes) {
-    setlocale(LC_TIME, 'it_IT.UTF-8');
     while ($row = $syncRes->fetch_assoc()) {
         $timestamp = strtotime($row['ym'] . '-01');
-        $unsyncedMonths[] = ucfirst(strftime('%B %Y', $timestamp));
+        $unsyncedMonths[] = ucfirst(gf_month_it($timestamp) . ' ' . date('Y', $timestamp));
     }
 }
 $needSync = !empty($unsyncedMonths);

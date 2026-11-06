@@ -2,7 +2,7 @@
 <?php
 require_once 'includes/db.php';
 include 'includes/header.php';
-setlocale(LC_TIME, 'it_IT.UTF-8');
+require_once __DIR__ . '/includes/date_it.php';
 
 $idUtente = $_SESSION['utente_id'] ?? 0;
 
@@ -27,7 +27,7 @@ $result = $conn->query($sql);
 $annoCorrente = date('Y');
 while ($row = $result->fetch_assoc()) {
     $timestamp = strtotime($row['ym'] . '-01');
-    $label = strftime('%B', $timestamp);
+    $label = gf_month_it($timestamp);
     $anno = date('Y', $timestamp);
     if ($anno < $annoCorrente) {
         $label .= ' ' . $anno;

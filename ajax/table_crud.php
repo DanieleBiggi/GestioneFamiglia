@@ -5,6 +5,7 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/permissions.php';
 require_once __DIR__ . '/../includes/etichette_utils.php';
 $config = include __DIR__ . '/../includes/table_config.php';
+$conn->set_charset('utf8mb4');
 
 $table = $_GET['table'] ?? $_POST['table'] ?? '';
 if (!isset($config[$table])) {
@@ -45,11 +46,7 @@ switch ($action) {
         $result = $stmt->get_result();
         $dati = $result->fetch_all(MYSQLI_ASSOC);
         //print_r($dati);
-        foreach ($dati as &$row) {
-            array_walk_recursive($row, function(&$value) {
-                $value = utf8_encode($value);  // Codifica i valori in UTF-8
-            });
-        }
+        // La connessione usa UTF-8: non ricodificare i valori già in UTF-8.
         
         echo json_encode($dati, JSON_UNESCAPED_UNICODE);
         //echo json_encode($dati);
