@@ -7,6 +7,10 @@ on:
       - 'api/v1/bootstrap.php'
       - 'tests/oauth_php83.php'
       - 'tests/mcp_tool_schema.php'
+      - 'tests/spesa_associazioni.php'
+      - 'api/v1/spesa_associazioni.php'
+      - 'api/v1/spesa_associazioni_helper.php'
+      - 'api/v1/spesa.php'
       - '.github/workflows/mcp-oauth-check.yml'
 jobs:
   php:
@@ -27,3 +31,4 @@ jobs:
         run: |
           php tests/oauth_php83.php
           php tests/mcp_tool_schema.php
+          php tests/spesa_associazioni.php
