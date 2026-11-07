@@ -6,6 +6,7 @@ on:
       - 'api/mcp.php'
       - 'api/v1/bootstrap.php'
       - 'tests/oauth_php83.php'
+      - 'tests/mcp_tool_schema.php'
       - '.github/workflows/mcp-oauth-check.yml'
 jobs:
   php:
@@ -23,4 +24,6 @@ jobs:
           php -l api/v1/bootstrap.php
           find api/oauth -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Test helper OAuth
-        run: php tests/oauth_php83.php
+        run: |
+          php tests/oauth_php83.php
+          php tests/mcp_tool_schema.php
