@@ -34,3 +34,32 @@ Verifiche:
 - menù e lista spesa letti, anteprima e inserimento (solo con conferma) tramite il plugin ChatGPT.
 
 **Non fare merge prima dei test in Aruba.**
+
+## Compatibilità con «Verifica menù»
+
+La pagina `js/verifica_menu_spesa.js` interpreta le note nel formato **`Nome piatto, Giorno`**, eventualmente ripetuto e separato da `;`. Il vecchio importatore JSON costruiva questo testo da `associazioni`. Gli inserimenti MCP con note libere non garantivano questa struttura e lasciavano gli ingredienti senza abbinamenti.
+
+Ora `api/v1/spesa.php` accetta su ogni elemento anche:
+
+```json
+{
+  "nome": "Uova",
+  "quantita": "8",
+  "associazioni": [{"giorno":"Lunedì","piatto":"Omelette al parmigiano"}],
+  "note": "Quantità indicativa per quattro persone"
+}
+```
+
+L'API salva `note="Omelette al parmigiano, Lunedì; Quantità indicativa per quattro persone"`, in modo che la vista di verifica riconosca la prima parte, conservando il dettaglio descrittivo.
+
+Per riparare i prodotti già esistenti (senza duplicarli) due nuovi strumenti MCP:
+
+- `anteprima_associazioni_spesa`, che legge i prodotti per ID e mostra `note_originali` e `note_nuove`, senza salvare;
+- `aggiorna_associazioni_spesa`, che aggiorna solo le note, **esclusivamente dopo conferma**, richiede `request_id` anti-duplicazione e conserva tutte le note precedenti in coda alle associazioni.
+
+L'API di supporto è `POST /api/v1/spesa_associazioni.php`, con payload `{"items":[{"id":1548,"associazioni":[{"giorno":"Lunedì","piatto":"Omelette al parmigiano"}]}],"dry_run":true}`.
+
+Non aggiungere associazioni dubbie: ogni ingrediente deve essere collegato soltanto a piatti esplicitamente verificati sul menu della settimana. Non modificare direttamente il DB. Un'associazione errata può mostrare un ingrediente sotto il piatto sbagliato.
+
+**Deploy aggiornato:** oltre a `api/mcp.php` e `api/v1/menu_cene.php`, pubblicare `api/v1/spesa.php`, `api/v1/spesa_associazioni.php` e `api/v1/spesa_associazioni_helper.php`. Nessuna migrazione SQL; il campo `note` è già presente in `lista_spesa` ed è limitato a 255 caratteri.
+
