@@ -44,9 +44,10 @@ function mcp_tools(): array {
     $requestId = ['type'=>'string', 'pattern'=>'^[A-Za-z0-9_-]{16,64}$',
         'description'=>'Identificativo univoco stabile per questa operazione. Riutilizzare lo stesso ID se la richiesta viene ripetuta.'];
     return [
-        mcp_tool('leggi_menu_settimanale', 'Leggi menu cene settimanale',
-            'Legge i cinque pasti della settimana da lunedì a venerdì, le note delle ricette e distingue giorni salvati da giorni solo previsti dal master. Nessuna modifica. Se week_start non è indicato, usa il prossimo lunedì. Usare insieme a leggi_lista_spesa prima di proporre ingredienti e quantità. Le ricette non hanno ingredienti strutturati: esplicitare le stime, non inventare preferenze.',
-            mcp_schema(['week_start'=>['type'=>'string','pattern'=>'^[0-9]{4}-[0-9]{2}-[0-9]{2}
+        mcp_tool('leggi_menu_settimanale', 'Leggi menù cene settimanale',
+            'Legge i cinque pasti da lunedì a venerdì, le note delle ricette e distingue i giorni salvati dalle previsioni master. Nessuna modifica. Senza week_start usa il prossimo lunedì. Per preparare la spesa confrontare con leggi_lista_spesa e chiedere conferma prima di inserire.',
+            mcp_schema(['week_start'=>['type'=>'string', 'pattern'=>'^[0-9]{4}-[0-9]{2}-[0-9]{2}$', 'description'=>'Lunedì nel formato YYYY-MM-DD, omettere per il prossimo lunedì']]), true),
+        mcp_tool('leggi_lista_spesa', 'Leggi lista spesa',
             'Legge i prodotti nella lista della spesa della famiglia configurata.',
             mcp_schema(), true),
         mcp_tool('anteprima_spesa', 'Anteprima inserimento spesa',
