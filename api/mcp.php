@@ -51,10 +51,16 @@ function mcp_tools(): array {
             'Legge i prodotti nella lista della spesa della famiglia configurata.',
             mcp_schema(), true),
         mcp_tool('anteprima_spesa', 'Anteprima inserimento spesa',
-            'Valida senza salvare. Passa payload.items con elementi nome, quantita e note. Mostra il risultato e chiedi conferma esplicita prima di creare.',
+            'Valida senza salvare. Per ingredienti del menu usare payload.items con nome, quantita, associazioni:[{giorno,piatto}], note opzionali. piatto deve corrispondere al piatto del giorno letto dal menu. Non limitarsi a note in linguaggio naturale: la verifica menu necessita di giorno e piatto espliciti.',
             mcp_schema(['payload'=>$payload], ['payload']), true),
         mcp_tool('crea_spesa', 'Inserisci prodotti nella spesa',
-            'Aggiunge prodotti REALMENTE. Chiamare solo dopo anteprima e consenso esplicito. Non usare su richieste ipotetiche.',
+            'Aggiunge prodotti REALMENTE solo dopo anteprima e conferma. Per ingredienti del menu usare associazioni:[{giorno,piatto}] oltre a nome e quantita; note puo contenere dettagli separati. Le associazioni vengono convertite nel formato della verifica menu.',
+            mcp_schema(['payload'=>$payload,'confirm'=>$confirm,'request_id'=>$requestId],['payload','confirm','request_id']), false),
+        mcp_tool('anteprima_associazioni_spesa', 'Anteprima collegamenti ingredienti a piatti',
+            'NON modifica nulla. Per correggere prodotti esistenti: payload.items con id del prodotto e associazioni:[{giorno,piatto}]. Leggere prima il menu e la spesa, non indovinare i collegamenti. Mostra note originali e nuove prima di chiedere conferma.',
+            mcp_schema(['payload'=>$payload], ['payload']), true),
+        mcp_tool('aggiorna_associazioni_spesa', 'Collega ingredienti esistenti ai piatti',
+            'Modifica SOLO il campo note dei prodotti indicati, preservando le note originali. Chiamare esclusivamente dopo anteprima e conferma esplicita dell utente sui singoli abbinamenti.',
             mcp_schema(['payload'=>$payload,'confirm'=>$confirm,'request_id'=>$requestId],['payload','confirm','request_id']), false),
         mcp_tool('elenca_vacanze', 'Elenca vacanze API',
             'Elenca vacanze associate alla famiglia, importate tramite API.',
@@ -146,15 +152,18 @@ $args = $params['arguments'] ?? [];
 if (!is_array($args)) mcp_failure($id,-32602,'Argomenti non validi');
 $allowed = array_column(mcp_tools(),'name');
 if (!in_array($name, $allowed, true)) mcp_failure($id,-32602,'Strumento non disponibile');
-$write = in_array($name,['crea_spesa','crea_vacanza'],true);
+$write = in_array($name,['crea_spesa','crea_vacanza','aggiorna_associazioni_spesa'],true);
 if ($write && ($args['confirm'] ?? null) !== true) mcp_failure($id,-32602,'Conferma esplicita obbligatoria');
 if ($write && (!is_string($args['request_id'] ?? null) ||
     !preg_match('/^[A-Za-z0-9_-]{16,64}$/D', $args['request_id']))) mcp_failure($id,-32602,'request_id mancante o non valido');
-if (in_array($name,['crea_spesa','crea_vacanza','anteprima_spesa','anteprima_vacanza'],true) &&
+if (in_array($name,['crea_spesa','crea_vacanza','anteprima_spesa','anteprima_vacanza','anteprima_associazioni_spesa','aggiorna_associazioni_spesa'],true) &&
     (!is_array($args['payload'] ?? null) || array_is_list($args['payload']))) mcp_failure($id,-32602,'payload JSON non valido');
 
 try {
     $file = in_array($name, ['leggi_lista_spesa','anteprima_spesa','crea_spesa'],true) ? 'spesa.php' : 'vacanze.php';
+    if (in_array($name, ['anteprima_associazioni_spesa','aggiorna_associazioni_spesa'], true)) {
+        $file = 'spesa_associazioni.php';
+    }
     if ($name === 'leggi_menu_settimanale') {
         $file = 'menu_cene.php';
         if (array_key_exists('week_start', $args)) {
@@ -165,7 +174,7 @@ try {
             $file .= '?week_start=' . rawurlencode($week);
         }
     }
-    $verb = in_array($name, ['anteprima_spesa','crea_spesa','anteprima_vacanza','crea_vacanza'],true) ? 'POST' : 'GET';
+    $verb = in_array($name, ['anteprima_spesa','crea_spesa','anteprima_vacanza','crea_vacanza','anteprima_associazioni_spesa','aggiorna_associazioni_spesa'],true) ? 'POST' : 'GET';
     if ($name === 'leggi_vacanza') {
         $vacId = filter_var($args['id_viaggio'] ?? null, FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
         if (!$vacId) mcp_failure($id,-32602,'ID vacanza non valido');
