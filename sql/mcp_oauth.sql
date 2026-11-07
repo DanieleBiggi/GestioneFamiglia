@@ -35,11 +35,3 @@ CREATE TABLE IF NOT EXISTS gf_oauth_refresh_tokens (
   KEY idx_exp (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Diagnostica senza token/codici OAuth: solo fase ed esito per il collaudo.
-CREATE TABLE IF NOT EXISTS gf_oauth_diagnostics (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  recorded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  endpoint VARCHAR(30) NOT NULL,
-  stage VARCHAR(40) NOT NULL,
-  KEY idx_recent (recorded_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
