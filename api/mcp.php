@@ -19,7 +19,9 @@ function mcp_failure($id, int $code, string $message): void {
     mcp_json($id, ['error' => ['code' => $code, 'message' => $message]]);
 }
 function mcp_schema(array $properties = [], array $required = []): array {
-    return ['type' => 'object', 'properties' => $properties, 'required' => $required, 'additionalProperties' => false];
+    // JSON Schema impone "properties" come oggetto JSON, anche quando e' vuoto.
+    // In PHP [] serializzato direttamente diventerebbe un array JSON non valido.
+    return ['type' => 'object', 'properties' => (object)$properties, 'required' => $required, 'additionalProperties' => false];
 }
 function mcp_tool(string $name, string $title, string $description, array $schema, bool $readOnly): array {
     return [
