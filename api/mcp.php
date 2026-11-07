@@ -187,30 +187,6 @@ try {
     error_log('MCP API error: ' . $e->getMessage());
     mcp_json($id,['result'=>['content'=>[['type'=>'text','text'=>'Operazione non riuscita: verifica API e log server.']], 'isError'=>true]]);
 }
-,'description'=>'Lunedì nel formato YYYY-MM-DD; omettere per il prossimo lunedì.']]), true),
-        mcp_tool('leggi_lista_spesa', 'Leggi lista spesa',
-            'Legge i prodotti nella lista della spesa della famiglia configurata.',
-            mcp_schema(), true),
-        mcp_tool('anteprima_spesa', 'Anteprima inserimento spesa',
-            'Valida senza salvare. Passa payload.items con elementi nome, quantita e note. Mostra il risultato e chiedi conferma esplicita prima di creare.',
-            mcp_schema(['payload'=>$payload], ['payload']), true),
-        mcp_tool('crea_spesa', 'Inserisci prodotti nella spesa',
-            'Aggiunge prodotti REALMENTE. Chiamare solo dopo anteprima e consenso esplicito. Non usare su richieste ipotetiche.',
-            mcp_schema(['payload'=>$payload,'confirm'=>$confirm,'request_id'=>$requestId],['payload','confirm','request_id']), false),
-        mcp_tool('elenca_vacanze', 'Elenca vacanze API',
-            'Elenca vacanze associate alla famiglia, importate tramite API.',
-            mcp_schema(), true),
-        mcp_tool('leggi_vacanza', 'Dettagli vacanza API',
-            'Legge vacanza e alternative tramite id_viaggio autorizzato.',
-            mcp_schema(['id_viaggio'=>['type'=>'integer','minimum'=>1]],['id_viaggio']), true),
-        mcp_tool('anteprima_vacanza', 'Anteprima nuova vacanza',
-            'Valida senza scrivere. payload: titolo, data_inizio/data_fine AAAA-MM-GG, persone, scenari array; scenario.nome, trasporti (tipo, descrizione, origine, destinazione, costo_volo_eur, costo_traghetto_eur, altri_costi_eur, note), alloggi (nome, indirizzo, checkin, checkout, costo_notte_eur, note), altri_costi (descrizione, importo_eur, note). Non inventare dati assenti.',
-            mcp_schema(['payload'=>$payload],['payload']), true),
-        mcp_tool('crea_vacanza', 'Crea vacanza',
-            'Crea REALMENTE una vacanza con scenari. Chiamare solo dopo anteprima, riepilogo costi e approvazione esplicita dell’utente. Non inviare informazioni non confermate come prenotate.',
-            mcp_schema(['payload'=>$payload,'confirm'=>$confirm,'request_id'=>$requestId],['payload','confirm','request_id']), false)
-    ];
-}
 function mcp_request(string $path, string $verb, string $token, ?array $payload = null, ?string $requestId = null): array {
     if (!function_exists('curl_init')) throw new RuntimeException('Estensione PHP cURL non disponibile');
     $url = 'https://www.gestionefamiglia.it/Gestionale25/api/v1/' . $path;
