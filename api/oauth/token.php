@@ -13,49 +13,28 @@ if (($oauthConfig['enabled'] ?? false) !== true || ($oauthConfig['mcp_oauth_enab
 // Calcolare l'ID prima di includere db.php (che definisce variabili globali).
 $family=(int)($oauthConfig['family_id'] ?? 0);
 require_once __DIR__.'/../../includes/db.php';
-function gf_oauth_trace(mysqli $conn, string $stage): void {
-    // Non memorizza code, state, token, client ID, indirizzi IP o redirect.
-    try {
-        $q = $conn->prepare('INSERT INTO gf_oauth_diagnostics (endpoint, stage) VALUES (?,?)');
-        $endpoint = 'token';
-        $q->bind_param('ss', $endpoint, $stage);
-        $q->execute();
-        $q->close();
-    } catch (Throwable $ignored) { /* Tabella diagnostica facoltativa. */ }
-}
-gf_oauth_trace($conn, 'token_build_2');
-gf_oauth_trace($conn, 'request_received');
 $grant=$_POST['grant_type'] ?? '';
 $client=$_POST['client_id'] ?? '';
 $resource=$_POST['resource'] ?? '';
 
-// Traccia solo quale campo ha il tipo inatteso; non registrare mai valori
-// o corpo della richiesta. I campi token OAuth devono essere stringhe.
 if (!is_string($grant)) {
-    gf_oauth_trace($conn, 'format_grant_type');
     gf_oauth_error('invalid_request');
 }
 if (!is_string($client)) {
-    gf_oauth_trace($conn, 'format_client_id');
     gf_oauth_error('invalid_request');
 }
 if (!is_string($resource)) {
-    gf_oauth_trace($conn, 'format_resource');
     gf_oauth_error('invalid_request');
 }
 if ($family < 1) {
-    gf_oauth_trace($conn, 'family_not_configured');
     gf_oauth_error('invalid_request');
 }
 if (!hash_equals(GF_OAUTH_RESOURCE, $resource)) {
-    gf_oauth_trace($conn, $resource === '' ? 'missing_resource' : 'invalid_resource');
     gf_oauth_error('invalid_target');
 }
 if ($client === '') {
-    gf_oauth_trace($conn, 'missing_client_id');
     gf_oauth_error('invalid_request');
 }
-gf_oauth_trace($conn, 'request_fields_valid');
 try {
     $conn->begin_transaction();
     if ($grant === 'authorization_code') {
@@ -90,17 +69,14 @@ try {
         $tokens=gf_oauth_issue($conn,(int)$row['id_utente'],$family,$client,$resource,(string)$row['scope']);
     } else throw new DomainException('unsupported_grant_type');
     $conn->commit();
-    gf_oauth_trace($conn, 'token_issued');
     gf_oauth_json(200,$tokens);
 } catch (DomainException $e) {
     $conn->rollback();
     // Nessun dato sensibile; una richiesta rifiutata non deve lasciare transazioni aperte.
-    $stage = $e->getMessage() === 'unsupported_grant_type' ? 'unsupported_grant' : 'invalid_grant';
-    gf_oauth_trace($conn, $stage);
     gf_oauth_error($e->getMessage());
 } catch (Throwable $e) {
     $conn->rollback();
-    gf_oauth_trace($conn, 'server_error');
     error_log('GF OAuth token endpoint: server_error (' . get_class($e) . ')');
     gf_oauth_error('server_error',500);
 }
+
