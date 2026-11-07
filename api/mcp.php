@@ -116,6 +116,17 @@ if (!is_array($input) || ($input['jsonrpc'] ?? null) !== '2.0' || !is_string($in
 }
 $id = $input['id'] ?? null;
 $method = $input['method'];
+if ($oauthAccess) {
+    // Non registra payload, parametri o dati personali.
+    $stage = match ($method) {
+        'initialize' => 'initialize_received',
+        'tools/list' => 'tools_list_received',
+        'tools/call' => 'tool_call_received',
+        'server/discover' => 'discover_received',
+        default => 'other_method_received'
+    };
+    gf_mcp_trace($conn, $stage);
+}
 if ($id === null && str_starts_with($method, 'notifications/')) {
     http_response_code(202);
     exit;
