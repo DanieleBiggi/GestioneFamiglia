@@ -1,0 +1,5 @@
+# Questo file NON va in /Gestionale25/.well-known.
+# Copiare la cartella .well-known nella ROOT del dominio: /.well-known/.htaccess
+RewriteEngine On
+RewriteRule ^oauth-authorization-server/?$ /Gestionale25/api/oauth/metadata.php [L]
+RewriteRule ^oauth-protected-resource/?$ /Gestionale25/api/oauth/resource.php [L]

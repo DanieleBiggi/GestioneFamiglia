@@ -6,6 +6,7 @@ declare(strict_types=1);
  * Uses the same API key authentication as /api/v1/*.php.
  * Only expose through HTTPS; the REST API still enforces family access.
  */
+define('GF_MCP_CONTEXT', true);
 require_once __DIR__ . '/v1/bootstrap.php';
 
 header('MCP-Protocol-Version: 2025-06-18');
@@ -18,7 +19,9 @@ function mcp_failure($id, int $code, string $message): void {
     mcp_json($id, ['error' => ['code' => $code, 'message' => $message]]);
 }
 function mcp_schema(array $properties = [], array $required = []): array {
-    return ['type' => 'object', 'properties' => $properties, 'required' => $required, 'additionalProperties' => false];
+    // JSON Schema impone "properties" come oggetto JSON, anche quando e' vuoto.
+    // In PHP [] serializzato direttamente diventerebbe un array JSON non valido.
+    return ['type' => 'object', 'properties' => (object)$properties, 'required' => $required, 'additionalProperties' => false];
 }
 function mcp_tool(string $name, string $title, string $description, array $schema, bool $readOnly): array {
     return [
@@ -26,6 +29,7 @@ function mcp_tool(string $name, string $title, string $description, array $schem
         'title' => $title,
         'description' => $description,
         'inputSchema' => $schema,
+        'securitySchemes' => [['type'=>'oauth2','scopes'=>[$readOnly ? 'family:read' : 'family:write']]],
         'annotations' => [
             'readOnlyHint' => $readOnly,
             'destructiveHint' => false,
@@ -66,9 +70,21 @@ function mcp_tools(): array {
 function mcp_request(string $path, string $verb, string $token, ?array $payload = null, ?string $requestId = null): array {
     if (!function_exists('curl_init')) throw new RuntimeException('Estensione PHP cURL non disponibile');
     $url = 'https://www.gestionefamiglia.it/Gestionale25/api/v1/' . $path;
-    $headers = ['X-GF-Api-Key: ' . $token, 'Accept: application/json'];
+    $headers = ['Accept: application/json'];
+    $jsonBody = $payload !== null ? json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '';
     if ($payload !== null) $headers[] = 'Content-Type: application/json; charset=utf-8';
     if ($requestId !== null) $headers[] = 'X-GF-Request-Id: ' . $requestId;
+    if ($token !== '') {
+        $headers[]='X-GF-Api-Key: ' . $token;
+    } else {
+        $key = $GLOBALS['apiConfig']['mcp_internal_key'] ?? '';
+        if (!is_string($key) || !preg_match('/^[a-f0-9]{64}$/Di',$key)) throw new RuntimeException('Chiave interna MCP assente');
+        $timestamp=(string)time();
+        $canonicalPath='/Gestionale25/api/v1/' . parse_url($path, PHP_URL_PATH);
+        $signed=$timestamp . "\n" . $verb . "\n" . $canonicalPath . "\n" . hash('sha256',$jsonBody);
+        $headers[]='X-GF-Internal-Time: ' . $timestamp;
+        $headers[]='X-GF-Internal-Signature: ' . hash_hmac('sha256',$signed,hex2bin($key));
+    }
     $curl = curl_init($url);
     curl_setopt_array($curl, [
         CURLOPT_RETURNTRANSFER => true,
@@ -82,7 +98,7 @@ function mcp_request(string $path, string $verb, string $token, ?array $payload 
         CURLOPT_MAXREDIRS => 0,
         CURLOPT_HEADER => false
     ]);
-    if ($payload !== null) curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    if ($payload !== null) curl_setopt($curl, CURLOPT_POSTFIELDS, $jsonBody);
     $result = curl_exec($curl);
     $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
     $error = curl_error($curl);
@@ -147,7 +163,10 @@ try {
         unset($payload['dry_run']);
         $payload['dry_run'] = !$write;
     }
-    $data = mcp_request($file, $verb, $_SERVER['HTTP_X_GF_API_KEY'], $payload,
+    if ($oauthAccess && !in_array($write ? 'family:write' : 'family:read', explode(' ', (string)$oauthAccess['scope']), true)) {
+        mcp_failure($id, -32602, 'Permesso OAuth insufficiente');
+    }
+    $data = mcp_request($file, $verb, $_SERVER['HTTP_X_GF_API_KEY'] ?? '', $payload,
         $write ? $args['request_id'] : null);
     mcp_json($id,['result'=>['content'=>[['type'=>'text','text'=>json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]],
         'isError'=>($data['success'] ?? false) !== true]]);
