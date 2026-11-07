@@ -15,14 +15,6 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // I redirect OAuth verso ChatGPT devono essere navigazioni native del browser.
-  // Con respondWith(fetch(...)) un redirect verso un altro dominio può essere
-  // intercettato/annullato dal Service Worker.
-  const url = new URL(event.request.url);
-  if (url.pathname.startsWith('/Gestionale25/api/oauth/')) {
-    return;
-  }
-
-  // Per tutte le altre richieste, comportamento PWA invariato (nessuna cache).
+  // Always go to the network, no caching
   event.respondWith(fetch(event.request));
 });
