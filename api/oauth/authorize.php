@@ -99,12 +99,6 @@ try {
     $stmt->bind_param('siisssss', $hash, $uid, $family, $pending['client'], $pending['redirect'], $pending['resource'], $pending['scope'], $pending['challenge']);
     $stmt->execute();
     $stmt->close();
-    // Diagnostica opzionale: solo la fase raggiunta, mai code/state/token/redirect.
-    try {
-        $q = $conn->prepare("INSERT INTO gf_oauth_diagnostics (endpoint, stage) VALUES ('authorize','redirect_issued')");
-        $q->execute();
-        $q->close();
-    } catch (Throwable $ignored) { /* La diagnostica non deve bloccare OAuth. */ }
 } catch (Throwable $e) {
     $errorId = bin2hex(random_bytes(4));
     // Log tecnico lato server: mai includere codice OAuth, token, state o redirect URI.
