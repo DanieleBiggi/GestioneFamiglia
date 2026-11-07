@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/spesa_associazioni_helper.php';
 api_method('GET', 'POST');
 try {
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -16,10 +17,15 @@ try {
     $validated = [];
     foreach ($items as $item) {
         $item = api_assoc($item);
+        $note = api_str($item['note'] ?? null, 255);
+        if (array_key_exists('associazioni', $item)) {
+            $prefix = spesa_associazioni_note($item['associazioni']);
+            $note = spesa_associazioni_merge_note($prefix, $note);
+        }
         $validated[] = [
             api_str($item['nome'] ?? null, 255, true),
             api_str($item['quantita'] ?? null, 100),
-            api_str($item['note'] ?? null, 255)
+            $note
         ];
     }
     if (($body['dry_run'] ?? false) === true) api_reply(200, ['success'=>true,'dry_run'=>true,'items'=>$validated]);
