@@ -63,7 +63,7 @@ try {
         $q->bind_param('s',$hash);$q->execute();$row=$q->get_result()->fetch_assoc();$q->close();
         if (!$row || !hash_equals((string)$row['client_id'],$client) ||
             !hash_equals((string)$row['resource'],$resource) ||
-            (int)$row['id_famiglia']!==$family) gf_oauth_error('invalid_grant');
+            (int)$row['id_famiglia']!==$family) throw new DomainException('invalid_grant');
         $q=$conn->prepare("UPDATE gf_oauth_refresh_tokens SET revoked_at=UTC_TIMESTAMP() WHERE token_hash=? AND revoked_at IS NULL");
         $q->bind_param('s',$hash);$q->execute();$q->close();
         $tokens=gf_oauth_issue($conn,(int)$row['id_utente'],$family,$client,$resource,(string)$row['scope']);
