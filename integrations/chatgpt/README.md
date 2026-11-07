@@ -1,6 +1,6 @@
 # Collegamento OAuth ChatGPT ↔ Gestione Famiglia (PR #444)
 
-Questa PR aggiunge OAuth al server MCP già funzionante. **Non eseguire il merge prima del test end-to-end su Aruba.** OAuth è disabilitato di default; le REST API con `X-GF-Api-Key` continuano a funzionare.
+Questa PR aggiunge OAuth al server MCP già funzionante. OAuth è disabilitato di default; le REST API con `X-GF-Api-Key` continuano a funzionare. L'autenticazione e la lettura della spesa via ChatGPT sono state collaudate su Aruba.
 
 ## Percorso dei file
 
@@ -23,20 +23,9 @@ La prima deve indicare `issuer: https://www.gestionefamiglia.it`, `code_challeng
 
 La seconda deve indicare `resource: https://www.gestionefamiglia.it/Gestionale25/api/mcp.php` e `authorization_servers` con l'issuer di cui sopra.
 
-## Test del passaggio dell'header Authorization
+## Header Authorization su Aruba
 
-**Il precedente test Aruba aveva rilevato che l'header Authorization NON veniva reso disponibile a PHP.** La nuova versione del file `.htaccess` include direttive di inoltro, ma **va verificato che funzionino sull'hosting reale**. In caso contrario ChatGPT non riuscirà a usare OAuth, anche se le API con `X-GF-Api-Key` funzionano.
-
-Non attivare OAuth prima di aver verificato questo punto e la stabilità dell'app dopo la pubblicazione del nuovo `.htaccess`.
-
-Il branch include un file di diagnostica **temporaneo**, `api/oauth/check_aruba.php`. Finché non viene rimosso, per testare l'header senza mostrarne il valore puoi eseguire in PowerShell (nella finestra con il tuo token API in `$token`):
-
-```powershell
-Invoke-RestMethod -Uri "https://www.gestionefamiglia.it/Gestionale25/api/oauth/check_aruba.php" -Method Get -Headers @{"X-GF-Api-Key"=$token; "Authorization"="Bearer test-header-only"}
-```
-
-Il risultato atteso è `success=True`, `authorization_header_received=True`. Se è `False`, il passaggio del bearer da Apache a PHP è ancora bloccato e **non bisogna attivare OAuth**. Il test non crea né modifica dati e non restituisce alcun valore di header. **Eliminare `check_aruba.php` dal branch e dal server una volta verificato**, prima di fare il merge.
-
+Il passaggio dell'header Bearer da Apache a PHP e il flusso OAuth sono stati verificati su Aruba con ChatGPT. Le direttive necessarie sono presenti nel file `.htaccess` di `/Gestionale25/`.
 
 ## Configurazione privata: solo dopo i test di discovery e database
 
@@ -79,7 +68,7 @@ Al primo collegamento, la pagina authorize deve riconoscere una sessione già au
 
 Il token OAuth restituito a ChatGPT ha scadenza 1 ora; il refresh token (ruotato a ogni utilizzo) ha scadenza 30 giorni. Soltanto gli hash dei token sono conservati nel database. Per revocare subito i collegamenti è possibile impostare `mcp_oauth_enabled=false`; per annullare i token già emessi aggiornare `revoked_at` nelle tabelle `gf_oauth_access_tokens` e `gf_oauth_refresh_tokens` tramite operazione amministrativa autorizzata.
 
-## Controlli funzionali obbligatori
+## Verifiche dopo il deploy
 
 1. Login normale di Gestione Famiglia e API esistenti devono continuare a funzionare.
 2. Discovery OAuth e 401 con `WWW-Authenticate: Bearer resource_metadata=...`.
@@ -92,23 +81,5 @@ Il token OAuth restituito a ChatGPT ha scadenza 1 ora; il refresh token (ruotato
 
 In caso di 500, 401 continui o problemi di login, ripristinare il backup dei file modificati e mantenere `mcp_oauth_enabled=false`. Non esporre password, token, hash o sessioni nei log condivisi.
 
-## Diagnostica flusso di collegamento (solo durante il collaudo)
 
-Se il consenso genera il codice ma ChatGPT rimane con "Connetti" in caricamento e `gf_oauth_codes.used_at` rimane NULL, **non ripetere il clic sullo stesso consenso**.
-
-Questa PR include la tabella `gf_oauth_diagnostics`, con sole fasi e orari, senza dati privati. Dopo averla creata (script SQL aggiornato) e aver pubblicato `api/oauth/authorize.php` e `api/oauth/token.php`, avvia **una sola nuova connessione** da ChatGPT.
-
-In phpMyAdmin:
-
-```sql
-SELECT recorded_at, endpoint, stage
-FROM gf_oauth_diagnostics
-ORDER BY id DESC LIMIT 15;
-```
-
-Interpretazione:
-- `authorize / redirect_issued`, senza `token / request_received`: consenso e redirect dal gestionale avvenuti, ma richiesta al token endpoint non osservata. Controllare in ChatGPT il callback o la connessione, senza ripetere il consenso.
-- `token / request_received`, senza `token / token_issued`: ChatGPT ha raggiunto il token endpoint, ma è stata rifiutata o è fallita la richiesta. Esaminare il solo status HTTP e il tipo di errore (non parametri, codici o token).
-- `token / token_issued`: token rilasciato, il problema è nell'uso successivo da ChatGPT.
-
-Non eliminare prematuramente la diagnostica prima di aver concluso i test; successivamente si può rimuovere il codice di tracing e la tabella in una PR di pulizia.
+**Pulizia dopo il collaudo:** eliminare manualmente su Aruba `api/oauth/check_aruba.php` e `api/oauth/check_opcache.php`, se ancora presenti. Non sono più nel repository. La tabella `gf_oauth_diagnostics` già creata su Aruba non è usata dal codice finale: può essere rimossa separatamente dopo averne valutato la conservazione, senza farne dipendere il deploy.
