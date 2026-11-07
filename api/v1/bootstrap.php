@@ -105,27 +105,13 @@ unset($internalKey,$timeHeader,$signature);
 require_once __DIR__ . '/../../includes/db.php';
 $conn->set_charset('utf8mb4');
 
-// Diagnostica minimale MCP: solo stato della fase, mai token, codici o URL.
-function gf_mcp_trace(mysqli $db, string $stage): void {
-    try {
-        $q = $db->prepare('INSERT INTO gf_oauth_diagnostics (endpoint, stage) VALUES (?,?)');
-        $source = 'mcp';
-        $q->bind_param('ss', $source, $stage);
-        $q->execute();
-        $q->close();
-    } catch (Throwable $ignored) {
-        // La tabella di diagnostica è facoltativa e non deve bloccare le API.
-    }
-}
 $oauthAccess = null;
 if (!$apiKeyValid && !$internalValid && defined('GF_MCP_CONTEXT') && GF_MCP_CONTEXT
     && ($apiConfig['mcp_oauth_enabled'] ?? false) === true) {
     require_once __DIR__ . '/../oauth/common.php';
     try {
         $oauthAccess = gf_oauth_access($conn, gf_oauth_bearer(), (int)$familyId);
-        gf_mcp_trace($conn, $oauthAccess ? 'oauth_authenticated' : 'oauth_token_rejected');
     } catch (Throwable $e) {
-        gf_mcp_trace($conn, 'oauth_auth_db_error');
         error_log('GF MCP authentication DB error type: ' . get_class($e));
         api_error(500, 'Errore verifica OAuth');
     }
