@@ -28,6 +28,16 @@ $comments->bind_param('ii', $share['id_viaggio'], $shareId);
 $comments->execute();
 $publicComments = $comments->get_result()->fetch_all(MYSQLI_ASSOC);
 $comments->close();
+// La pagina pubblica non ha sessione: carica il tema Lilla gia' salvato nel portale.
+$themeStmt=$conn->prepare("SELECT background_color,text_color,primary_color,secondary_color FROM temi WHERE LOWER(nome) LIKE '%lilla%' ORDER BY CASE WHEN LOWER(TRIM(nome))='lilla' THEN 0 ELSE 1 END,id LIMIT 1");
+$themeStmt->execute();
+$shareTheme=$themeStmt->get_result()->fetch_assoc();
+$themeStmt->close();
+if(!$shareTheme){
+    error_log('Tema Lilla non trovato nella tabella temi');
+    http_response_code(503);
+    exit('Tema Lilla non disponibile. Verificare la configurazione dei temi.');
+}
 function h($value) { return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'); }
 ?>
 <!doctype html>
@@ -35,18 +45,32 @@ function h($value) { return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'
 <title>Vacanza condivisa</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <style>
-:root { color-scheme: light; --share-lilac:#f5f0ff; --share-accent:#7456a6; --share-ink:#29243a; --share-border:#e4d7f4; }
-body.vacanze-share { background:var(--share-lilac); color:var(--share-ink); min-height:100vh; }
+/* I quattro colori vengono dal tema Lilla presente nel database, non da una seconda palette. */
+:root {
+  color-scheme:light;
+  --share-bg:<?= h($shareTheme['background_color']) ?>;
+  --share-fg:<?= h($shareTheme['text_color']) ?>;
+  --share-primary:<?= h($shareTheme['primary_color']) ?>;
+  --share-secondary:<?= h($shareTheme['secondary_color']) ?>;
+}
+body.vacanze-share { background:var(--share-bg); color:var(--share-fg); min-height:100vh; }
 .vacanze-share main { max-width:940px; }
-.vacanze-share h1 { color:#4b3375; font-weight:750; }
-.vacanze-share h2 { color:#583a84; font-weight:700; }
-.vacanze-share h3 { color:#493371; }
-.vacanze-share .share-card { background:#fff; border:1px solid var(--share-border)!important; border-radius:16px!important; box-shadow:0 4px 18px rgba(91,58,135,.07); }
-.vacanze-share .share-row { background:#fff; color:var(--share-ink); border-color:#eee6f7; }
-.vacanze-share .share-total { margin-top:14px; border-radius:10px; padding:10px 13px; background:#eee4fa; color:#422764; }
-.vacanze-share .text-secondary { color:#675d77!important; }
-.vacanze-share .share-heading { border-bottom:1px solid var(--share-border); padding-bottom:12px; }
-@media (max-width:576px) { .vacanze-share main { padding-inline:16px; } .vacanze-share .share-card { padding:15px!important; } }
+.vacanze-share h1,.vacanze-share h2,.vacanze-share h3 { color:var(--share-fg); }
+.vacanze-share h1 { font-weight:750; }
+.vacanze-share h2 { font-weight:700; }
+.vacanze-share .share-card {
+ background:#fff; color:#29243a;
+ border:1px solid var(--share-secondary)!important;
+ border-radius:16px!important;
+ box-shadow:0 4px 18px rgba(40,25,65,.08);
+}
+.vacanze-share .share-card h3,.vacanze-share .share-card h4 { color:#29243a; }
+.vacanze-share .share-row { background:#fff; color:#29243a; border-color:var(--share-secondary); }
+.vacanze-share .share-total { margin-top:14px; border-radius:10px; padding:10px 13px; background:var(--share-primary); color:var(--share-fg); }
+.vacanze-share .text-secondary { color:var(--share-fg)!important; opacity:.75; }
+.vacanze-share .share-card .text-secondary { color:#585166!important; opacity:1; }
+.vacanze-share .share-heading { border-bottom:1px solid var(--share-secondary); padding-bottom:12px; }
+@media(max-width:576px){.vacanze-share main{padding-inline:16px}.vacanze-share .share-card{padding:15px!important}}
 </style></head>
 <body class="vacanze-share"><main class="container py-4">
 <h1 class="h3 share-heading"><?= h($share['titolo']) ?></h1>
