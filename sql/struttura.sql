@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 89.46.111.63:3306
--- Creato il: Nov 04, 2026 alle 14:46
+-- Creato il: Nov 08, 2026 alle 17:59
 -- Versione del server: 5.6.51-91.0-log
 -- Versione PHP: 8.0.7
 
@@ -45,6 +45,19 @@ CREATE TABLE `amazon_orders` (
   `payments` varchar(255) DEFAULT NULL,
   `descrizione_extra` varchar(250) DEFAULT NULL,
   `completato` int(11) DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `api_v1_richieste`
+--
+
+CREATE TABLE `api_v1_richieste` (
+  `id_famiglia` int(11) NOT NULL,
+  `risorsa` varchar(30) NOT NULL,
+  `richiesta_id` varchar(64) NOT NULL,
+  `creata_il` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -716,6 +729,72 @@ CREATE TABLE `gestione_account_password` (
   `condivisa_con_famiglia` int(11) NOT NULL DEFAULT '0',
   `attiva` int(11) NOT NULL DEFAULT '1',
   `note` text
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `gf_oauth_access_tokens`
+--
+
+CREATE TABLE `gf_oauth_access_tokens` (
+  `token_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `id_utente` int(11) NOT NULL,
+  `id_famiglia` int(11) NOT NULL,
+  `client_id` varchar(255) NOT NULL,
+  `resource` varchar(500) NOT NULL,
+  `scope` varchar(100) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `revoked_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `gf_oauth_codes`
+--
+
+CREATE TABLE `gf_oauth_codes` (
+  `code_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `id_utente` int(11) NOT NULL,
+  `id_famiglia` int(11) NOT NULL,
+  `client_id` varchar(255) NOT NULL,
+  `redirect_uri` varchar(500) NOT NULL,
+  `resource` varchar(500) NOT NULL,
+  `scope` varchar(100) NOT NULL,
+  `code_challenge` varchar(128) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `used_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `gf_oauth_diagnostics`
+--
+
+CREATE TABLE `gf_oauth_diagnostics` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `recorded_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `endpoint` varchar(30) NOT NULL,
+  `stage` varchar(40) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `gf_oauth_refresh_tokens`
+--
+
+CREATE TABLE `gf_oauth_refresh_tokens` (
+  `token_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `id_utente` int(11) NOT NULL,
+  `id_famiglia` int(11) NOT NULL,
+  `client_id` varchar(255) NOT NULL,
+  `resource` varchar(500) NOT NULL,
+  `scope` varchar(100) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `revoked_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -1417,6 +1496,7 @@ CREATE TABLE `viaggi_alloggi` (
   `data_checkin` date DEFAULT NULL,
   `data_checkout` date DEFAULT NULL,
   `costo_notte_eur` decimal(10,2) DEFAULT NULL,
+  `costo_totale_eur` decimal(12,2) DEFAULT NULL,
   `note` text,
   `pagato` tinyint(1) NOT NULL DEFAULT '0',
   `id_viaggio_alternativa` int(11) DEFAULT NULL
@@ -1471,6 +1551,17 @@ CREATE TABLE `viaggi_altri_costi` (
 CREATE TABLE `viaggi_altri_costi_alternative` (
   `id_costo` int(11) NOT NULL,
   `id_viaggio_alternativa` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `viaggi_api_famiglie`
+--
+
+CREATE TABLE `viaggi_api_famiglie` (
+  `id_viaggio` int(11) NOT NULL,
+  `id_famiglia` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -1637,6 +1728,19 @@ CREATE TABLE `viaggi_pasti` (
 CREATE TABLE `viaggi_pasti_alternative` (
   `id_pasto` int(11) NOT NULL,
   `id_viaggio_alternativa` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `viaggi_pianificazione`
+--
+
+CREATE TABLE `viaggi_pianificazione` (
+  `id_viaggio` int(11) NOT NULL,
+  `id_alternativa_confermata` int(11) DEFAULT NULL,
+  `id_salvadanaio` int(11) DEFAULT NULL,
+  `obiettivo_salvadanaio` decimal(10,2) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -2412,6 +2516,50 @@ CREATE TABLE `v_utenti_ricerca` (
 -- --------------------------------------------------------
 
 --
+-- Struttura stand-in per le viste `v_vacanze_totali_alloggi`
+-- (Vedi sotto per la vista effettiva)
+--
+CREATE TABLE `v_vacanze_totali_alloggi` (
+`id_viaggio_alternativa` int(11)
+,`totale` decimal(38,2)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Struttura stand-in per le viste `v_vacanze_totali_altri_costi`
+-- (Vedi sotto per la vista effettiva)
+--
+CREATE TABLE `v_vacanze_totali_altri_costi` (
+`id_viaggio_alternativa` int(11)
+,`totale` decimal(32,2)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Struttura stand-in per le viste `v_vacanze_totali_pasti`
+-- (Vedi sotto per la vista effettiva)
+--
+CREATE TABLE `v_vacanze_totali_pasti` (
+`id_viaggio_alternativa` int(11)
+,`totale` decimal(32,2)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Struttura stand-in per le viste `v_vacanze_totali_trasporti`
+-- (Vedi sotto per la vista effettiva)
+--
+CREATE TABLE `v_vacanze_totali_trasporti` (
+`id_viaggio_alternativa` int(11)
+,`totale` decimal(49,11)
+);
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `webauthn_credentials`
 --
 
@@ -2432,6 +2580,12 @@ CREATE TABLE `webauthn_credentials` (
 --
 ALTER TABLE `amazon_orders`
   ADD PRIMARY KEY (`id_amazon_order`);
+
+--
+-- Indici per le tabelle `api_v1_richieste`
+--
+ALTER TABLE `api_v1_richieste`
+  ADD PRIMARY KEY (`id_famiglia`,`risorsa`,`richiesta_id`);
 
 --
 -- Indici per le tabelle `bilancio`
@@ -2753,6 +2907,34 @@ ALTER TABLE `gestione_account_password`
   ADD PRIMARY KEY (`id_account_password`),
   ADD KEY `fk_password_utente` (`id_utente`),
   ADD KEY `fk_password_famiglia` (`id_famiglia`);
+
+--
+-- Indici per le tabelle `gf_oauth_access_tokens`
+--
+ALTER TABLE `gf_oauth_access_tokens`
+  ADD PRIMARY KEY (`token_hash`),
+  ADD KEY `idx_exp` (`expires_at`);
+
+--
+-- Indici per le tabelle `gf_oauth_codes`
+--
+ALTER TABLE `gf_oauth_codes`
+  ADD PRIMARY KEY (`code_hash`),
+  ADD KEY `idx_exp` (`expires_at`);
+
+--
+-- Indici per le tabelle `gf_oauth_diagnostics`
+--
+ALTER TABLE `gf_oauth_diagnostics`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_recent` (`recorded_at`);
+
+--
+-- Indici per le tabelle `gf_oauth_refresh_tokens`
+--
+ALTER TABLE `gf_oauth_refresh_tokens`
+  ADD PRIMARY KEY (`token_hash`),
+  ADD KEY `idx_exp` (`expires_at`);
 
 --
 -- Indici per le tabelle `importazioni_file`
@@ -3103,6 +3285,13 @@ ALTER TABLE `viaggi_altri_costi_alternative`
   ADD KEY `idx_vaca_alternativa` (`id_viaggio_alternativa`);
 
 --
+-- Indici per le tabelle `viaggi_api_famiglie`
+--
+ALTER TABLE `viaggi_api_famiglie`
+  ADD PRIMARY KEY (`id_viaggio`),
+  ADD KEY `idx_viaggi_api_famiglie_famiglia` (`id_famiglia`,`id_viaggio`);
+
+--
 -- Indici per le tabelle `viaggi_checklist`
 --
 ALTER TABLE `viaggi_checklist`
@@ -3186,6 +3375,14 @@ ALTER TABLE `viaggi_pasti`
 ALTER TABLE `viaggi_pasti_alternative`
   ADD PRIMARY KEY (`id_pasto`,`id_viaggio_alternativa`),
   ADD KEY `idx_vpa_alternativa` (`id_viaggio_alternativa`);
+
+--
+-- Indici per le tabelle `viaggi_pianificazione`
+--
+ALTER TABLE `viaggi_pianificazione`
+  ADD PRIMARY KEY (`id_viaggio`),
+  ADD UNIQUE KEY `uq_vp_salvadanaio` (`id_salvadanaio`),
+  ADD KEY `idx_vp_scenario` (`id_alternativa_confermata`);
 
 --
 -- Indici per le tabelle `viaggi_tratte`
@@ -3453,6 +3650,12 @@ ALTER TABLE `film_utenti`
 --
 ALTER TABLE `gestione_account_password`
   MODIFY `id_account_password` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `gf_oauth_diagnostics`
+--
+ALTER TABLE `gf_oauth_diagnostics`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT per la tabella `importazioni_file`
@@ -4094,7 +4297,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v
 --
 DROP TABLE IF EXISTS `v_totali_alternative`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_totali_alternative`  AS SELECT `vt`.`id_viaggio` AS `id_viaggio`, `alt`.`id_viaggio_alternativa` AS `id_viaggio_alternativa`, `alt`.`breve_descrizione` AS `breve_descrizione`, sum(((((((((coalesce(`vt`.`distanza_km`,0) * coalesce(`vt`.`consumo_litri_100km`,0)) / 100) * coalesce(`vt`.`prezzo_carburante_eur_litro`,0)) + coalesce(`vt`.`pedaggi_eur`,0)) + coalesce(`vt`.`costo_traghetto_eur`,0)) + coalesce(`vt`.`costo_volo_eur`,0)) + coalesce(`vt`.`costo_noleggio_eur`,0)) + coalesce(`vt`.`altri_costi_eur`,0))) AS `totale_trasporti`, (select coalesce(sum(((to_days(`va`.`data_checkout`) - to_days(`va`.`data_checkin`)) * coalesce(`va`.`costo_notte_eur`,0))),0) from `viaggi_alloggi` `va` where ((`va`.`id_viaggio` = `vt`.`id_viaggio`) and (`va`.`id_viaggio_alternativa` = `vt`.`id_viaggio_alternativa`))) AS `totale_alloggi`, (select coalesce(sum(`vp`.`costo_medio_eur`),0) from `viaggi_pasti` `vp` where ((`vp`.`id_viaggio` = `vt`.`id_viaggio`) and (`vp`.`id_viaggio_alternativa` = `vt`.`id_viaggio_alternativa`))) AS `totale_pasti`, (select coalesce(sum(`vac`.`importo_eur`),0) from `viaggi_altri_costi` `vac` where ((`vac`.`id_viaggio` = `vt`.`id_viaggio`) and (`vac`.`id_viaggio_alternativa` = `vt`.`id_viaggio_alternativa`))) AS `totale_altri_costi`, (((sum(((((((((coalesce(`vt`.`distanza_km`,0) * coalesce(`vt`.`consumo_litri_100km`,0)) / 100) * coalesce(`vt`.`prezzo_carburante_eur_litro`,0)) + coalesce(`vt`.`pedaggi_eur`,0)) + coalesce(`vt`.`costo_traghetto_eur`,0)) + coalesce(`vt`.`costo_volo_eur`,0)) + coalesce(`vt`.`costo_noleggio_eur`,0)) + coalesce(`vt`.`altri_costi_eur`,0))) + (select coalesce(sum(((to_days(`va`.`data_checkout`) - to_days(`va`.`data_checkin`)) * coalesce(`va`.`costo_notte_eur`,0))),0) from `viaggi_alloggi` `va` where ((`va`.`id_viaggio` = `vt`.`id_viaggio`) and (`va`.`id_viaggio_alternativa` = `vt`.`id_viaggio_alternativa`)))) + (select coalesce(sum(`vp`.`costo_medio_eur`),0) from `viaggi_pasti` `vp` where ((`vp`.`id_viaggio` = `vt`.`id_viaggio`) and (`vp`.`id_viaggio_alternativa` = `vt`.`id_viaggio_alternativa`)))) + (select coalesce(sum(`vac`.`importo_eur`),0) from `viaggi_altri_costi` `vac` where ((`vac`.`id_viaggio` = `vt`.`id_viaggio`) and (`vac`.`id_viaggio_alternativa` = `vt`.`id_viaggio_alternativa`)))) AS `totale_viaggio` FROM (`viaggi_tratte` `vt` join `viaggi_alternative` `alt` on((`vt`.`id_viaggio_alternativa` = `alt`.`id_viaggio_alternativa`))) GROUP BY `vt`.`id_viaggio`, `vt`.`id_viaggio_alternativa` ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_totali_alternative`  AS SELECT `a`.`id_viaggio` AS `id_viaggio`, `a`.`id_viaggio_alternativa` AS `id_viaggio_alternativa`, `a`.`breve_descrizione` AS `breve_descrizione`, coalesce(`t`.`totale`,0) AS `totale_trasporti`, coalesce(`h`.`totale`,0) AS `totale_alloggi`, coalesce(`p`.`totale`,0) AS `totale_pasti`, coalesce(`c`.`totale`,0) AS `totale_altri_costi`, (((coalesce(`t`.`totale`,0) + coalesce(`h`.`totale`,0)) + coalesce(`p`.`totale`,0)) + coalesce(`c`.`totale`,0)) AS `totale_viaggio` FROM ((((`viaggi_alternative` `a` left join `v_vacanze_totali_trasporti` `t` on((`t`.`id_viaggio_alternativa` = `a`.`id_viaggio_alternativa`))) left join `v_vacanze_totali_alloggi` `h` on((`h`.`id_viaggio_alternativa` = `a`.`id_viaggio_alternativa`))) left join `v_vacanze_totali_pasti` `p` on((`p`.`id_viaggio_alternativa` = `a`.`id_viaggio_alternativa`))) left join `v_vacanze_totali_altri_costi` `c` on((`c`.`id_viaggio_alternativa` = `a`.`id_viaggio_alternativa`))) ;
 
 -- --------------------------------------------------------
 
@@ -4122,6 +4325,42 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v
 DROP TABLE IF EXISTS `v_utenti_ricerca`;
 
 CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_utenti_ricerca`  AS SELECT `utenti`.`id` AS `id_utente`, `utenti`.`nome` AS `nome`, `utenti`.`cognome` AS `cognome`, concat(`utenti`.`cognome`,' ',`utenti`.`nome`) AS `fullname`, `utenti`.`email` AS `email`, `utenti`.`attivo` AS `attivo`, `utenti`.`id_famiglia_attuale` AS `id_famiglia_attuale`, `utenti`.`disponibile_per_soso` AS `disponibile_per_soso` FROM `utenti` ;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura per vista `v_vacanze_totali_alloggi`
+--
+DROP TABLE IF EXISTS `v_vacanze_totali_alloggi`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_vacanze_totali_alloggi`  AS SELECT `x`.`id_viaggio_alternativa` AS `id_viaggio_alternativa`, sum((case when (`e`.`costo_totale_eur` is not null) then `e`.`costo_totale_eur` else ((to_days(`e`.`data_checkout`) - to_days(`e`.`data_checkin`)) * coalesce(`e`.`costo_notte_eur`,0)) end)) AS `totale` FROM ((`viaggi_alloggi_alternative` `x` join `viaggi_alloggi` `e` on((`e`.`id_alloggio` = `x`.`id_alloggio`))) join `viaggi_alternative` `a` on(((`a`.`id_viaggio_alternativa` = `x`.`id_viaggio_alternativa`) and (`a`.`id_viaggio` = `e`.`id_viaggio`)))) GROUP BY `x`.`id_viaggio_alternativa` ;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura per vista `v_vacanze_totali_altri_costi`
+--
+DROP TABLE IF EXISTS `v_vacanze_totali_altri_costi`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_vacanze_totali_altri_costi`  AS SELECT `x`.`id_viaggio_alternativa` AS `id_viaggio_alternativa`, sum(coalesce(`e`.`importo_eur`,0)) AS `totale` FROM ((`viaggi_altri_costi_alternative` `x` join `viaggi_altri_costi` `e` on((`e`.`id_costo` = `x`.`id_costo`))) join `viaggi_alternative` `a` on(((`a`.`id_viaggio_alternativa` = `x`.`id_viaggio_alternativa`) and (`a`.`id_viaggio` = `e`.`id_viaggio`)))) GROUP BY `x`.`id_viaggio_alternativa` ;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura per vista `v_vacanze_totali_pasti`
+--
+DROP TABLE IF EXISTS `v_vacanze_totali_pasti`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_vacanze_totali_pasti`  AS SELECT `x`.`id_viaggio_alternativa` AS `id_viaggio_alternativa`, sum(coalesce(`e`.`costo_medio_eur`,0)) AS `totale` FROM ((`viaggi_pasti_alternative` `x` join `viaggi_pasti` `e` on((`e`.`id_pasto` = `x`.`id_pasto`))) join `viaggi_alternative` `a` on(((`a`.`id_viaggio_alternativa` = `x`.`id_viaggio_alternativa`) and (`a`.`id_viaggio` = `e`.`id_viaggio`)))) GROUP BY `x`.`id_viaggio_alternativa` ;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura per vista `v_vacanze_totali_trasporti`
+--
+DROP TABLE IF EXISTS `v_vacanze_totali_trasporti`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`Sql1203781`@`%` SQL SECURITY DEFINER VIEW `v_vacanze_totali_trasporti`  AS SELECT `x`.`id_viaggio_alternativa` AS `id_viaggio_alternativa`, sum(((((((((coalesce(`e`.`distanza_km`,0) * coalesce(`e`.`consumo_litri_100km`,0)) / 100) * coalesce(`e`.`prezzo_carburante_eur_litro`,0)) + coalesce(`e`.`pedaggi_eur`,0)) + coalesce(`e`.`costo_traghetto_eur`,0)) + coalesce(`e`.`costo_volo_eur`,0)) + coalesce(`e`.`costo_noleggio_eur`,0)) + coalesce(`e`.`altri_costi_eur`,0))) AS `totale` FROM ((`viaggi_tratte_alternative` `x` join `viaggi_tratte` `e` on((`e`.`id_tratta` = `x`.`id_tratta`))) join `viaggi_alternative` `a` on(((`a`.`id_viaggio_alternativa` = `x`.`id_viaggio_alternativa`) and (`a`.`id_viaggio` = `e`.`id_viaggio`)))) GROUP BY `x`.`id_viaggio_alternativa` ;
 
 --
 -- Limiti per le tabelle scaricate
@@ -4433,6 +4672,14 @@ ALTER TABLE `viaggi_pasti`
 ALTER TABLE `viaggi_pasti_alternative`
   ADD CONSTRAINT `fk_vpa_alternativa` FOREIGN KEY (`id_viaggio_alternativa`) REFERENCES `viaggi_alternative` (`id_viaggio_alternativa`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_vpa_pasto` FOREIGN KEY (`id_pasto`) REFERENCES `viaggi_pasti` (`id_pasto`) ON DELETE CASCADE;
+
+--
+-- Limiti per la tabella `viaggi_pianificazione`
+--
+ALTER TABLE `viaggi_pianificazione`
+  ADD CONSTRAINT `fk_vp_salvadanaio` FOREIGN KEY (`id_salvadanaio`) REFERENCES `salvadanai` (`id_salvadanaio`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_vp_scenario` FOREIGN KEY (`id_alternativa_confermata`) REFERENCES `viaggi_alternative` (`id_viaggio_alternativa`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_vp_viaggio` FOREIGN KEY (`id_viaggio`) REFERENCES `viaggi` (`id_viaggio`) ON DELETE CASCADE;
 
 --
 -- Limiti per la tabella `viaggi_tratte`
