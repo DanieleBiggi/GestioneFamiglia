@@ -33,14 +33,28 @@ function h($value) { return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'
 <!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Vacanza condivisa</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"></head>
-<body class="bg-dark text-white"><main class="container py-4">
-<h1 class="h3"><?= h($share['titolo']) ?></h1>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+:root { color-scheme: light; --share-lilac:#f5f0ff; --share-accent:#7456a6; --share-ink:#29243a; --share-border:#e4d7f4; }
+body.vacanze-share { background:var(--share-lilac); color:var(--share-ink); min-height:100vh; }
+.vacanze-share main { max-width:940px; }
+.vacanze-share h1 { color:#4b3375; font-weight:750; }
+.vacanze-share h2 { color:#583a84; font-weight:700; }
+.vacanze-share h3 { color:#493371; }
+.vacanze-share .share-card { background:#fff; border:1px solid var(--share-border)!important; border-radius:16px!important; box-shadow:0 4px 18px rgba(91,58,135,.07); }
+.vacanze-share .share-row { background:#fff; color:var(--share-ink); border-color:#eee6f7; }
+.vacanze-share .share-total { margin-top:14px; border-radius:10px; padding:10px 13px; background:#eee4fa; color:#422764; }
+.vacanze-share .text-secondary { color:#675d77!important; }
+.vacanze-share .share-heading { border-bottom:1px solid var(--share-border); padding-bottom:12px; }
+@media (max-width:576px) { .vacanze-share main { padding-inline:16px; } .vacanze-share .share-card { padding:15px!important; } }
+</style></head>
+<body class="vacanze-share"><main class="container py-4">
+<h1 class="h3 share-heading"><?= h($share['titolo']) ?></h1>
 <p class="text-secondary">Consultazione in sola lettura. Link valido fino al <?= h($share['scade_il']) ?> (UTC).</p>
 <h2 class="h5 mt-4">Scenari condivisi</h2>
 <?php if (!$alternatives): ?><p>Nessuno scenario disponibile.</p><?php endif; ?>
 <?php foreach ($alternatives as $a): ?>
-<section class="border rounded p-3 mb-3"><h3 class="h6"><?= h($a['breve_descrizione']) ?></h3>
+<section class="share-card p-3 mb-3"><h3 class="h6"><?= h($a['breve_descrizione']) ?></h3>
 <?php
 $categories = [
  ['Viaggi e trasporti','viaggi_tratte','viaggi_tratte_alternative','id_tratta','descrizione','COALESCE(distanza_km,0)*COALESCE(consumo_litri_100km,0)/100*COALESCE(prezzo_carburante_eur_litro,0)+COALESCE(pedaggi_eur,0)+COALESCE(costo_traghetto_eur,0)+COALESCE(costo_volo_eur,0)+COALESCE(costo_noleggio_eur,0)+COALESCE(altri_costi_eur,0)'],
@@ -57,18 +71,18 @@ foreach ($categories as [$label,$table,$link,$key,$description,$formula]) {
  echo '<h4 class="h6 mt-3">'.h($label).'</h4><ul class="list-group">';
  foreach ($items as $item) {
   $amount=(float)$item['importo']; $grandTotal+=$amount;
-  echo '<li class="list-group-item bg-dark text-white d-flex justify-content-between"><span>'.h($item['descrizione'] ?: $label).'</span><span>€ '.number_format($amount,2,',','.').'</span></li>';
+  echo '<li class="list-group-item share-row d-flex justify-content-between gap-3"><span>'.h($item['descrizione'] ?: $label).'</span><span>€ '.number_format($amount,2,',','.').'</span></li>';
  }
  echo '</ul>';
 }
 ?>
-<div class="fw-bold mt-3">Totale scenario: € <?= number_format($grandTotal,2,',','.') ?></div>
+<div class="share-total fw-bold">Totale scenario: € <?= number_format($grandTotal,2,',','.') ?></div>
 </section>
 <?php endforeach; ?>
 <h2 class="h5 mt-4">Note e commenti condivisi</h2>
 <?php if (!$publicComments): ?><p class="text-secondary">Nessun commento pubblico.</p><?php endif; ?>
 <?php foreach ($publicComments as $c): ?>
-<div class="border rounded p-3 mb-2"><div class="small text-secondary"><?= h($c['username']) ?> · <?= h($c['creato_il']) ?><?= $c['breve_descrizione'] !== null ? ' · '.h($c['breve_descrizione']) : '' ?></div>
+<div class="share-card p-3 mb-2"><div class="small text-secondary"><?= h($c['username']) ?> · <?= h($c['creato_il']) ?><?= $c['breve_descrizione'] !== null ? ' · '.h($c['breve_descrizione']) : '' ?></div>
 <div><?= nl2br(h($c['testo'])) ?></div></div>
 <?php endforeach; ?>
 </main></body></html>
