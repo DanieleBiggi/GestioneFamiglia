@@ -11,6 +11,8 @@ on:
       - 'api/v1/spesa_associazioni.php'
       - 'api/v1/spesa_associazioni_helper.php'
       - 'api/v1/spesa.php'
+      - 'api/v1/vacanze_scenari.php'
+      - 'vacanze_workspace.php'
       - '.github/workflows/mcp-oauth-check.yml'
 jobs:
   php:
@@ -26,6 +28,8 @@ jobs:
           set -euo pipefail
           php -l api/mcp.php
           php -l api/v1/bootstrap.php
+          php -l api/v1/vacanze_scenari.php
+          php -l vacanze_workspace.php
           find api/oauth -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Test helper OAuth
         run: |
