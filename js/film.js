@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const durataDa = parseInt(filterDurataDa.value || '0', 10);
     const durataA = parseInt(filterDurataA.value || '0', 10);
 
+    let visibleCount = 0;
     cards.forEach(card => {
       const text = (card.dataset.search || '');
       const matchSearch = text.includes(q);
@@ -112,11 +113,28 @@ document.addEventListener('DOMContentLoaded', () => {
       const matchDurataA = !filterDurataA.value || durata <= durataA;
       const visible = matchSearch && matchAnnoDa && matchAnnoA && matchGenere && matchRegista && matchGruppo && matchLista && matchPiattaforma && matchVotoDa && matchVotoA && matchDataDa && matchDataA && matchDurataDa && matchDurataA;
       if (visible) {
+        visibleCount++;
         card.style.removeProperty('display');
       } else {
         card.style.setProperty('display', 'none', 'important');
       }
     });
+    const suggestion = document.getElementById('filmSearchSuggestion');
+    if (suggestion) {
+      suggestion.replaceChildren();
+      if (q && visibleCount === 0) {
+        const message = document.createElement('span');
+        message.textContent = 'Nessun film trovato nella raccolta. ';
+        const link = document.createElement('a');
+        link.href = 'film_aggiungi.php?q=' + encodeURIComponent(search.value.trim());
+        link.textContent = 'Cerca su TMDB e aggiungi il film';
+        link.className = 'alert-link';
+        suggestion.append(message, link);
+        suggestion.classList.remove('d-none');
+      } else {
+        suggestion.classList.add('d-none');
+      }
+    }
   }
 
   document.querySelectorAll('.film-filter-gruppo').forEach(el => {

@@ -168,6 +168,7 @@ $piattaformeRes = $conn->query("SELECT id_piattaforma, nome FROM streaming_piatt
     </div>
   </div>
 </div>
+<div id="filmSearchSuggestion" class="alert alert-info d-none" role="status"></div>
 <div id="filmList">
   <?php while ($row = $res->fetch_assoc()): ?>
     <?php render_film($row); ?>

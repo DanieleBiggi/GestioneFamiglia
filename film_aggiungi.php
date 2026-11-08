@@ -15,6 +15,7 @@ $apiKey = $config['TMDB_API_KEY'];
   </div>
   <button id="searchBtn" class="btn btn-primary mb-3">Cerca</button>
   <div id="searchResults"></div>
+  <div id="filmImportMessage" class="alert d-none" role="status"></div>
 </div>
 <script>
   const TMDB_API_KEY = '<?= htmlspecialchars($apiKey ?? '') ?>';
