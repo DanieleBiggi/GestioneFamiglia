@@ -28,19 +28,57 @@ $comments->bind_param('ii', $share['id_viaggio'], $shareId);
 $comments->execute();
 $publicComments = $comments->get_result()->fetch_all(MYSQLI_ASSOC);
 $comments->close();
+// La pagina pubblica non ha sessione: carica il tema Lilla gia' salvato nel portale.
+$themeStmt=$conn->prepare("SELECT background_color,text_color,primary_color,secondary_color FROM temi WHERE LOWER(nome) LIKE '%lilla%' ORDER BY CASE WHEN LOWER(TRIM(nome))='lilla' THEN 0 ELSE 1 END,id LIMIT 1");
+$themeStmt->execute();
+$shareTheme=$themeStmt->get_result()->fetch_assoc();
+$themeStmt->close();
+if(!$shareTheme){
+    error_log('Tema Lilla non trovato nella tabella temi');
+    http_response_code(503);
+    exit('Tema Lilla non disponibile. Verificare la configurazione dei temi.');
+}
 function h($value) { return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'); }
 ?>
 <!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Vacanza condivisa</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"></head>
-<body class="bg-dark text-white"><main class="container py-4">
-<h1 class="h3"><?= h($share['titolo']) ?></h1>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+/* I quattro colori vengono dal tema Lilla presente nel database, non da una seconda palette. */
+:root {
+  color-scheme:light;
+  --share-bg:<?= h($shareTheme['background_color']) ?>;
+  --share-fg:<?= h($shareTheme['text_color']) ?>;
+  --share-primary:<?= h($shareTheme['primary_color']) ?>;
+  --share-secondary:<?= h($shareTheme['secondary_color']) ?>;
+}
+body.vacanze-share { background:var(--share-bg); color:var(--share-fg); min-height:100vh; }
+.vacanze-share main { max-width:940px; }
+.vacanze-share h1,.vacanze-share h2,.vacanze-share h3 { color:var(--share-fg); }
+.vacanze-share h1 { font-weight:750; }
+.vacanze-share h2 { font-weight:700; }
+.vacanze-share .share-card {
+ background:#fff; color:#29243a;
+ border:1px solid var(--share-secondary)!important;
+ border-radius:16px!important;
+ box-shadow:0 4px 18px rgba(40,25,65,.08);
+}
+.vacanze-share .share-card h3,.vacanze-share .share-card h4 { color:#29243a; }
+.vacanze-share .share-row { background:#fff; color:#29243a; border-color:var(--share-secondary); }
+.vacanze-share .share-total { margin-top:14px; border-radius:10px; padding:10px 13px; background:#fff; color:#29243a; border-left:4px solid var(--share-primary); }
+.vacanze-share .text-secondary { color:var(--share-fg)!important; opacity:.75; }
+.vacanze-share .share-card .text-secondary { color:#585166!important; opacity:1; }
+.vacanze-share .share-heading { border-bottom:1px solid var(--share-secondary); padding-bottom:12px; }
+@media(max-width:576px){.vacanze-share main{padding-inline:16px}.vacanze-share .share-card{padding:15px!important}}
+</style></head>
+<body class="vacanze-share"><main class="container py-4">
+<h1 class="h3 share-heading"><?= h($share['titolo']) ?></h1>
 <p class="text-secondary">Consultazione in sola lettura. Link valido fino al <?= h($share['scade_il']) ?> (UTC).</p>
 <h2 class="h5 mt-4">Scenari condivisi</h2>
 <?php if (!$alternatives): ?><p>Nessuno scenario disponibile.</p><?php endif; ?>
 <?php foreach ($alternatives as $a): ?>
-<section class="border rounded p-3 mb-3"><h3 class="h6"><?= h($a['breve_descrizione']) ?></h3>
+<section class="share-card p-3 mb-3"><h3 class="h6"><?= h($a['breve_descrizione']) ?></h3>
 <?php
 $categories = [
  ['Viaggi e trasporti','viaggi_tratte','viaggi_tratte_alternative','id_tratta','descrizione','COALESCE(distanza_km,0)*COALESCE(consumo_litri_100km,0)/100*COALESCE(prezzo_carburante_eur_litro,0)+COALESCE(pedaggi_eur,0)+COALESCE(costo_traghetto_eur,0)+COALESCE(costo_volo_eur,0)+COALESCE(costo_noleggio_eur,0)+COALESCE(altri_costi_eur,0)'],
@@ -57,18 +95,18 @@ foreach ($categories as [$label,$table,$link,$key,$description,$formula]) {
  echo '<h4 class="h6 mt-3">'.h($label).'</h4><ul class="list-group">';
  foreach ($items as $item) {
   $amount=(float)$item['importo']; $grandTotal+=$amount;
-  echo '<li class="list-group-item bg-dark text-white d-flex justify-content-between"><span>'.h($item['descrizione'] ?: $label).'</span><span>€ '.number_format($amount,2,',','.').'</span></li>';
+  echo '<li class="list-group-item share-row d-flex justify-content-between gap-3"><span>'.h($item['descrizione'] ?: $label).'</span><span>€ '.number_format($amount,2,',','.').'</span></li>';
  }
  echo '</ul>';
 }
 ?>
-<div class="fw-bold mt-3">Totale scenario: € <?= number_format($grandTotal,2,',','.') ?></div>
+<div class="share-total fw-bold">Totale scenario: € <?= number_format($grandTotal,2,',','.') ?></div>
 </section>
 <?php endforeach; ?>
 <h2 class="h5 mt-4">Note e commenti condivisi</h2>
 <?php if (!$publicComments): ?><p class="text-secondary">Nessun commento pubblico.</p><?php endif; ?>
 <?php foreach ($publicComments as $c): ?>
-<div class="border rounded p-3 mb-2"><div class="small text-secondary"><?= h($c['username']) ?> · <?= h($c['creato_il']) ?><?= $c['breve_descrizione'] !== null ? ' · '.h($c['breve_descrizione']) : '' ?></div>
+<div class="share-card p-3 mb-2"><div class="small text-secondary"><?= h($c['username']) ?> · <?= h($c['creato_il']) ?><?= $c['breve_descrizione'] !== null ? ' · '.h($c['breve_descrizione']) : '' ?></div>
 <div><?= nl2br(h($c['testo'])) ?></div></div>
 <?php endforeach; ?>
 </main></body></html>
