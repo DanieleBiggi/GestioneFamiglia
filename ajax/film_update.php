@@ -27,12 +27,36 @@ if (!$apiKey) {
     exit;
 }
 
-$detailsJson = @file_get_contents("https://api.themoviedb.org/3/movie/{$tmdbId}?api_key={$apiKey}&language=it-IT&append_to_response=credits,videos");
-if (!$detailsJson) {
-    echo json_encode(['success' => false, 'error' => 'Errore chiamata TMDB']);
+$url = "https://api.themoviedb.org/3/movie/{$tmdbId}?" . http_build_query(['api_key' => $apiKey, 'language' => 'it-IT', 'append_to_response' => 'credits,videos']);
+$detailsJson = false;
+$httpStatus = 0;
+if (function_exists('curl_init')) {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 15, CURLOPT_FOLLOWLOCATION => false]);
+    $detailsJson = curl_exec($ch);
+    $httpStatus = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+} else {
+    $context = stream_context_create(['http' => ['timeout' => 15, 'ignore_errors' => true]]);
+    $detailsJson = @file_get_contents($url, false, $context);
+    if (isset($http_response_header[0]) && preg_match('/HTTP\\/\\S+\\s+(\\d+)/', $http_response_header[0], $matches)) {
+        $httpStatus = (int)$matches[1];
+    }
+}
+if ($httpStatus !== 200 || !$detailsJson) {
+    error_log('TMDB movie details failed: HTTP ' . $httpStatus . ', movie ID ' . $tmdbId);
+    http_response_code(502);
+    echo json_encode(['success' => false, 'error' => 'Impossibile recuperare i dettagli del film da TMDB. Riprova tra poco.']);
     exit;
 }
+
 $movie = json_decode($detailsJson, true);
+if (!is_array($movie) || empty($movie['id']) || empty($movie['title'])) {
+    error_log('Invalid TMDB movie response for movie ID ' . $tmdbId);
+    http_response_code(502);
+    echo json_encode(['success' => false, 'error' => 'TMDB ha restituito dati non validi. Riprova tra poco.']);
+    exit;
+}
 $votoMedio = isset($movie['vote_average']) ? (float)$movie['vote_average'] : null;
 $budget = isset($movie['budget']) ? (int)$movie['budget'] : null;
 $incassi = isset($movie['revenue']) ? (int)$movie['revenue'] : null;
