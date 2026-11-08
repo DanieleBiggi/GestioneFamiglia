@@ -63,7 +63,8 @@ function gf_changes(array $scenario,array $snapshot):array{
   if(isset($seen[$identity]))gf_fail('Voce ripetuta');$seen[$identity]=true;
   if($old&&(int)($old['pagato']??0)!==0)gf_fail('Voce gia pagata: nessuna modifica consentita');
   $before=[];foreach($clean as $k=>$v)$before[$k]=$old[$k]??null;
-  $ops[]=['categoria'=>$category,'azione'=>$old?'aggiorna':'inserisci','id'=>$old?(int)$old[$pk]:null,'prima'=>$before,'dopo'=>$clean];
+  $diff=[];foreach($clean as $k=>$v){if(in_array($rules[$k],['money','day'],true))$diff[$k]=$v===null?null:round((float)$v-(float)($before[$k]??0),2);}
+  $ops[]=['categoria'=>$category,'azione'=>$old?'aggiorna':'inserisci','id'=>$old?(int)$old[$pk]:null,'prima'=>$before,'dopo'=>$clean,'differenze_numeriche'=>$diff];
  }
  return $ops;
 }
