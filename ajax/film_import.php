@@ -14,18 +14,54 @@ if (!$tmdbId) {
     exit;
 }
 
+// Never overwrite an existing user's viewing date, rating or comments.
+$idUtente = (int)($_SESSION['utente_id'] ?? 0);
+$stmtExisting = $conn->prepare("SELECT f.id_film FROM film f JOIN film_utenti fu ON fu.id_film=f.id_film WHERE f.tmdb_id=? AND fu.id_utente=? LIMIT 1");
+$stmtExisting->bind_param('ii', $tmdbId, $idUtente);
+$stmtExisting->execute();
+$existing = $stmtExisting->get_result()->fetch_assoc();
+$stmtExisting->close();
+if ($existing) {
+    echo json_encode(['success' => true, 'already_present' => true, 'id_film' => (int)$existing['id_film']]);
+    exit;
+}
+
 $apiKey =  $config['TMDB_API_KEY'];
 if (!$apiKey) {
     echo json_encode(['success' => false, 'error' => 'TMDB_API_KEY non configurato']);
     exit;
 }
 
-$detailsJson = @file_get_contents("https://api.themoviedb.org/3/movie/{$tmdbId}?api_key={$apiKey}&language=it-IT&append_to_response=credits,videos");
-if (!$detailsJson) {
-    echo json_encode(['success' => false, 'error' => 'Errore chiamata TMDB']);
+$url = "https://api.themoviedb.org/3/movie/{$tmdbId}?" . http_build_query(['api_key' => $apiKey, 'language' => 'it-IT', 'append_to_response' => 'credits,videos']);
+$detailsJson = false;
+$httpStatus = 0;
+if (function_exists('curl_init')) {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 15, CURLOPT_FOLLOWLOCATION => false]);
+    $detailsJson = curl_exec($ch);
+    $httpStatus = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+} else {
+    $context = stream_context_create(['http' => ['timeout' => 15, 'ignore_errors' => true]]);
+    $detailsJson = @file_get_contents($url, false, $context);
+    if (isset($http_response_header[0]) && preg_match('/HTTP\\/\\S+\\s+(\\d+)/', $http_response_header[0], $matches)) {
+        $httpStatus = (int)$matches[1];
+    }
+}
+if ($httpStatus !== 200 || !$detailsJson) {
+    error_log('TMDB movie details failed: HTTP ' . $httpStatus . ', movie ID ' . $tmdbId);
+    http_response_code(502);
+    echo json_encode(['success' => false, 'error' => 'Impossibile recuperare i dettagli del film da TMDB. Riprova tra poco.']);
     exit;
 }
+
 $movie = json_decode($detailsJson, true);
+if (!is_array($movie) || empty($movie['id']) || empty($movie['title'])) {
+    error_log('Invalid TMDB movie response for movie ID ' . $tmdbId);
+    http_response_code(502);
+    echo json_encode(['success' => false, 'error' => 'TMDB ha restituito dati non validi. Riprova tra poco.']);
+    exit;
+}
 $votoMedio = isset($movie['vote_average']) ? (float)$movie['vote_average'] : null;
 $budget = isset($movie['budget']) ? (int)$movie['budget'] : null;
 $incassi = isset($movie['revenue']) ? (int)$movie['revenue'] : null;
@@ -82,20 +118,17 @@ try {
         }
     }
     $stmt->close();
-    // update vote average and other details even if film already exists
-    $stmtUpd = $conn->prepare("UPDATE film SET voto_medio=?, regista=?, budget=?, incassi=?, trailer_ita_url=? WHERE id_film=?");
-    $stmtUpd->bind_param('dsiisi', $votoMedio, $regista, $budget, $incassi, $trailerIta, $idFilm);
-    $stmtUpd->execute();
-    $stmtUpd->close();
+    // TMDB metadata for an existing global film is intentionally left unchanged.
 
     // Insert/Update film_utenti
-    $idUtente = $_SESSION['utente_id'];
-    $stmtFU = $conn->prepare("INSERT INTO film_utenti (id_film, id_utente, data_visto, voto) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE data_visto=VALUES(data_visto), voto=VALUES(voto)");
+    // The current user's association is new; never update existing personal data.
+    $stmtFU = $conn->prepare("INSERT IGNORE INTO film_utenti (id_film, id_utente, data_visto, voto) VALUES (?,?,?,?)");
     $stmtFU->bind_param('iisd', $idFilm, $idUtente, $dataVisto, $voto);
     $stmtFU->execute();
+    $newAssociation = $stmtFU->affected_rows > 0;
     $stmtFU->close();
 
-    if ($commento !== '') {
+    if ($newAssociation && $commento !== '') {
         $stmtC = $conn->prepare("INSERT INTO film_commenti (id_film, id_utente, commento) VALUES (?,?,?)");
         $stmtC->bind_param('iis', $idFilm, $idUtente, $commento);
         $stmtC->execute();
