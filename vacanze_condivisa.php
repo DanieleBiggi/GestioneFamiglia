@@ -66,7 +66,7 @@ body.vacanze-share { background:var(--share-bg); color:var(--share-fg); min-heig
 }
 .vacanze-share .share-card h3,.vacanze-share .share-card h4 { color:#29243a; }
 .vacanze-share .share-row { background:#fff; color:#29243a; border-color:var(--share-secondary); }
-.vacanze-share .share-total { margin-top:14px; border-radius:10px; padding:10px 13px; background:var(--share-primary); color:var(--share-fg); }
+.vacanze-share .share-total { margin-top:14px; border-radius:10px; padding:10px 13px; background:#fff; color:#29243a; border-left:4px solid var(--share-primary); }
 .vacanze-share .text-secondary { color:var(--share-fg)!important; opacity:.75; }
 .vacanze-share .share-card .text-secondary { color:#585166!important; opacity:1; }
 .vacanze-share .share-heading { border-bottom:1px solid var(--share-secondary); padding-bottom:12px; }
