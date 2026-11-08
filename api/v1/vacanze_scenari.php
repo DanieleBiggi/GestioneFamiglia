@@ -10,7 +10,7 @@ const GF_VOCI=[
  'alloggi'=>['viaggi_alloggi','viaggi_alloggi_alternative','id_alloggio','nome_alloggio',
     ['nome_alloggio'=>'text:255','indirizzo'=>'text:255','data_checkin'=>'date','data_checkout'=>'date','costo_notte_eur'=>'money','costo_totale_eur'=>'money','note'=>'text:5000']],
  'pasti'=>['viaggi_pasti','viaggi_pasti_alternative','id_pasto','nome_locale',
-    ['nome_locale'=>'text:255','tipo_pasto'=>'enum:colazione,pranzo,cena','tipologia'=>'enum:ristorante,cucinato','giorno_indice'=>'day','costo_medio_eur'=>'money','note'=>'text:5000']],
+    ['nome_locale'=>'text:255','tipo_pasto'=>'enum:colazione,pranzo,cena','tipologia'=>'enum:ristorante,pizzeria,cucinato','giorno_indice'=>'day','costo_medio_eur'=>'money','note'=>'text:5000']],
  'altri_costi'=>['viaggi_altri_costi','viaggi_altri_costi_alternative','id_costo','descrizione',
     ['descrizione'=>'text:255','importo_eur'=>'money','data'=>'date','note'=>'text:5000']]
 ];
@@ -59,6 +59,7 @@ function gf_changes(array $scenario,array $snapshot):array{
   $old=$found[0]??null;
   if(!$old&&empty($clean[$label]))gf_fail('Nome obbligatorio per nuova voce');
   if(!$old&&$category==='trasporti'&&empty($clean['tipo_tratta']))gf_fail('Tipo tratta obbligatorio');
+  if(!$old&&$category==='pasti'&&empty($clean['tipo_pasto']))gf_fail('Tipo pasto obbligatorio');
   $identity=$category.':'.($old?(string)$old[$pk]:mb_strtolower($clean[$label]));
   if(isset($seen[$identity]))gf_fail('Voce ripetuta');$seen[$identity]=true;
   if($old&&(int)($old['pagato']??0)!==0)gf_fail('Voce gia pagata: nessuna modifica consentita');
