@@ -36,6 +36,20 @@ if (!$viaggio) {
     exit;
 }
 
+function vacanze_numero_trasporto($raw, string $campo, float $max, int $decimali): float {
+    if ($raw === '' || $raw === null) return 0.0;
+    if (!is_scalar($raw) || !is_numeric($raw)) {
+        http_response_code(422);
+        exit('Valore non valido per ' . htmlspecialchars($campo, ENT_QUOTES, 'UTF-8'));
+    }
+    $numero = (float)$raw;
+    if (!is_finite($numero) || $numero < 0 || $numero > $max || round($numero, $decimali) != $numero) {
+        http_response_code(422);
+        exit('Valore fuori limite o con troppi decimali per ' . htmlspecialchars($campo, ENT_QUOTES, 'UTF-8'));
+    }
+    return $numero;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['delete']) && !$canDeleteSpesa) { http_response_code(403); exit('Accesso negato'); }
     if (!isset($_POST['delete']) && !($id_tratta && !$duplica ? $canUpdateSpesa : $canInsertSpesa)) { http_response_code(403); exit('Accesso negato'); }
@@ -53,15 +67,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $destinazione = $_POST['destinazione_testo'] ?? null;
     $destinazione_lat = (($_POST['destinazione_lat'] ?? '') !== '') ? (float)$_POST['destinazione_lat'] : null;
     $destinazione_lng = (($_POST['destinazione_lng'] ?? '') !== '') ? (float)$_POST['destinazione_lng'] : null;
-    $distanza = (float)($_POST['distanza_km'] ?? 0);
-    $durata = (float)($_POST['durata_ore'] ?? 0);
-    $consumo = (float)($_POST['consumo_litri_100km'] ?? 0);
-    $prezzo = (float)($_POST['prezzo_carburante_eur_litro'] ?? 0);
-    $pedaggi = (float)($_POST['pedaggi_eur'] ?? 0);
-    $traghetto = (float)($_POST['costo_traghetto_eur'] ?? 0);
-    $volo = (float)($_POST['costo_volo_eur'] ?? 0);
-    $noleggio = (float)($_POST['costo_noleggio_eur'] ?? 0);
-    $altri = (float)($_POST['altri_costi_eur'] ?? 0);
+    $distanza = vacanze_numero_trasporto($_POST['distanza_km'] ?? '', 'distanza_km', 999999.99, 2);
+    $durata = vacanze_numero_trasporto($_POST['durata_ore'] ?? '', 'durata_ore', 999.99, 2);
+    $consumo = vacanze_numero_trasporto($_POST['consumo_litri_100km'] ?? '', 'consumo_litri_100km', 999.99, 2);
+    $prezzo = vacanze_numero_trasporto($_POST['prezzo_carburante_eur_litro'] ?? '', 'prezzo_carburante_eur_litro', 99.999, 3);
+    $pedaggi = vacanze_numero_trasporto($_POST['pedaggi_eur'] ?? '', 'pedaggi_eur', 99999999.99, 2);
+    $traghetto = vacanze_numero_trasporto($_POST['costo_traghetto_eur'] ?? '', 'costo_traghetto_eur', 99999999.99, 2);
+    $volo = vacanze_numero_trasporto($_POST['costo_volo_eur'] ?? '', 'costo_volo_eur', 99999999.99, 2);
+    $noleggio = vacanze_numero_trasporto($_POST['costo_noleggio_eur'] ?? '', 'costo_noleggio_eur', 99999999.99, 2);
+    $altri = vacanze_numero_trasporto($_POST['altri_costi_eur'] ?? '', 'altri_costi_eur', 99999999.99, 2);
     $note = $_POST['note'] ?? null;
     $pagato = isset($_POST['pagato']) ? 1 : 0;
 
