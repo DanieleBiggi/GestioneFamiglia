@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$id_pasto || $duplica || !$canInsertSpesa || !$canUpdateSpesa) {
             http_response_code(403); exit('Operazione non consentita');
         }
-        $targetAlt = filter_var($_POST['separa_scenario'], FILTER_VALIDATE_INT);
+        $targetAlt = filter_var($_POST['target_scenario'] ?? null, FILTER_VALIDATE_INT);
         if (!$targetAlt || $targetAlt <= 0) { http_response_code(422); exit('Scenario non valido'); }
         try {
             $newId = vacanze_separa_spesa_scenario($conn, 'viaggi_pasti', $id_pasto, $id, (int)$targetAlt);
@@ -161,12 +161,12 @@ $alt_desc = $alternative[$alt] ?? '';
       <div class="mb-3">
         <label for="separa_scenario_id_pasto" class="form-label">Modifica soltanto uno scenario</label>
         <div class="d-flex gap-2 flex-wrap">
-          <select id="separa_scenario_id_pasto" name="separa_scenario" class="form-select" style="max-width: 320px">
+          <select id="separa_scenario_id_pasto" name="target_scenario" class="form-select" style="max-width: 320px">
             <?php foreach ($selectedAlternativeIds as $scenarioId): ?>
               <option value="<?= (int)$scenarioId ?>"><?= htmlspecialchars($alternative[$scenarioId] ?? (string)$scenarioId, ENT_QUOTES, 'UTF-8') ?></option>
             <?php endforeach; ?>
           </select>
-          <button type="submit" class="btn btn-outline-primary" formnovalidate onclick="return confirm('Creare una copia indipendente per questo scenario? La spesa originale resterà negli altri scenari.')">Separa e modifica</button>
+          <button type="submit" name="separa_scenario" value="1" class="btn btn-outline-primary" formnovalidate onclick="return confirm('Creare una copia indipendente per questo scenario? La spesa originale resterà negli altri scenari.')">Separa e modifica</button>
         </div>
         <small class="text-muted">Crea una copia per lo scenario scelto, senza modificare gli altri. Le modifiche saranno salvate nella pagina successiva.</small>
       </div>
