@@ -13,6 +13,7 @@ on:
       - 'api/v1/spesa.php'
       - 'api/v1/vacanze_scenari.php'
       - 'api/v1/vacanze_date.php'
+      - 'api/v1/vacanze_voci_elimina.php'
       - 'vacanze_workspace.php'
       - '.github/workflows/mcp-oauth-check.yml'
 jobs:
@@ -31,6 +32,7 @@ jobs:
           php -l api/v1/bootstrap.php
           php -l api/v1/vacanze_scenari.php
           php -l api/v1/vacanze_date.php
+          php -l api/v1/vacanze_voci_elimina.php
           php -l vacanze_workspace.php
           find api/oauth -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Test helper OAuth
