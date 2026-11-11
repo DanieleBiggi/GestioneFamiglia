@@ -9,7 +9,7 @@ function gf_menu_normalize_day(string $value): ?string {
     $value = trim($value);
     $ascii = ['lunedi'=>'Lunedì','martedi'=>'Martedì','mercoledi'=>'Mercoledì','giovedi'=>'Giovedì','venerdi'=>'Venerdì'];
     $key = mb_strtolower($value, 'UTF-8');
-    $key = str_replace(['ì','Ã¬','ÃƒÂ¬'], 'i', $key);
+    $key = str_replace(['ì','ã¬','ãƒâ¬'], 'i', $key);
     return $ascii[$key] ?? null;
 }
 
