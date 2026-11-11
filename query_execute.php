@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const getValue = row => row.cells[index]?.dataset.sort?.trim() ?? '';
             const numeric = originalRows.every(row => {
                 const v = getValue(row);
-                return v === '' || /^-?\\d+(?:\\.\\d+)?$/.test(v);
+                return v === '' || /^-?\d+(?:\.\d+)?$/.test(v);
             });
             const ordered = [...originalRows].sort((a,b) => {
                 const av = getValue(a), bv = getValue(b);
