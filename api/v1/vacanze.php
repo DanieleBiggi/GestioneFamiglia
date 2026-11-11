@@ -94,12 +94,26 @@ try {
                 api_number($a['costo_notte_eur'] ?? null), api_str($a['note'] ?? null, 5000)
             ];
         }
+        $meals = [];
+        foreach (api_list($s['pasti'] ?? [], 50) as $meal) {
+            $m = api_assoc($meal);
+            $mealType = api_str($m['tipo_pasto'] ?? null, 20, true);
+            if (!in_array($mealType, ['colazione','pranzo','cena'], true)) api_error(422, 'Tipo pasto non valido');
+            $mealCategory = api_str($m['tipologia'] ?? 'ristorante', 20, true);
+            if (!in_array($mealCategory, ['ristorante','pizzeria','cucinato'], true)) api_error(422, 'Tipologia pasto non valida');
+            $day = $m['giorno_indice'] ?? null;
+            if ($day !== null && (!is_int($day) || $day < 0 || $day > 30)) api_error(422, 'Giorno pasto non valido');
+            $amount = gf_vacanze_route_number($m['costo_medio_eur'] ?? null, 99999999.99, 2);
+            $meals[] = [$day, $mealType, api_str($m['nome_locale'] ?? null, 255),
+                api_str($m['indirizzo'] ?? null, 255), $mealCategory, $amount,
+                api_str($m['note'] ?? null, 5000)];
+        }
         $costs = [];
         foreach (api_list($s['altri_costi'] ?? [], 50) as $cost) {
             $c = api_assoc($cost);
             $costs[] = [api_str($c['descrizione'] ?? null, 255, true), api_number($c['importo_eur'] ?? null), api_str($c['note'] ?? null, 5000)];
         }
-        $validated[] = ['nome'=>$name,'trasporti'=>$routes,'alloggi'=>$lodgings,'altri_costi'=>$costs];
+        $validated[] = ['nome'=>$name,'trasporti'=>$routes,'alloggi'=>$lodgings,'pasti'=>$meals,'altri_costi'=>$costs];
     }
     if (($body['dry_run'] ?? false) === true) api_reply(200, ['success'=>true, 'dry_run'=>true,'vacanza'=>['titolo'=>$title,'data_inizio'=>$start,'data_fine'=>$end,'persone'=>$people,'scenari'=>$validated]]);
     $state = 'idea';
@@ -146,6 +160,18 @@ try {
             $stmt->close();
             $link = $conn->prepare('INSERT INTO viaggi_alloggi_alternative (id_alloggio, id_viaggio_alternativa) VALUES (?,?)');
             $link->bind_param('ii', $expenseId, $sid);
+            $link->execute();
+            $link->close();
+        }
+        foreach ($s['pasti'] as $m) {
+            [$day,$mealType,$venue,$address,$category,$amount,$mealNotes]=$m;
+            $stmt=$conn->prepare('INSERT INTO viaggi_pasti (id_viaggio,id_viaggio_alternativa,giorno_indice,tipo_pasto,nome_locale,indirizzo,tipologia,costo_medio_eur,note) VALUES (?,?,?,?,?,?,?,?,?)');
+            $stmt->bind_param('iiissssds',$tripId,$sid,$day,$mealType,$venue,$address,$category,$amount,$mealNotes);
+            $stmt->execute();
+            $expenseId=$conn->insert_id;
+            $stmt->close();
+            $link=$conn->prepare('INSERT INTO viaggi_pasti_alternative (id_pasto,id_viaggio_alternativa) VALUES (?,?)');
+            $link->bind_param('ii',$expenseId,$sid);
             $link->execute();
             $link->close();
         }
