@@ -75,3 +75,19 @@ Esempio di anteprima (le date sono illustrative, NON applicare alla vacanza 16 s
 **Importante:** spostare la vacanza non sposta automaticamente le prenotazioni o i check-in/check-out degli alloggi. Eventuali incoerenze devono essere mostrate separatamente, senza correggerle di nascosto.
 
 Il deploy di questa estensione richiede anche api/v1/vacanze_date.php. Nessuna migrazione SQL.
+
+## Eliminazione di singole voci dagli scenari
+
+- REST: POST /api/v1/vacanze_voci_elimina.php.
+- MCP: anteprima_eliminazione_voce_scenario (sola lettura) ed elimina_voce_scenario (scrittura dopo conferma).
+- L'utente deve identificare la vacanza, lo scenario, la categoria e **l'ID della voce** restituito da leggi_vacanza; il nome da solo non autorizza alcuna eliminazione.
+- Anteprima: dry_run=true. Restituisce descrizione, importo che verrebbe sottratto dal budget dello scenario, scenario originale, altri scenari associati, effetto esatto (scollega o elimina) ed expected_hash.
+- Conferma: stesso payload con dry_run=false, expected_hash dalla precedente anteprima, request_id univoco (header X-GF-Request-Id) e consenso esplicito tramite MCP confirm=true.
+- Se la voce è associata anche ad altri scenari: viene cancellato **solo il collegamento con lo scenario richiesto** e aggiornato il vecchio campo id_viaggio_alternativa con un altro scenario superstite. Gli altri scenari conservano la voce e i costi.
+- Se è l'ultimo collegamento: viene cancellato il record della spesa (e il collegamento residuo) in transazione.
+- Le spese con pagato=1 non sono eliminabili tramite MCP, anche se condivise. Per esse serve una diversa procedura di rettifica che preservi lo storico.
+- La famiglia viene verificata tramite viaggi_api_famiglie con id_famiglia dal server. Si verifica anche l'appartenenza dello scenario alla vacanza e della voce allo scenario.
+- Ripetere una richiesta con il medesimo request_id produce HTTP 409; se la voce o le sue associazioni sono cambiate dopo l'anteprima, il server restituisce HTTP 409 e impone una nuova anteprima.
+- Non sono richieste migrazioni SQL. L'endpoint usa le quattro tabelle di spesa e le associazioni V2 già esistenti.
+- Testare prima in un DB di prova: voce esclusiva, condivisa, pagata, cross-family, ID errato, hash obsoleto, request_id ripetuto; verificare la vista v_totali_alternative e i campi legacy.
+- Aggiungere il nuovo file api/v1/vacanze_voci_elimina.php al deploy coordinato con api/mcp.php dopo backup. **Nessuna eliminazione reale sui dati di vacanza 16 durante lo sviluppo.**
