@@ -3,6 +3,13 @@ require_once __DIR__ . '/bootstrap.php';
 api_method('GET', 'POST');
 // Le vacanze sono visibili soltanto se associate alla famiglia del token.
 if (!$allowVacations) api_error(403, 'Accesso alle vacanze non abilitato');
+function gf_vacanze_route_number($value, float $max, int $decimals): ?float {
+    if ($value === null) return null;
+    if ((!is_int($value) && !is_float($value)) || !is_finite((float)$value) || $value < 0 || $value > $max) {
+        api_error(422, 'Parametro trasporto non valido');
+    }
+    return round((float)$value, $decimals);
+}
 try {
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
@@ -69,7 +76,13 @@ try {
                 $type, api_str($route['descrizione'] ?? null, 5000),
                 api_str($route['origine'] ?? null, 255), api_str($route['destinazione'] ?? null, 255),
                 api_number($route['costo_volo_eur'] ?? null), api_number($route['costo_traghetto_eur'] ?? null),
-                api_number($route['altri_costi_eur'] ?? null), api_str($route['note'] ?? null, 5000)
+                api_number($route['altri_costi_eur'] ?? null), api_str($route['note'] ?? null, 5000),
+                gf_vacanze_route_number($route['distanza_km'] ?? null, 999999.99, 2),
+                gf_vacanze_route_number($route['durata_ore'] ?? null, 999.99, 2),
+                gf_vacanze_route_number($route['consumo_litri_100km'] ?? null, 999.99, 2),
+                gf_vacanze_route_number($route['prezzo_carburante_eur_litro'] ?? null, 99.999, 3),
+                gf_vacanze_route_number($route['pedaggi_eur'] ?? null, 99999999.99, 2),
+                gf_vacanze_route_number($route['costo_noleggio_eur'] ?? null, 99999999.99, 2)
             ];
         }
         $lodgings = [];
@@ -113,9 +126,9 @@ try {
         $stmt->close();
         $scenarioIds[] = $sid;
         foreach ($s['trasporti'] as $r) {
-            [$type,$description,$origin,$destination,$flight,$ferry,$other,$routeNotes]=$r;
-            $stmt=$conn->prepare('INSERT INTO viaggi_tratte (id_viaggio,id_viaggio_alternativa,tipo_tratta,descrizione,origine_testo,destinazione_testo,costo_volo_eur,costo_traghetto_eur,altri_costi_eur,note) VALUES (?,?,?,?,?,?,?,?,?,?)');
-            $stmt->bind_param('iissssddds',$tripId,$sid,$type,$description,$origin,$destination,$flight,$ferry,$other,$routeNotes);
+            [$type,$description,$origin,$destination,$flight,$ferry,$other,$routeNotes,$distance,$duration,$consumption,$fuelPrice,$tolls,$rental]=$r;
+            $stmt=$conn->prepare('INSERT INTO viaggi_tratte (id_viaggio,id_viaggio_alternativa,tipo_tratta,descrizione,origine_testo,destinazione_testo,costo_volo_eur,costo_traghetto_eur,altri_costi_eur,note,distanza_km,durata_ore,consumo_litri_100km,prezzo_carburante_eur_litro,pedaggi_eur,costo_noleggio_eur) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+            $stmt->bind_param('iissssdddsdddddd',$tripId,$sid,$type,$description,$origin,$destination,$flight,$ferry,$other,$routeNotes,$distance,$duration,$consumption,$fuelPrice,$tolls,$rental);
             $stmt->execute();
             $expenseId = $conn->insert_id;
             $stmt->close();
