@@ -85,8 +85,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $conn->prepare($sql);
         $stmt->bind_param($types, ...$params);
     }
-  $stmt->execute();
-  $id = $id ?: $stmt->insert_id;
+  if ($id > 0) {
+      // La modifica di una vacanza esistente non cambia la sua famiglia.
+      $stmt->execute();
+      $stmt->close();
+  } else {
+      $idFamiglia = (int)($_SESSION['id_famiglia_gestione'] ?? 0);
+      if ($idFamiglia <= 0) {
+          http_response_code(403);
+          exit('Famiglia non valida');
+      }
+      $conn->begin_transaction();
+      try {
+          if (!$stmt->execute()) {
+              throw new RuntimeException('Creazione vacanza non riuscita');
+          }
+          $id = (int)$stmt->insert_id;
+          $stmt->close();
+          if ($id <= 0) {
+              throw new RuntimeException('ID vacanza non valido');
+          }
+          $associazione = $conn->prepare('INSERT INTO viaggi_api_famiglie (id_viaggio, id_famiglia) VALUES (?, ?)');
+          $associazione->bind_param('ii', $id, $idFamiglia);
+          if (!$associazione->execute()) {
+              throw new RuntimeException('Associazione famiglia non riuscita');
+          }
+          $associazione->close();
+          $conn->commit();
+      } catch (Throwable $e) {
+          $conn->rollback();
+          error_log('Errore creazione vacanza: ' . $e->getMessage());
+          http_response_code(500);
+          exit('Impossibile creare la vacanza');
+      }
+  }
   header('Location: vacanze_workspace.php?id=' . $id);
   exit;
 }
