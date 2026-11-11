@@ -33,20 +33,20 @@ var aziende = JSON.parse('<?= json_encode($aziende, JSON_HEX_TAG | JSON_HEX_APOS
 var aziende_chiavi = JSON.parse('<?= json_encode($aziende_chiavi, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>');
 </script>
 <div class="mb-3 text-center text-md-start">
-    <h4>Storia</h4>
+    <h4>Storia cedolini</h4>
     <a class="btn btn-outline-light btn-sm" href="query.php">Query</a>
 </div>
 <ul class="nav nav-tabs mb-3 justify-content-center">
     <li class="nav-item">
-        <a class="nav-link active" id="nav-utenti" data-quale="utenti" href="#">Utenti</a>
+        <a class="nav-link active storia-nav" id="nav-utenti" data-quale="utenti" href="#">Utenti</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" id="nav-aziende" data-quale="aziende" href="#">Aziende</a>
+        <a class="nav-link storia-nav" id="nav-aziende" data-quale="aziende" href="#">Aziende</a>
     </li>
 </ul>
 <div class="row g-2 mb-3">
     <div class="col-12 col-md-4">
-        <input type="text" id="ricerca" class="form-control bg-dark text-white border-secondary" placeholder="Cerca">
+        <input type="text" id="ricerca" class="form-control bg-dark text-white border-secondary" placeholder="Cerca nome o cognome" aria-label="Cerca dipendente">
     </div>
     <div class="col-12 col-md-5">
         <select id="filtroAzienda" class="form-select bg-dark text-white border-secondary">
@@ -57,7 +57,7 @@ var aziende_chiavi = JSON.parse('<?= json_encode($aziende_chiavi, JSON_HEX_TAG |
         </select>
     </div>
     <div class="col-12 col-md-3">
-        <button class="btn btn-outline-light w-100" id="btn_ricerca" type="button">Cerca</button>
+        <button class="btn btn-outline-light w-100" id="btn_ricerca" type="button"><i class="bi bi-search me-1"></i>Cerca</button>
     </div>
 </div>
 <nav aria-label="breadcrumb" id="breadcrumbs_storia" style="display:none">
@@ -69,7 +69,7 @@ var aziende_chiavi = JSON.parse('<?= json_encode($aziende_chiavi, JSON_HEX_TAG |
         <span class="visually-hidden">Loading...</span>
     </div>
 </div>
-<div id="div_content">
+<div id="div_content" aria-live="polite">
 
 </div>
 
