@@ -22,18 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
   showArchived.addEventListener('input', filter);
   filter();
 
-  document.getElementById('queryList').addEventListener('click', e => {
-    const btn = e.target.closest('.run-query');
-    if (btn) {
-      const id = btn.dataset.id;
-      btn.disabled = true;
-      fetch('query_execute.php?id=' + encodeURIComponent(id))
-        .then(r => r.json())
-        .then(data => {
-          alert(JSON.stringify(data, null, 2));
-        })
-        .catch(err => alert('Errore: ' + err))
-        .finally(() => { btn.disabled = false; });
-    }
-  });
+  // I link Esegui aprono query_execute.php, che restituisce una pagina HTML.
+  // Non intercettarli con fetch/JSON: il risultato viene visualizzato normalmente.
 });
