@@ -38,6 +38,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['delete']) && $duplica) { http_response_code(400); exit('Operazione non valida'); }
     $postedSpesaId = (int)($_POST['id_costo'] ?? 0);
     if ($postedSpesaId !== ($duplica ? 0 : $id_costo)) { http_response_code(400); exit('Identificativo spesa non valido'); }
+    if (isset($_POST['separa_scenario'])) {
+        if (!$id_costo || $duplica || !$canInsertSpesa || !$canUpdateSpesa) {
+            http_response_code(403); exit('Operazione non consentita');
+        }
+        $targetAlt = filter_var($_POST['target_scenario'] ?? null, FILTER_VALIDATE_INT);
+        if (!$targetAlt || $targetAlt <= 0) { http_response_code(422); exit('Scenario non valido'); }
+        try {
+            $newId = vacanze_separa_spesa_scenario($conn, 'viaggi_altri_costi', $id_costo, $id, (int)$targetAlt);
+        } catch (Throwable $e) {
+            http_response_code(422);
+            exit('Impossibile separare la spesa: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
+        }
+        header('Location: vacanze_altri_costi_dettaglio.php?id=' . $id . '&alt=' . (int)$targetAlt . '&id_costo=' . $newId);
+        exit;
+    }
     $selectedAltIds = array_map('intval', (array)($_POST['id_alternative'] ?? []));
     $id_alt = $selectedAltIds[0] ?? null;
     $data = ($_POST['data'] ?? '') ?: null;
@@ -130,6 +145,20 @@ $alt_desc = $alternative[$alt] ?? '';
       <div class="alert alert-warning">
         Questa spesa è condivisa da <?= count($selectedAlternativeIds) ?> scenari. Le modifiche ai dati o l'eliminazione avranno effetto su tutti gli scenari collegati.
         <label class="d-block mt-2"><input type="checkbox" name="conferma_spesa_condivisa" value="1" required> Confermo di voler modificare o eliminare questa spesa condivisa.</label>
+      </div>
+    <?php endif; ?>
+    <?php if ($id_costo && !$duplica && count($selectedAlternativeIds) > 1 && $canInsertSpesa && $canUpdateSpesa): ?>
+      <div class="mb-3">
+        <label for="separa_scenario_id_costo" class="form-label">Modifica soltanto uno scenario</label>
+        <div class="d-flex gap-2 flex-wrap">
+          <select id="separa_scenario_id_costo" name="target_scenario" class="form-select" style="max-width: 320px">
+            <?php foreach ($selectedAlternativeIds as $scenarioId): ?>
+              <option value="<?= (int)$scenarioId ?>"><?= htmlspecialchars($alternative[$scenarioId] ?? (string)$scenarioId, ENT_QUOTES, 'UTF-8') ?></option>
+            <?php endforeach; ?>
+          </select>
+          <button type="submit" name="separa_scenario" value="1" class="btn btn-outline-primary" formnovalidate onclick="return confirm('Creare una copia indipendente per questo scenario? La spesa originale resterà negli altri scenari.')">Separa e modifica</button>
+        </div>
+        <small class="text-muted">Crea una copia per lo scenario scelto, senza modificare gli altri. Le modifiche saranno salvate nella pagina successiva.</small>
       </div>
     <?php endif; ?>
     <input type="hidden" name="vacanze_csrf" value="<?= htmlspecialchars($_SESSION['vacanze_csrf'], ENT_QUOTES, 'UTF-8') ?>">
