@@ -50,3 +50,28 @@ Per aggiornare una voce esistente usare il suo ID. Se l'ID manca, l'API usa una 
 4. Eseguire anteprime sulla vacanza 16, NON scritture reali durante sviluppo.
 5. Testare le scritture solo su un database di test / vacanza appositamente autorizzata.
 6. Verificare accesso cross-family, scenario estraneo, aggiornamento voce condivisa o pagata, hash obsoleto, request_id duplicato e salvataggio multiplo transazionale.
+
+## Modificare direttamente le date generali di una vacanza
+
+- REST: POST /api/v1/vacanze_date.php.
+- MCP: anteprima_modifica_date_vacanza e modifica_date_vacanza.
+- La modifica riguarda solo viaggi.data_inizio, viaggi.data_fine e viaggi.notti (ricalcolate automaticamente).
+- Sono invariati gli ID, le descrizioni, gli scenari, le prenotazioni, i pagamenti e le date specifiche delle spese (ad esempio check-in/check-out).
+- In anteprima (dry_run=true), il servizio restituisce precedente, nuovo, modificato, expected_hash e un avviso sugli eventuali dettagli da verificare.
+- Dopo conferma esplicita, ChatGPT deve passare lo stesso payload con dry_run=false, expected_hash ottenuto dall'anteprima e X-GF-Request-Id univoco. Il server rifiuta modifiche concorrenti (HTTP 409) e richieste già inviate (HTTP 409).
+- Il proprietario viene verificato tramite viaggi_api_famiglie; nessun parametro della richiesta permette di scegliere un'altra famiglia.
+
+Esempio di anteprima (le date sono illustrative, NON applicare alla vacanza 16 senza indicazioni):
+
+~~~json
+{
+  "dry_run": true,
+  "id_viaggio": 16,
+  "data_inizio": "2026-11-28",
+  "data_fine": "2026-11-30"
+}
+~~~
+
+**Importante:** spostare la vacanza non sposta automaticamente le prenotazioni o i check-in/check-out degli alloggi. Eventuali incoerenze devono essere mostrate separatamente, senza correggerle di nascosto.
+
+Il deploy di questa estensione richiede anche api/v1/vacanze_date.php. Nessuna migrazione SQL.
