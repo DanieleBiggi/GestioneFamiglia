@@ -9,16 +9,16 @@ $stmt->execute();
 $res = $stmt->get_result();
 ?>
 <div class="d-flex mb-3 justify-content-between">
-  <h4>Query</h4><a href="query_dettaglio.php" class="btn btn-outline-light btn-sm">Aggiungi nuovo</a>
+  <h4>Query salvate</h4><a href="query_dettaglio.php" class="btn btn-outline-light btn-sm">Aggiungi nuovo</a>
 </div>
 <div class="d-flex mb-3 align-items-center">
-  <input type="text" id="search" class="form-control bg-dark text-white border-secondary me-2" placeholder="Cerca">
+  <input type="text" id="search" class="form-control bg-dark text-white border-secondary me-2" placeholder="Cerca per descrizione, SQL o tabella..." aria-label="Cerca query salvata">
   <div class="form-check form-switch text-nowrap">
     <input class="form-check-input" type="checkbox" id="showArchived">
     <label class="form-check-label" for="showArchived">Mostra archiviati</label>
   </div>
 </div>
-<div id="queryList">
+<div id="queryList" aria-live="polite">
 <?php while ($row = $res->fetch_assoc()): ?>
   <?php render_query($row); ?>
 <?php endwhile; ?>

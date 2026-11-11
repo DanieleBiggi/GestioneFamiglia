@@ -60,6 +60,10 @@ class PageManager {
         });
     }
 
+    escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    }
+
     render_models(json_data, modello)
     {
         var str = modello,
@@ -82,15 +86,15 @@ class PageManager {
     {
         this.attiva_nav();
 
-        $('.nav-link').on('click', (e) => {
+        $('.storia-nav').on('click', (e) => {
             e.preventDefault();
             this.nav_attivo = $(e.currentTarget).data("quale");
             this.attiva_nav();
         });
 
-        $('#btn_ricerca').on('click', (e) => {
-
-            this.ricerca();
+        $('#btn_ricerca').on('click', () => this.ricerca());
+        $('#ricerca').on('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); this.ricerca(); }
         });
     }
 
@@ -139,7 +143,7 @@ class PageManager {
 
     attiva_nav()
     {
-        $(".nav-link").removeClass("active");
+        $(".storia-nav").removeClass("active");
         $("#nav-"+this.nav_attivo).addClass("active");
         this.toggle_filter();
     }
@@ -267,7 +271,7 @@ class PageManager {
 
             for(let chiave in dbcolprinc)
             {
-                dati_render.dato_principale += az[dbcolprinc[chiave]]+" ";
+                dati_render.dato_principale += this.escapeHtml(az[dbcolprinc[chiave]])+" ";
             }
 
             dati_render.contenuto       = "";
@@ -279,7 +283,7 @@ class PageManager {
             for(let posk in valore_chiave)
             {
                 let chiave = valore_chiave[posk];
-                dati_render_altro.valori_chiave += "data-"+chiave+"="+az[chiave]+" ";
+                dati_render_altro.valori_chiave += "data-"+chiave+"=\""+this.escapeHtml(az[chiave])+"\" ";
             }
 
             if(dati_render_altro.valori_chiave!="")
@@ -291,13 +295,13 @@ class PageManager {
 
             if(tabella_da_disegnare=="utenti")
             {
-                dati_render.contenuto += "<br><i>"+this.aziende[az['CODAZI']]['RAGSOC']+"</i>";
+                dati_render.contenuto += "<br><i>"+this.escapeHtml(this.aziende[az['CODAZI']]?.['RAGSOC'])+"</i>";
             }
 
             for(let dbcol in ar_colonne)
             {
                 dati_render_dato.chiave = ar_colonne[dbcol];
-                dati_render_dato.valore = az[dbcol];
+                dati_render_dato.valore = this.escapeHtml(az[dbcol]);
 
                 dati_render.contenuto += this.render_models(dati_render_dato, models.contenuto_singolo);
             }
@@ -343,8 +347,8 @@ class PageManager {
 
                     if(ar_chiave_valore[k] !== undefined)
                     {
-                        dati_render.chiave   = ar_chiave_valore[k]['DESCRIZ'];
-                        dati_render.valore   = ar_chiave_valore[k]['IMPORTO'];
+                        dati_render.chiave   = this.escapeHtml(ar_chiave_valore[k]['DESCRIZ']);
+                        dati_render.valore   = this.escapeHtml(ar_chiave_valore[k]['IMPORTO']);
 
                     }else{
 
@@ -410,6 +414,7 @@ class PageManager {
             this.hide_breadcrumbs();
             this.disegna_tabella();
         })
+        .fail(() => { document.getElementById('div_content').textContent = 'Impossibile caricare i risultati. Riprova.'; })
         .always(()=>{
             this.hide_loading();
         });
@@ -469,7 +474,7 @@ class PageManager {
         {
             if(utente)
             {
-                bc += '<li class="breadcrumb-item active" aria-current="page">'+utente['NOME']+' '+utente['COGNOME']+'</li>';
+                bc += '<li class="breadcrumb-item active" aria-current="page">'+this.escapeHtml(utente['NOME'])+' '+this.escapeHtml(utente['COGNOME'])+'</li>';
             }
         }
 
@@ -496,7 +501,6 @@ class PageManager {
         this.show_breadcrumbs();
 
         $('#home_storia').on('click', (e) => {
-            this.valore_ricercato = '';
             this.ricerca();
         });
 

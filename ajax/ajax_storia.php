@@ -19,8 +19,8 @@ switch($_POST['azione'] ?? '') {
                     $params[] = "%$valore_ricercato%";
                     $types .= 'ss';
                 }
-                if(!empty($_POST['ar_filtri']['codazi'])) {
-                    $codazi = (int)$_POST['ar_filtri']['codazi'];
+                if(!empty($_POST['filtro_azienda']) || !empty($_POST['ar_filtri']['codazi'])) {
+                    $codazi = (int)($_POST['filtro_azienda'] ?? $_POST['ar_filtri']['codazi']);
                     $conditions[] = 'CODAZI = ?';
                     $params[] = $codazi;
                     $types .= 'i';
