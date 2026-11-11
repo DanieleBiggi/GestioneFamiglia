@@ -6,7 +6,7 @@ if (!$allowVacations) api_error(403,'Vacanze non abilitate');
 
 const GF_VOCI=[
  'trasporti'=>['viaggi_tratte','viaggi_tratte_alternative','id_tratta','descrizione',
-    ['tipo_tratta'=>'enum:auto,aereo,traghetto,treno','descrizione'=>'text:5000','origine_testo'=>'text:255','destinazione_testo'=>'text:255','costo_volo_eur'=>'money','costo_traghetto_eur'=>'money','costo_noleggio_eur'=>'money','pedaggi_eur'=>'money','altri_costi_eur'=>'money','note'=>'text:5000']],
+    ['tipo_tratta'=>'enum:auto,aereo,traghetto,treno','descrizione'=>'text:5000','origine_testo'=>'text:255','destinazione_testo'=>'text:255','costo_volo_eur'=>'money','costo_traghetto_eur'=>'money','costo_noleggio_eur'=>'money','pedaggi_eur'=>'money','altri_costi_eur'=>'money','distanza_km'=>'distance','durata_ore'=>'duration','consumo_litri_100km'=>'consumption','prezzo_carburante_eur_litro'=>'fuel_price','note'=>'text:5000']],
  'alloggi'=>['viaggi_alloggi','viaggi_alloggi_alternative','id_alloggio','nome_alloggio',
     ['nome_alloggio'=>'text:255','indirizzo'=>'text:255','data_checkin'=>'date','data_checkout'=>'date','costo_notte_eur'=>'money','costo_totale_eur'=>'money','note'=>'text:5000']],
  'pasti'=>['viaggi_pasti','viaggi_pasti_alternative','id_pasto','nome_locale',
@@ -19,6 +19,12 @@ function gf_id($v): int {if(!is_int($v)||$v<1)gf_fail('ID non valido');return $v
 function gf_validate($v,string $type) {
  if($v===null)return null;
  if($type==='money'){if((!is_int($v)&&!is_float($v))||!is_finite((float)$v)||$v<0||$v>10000000)gf_fail('Importo non valido');return round((float)$v,2);}
+ if(in_array($type,['distance','duration','consumption','fuel_price'],true)){
+  $limits=['distance'=>[999999.99,2],'duration'=>[999.99,2],'consumption'=>[999.99,2],'fuel_price'=>[99.999,3]];
+  [$max,$decimals]=$limits[$type];
+  if((!is_int($v)&&!is_float($v))||!is_finite((float)$v)||$v<0||$v>$max)gf_fail('Parametro trasporto non valido');
+  return round((float)$v,$decimals);
+ }
  if($type==='day'){if(!is_int($v)||$v<0||$v>30)gf_fail('Giorno non valido');return $v;}
  if($type==='date'){if(!is_string($v)||!preg_match('/^\d{4}-\d{2}-\d{2}$/D',$v))gf_fail('Data non valida');$d=DateTimeImmutable::createFromFormat('!Y-m-d',$v);if(!$d||$d->format('Y-m-d')!==$v)gf_fail('Data non valida');return $v;}
  if(!is_string($v))gf_fail('Testo non valido');$v=trim($v);
