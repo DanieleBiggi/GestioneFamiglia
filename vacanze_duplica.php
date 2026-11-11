@@ -60,6 +60,12 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
       $q=$conn->prepare("INSERT INTO viaggi (titolo,id_luogo,data_inizio,data_fine,notti,persone,id_foto,breve_descrizione,stato,priorita,visibilita,note) SELECT ?,id_luogo,NULL,NULL,NULL,persone,id_foto,breve_descrizione,'idea',priorita,'private',note FROM viaggi WHERE id_viaggio=?");
       $q->bind_param('si',$title,$id);$q->execute();$newTrip=(int)$conn->insert_id;$q->close();
       if(!$newTrip) throw new RuntimeException('Non è stato possibile creare la vacanza.');
+      $idFamiglia = (int)($_SESSION['id_famiglia_gestione'] ?? 0);
+      if ($idFamiglia <= 0) throw new RuntimeException('Famiglia non valida');
+      $assoc = $conn->prepare('INSERT INTO viaggi_api_famiglie (id_viaggio, id_famiglia) VALUES (?, ?)');
+      $assoc->bind_param('ii', $newTrip, $idFamiglia);
+      if (!$assoc->execute()) throw new RuntimeException('Associazione famiglia non riuscita');
+      $assoc->close();
       $alts=$conn->query('SELECT id_viaggio_alternativa,breve_descrizione FROM viaggi_alternative WHERE id_viaggio='.(int)$id)->fetch_all(MYSQLI_ASSOC);
       $scenarioIds=[];
       $q=$conn->prepare('INSERT INTO viaggi_alternative(id_viaggio,breve_descrizione) VALUES (?,?)');
