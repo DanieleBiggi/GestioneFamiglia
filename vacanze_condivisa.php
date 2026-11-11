@@ -89,7 +89,8 @@ $categories = [
 ];
 $grandTotal = 0;
 foreach ($categories as [$label,$table,$link,$key,$description,$formula]) {
- $q = $conn->prepare("SELECT e.`$description` AS descrizione,($formula) AS importo FROM `$table` e JOIN `$link` l ON l.`$key`=e.`$key` WHERE e.id_viaggio=? AND l.id_viaggio_alternativa=? ORDER BY e.`$key`");
+ $noteSelect = $table === 'viaggi_alloggi' ? ',e.note AS note_alloggio' : '';
+ $q = $conn->prepare("SELECT e.`$description` AS descrizione,($formula) AS importo $noteSelect FROM `$table` e JOIN `$link` l ON l.`$key`=e.`$key` WHERE e.id_viaggio=? AND l.id_viaggio_alternativa=? ORDER BY e.`$key`");
  $q->bind_param('ii', $share['id_viaggio'], $a['id_viaggio_alternativa']);
  $q->execute(); $items=$q->get_result()->fetch_all(MYSQLI_ASSOC); $q->close();
  if (!$items) continue;
