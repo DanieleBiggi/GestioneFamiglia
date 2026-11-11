@@ -97,9 +97,6 @@ try {
     $conn->commit();
     api_reply(200, ['success'=>true, 'updated'=>$changed, 'vacanza'=>$report]);
 } catch (Throwable $e) {
-    if ($conn->errno === 0) {
-        // Gli errori di validazione sono gestiti con api_error prima di modificare i dati.
-    }
     $conn->rollback();
     api_json_error($e);
 }
