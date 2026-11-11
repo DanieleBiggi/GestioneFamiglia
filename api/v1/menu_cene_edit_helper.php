@@ -3,6 +3,16 @@ declare(strict_types=1);
 
 /** Funzioni pure per modificare i piatti; nessuna scrittura nel database o su file. */
 const GF_MENU_DAYS = ['Lunedì','Martedì','Mercoledì','Giovedì','Venerdì'];
+// Normalizza etichette accentate, senza accento e mojibake storici.
+// Non altera le righe del database; serve anche per la lettura web.
+function gf_menu_normalize_day(string $value): ?string {
+    $value = trim($value);
+    $ascii = ['lunedi'=>'Lunedì','martedi'=>'Martedì','mercoledi'=>'Mercoledì','giovedi'=>'Giovedì','venerdi'=>'Venerdì'];
+    $key = mb_strtolower($value, 'UTF-8');
+    $key = str_replace(['ì','Ã¬','ÃƒÂ¬'], 'i', $key);
+    return $ascii[$key] ?? null;
+}
+
 function gf_menu_parts(string $dish): array {
     $lines = preg_split('/\r?\n/u', $dish, 2);
     return ['cena'=>trim($lines[0]??''),'contorno'=>trim($lines[1]??'')];
