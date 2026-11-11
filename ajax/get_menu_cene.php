@@ -4,6 +4,8 @@ include '../includes/session_check.php';
 include '../includes/db.php';
 require_once '../includes/permissions.php';
 require_once '../includes/menu_cene_master.php';
+require_once '../api/v1/menu_cene_edit_helper.php';
+$conn->set_charset('utf8mb4');
 
 if (!has_permission($conn, 'ajax:get_menu_cene', 'view')) {
     http_response_code(403);
@@ -93,13 +95,15 @@ $endNext = $nextWeekEnd->format('Y-m-d');
 
 // Carica esclusivamente il menu della settimana selezionata.
 $menu = [];
-$stmt = $conn->prepare('SELECT id, giorno, piatto FROM menu_cene_settimanale WHERE id_famiglia = ? AND week_start = ?');
+$stmt = $conn->prepare('SELECT id, giorno, piatto FROM menu_cene_settimanale WHERE id_famiglia = ? AND week_start = ? ORDER BY id ASC');
 $stmt->bind_param('is', $idFamiglia, $startCurrent);
 $stmt->execute();
 $res = $stmt->get_result();
 while ($row = $res->fetch_assoc()) {
-    if (in_array($row['giorno'], $days, true)) {
-        $menu[$row['giorno']] = ['id' => (int)$row['id'], 'giorno' => $row['giorno'], 'piatto' => $row['piatto'] ?? ''];
+    $day = gf_menu_normalize_day((string)$row['giorno']);
+    if ($day !== null) {
+        // In caso di record storici duplicati, prevale il più recente.
+        $menu[$day] = ['id' => (int)$row['id'], 'giorno' => $day, 'piatto' => $row['piatto'] ?? ''];
     }
 }
 $stmt->close();
