@@ -4,6 +4,7 @@ require_once __DIR__ . '/bootstrap.php';
 api_method('GET');
 
 require_once __DIR__ . '/../../includes/menu_cene_master.php';
+require_once __DIR__ . '/menu_cene_edit_helper.php';
 
 /**
  * Lettura senza effetti collaterali. Diversamente da ajax/get_menu_cene.php,
@@ -37,7 +38,7 @@ try {
     $plan = $master[$season][$cycleWeek] ?? [];
 
     $stmt = $conn->prepare(
-        'SELECT giorno, piatto FROM menu_cene_settimanale WHERE id_famiglia=? AND week_start=?'
+        'SELECT giorno, piatto FROM menu_cene_settimanale WHERE id_famiglia=? AND week_start=? ORDER BY id ASC'
     );
     $stmt->bind_param('is', $familyId, $weekStart);
     $stmt->execute();
@@ -45,7 +46,8 @@ try {
     $stmt->close();
     $saved = [];
     foreach ($savedRows as $row) {
-        $saved[$row['giorno']] = $row['piatto'];
+        $day = gf_menu_normalize_day((string)$row['giorno']);
+        if ($day !== null) $saved[$day] = $row['piatto'];
     }
 
     $days = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì'];

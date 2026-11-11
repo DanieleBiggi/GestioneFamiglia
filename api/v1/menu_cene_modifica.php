@@ -31,7 +31,7 @@ function gf_menu_week_state(mysqli $db,int $family,DateTimeImmutable $start,arra
     $master=$config['stagioni'][$plan['stagione']][$plan['settimana_ciclo']]??[];
     $q=$db->prepare('SELECT giorno,piatto FROM menu_cene_settimanale WHERE id_famiglia=? AND week_start=? ORDER BY id FOR UPDATE');
     $q->bind_param('is',$family,$week);$q->execute();$rows=$q->get_result()->fetch_all(MYSQLI_ASSOC);$q->close();
-    $saved=[];foreach($rows as $row)if(in_array($row['giorno'],GF_MENU_DAYS,true))$saved[$row['giorno']]=(string)$row['piatto'];
+    $saved=[];foreach($rows as $row) { $day=gf_menu_normalize_day((string)$row['giorno']); if($day!==null)$saved[$day]=(string)$row['piatto']; }
     $days=[];$origin=[];
     foreach(GF_MENU_DAYS as $day) {
         $has=array_key_exists($day,$saved);
