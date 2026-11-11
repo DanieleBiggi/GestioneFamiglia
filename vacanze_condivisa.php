@@ -1,6 +1,7 @@
 <?php
 // Public read-only vacation preview. Never include the authenticated header.
 require_once 'includes/db.php';
+require_once 'includes/vacanze_alloggio_link.php';
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $conn->set_charset('utf8mb4');
 header('Cache-Control: no-store, private');
@@ -88,14 +89,18 @@ $categories = [
 ];
 $grandTotal = 0;
 foreach ($categories as [$label,$table,$link,$key,$description,$formula]) {
- $q = $conn->prepare("SELECT e.`$description` AS descrizione,($formula) AS importo FROM `$table` e JOIN `$link` l ON l.`$key`=e.`$key` WHERE e.id_viaggio=? AND l.id_viaggio_alternativa=? ORDER BY e.`$key`");
+ $noteSelect = $table === 'viaggi_alloggi' ? ',e.note AS note_alloggio' : '';
+ $q = $conn->prepare("SELECT e.`$description` AS descrizione,($formula) AS importo $noteSelect FROM `$table` e JOIN `$link` l ON l.`$key`=e.`$key` WHERE e.id_viaggio=? AND l.id_viaggio_alternativa=? ORDER BY e.`$key`");
  $q->bind_param('ii', $share['id_viaggio'], $a['id_viaggio_alternativa']);
  $q->execute(); $items=$q->get_result()->fetch_all(MYSQLI_ASSOC); $q->close();
  if (!$items) continue;
  echo '<h4 class="h6 mt-3">'.h($label).'</h4><ul class="list-group">';
  foreach ($items as $item) {
   $amount=(float)$item['importo']; $grandTotal+=$amount;
-  echo '<li class="list-group-item share-row d-flex justify-content-between gap-3"><span>'.h($item['descrizione'] ?: $label).'</span><span>€ '.number_format($amount,2,',','.').'</span></li>';
+  $lodgingUrl = $table === 'viaggi_alloggi' ? vacanze_alloggio_link_da_note($item['note_alloggio'] ?? '') : '';
+  echo '<li class="list-group-item share-row d-flex justify-content-between gap-3"><span>'.h($item['descrizione'] ?: $label);
+  if ($lodgingUrl !== '') echo ' <a href="'.h($lodgingUrl).'" target="_blank" rel="noopener noreferrer" class="d-inline-block ms-2">Visualizza alloggio</a>';
+  echo '</span><span>€ '.number_format($amount,2,',','.').'</span></li>';
  }
  echo '</ul>';
 }

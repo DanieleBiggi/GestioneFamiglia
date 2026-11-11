@@ -2,6 +2,7 @@
 <?php
 include 'includes/db.php';
 require_once 'includes/vacanze_spese_assoc.php';
+require_once 'includes/vacanze_alloggio_link.php';
 require_once 'includes/permissions.php';
 
 
@@ -58,6 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $costo=$tipoCosto==='notte'?$importo:0.0;
     $costoTotale=$tipoCosto==='totale'?$importo:null;
     $note = $_POST['note'] ?? null;
+    $linkRaw = trim((string)($_POST['link_alloggio'] ?? ''));
+    $linkAlloggio = $linkRaw === '' ? '' : vacanze_alloggio_url_valido($linkRaw);
+    if ($linkRaw !== '' && $linkAlloggio === false) { http_response_code(400); exit('Link alloggio non valido: usa http:// o https://'); }
+    $note = vacanze_alloggio_note_con_link($note, $linkAlloggio);
     $pagato = isset($_POST['pagato']) ? 1 : 0;
 
     $conn->begin_transaction();
@@ -181,6 +186,11 @@ $alt_desc = $alternative[$alt] ?? '';
     <div class="form-check form-switch mb-3">
       <input class="form-check-input" type="checkbox" name="pagato" id="pagato_alloggio" <?= !empty($alloggio['pagato']) ? 'checked' : '' ?>>
       <label class="form-check-label" for="pagato_alloggio">Già pagato</label>
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="link_alloggio">Link alloggio</label>
+      <input type="url" class="form-control" id="link_alloggio" name="link_alloggio" maxlength="2048" placeholder="https://www.airbnb.it/rooms/..." value="<?= htmlspecialchars(vacanze_alloggio_link_da_note($alloggio['note'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+      <div class="form-text">Visibile e cliccabile anche nella pagina di condivisione.</div>
     </div>
     <div class="mb-3">
       <label class="form-label">Note</label>
