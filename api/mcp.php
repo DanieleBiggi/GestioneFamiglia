@@ -47,6 +47,9 @@ function mcp_tools(): array {
         mcp_tool('leggi_menu_settimanale', 'Leggi menù cene settimanale',
             'Legge i cinque pasti da lunedì a venerdì e le note delle ricette; distingue giorni salvati e previsioni master. Nessuna modifica. Senza week_start usa il prossimo lunedì. Confrontare con leggi_lista_spesa e chiedere conferma prima di aggiungere prodotti.',
             mcp_schema(['week_start'=>['type'=>'string','pattern'=>'^[0-9]{4}-[0-9]{2}-[0-9]{2}$','description'=>'Lunedì nel formato YYYY-MM-DD; omettere per il prossimo lunedì']]), true),
+        mcp_tool('leggi_menu_master_cene', 'Leggi il master ciclico delle cene',
+            'Restituisce il menu master della famiglia: settimane cicliche 1-4, stagioni Estivo e Invernale, cena e contorno per ogni giorno. Nessuna scrittura. Leggere prima di proporre cambiamenti permanenti.',
+            mcp_schema(), true),
         mcp_tool('anteprima_modifica_menu_cene', 'Anteprima modifiche alle cene',
             'NON salva. Leggere prima leggi_menu_settimanale. payload: ambito=settimana, week_start=YYYY-MM-DD lunedi, operazioni:[{azione:sostituisci|aggiungi|elimina|scambia,giorno,parte:cena|contorno,piatto,altro_giorno}]. Per master: ambito=master, stagione=Estivo|Invernale, settimana_ciclo=1..4; effetto permanente sui cicli futuri, NON sulle settimane gia salvate. La risposta riporta prima/dopo e expected_hash. Per scambia senza parte si scambia tutta la cena con contorno.',
             mcp_schema(['payload'=>$payload],['payload']), true),
@@ -209,6 +212,9 @@ try {
     }
     if (in_array($name,['anteprima_modifica_menu_cene','modifica_menu_cene'],true)) {
         $file='menu_cene_modifica.php';
+    }
+    if ($name === 'leggi_menu_master_cene') {
+        $file='menu_cene_master.php';
     }
     if ($name === 'leggi_menu_settimanale') {
         $file = 'menu_cene.php';
