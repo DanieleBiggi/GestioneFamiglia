@@ -15,6 +15,10 @@ on:
       - 'api/v1/vacanze_date.php'
       - 'api/v1/vacanze_voci_elimina.php'
       - 'api/v1/vacanze.php'
+      - 'api/v1/menu_cene_modifica.php'
+      - 'api/v1/menu_cene_master.php'
+      - 'api/v1/menu_cene_edit_helper.php'
+      - 'tests/menu_cene_edit.php'
       - 'vacanze_workspace.php'
       - '.github/workflows/mcp-oauth-check.yml'
 jobs:
@@ -35,6 +39,10 @@ jobs:
           php -l api/v1/vacanze_date.php
           php -l api/v1/vacanze_voci_elimina.php
           php -l api/v1/vacanze.php
+          php -l api/v1/menu_cene_modifica.php
+          php -l api/v1/menu_cene_master.php
+          php -l api/v1/menu_cene_edit_helper.php
+          php -l tests/menu_cene_edit.php
           php -l vacanze_workspace.php
           find api/oauth -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Test helper OAuth
@@ -42,3 +50,4 @@ jobs:
           php tests/oauth_php83.php
           php tests/mcp_tool_schema.php
           php tests/spesa_associazioni.php
+          php tests/menu_cene_edit.php
