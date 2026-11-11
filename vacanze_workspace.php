@@ -105,6 +105,8 @@ if(!empty($planning['id_salvadanaio'])){
 $confirmedTotal=null;$confirmedName=null;
 $totals=$conn->prepare('SELECT * FROM v_totali_alternative WHERE id_viaggio=? ORDER BY id_viaggio_alternativa');
 $totals->bind_param('i',$id);$totals->execute();$scenarios=$totals->get_result()->fetch_all(MYSQLI_ASSOC);$totals->close();
+// Nel confronto ordinare i costi dal minore al maggiore, non alterare gli altri tab.
+if ($tab==='compare') usort($scenarios, static fn($a,$b) => (((float)$a['totale_viaggio'] <= 0) <=> ((float)$b['totale_viaggio'] <= 0)) ?: (((float)$a['totale_viaggio'] <=> (float)$b['totale_viaggio']) ?: ((int)$a['id_viaggio_alternativa'] <=> (int)$b['id_viaggio_alternativa'])));
 foreach($scenarios as $scenario){
  if((int)$scenario['id_viaggio_alternativa']===(int)($planning['id_alternativa_confermata']??0)){
   $confirmedTotal=(float)$scenario['totale_viaggio'];$confirmedName=$scenario['breve_descrizione'];break;
@@ -315,7 +317,8 @@ include 'includes/header.php';
  </div><?php endforeach; ?>
  </div></section><?php endif; ?>
  <?php elseif($tab==='compare'): ?>
- <div class="vw-section-head"><h2>Confronto dei budget</h2><a class="vw-btn" href="<?= vwUrl($id,'catalog') ?>">Gestisci le spese</a></div>
+ <div class="vw-section-head"><h2>Confronto dei budget (dal meno costoso)</h2><a class="vw-btn" href="<?= vwUrl($id,'catalog') ?>">Gestisci le spese</a></div>
+ <p class="vw-muted">Importi delle voci inserite, non preventivi completi: gli scenari senza costi censiti sono mostrati in fondo e non significa che la vacanza sia gratuita. La fonte e la qualità del prezzo sono nelle note delle singole voci.</p>
  <div class="vw-panel"><div class="vw-table-wrap"><table class="vw-table"><thead><tr><th>Scenario</th><th>Trasporti</th><th>Alloggi</th><th>Pasti</th><th>Altri costi</th><th class="vw-money">Totale</th><th class="vw-money">Pagato</th><th class="vw-money">Da pagare</th></tr></thead><tbody>
  <?php foreach($scenarios as $s): ?><tr><td><?= vwEsc($s['breve_descrizione']) ?></td><td><?= vwEuro($s['totale_trasporti']) ?></td><td><?= vwEuro($s['totale_alloggi']) ?></td><td><?= vwEuro($s['totale_pasti']) ?></td><td><?= vwEuro($s['totale_altri_costi']) ?></td><td class="vw-money"><b><?= vwEuro($s['totale_viaggio']) ?></b></td><td class="vw-money"><?= vwEuro($scenarioPaymentTotals[(int)$s['id_viaggio_alternativa']]['pagato']) ?></td><td class="vw-money"><b><?= vwEuro($scenarioPaymentTotals[(int)$s['id_viaggio_alternativa']]['restante']) ?></b></td></tr><?php endforeach; ?></tbody></table></div>
  <div class="vw-card-mobile"><?php foreach($scenarios as $s): ?><article><h3><?= vwEsc($s['breve_descrizione']) ?></h3><div class="vw-price"><?= vwEuro($s['totale_viaggio']) ?></div><p class="vw-muted">Già pagato: <?= vwEuro($scenarioPaymentTotals[(int)$s['id_viaggio_alternativa']]['pagato']) ?><br><strong>Ancora da pagare: <?= vwEuro($scenarioPaymentTotals[(int)$s['id_viaggio_alternativa']]['restante']) ?></strong></p><div class="vw-split"><span>Trasporti</span><b><?= vwEuro($s['totale_trasporti']) ?></b><span>Alloggi</span><b><?= vwEuro($s['totale_alloggi']) ?></b><span>Pasti</span><b><?= vwEuro($s['totale_pasti']) ?></b><span>Altri costi</span><b><?= vwEuro($s['totale_altri_costi']) ?></b></div></article><?php endforeach; ?></div></div>

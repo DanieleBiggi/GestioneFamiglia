@@ -21,6 +21,7 @@ try {
             $categories = [
                 'trasporti'=>['table'=>'viaggi_tratte','link'=>'viaggi_tratte_alternative','key'=>'id_tratta'],
                 'alloggi'=>['table'=>'viaggi_alloggi','link'=>'viaggi_alloggi_alternative','key'=>'id_alloggio'],
+                'pasti'=>['table'=>'viaggi_pasti','link'=>'viaggi_pasti_alternative','key'=>'id_pasto'],
                 'altri_costi'=>['table'=>'viaggi_altri_costi','link'=>'viaggi_altri_costi_alternative','key'=>'id_costo']
             ];
             foreach ($trip['scenari'] as &$scenario) {
