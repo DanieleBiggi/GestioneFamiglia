@@ -52,6 +52,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pagato = isset($_POST['pagato']) ? 1 : 0;
 
     $conn->begin_transaction();
+    if ($id_pasto && !$duplica) {
+        $sharedCheck = $conn->prepare('SELECT COUNT(*) AS totale FROM viaggi_pasti_alternative WHERE id_pasto=?');
+        $sharedCheck->bind_param('i', $id_pasto);
+        $sharedCheck->execute();
+        $sharedCount = (int)$sharedCheck->get_result()->fetch_assoc()['totale'];
+        $sharedCheck->close();
+        if ($sharedCount > 1 && ($_POST['conferma_spesa_condivisa'] ?? '') !== '1') {
+            $conn->rollback();
+            http_response_code(422);
+            exit('Questa spesa appartiene a più scenari. Conferma esplicitamente la modifica o eliminazione su tutti gli scenari collegati.');
+        }
+    }
     try {
     if (isset($_POST['delete']) && $id_pasto && !$duplica) {
         $del = $conn->prepare('DELETE FROM viaggi_pasti WHERE id_pasto=? AND id_viaggio=?');
@@ -124,6 +136,12 @@ $alt_desc = $alternative[$alt] ?? '';
   <a href="vacanze_tratte.php?id=<?= $id ?>&alt=<?= $alt ?>" class="btn btn-outline-light mb-3">← Indietro</a>
   <h4 class="mb-3"><?= $duplica ? 'Duplica' : ($id_pasto ? 'Modifica' : 'Nuovo') ?> pasto</h4>
   <form method="post">
+    <?php if ($id_pasto && !$duplica && count($selectedAlternativeIds) > 1): ?>
+      <div class="alert alert-warning">
+        Questa spesa è condivisa da <?= count($selectedAlternativeIds) ?> scenari. Le modifiche ai dati o l'eliminazione avranno effetto su tutti gli scenari collegati.
+        <label class="d-block mt-2"><input type="checkbox" name="conferma_spesa_condivisa" value="1" required> Confermo di voler modificare o eliminare questa spesa condivisa.</label>
+      </div>
+    <?php endif; ?>
     <input type="hidden" name="vacanze_csrf" value="<?= htmlspecialchars($_SESSION['vacanze_csrf'], ENT_QUOTES, 'UTF-8') ?>">
     <input type="hidden" name="id_pasto" value="<?= (int)$id_pasto ?>">
     <div class="mb-3">
