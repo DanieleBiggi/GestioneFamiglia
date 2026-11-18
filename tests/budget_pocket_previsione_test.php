@@ -26,4 +26,12 @@ $multi=[['tipologia'=>'uscita','tipologia_spesa'=>'una_tantum','importo'=>300,'d
 ['tipologia'=>'uscita','tipologia_spesa'=>'una_tantum','importo'=>200,'da_13esima'=>0,'da_14esima'=>0,'data_inizio'=>'2026-01-01','data_scadenza'=>'2027-02-15']];
 $rm=gf_pocket_previsione($multi,0,100,'2026-11-18');
 checkBudget($rm['peggiore']['data']==='2026-12-15','intermediate deadlines checked');
+$surplus=[['tipologia'=>'uscita','tipologia_spesa'=>'una_tantum','importo'=>300,
+'da_13esima'=>0,'da_14esima'=>0,'data_inizio'=>'2026-01-01','data_scadenza'=>'2027-02-15']];
+$over=gf_pocket_previsione($surplus,450,100,'2026-11-18');
+checkBudget(abs($over['eccedenza_attuale']-150)<0.01,'excess already present in real Pocket');
+checkBudget(abs($over['eccedenza_prevista']-450)<0.01,'future surplus includes scheduled deposits');
+checkBudget($rm['eccedenza_prevista']===0.0,'intermediate shortfall prevents future surplus label');
+$empty=gf_pocket_previsione([],500,100,'2026-11-18');
+checkBudget($empty['eccedenza_attuale']===0.0 && $empty['eccedenza_prevista']===0.0,'no excess without future planned expenses');
 echo "Pocket budget forecasts OK\n";
