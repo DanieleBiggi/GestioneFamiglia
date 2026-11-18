@@ -53,14 +53,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $saldi = [];
 $stmtPersone = $conn->prepare("SELECT DISTINCT u.id,u.nome,u.cognome
   FROM utenti u
-  JOIN utenti2famiglie uf ON uf.id_utente=u.id AND uf.id_famiglia=?
   WHERE u.id IN (
     SELECT uo.id_utente FROM bilancio_utenti2operazioni_etichettate uo
       JOIN bilancio_etichette2operazioni eo ON eo.id_e2o=uo.id_e2o WHERE eo.id_etichetta=?
     UNION
     SELECT cc.id_utente FROM etichette_conti_condivisi cc WHERE cc.id_etichetta=? AND cc.id_famiglia=? AND cc.id_utente IS NOT NULL
   ) ORDER BY u.nome,u.cognome");
-$stmtPersone->bind_param('iiii',$familyId,$id,$id,$familyId);
+$stmtPersone->bind_param('iii',$id,$id,$familyId);
 $stmtPersone->execute();
 $utentiConto = $stmtPersone->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmtPersone->close();
