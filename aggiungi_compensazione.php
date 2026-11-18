@@ -44,6 +44,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $check->bind_param('ii',$labelId,$idE2o);$check->execute();$ok=$check->get_result()->num_rows===1;$check->close();
             if (!$ok) throw new RuntimeException('Movimento non appartenente alla etichetta.');
         }
+        if ($idE2o) {
+            // Un movimento gia attribuito a questa persona nel sistema legacy
+            // non deve essere conteggiato nuovamente nel registro condiviso.
+            $check=$conn->prepare('SELECT 1 FROM bilancio_utenti2operazioni_etichettate WHERE id_e2o=? AND id_utente=? LIMIT 1');
+            $check->bind_param('ii',$idE2o,$personId);$check->execute();$legacyUsed=$check->get_result()->num_rows>0;$check->close();
+            if ($legacyUsed) throw new RuntimeException('Questa quota e gia presente nel conto della persona: evita un duplicato.');
+            $check=$conn->prepare('SELECT 1 FROM etichette_conti_condivisi WHERE id_e2o=? AND id_utente=? LIMIT 1');
+            $check->bind_param('ii',$idE2o,$personId);$check->execute();$sharedUsed=$check->get_result()->num_rows>0;$check->close();
+            if ($sharedUsed) throw new RuntimeException('Movimento gia collegato alla persona nel conto condiviso.');
+        }
         if ($type==='pagamento' && !$idE2o) throw new RuntimeException('Per un pagamento realmente ricevuto collega un movimento bancario esistente.');
         if (in_array($type,['compensazione','debito','pagamento'],true)) $amount=-$amount;
         if ($type==='rettifica') throw new RuntimeException('Le rettifiche richiedono un controllo dedicato.');
