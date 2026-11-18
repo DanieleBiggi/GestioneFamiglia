@@ -356,11 +356,16 @@ $salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
                                         COALESCE(NULLIF(TRIM(CONCAT(u.nome,' ',u.cognome)),''),c.controparte) AS persona
                                    FROM etichette_conti_condivisi c
                               LEFT JOIN utenti u ON u.id=c.id_utente
-                                  WHERE c.id_etichetta=? AND c.id_famiglia=?
-                                  ORDER BY c.data_movimento DESC,c.id DESC");
+                                  WHERE c.id_etichetta=? AND c.id_famiglia=?" .
+                                  ($mese !== '' ? " AND DATE_FORMAT(c.data_movimento,'%Y-%m')=?" : "") .
+                                  " ORDER BY c.data_movimento DESC,c.id DESC");
       $idEtComp = (int)$etichettaInfo['id_etichetta'];
       $idFamComp = (int)$famigliaId;
-      $stmtComp->bind_param('ii',$idEtComp,$idFamComp);
+      if ($mese !== '') {
+          $stmtComp->bind_param('iis',$idEtComp,$idFamComp,$mese);
+      } else {
+          $stmtComp->bind_param('ii',$idEtComp,$idFamComp);
+      }
       $stmtComp->execute();
       $righeComp = $stmtComp->get_result()->fetch_all(MYSQLI_ASSOC);
       $stmtComp->close();
