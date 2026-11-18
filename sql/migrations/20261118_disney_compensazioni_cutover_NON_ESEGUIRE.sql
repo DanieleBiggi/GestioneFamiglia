@@ -3,6 +3,7 @@
 -- VISTA "QUOTE PER PERSONA" AL REGISTRO "CONTO CONDIVISO".
 --
 -- MySQL 5.6, famiglia legacy 1, controparte Bocci (utente legacy ID 7).
+-- PREREQUISITO: eseguire prima 20261118_conti_compensazioni_crediti.sql.
 -- Cambia i dati reali! Richiede backup completo del database PRIMA di tutto.
 -- Le nove entrate di bilancio_entrate saranno RIMOSSE e sostituite da
 -- nove righe nella tabella etichette_conti_condivisi. I vecchi riepiloghi
@@ -30,7 +31,6 @@ BEGIN
   DECLARE esistenti INT DEFAULT 0;
   DECLARE quote INT DEFAULT 0;
   DECLARE altre INT DEFAULT 0;
-  DECLARE CONTINUE HANDLER FOR NOT FOUND SET n=0;
   DECLARE EXIT HANDLER FOR SQLEXCEPTION
   BEGIN
     ROLLBACK;
@@ -119,14 +119,14 @@ BEGIN
     WHERE eo.tabella_operazione='bilancio_entrate'
       AND eo.id_tabella IN (2637,2638,2639,2640,2679,2680,2681,2694,2702);
 
-  -- Conserva data, importo e descrizione. Il collegamento id_e2o
+  -- Conserva data, importo, descrizione e ID di origine; id_e2o
   -- deve essere NULL perche' la vecchia riga e2o sara' rimossa.
   INSERT INTO etichette_conti_condivisi
-    (id_etichetta,id_famiglia,controparte,data_movimento,tipo,importo,descrizione,id_e2o)
+    (id_etichetta,id_famiglia,controparte,data_movimento,tipo,importo,descrizione,id_e2o,id_utente,saldata,data_saldo,id_entrata_origine)
   SELECT 164,1,'Bocci',DATE(be.data_operazione),'compensazione',
          -ABS(be.importo),
          LEFT(COALESCE(NULLIF(be.descrizione_extra,''),be.descrizione_operazione,'Compensazione'),255),
-         NULL
+         NULL,7,0,NULL,be.id_entrata
   FROM bilancio_entrate be
   WHERE be.id_entrata IN (2637,2638,2639,2640,2679,2680,2681,2694,2702);
 
