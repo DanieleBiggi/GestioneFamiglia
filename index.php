@@ -144,7 +144,7 @@ $availableUtilities = array_values(array_filter($utilityServices, function ($uti
 // Funzioni più usate: manteniamo un ordine esplicito, indipendente dall'ordine
 // dell'elenco completo, così la home può evolvere senza alterare il menu "Altro".
 $homeUtilityHrefs = [
-    'aggiungi_entrata.php',
+    'aggiungi_compensazione.php',
     'menu_cene.php',
     'lista_spesa.php',
     'budget_dashboard.php',
