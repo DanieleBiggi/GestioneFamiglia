@@ -55,23 +55,23 @@ if (!$utente) {
 // Recupera eventuale lista utenti per la select
 $utentiFam = [];
 if ($canChangeUser) {
-    $stmtList = $conn->prepare('SELECT DISTINCT u.id, u.nome, u.cognome
+    $stmtList = $conn->prepare("SELECT DISTINCT u.id, u.nome, u.cognome
                                  FROM utenti u
                                  LEFT JOIN bilancio_utenti2operazioni_etichettate u2o ON u.id = u2o.id_utente
                                  LEFT JOIN etichette_conti_condivisi cc ON cc.id_utente=u.id AND cc.id_famiglia={$famigliaId}
                                  WHERE u.attivo = 1 AND (u2o.id_u2o IS NOT NULL OR cc.id IS NOT NULL)
-                                 ORDER BY u.nome');
+                                 ORDER BY u.nome");
     $stmtList->execute();
     $utentiFam = $stmtList->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmtList->close();
 }
 
 // Elenco date saldo disponibili
-$stmtDate = $conn->prepare('SELECT DISTINCT data_saldo FROM (
+$stmtDate = $conn->prepare("SELECT DISTINCT data_saldo FROM (
                                SELECT DATE(data_saldo) AS data_saldo FROM bilancio_utenti2operazioni_etichettate WHERE id_utente=? AND saldata=1
                                UNION ALL
                                SELECT DATE(data_saldo) AS data_saldo FROM etichette_conti_condivisi WHERE id_utente=? AND id_famiglia={$famigliaId} AND saldata=1
-                             ) dates ORDER BY data_saldo DESC');
+                             ) dates ORDER BY data_saldo DESC");
 $stmtDate->bind_param('ii', $idUtente, $idUtente);
 $stmtDate->execute();
 $dateSaldo = $stmtDate->get_result()->fetch_all(MYSQLI_ASSOC);
