@@ -206,7 +206,7 @@ foreach ($salvadanai as $dati) {
     $dati['scoperto_futuro'] = $gap;
     $dati['eccedenza_attuale'] = $previsione['eccedenza_attuale'];
     $dati['eccedenza_prevista'] = $previsione['eccedenza_prevista'];
-    $dati['rischio_data'] = $previsione['peggiore']['data'] ?? null;
+    $dati['rischio_data'] = $gap > 0.01 ? ($previsione['peggiore']['data'] ?? null) : ($previsione['ultima']['data'] ?? null);
     $dati['futuro_in_linea'] = $gap <= 0.01;
     $dati['bonus13_futuro'] = $previsione['tredicesima_futura'];
     $dati['bonus14_futuro'] = $previsione['quattordicesima_futura'];
@@ -311,7 +311,7 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
             <td class="gf-number"><?= number_format((float)$d['attuale'],2,',','.') ?> €</td>
             <td class="gf-number"><?= number_format($d['da_accantonare'],2,',','.') ?> €</td>
 
-            <td class="gf-status <?= $d['futuro_in_linea'] ? 'text-success' : 'text-warning' ?>" title="<?= $d['rischio_data'] ? 'Scadenza più critica: ' . htmlspecialchars(date('d/m/Y',strtotime($d['rischio_data'])),ENT_QUOTES) : 'Nessuna spesa con scadenza futura' ?>">
+            <td class="gf-status <?= $d['futuro_in_linea'] ? 'text-success' : 'text-warning' ?>" title="<?= $d['rischio_data'] ? ($d['futuro_in_linea'] ? 'Ultima scadenza: ' : 'Scadenza più critica: ') . htmlspecialchars(date('d/m/Y',strtotime($d['rischio_data'])),ENT_QUOTES) : 'Nessuna spesa con scadenza futura' ?>">
               <?php if ($d['rischio_data'] === null): ?>
                 Nessuna scadenza
               <?php elseif (!$d['futuro_in_linea']): ?>
