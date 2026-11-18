@@ -13,7 +13,7 @@ DELIMITER $$
 CREATE PROCEDURE ripristina_disney2026_compensazioni()
 BEGIN
   DECLARE n INT DEFAULT 0;
-  DECLARE EXIt HANDLER FOR SQLEXCEPTION
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
   BEGIN
     ROLLBACK;
     RESIGNAL;
@@ -33,22 +33,19 @@ BEGIN
   SELECT COUNT(*) INTO n
   FROM etichette_conti_condivisi ec
   JOIN backup_disney2026_entrate_20261118 b
-    ON ec.data_movimento=DATE(b.data_operazione)
-   AND ec.importo=-ABS(b.importo)
-   AND ec.descrizione=LEFT(COALESCE(NULLIF(b.descrizione_extra,''),b.descrizione_operazione,'Compensazione'),255)
+    ON ec.id_entrata_origine=b.id_entrata
   WHERE ec.id_etichetta=164 AND ec.id_famiglia=1
-    AND ec.controparte='Bocci' AND ec.tipo='compensazione'
-    AND ec.id_e2o IS NULL;
+    AND ec.id_utente=7 AND ec.controparte='Bocci'
+    AND ec.tipo='compensazione'
+    AND ec.importo=-ABS(b.importo)
+    AND ec.saldata=0 AND ec.data_saldo IS NULL;
   IF n<>9 THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Compensazioni diverse dal backup: interrotto';
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Compensazioni diverse dal backup o gia saldate: interrotto';
   END IF;
   DELETE ec FROM etichette_conti_condivisi ec
   JOIN backup_disney2026_entrate_20261118 b
-    ON ec.data_movimento=DATE(b.data_operazione)
-   AND ec.importo=-ABS(b.importo)
-   AND ec.descrizione=LEFT(COALESCE(NULLIF(b.descrizione_extra,''),b.descrizione_operazione,'Compensazione'),255)
-  WHERE ec.id_etichetta=164 AND ec.id_famiglia=1
-    AND ec.controparte='Bocci' AND ec.tipo='compensazione' AND ec.id_e2o IS NULL;
+    ON ec.id_entrata_origine=b.id_entrata
+  WHERE ec.id_etichetta=164 AND ec.id_famiglia=1 AND ec.id_utente=7;
   INSERT INTO bilancio_entrate SELECT * FROM backup_disney2026_entrate_20261118;
   INSERT INTO bilancio_etichette2operazioni SELECT * FROM backup_disney2026_etichette_20261118;
   INSERT INTO bilancio_utenti2operazioni_etichettate SELECT * FROM backup_disney2026_quote_20261118;
