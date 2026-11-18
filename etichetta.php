@@ -23,7 +23,7 @@ if ($etichettaParam === '') {
 }
 
 
-$stmtEt = $conn->prepare("SELECT id_etichetta, descrizione, attivo, da_dividere, anno, mese, utenti_tra_cui_dividere FROM bilancio_etichette WHERE id_etichetta = ?");
+$stmtEt = $conn->prepare("SELECT id_etichetta, descrizione, attivo, da_dividere, anno, mese, utenti_tra_cui_dividere, tipo_utilizzo FROM bilancio_etichette WHERE id_etichetta = ?");
 $stmtEt->bind_param('s', $etichettaParam);
 $stmtEt->execute();
 $etichettaInfo = $stmtEt->get_result()->fetch_assoc();
@@ -241,7 +241,7 @@ $salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
     <div class="d-flex">
         <a href="javascript:history.back()" class="btn btn-outline-light mb-3">← Indietro</a>
       <?php if ($isAdmin): ?>
-      <button type="button" class="btn btn-outline-light btn-sm ms-auto mb-3" id="settleBtn" onclick="settleSelected()">Segna saldati</button>
+      <button type="button" class="btn btn-outline-light btn-sm ms-auto mb-3 py-2" id="settleBtn" onclick="settleSelected()">Segna saldati</button>
       <!--<button type="button" class="btn btn-outline-light btn-sm ms-auto d-inline mb-3" onclick="toggleSettle()">Seleziona</button>-->
     <?php endif; ?>
     </div>
@@ -263,11 +263,22 @@ $salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
     <?php endif; ?>
       <i class="bi bi-pencil ms-2" role="button" onclick="openEtichettaModal()"></i>
   </h4>
+  <section class="card bg-dark border-secondary text-white p-3 mb-3" aria-label="Conto condiviso">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+      <div>
+        <div class="fw-semibold">Conto tra persone</div>
+        <div class="small text-white-50">Crediti, debiti e compensazioni con amici, senza creare movimenti bancari fittizi.</div>
+      </div>
+      <a class="btn btn-outline-light py-2" href="etichetta_conto.php?id_etichetta=<?= (int)$etichettaInfo['id_etichetta'] ?>">
+        <?= ($etichettaInfo['tipo_utilizzo'] ?? 'spese') === 'conto' ? 'Apri conto condiviso' : 'Gestisci conto condiviso' ?>
+      </a>
+    </div>
+  </section>
   <form method="get" class="mb-3">
     <input type="hidden" name="id_etichetta" value="<?= htmlspecialchars($etichettaParam) ?>">
-    <div class="d-flex gap-2 align-items-center">
+    <div class="d-flex flex-column flex-sm-row gap-2 align-items-sm-center">
       <label for="mese" class="form-label mb-0">Mese:</label>
-      <select name="mese" id="mese" class="form-select w-auto" onchange="this.form.submit()">
+      <select name="mese" id="mese" class="form-select w-100 w-sm-auto" onchange="this.form.submit()">
         <option value="" <?= $mese === '' ? 'selected' : '' ?>>Tutti i mesi</option>
         <?php foreach ($mesi as $m): ?>
           <option value="<?= htmlspecialchars($m['ym']) ?>" <?= $mese === $m['ym'] ? 'selected' : '' ?>><?= ucfirst($m['label']) ?></option>
