@@ -62,11 +62,17 @@ function gf_pocket_previsione(array $items, float $saldo, float $mensile, string
         $ultima=['data'=>$deadline,'saldo'=>$restante,'obiettivo'=>round($speseEntro,2),'mesi'=>$months];
     }
     $end=$ultima['data'] ?? $oggi;
+    // Excess already held: actual balance minus ALL remaining planned expenses.
+    // Future excess is valid only if intermediate deadlines also stay covered.
+    $eccedenzaAttuale=$validi ? max(0.0,round($saldo-$target,2)) : 0.0;
+    $eccedenzaPrevista=($ultima!==null && $peggiore!==null && $peggiore['saldo'] >= -0.005)
+        ? max(0.0,round($ultima['saldo'],2)) : 0.0;
     return [
         'obiettivo'=>round($target,2),'quota_13'=>round($quota13,2),'quota_14'=>round($quota14,2),
         'tredicesima_futura'=>$bonuses($bonus13Date,$end,'da_13esima'),
         'quattordicesima_futura'=>$bonuses($bonus14Date,$end,'da_14esima'),
         'consigliato'=>round($consigliato,2),'scoperto_immediato'=>$rischio,
+        'eccedenza_attuale'=>$eccedenzaAttuale,'eccedenza_prevista'=>$eccedenzaPrevista,
         'peggiore'=>$peggiore,'ultima'=>$ultima
     ];
 }
