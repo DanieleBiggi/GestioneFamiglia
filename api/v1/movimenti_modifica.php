@@ -80,6 +80,15 @@ try {
     $row = $q->get_result()->fetch_assoc();
     $q->close();
     if (!$row) { $conn->rollback(); api_error(404,'Movimento non trovato o non autorizzato'); }
+    if ($source === 'movimenti_revolut') {
+        // Match the existing read-only API visibility; never edit raw, filtered-out records.
+        $visibility = $conn->prepare('SELECT 1 FROM v_movimenti_revolut_filtrati WHERE id_movimento_revolut=? LIMIT 1');
+        $visibility->bind_param('i',$id);
+        $visibility->execute();
+        $visible = (bool)$visibility->get_result()->fetch_row();
+        $visibility->close();
+        if (!$visible) { $conn->rollback(); api_error(404,'Movimento Revolut non disponibile'); }
+    }
     $row['source'] = $source;
     $existing = [];
     $q = $conn->prepare('SELECT id_etichetta FROM bilancio_etichette2operazioni WHERE tabella_operazione=? AND id_tabella=? ORDER BY id_etichetta FOR UPDATE');
