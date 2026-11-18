@@ -38,7 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 continue;
             }
 
-            $amount = (float)$importo;
+            if (!is_numeric($importo) || (float)$importo < 0) { continue; }
+            $amount = round((float)$importo,2);
             $stmt->bind_param('dsi', $amount, $now, $id);
             $stmt->execute();
         }
@@ -66,36 +67,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php if ($updateSuccess): ?>
 <div class="alert alert-success">Importi aggiornati con successo.</div>
 <?php endif; ?>
+<p class="small text-white-50">Confronta i saldi con i Pocket Revolut e aggiorna solo quelli che hai verificato. Gli importi lasciati vuoti non vengono modificati.</p>
 <form method="post">
-  <div class="table-responsive">
-    <table class="table table-dark table-striped table-sm align-middle">
-      <thead>
-        <tr>
-          <th>Salvadanaio</th>
-          <th class="text-end">Importo attuale</th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php if (empty($salvadanai)): ?>
-          <tr>
-            <td colspan="2" class="text-center">Nessun salvadanaio disponibile</td>
-          </tr>
-        <?php else: ?>
-          <?php foreach ($salvadanai as $salvadanaio): ?>
-          <tr>
-            <td><?= htmlspecialchars($salvadanaio['nome_salvadanaio'] ?? '') ?></td>
-            <td>
-              <input type="hidden" name="id_salvadanaio[]" value="<?= (int)$salvadanaio['id_salvadanaio'] ?>">
-              <input type="number" step="0.01" name="importo_attuale[]" value="<?= number_format((float)($salvadanaio['importo_attuale'] ?? 0), 2, '.', '') ?>" class="form-control bg-dark text-white border-secondary text-end">
-            </td>
-          </tr>
-          <?php endforeach; ?>
-        <?php endif; ?>
-      </tbody>
-    </table>
+  <div class="row g-3">
+  <?php if (empty($salvadanai)): ?>
+    <p class="text-white-50">Nessun salvadanaio disponibile.</p>
+  <?php else: ?>
+    <?php foreach ($salvadanai as $salvadanaio): ?>
+    <div class="col-12 col-md-6 col-xl-4">
+      <div class="card bg-dark border-secondary text-white p-3 h-100">
+        <label class="form-label fw-semibold" for="saldo-<?= (int)$salvadanaio['id_salvadanaio'] ?>"><?= htmlspecialchars($salvadanaio['nome_salvadanaio'] ?? '') ?></label>
+        <div class="small text-white-50 mb-2">Saldo attuale in app: <?= number_format((float)$salvadanaio['importo_attuale'],2,',','.') ?> €</div>
+        <input type="hidden" name="id_salvadanaio[]" value="<?= (int)$salvadanaio['id_salvadanaio'] ?>">
+        <div class="input-group">
+          <input id="saldo-<?= (int)$salvadanaio['id_salvadanaio'] ?>" type="number" step="0.01" min="0" inputmode="decimal" name="importo_attuale[]" value="" placeholder="Nuovo saldo Revolut" class="form-control bg-dark text-white border-secondary" aria-label="Nuovo saldo Pocket <?= htmlspecialchars($salvadanaio['nome_salvadanaio'] ?? '',ENT_QUOTES) ?>">
+          <span class="input-group-text bg-secondary text-white">€</span>
+        </div>
+      </div>
+    </div>
+    <?php endforeach; ?>
+  <?php endif; ?>
   </div>
-  <div class="d-flex justify-content-end">
-    <button type="submit" class="btn btn-outline-light">Salva</button>
+  <div class="sticky-bottom bg-dark border-top border-secondary py-3 mt-3">
+    <button type="submit" class="btn btn-primary w-100 py-3">Salva i saldi verificati</button>
   </div>
 </form>
 <?php include 'includes/footer.php'; ?>
