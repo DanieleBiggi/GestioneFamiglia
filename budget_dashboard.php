@@ -301,7 +301,7 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
             <th scope="row" class="gf-name">
               <a href="budget_anno.php?<?= http_build_query(['id_salvadanaio'=>(int)$d['id'],'scadenza_da'=>'']) ?>"><?= htmlspecialchars($d['nome'] ?? '') ?></a>
               <?php foreach ($d['viaggi'] as $v): ?>
-                <a class="gf-trip ms-1" href="vacanze_workspace.php?id=<?= (int)$v['id_viaggio'] ?>" title="Apri vacanza: <?= htmlspecialchars($v['titolo'], ENT_QUOTES) ?>" aria-label="Apri vacanza <?= htmlspecialchars($v['titolo'],ENT_QUOTES) ?>"><i class="bi bi-suitcase-lg" aria-hidden="true"></i></a>
+                <a class="gf-trip ms-1" href="vacanze_workspace.php?id=<?= (int)$v['id_viaggio'] ?>" title="Apri vacanza: <?= htmlspecialchars($v['titolo'], ENT_QUOTES) ?>" aria-label="Apri vacanza <?= htmlspecialchars($v['titolo'],ENT_QUOTES) ?>"><i class="bi bi-airplane" aria-hidden="true"></i></a>
               <?php endforeach; ?>
             </th>
             <td class="gf-number"><?= number_format($d['pocket'],2,',','.') ?> €<?= $d['modalita']==='fisso' ? ' <span title="Accantonamento fisso">●</span>' : '' ?></td>
@@ -336,7 +336,7 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
         <div class="d-flex justify-content-between align-items-center">
           <a class="fw-semibold" href="budget_anno.php?<?= http_build_query(['id_salvadanaio'=>(int)$d['id'],'scadenza_da'=>'']) ?>"><?= htmlspecialchars($d['nome'] ?? '') ?></a>
           <?php foreach ($d['viaggi'] as $v): ?>
-            <a class="ms-2" href="vacanze_workspace.php?id=<?= (int)$v['id_viaggio'] ?>" title="<?= htmlspecialchars($v['titolo'],ENT_QUOTES) ?>"><i class="bi bi-suitcase-lg"></i></a>
+            <a class="ms-2" href="vacanze_workspace.php?id=<?= (int)$v['id_viaggio'] ?>" title="<?= htmlspecialchars($v['titolo'],ENT_QUOTES) ?>"><i class="bi bi-airplane"></i></a>
           <?php endforeach; ?>
         </div>
         <div class="d-flex justify-content-between small mt-1"><span>Pocket/mese</span><strong><?= number_format($d['pocket'],2,',','.') ?> €<?= $d['modalita']==='fisso' ? ' (fisso)' : '' ?></strong></div>
