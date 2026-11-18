@@ -85,6 +85,27 @@ while ($row = $resM->fetch_assoc()) {
 }
 $stmtM->close();
 
+// Anche i mesi con sole compensazioni devono essere selezionabili.
+if ((int)($_SESSION['id_famiglia_gestione'] ?? 0) === 1) {
+    $stmtMComp = $conn->prepare("SELECT DATE_FORMAT(data_movimento,'%Y-%m') AS ym,
+              DATE_FORMAT(data_movimento,'%M %Y') AS label
+        FROM etichette_conti_condivisi
+        WHERE id_etichetta=? AND id_famiglia=?
+        GROUP BY ym,label");
+    $meseEt = (int)$etichettaInfo['id_etichetta'];
+    $famMese = (int)$_SESSION['id_famiglia_gestione'];
+    $stmtMComp->bind_param('ii', $meseEt, $famMese);
+    $stmtMComp->execute();
+    $mesiComp = $stmtMComp->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmtMComp->close();
+    $mesiPerAnnoMese = [];
+    foreach (array_merge($mesi, $mesiComp) as $opzioneMese) {
+        $mesiPerAnnoMese[$opzioneMese['ym']] = $opzioneMese;
+    }
+    krsort($mesiPerAnnoMese);
+    $mesi = array_values($mesiPerAnnoMese);
+}
+
 // Calcolo dei totali entrate/uscite
 if ($mese !== '') {
     $sqlTot = "SELECT SUM(CASE WHEN amount>=0 THEN amount ELSE 0 END) AS entrate,
@@ -328,6 +349,43 @@ $salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
       <p class="text-center text-muted">Nessun movimento per questa etichetta.</p>
     <?php endif; ?>
   
+    <?php
+    // Le compensazioni sono extracontabili: non passano da bilancio_entrate.
+    if ((int)$famigliaId === 1 && !empty($etichettaInfo['id_etichetta'])):
+      $stmtComp = $conn->prepare("SELECT c.id,c.data_movimento,c.descrizione,c.tipo,c.importo,c.saldata,
+                                        COALESCE(NULLIF(TRIM(CONCAT(u.nome,' ',u.cognome)),''),c.controparte) AS persona
+                                   FROM etichette_conti_condivisi c
+                              LEFT JOIN utenti u ON u.id=c.id_utente
+                                  WHERE c.id_etichetta=? AND c.id_famiglia=?" .
+                                  ($mese !== '' ? " AND DATE_FORMAT(c.data_movimento,'%Y-%m')=?" : "") .
+                                  " ORDER BY c.data_movimento DESC,c.id DESC");
+      $idEtComp = (int)$etichettaInfo['id_etichetta'];
+      $idFamComp = (int)$famigliaId;
+      if ($mese !== '') {
+          $stmtComp->bind_param('iis',$idEtComp,$idFamComp,$mese);
+      } else {
+          $stmtComp->bind_param('ii',$idEtComp,$idFamComp);
+      }
+      $stmtComp->execute();
+      $righeComp = $stmtComp->get_result()->fetch_all(MYSQLI_ASSOC);
+      $stmtComp->close();
+    ?>
+    <?php if ($righeComp): ?>
+    <section class="mb-4" aria-label="Compensazioni e quote non bancarie">
+      <h5>Quote e compensazioni non bancarie</h5>
+      <?php foreach ($righeComp as $c): ?>
+        <div class="movement d-flex justify-content-between gap-3 mb-2">
+          <div>
+            <div class="fw-semibold"><?= htmlspecialchars($c['descrizione']) ?></div>
+            <div class="small text-muted"><?= htmlspecialchars($c['persona']) ?> · <?= htmlspecialchars($c['tipo']) ?> · <?= date('d/m/Y',strtotime($c['data_movimento'])) ?></div>
+            <div class="small"><?= (int)$c['saldata']===1?'Saldata':'Non saldata' ?></div>
+          </div>
+          <div class="text-end"><?= (float)$c['importo']>=0?'+':'' ?><?= number_format((float)$c['importo'],2,',','.') ?> €</div>
+        </div>
+      <?php endforeach; ?>
+    </section>
+    <?php endif; ?>
+    <?php endif; ?>
     <!-- Modal gestione quote utenti -->
     <div class="modal fade" id="u2oModal" tabindex="-1">
       <div class="modal-dialog">
@@ -554,6 +612,55 @@ $salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
     <?php
     $utentiDett = $ar_totali_utenti;
 
+    // Il dettaglio per utente comprende anche le registrazioni non bancarie
+    // del conto condiviso. Usa id_utente: il nome libero non e' affidabile.
+    // Le righe con id_e2o provengono da un registro distinto: non modificare
+    // i totali dei movimenti bancari ne' sommare due volte una quota legacy.
+    if ((int)$famigliaId === 1) {
+        $sqlQuoteCondivise = "SELECT c.id_utente,
+                TRIM(CONCAT(u.nome,' ',u.cognome)) AS persona,
+                SUM(c.importo) AS importo
+            FROM etichette_conti_condivisi c
+            JOIN utenti u ON u.id = c.id_utente
+            WHERE c.id_etichetta = ? AND c.id_famiglia = ?";
+        if ($mese !== '') {
+            $sqlQuoteCondivise .= " AND DATE_FORMAT(c.data_movimento,'%Y-%m') = ?";
+        }
+        $sqlQuoteCondivise .= " GROUP BY c.id_utente,u.nome,u.cognome";
+        $stmtQuote = $conn->prepare($sqlQuoteCondivise);
+        $idEtQuote = (int)$etichettaInfo['id_etichetta'];
+        $idFamQuote = (int)$famigliaId;
+        if ($mese !== '') {
+            $stmtQuote->bind_param('iis', $idEtQuote, $idFamQuote, $mese);
+        } else {
+            $stmtQuote->bind_param('ii', $idEtQuote, $idFamQuote);
+        }
+        $stmtQuote->execute();
+        $resQuote = $stmtQuote->get_result();
+        while ($quota = $resQuote->fetch_assoc()) {
+            $idPersona = (int)$quota['id_utente'];
+            if (!isset($utentiDett[$idPersona])) {
+                $utentiDett[$idPersona] = ['entrate' => 0.0, 'uscite' => 0.0];
+            }
+            $utentiDett[$idPersona]['utente'] = trim($quota['persona']);
+            $utentiDett[$idPersona]['operazioni_condivise'] = (float)$quota['importo'];
+        }
+        $stmtQuote->close();
+    }
+
+    // Tutti i totali della tabella derivano dalle medesime righe per utente,
+    // non dai totali finanziari generali, che non includono le compensazioni.
+    $totaliDettaglio = ['entrate' => 0.0, 'uscite' => 0.0, 'operazioni_condivise' => 0.0];
+    foreach ($utentiDett as $idPersona => &$dettaglioPersona) {
+        $dettaglioPersona['entrate'] = (float)($dettaglioPersona['entrate'] ?? 0);
+        $dettaglioPersona['uscite'] = (float)($dettaglioPersona['uscite'] ?? 0);
+        $dettaglioPersona['operazioni_condivise'] = (float)($dettaglioPersona['operazioni_condivise'] ?? 0);
+        foreach ($totaliDettaglio as $chiave => $valore) {
+            $totaliDettaglio[$chiave] += $dettaglioPersona[$chiave];
+        }
+    }
+    unset($dettaglioPersona);
+
     $gruppi = [];
     if (!empty($ar_totali_gruppi)) {
         $ids = array_keys($ar_totali_gruppi);
@@ -629,6 +736,7 @@ $salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
               <th>Utente</th>
               <th class="text-end">Entrate</th>
               <th class="text-end">Uscite</th>
+              <th class="text-end">Quote/compensazioni</th>
               <th class="text-end">Totale</th>
             </tr>
           </thead>
@@ -638,14 +746,16 @@ $salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
                 <td><?= htmlspecialchars($u['utente']) ?></td>
                 <td class="text-end text-nowrap"><?= ($u['entrate'] > 0 ? '+' : '') . number_format($u['entrate'], 2, ',', '.') ?> €</td>
                 <td class="text-end text-nowrap"><?= number_format($u['uscite'], 2, ',', '.') ?> €</td>
-                <td class="text-end text-nowrap"><?= number_format($u['entrate']+$u['uscite'], 2, ',', '.') ?> €</td>
+                <td class="text-end text-nowrap"><?= ($u['operazioni_condivise'] > 0 ? '+' : '') . number_format($u['operazioni_condivise'], 2, ',', '.') ?> €</td>
+                <td class="text-end text-nowrap"><?= number_format($u['entrate'] + $u['uscite'] + $u['operazioni_condivise'], 2, ',', '.') ?> €</td>
               </tr>
             <?php endforeach; ?>
             <tr>
               <td>Totali</td>
-              <td class="text-end text-nowrap"><?= '+' . number_format($totali['entrate'] ?? 0, 2, ',', '.') ?> €</td>
-              <td class="text-end text-nowrap"><?= number_format($totali['uscite'] ?? 0, 2, ',', '.') ?> €</td>
-              <td class="text-end text-nowrap"><?= number_format($totali['entrate']+$totali['uscite'] ?? 0, 2, ',', '.') ?> €</td>
+              <td class="text-end text-nowrap"><?= ($totaliDettaglio['entrate'] > 0 ? '+' : '') . number_format($totaliDettaglio['entrate'], 2, ',', '.') ?> €</td>
+              <td class="text-end text-nowrap"><?= number_format($totaliDettaglio['uscite'], 2, ',', '.') ?> €</td>
+              <td class="text-end text-nowrap"><?= ($totaliDettaglio['operazioni_condivise'] > 0 ? '+' : '') . number_format($totaliDettaglio['operazioni_condivise'], 2, ',', '.') ?> €</td>
+              <td class="text-end text-nowrap"><?= number_format(array_sum($totaliDettaglio), 2, ',', '.') ?> €</td>
             </tr>
           </tbody>
         </table>
