@@ -33,3 +33,11 @@ Separare l'accantonamento effettivo su Pocket Revolut dalla previsione dei budge
 - La proiezione è un **saldo dopo le uscite programmate**, non la somma dei soli accantonamenti.
 - Nel conto Disney+ si possono selezionare i movimenti già etichettati e assegnare manualmente la quota di Bocci: lo stesso movimento non può essere assegnato due volte alla stessa persona. Compensazioni senza transazione bancaria restano distinte.
 - Non ripartire automaticamente le vecchie spese, neppure quelle chiamate cinema o Wiener: occorre verificare quali riguardano la quota dell'altra persona.
+
+## Dashboard Budget desktop, revisione leggibilità
+- Eliminato il contenitore a scroll interno: è consentito solo lo scorrimento ordinario della pagina. Nessuna `max-height` né `overflow:auto` sulla tabella salvadanai desktop.
+- Tabella desktop con **saldo attuale**, **atteso oggi**, **situazione oggi** (in linea o differenza negativa) e **previsione alle scadenze** (coperto o quanti euro mancano, con data più critica). La previsione considera la 13ª futura e gli accantonamenti Pocket, e non aggiunge la 14ª senza data.
+- L'atteso oggi è il livello teorico accumulato secondo i budget e le eventuali quote da tredicesima dei dicembre già trascorsi durante il periodo di budget, non una lettura storica del saldo Revolut.
+- Link alle vacanze mediante icona a forma di valigia vicino al salvadanaio, senza card separate.
+- Entrate mensili, uscite mensili e distribuzione del reddito **sempre aperte**, in tre colonne desktop. Il margine dopo Pocket tiene separati versamenti effettivi e altri stanziamenti annuali; viene mostrato anche il margine del budget tradizionale per confronto.
+- Le tabelle possono comunque superare l'altezza della finestra se contengono molte righe; la pagina rimane unica e priva di barre interne.
