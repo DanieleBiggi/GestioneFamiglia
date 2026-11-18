@@ -5,6 +5,7 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 require_once 'includes/db.php';
 require_once 'includes/utility.php';
+require_once 'includes/budget_pocket_previsione.php';
 include 'includes/header.php';
 
 date_default_timezone_set('Europe/Rome');
@@ -97,12 +98,7 @@ while ($row = $res->fetch_assoc()) {
     $k = $dataInizio ? max(0, diff_mesi($primo_del_mese_di_data_inizio->format('Y-m-d'), $today->format('Y-m-d'))) : 0; // mesi da inizio
     $mesi_data_inizio_fine = $dataInizio ? max(0, diff_mesi($primo_del_mese_di_data_inizio->format('Y-m-d'), $dataScadenza)) : 0; // mesi da inizio
 
-    if(strtotime($dataInizio)<time() && strtotime($dataScadenza)>time())
-    {
-        $importoMensile = round($residuo / $mesi_data_inizio_fine, 2);
-    }else{
-        $importoMensile = 0;
-    }
+    $importoMensile = gf_budget_importo_mensile($row, $today->format('Y-m-d'));
     
     if ($dataScadenza) {
         if ($j < 0) {
