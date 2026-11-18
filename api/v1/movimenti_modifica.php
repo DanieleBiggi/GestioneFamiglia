@@ -18,6 +18,7 @@ function gf_mov_hash(array $row, array $labels): string {
     return hash('sha256', json_encode([
         'source'=>$row['source'], 'id'=>(int)$row['id'],
         'descrizione_extra'=>$row['descrizione_extra'],
+        'note'=>$row['note'],
         'id_gruppo_transazione'=>$row['id_gruppo_transazione'] === null ? null : (int)$row['id_gruppo_transazione'],
         'etichette'=>$labels
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
@@ -38,12 +39,18 @@ try {
     $hasLabels = array_key_exists('etichette', $body);
     if ($hasLabels && (int)$familyId !== 1) api_error(403,'Etichette non disponibili per questa famiglia');
     $hasDesc = array_key_exists('descrizione_extra', $body);
+    $hasNote = array_key_exists('note', $body);
     $hasGroup = array_key_exists('id_gruppo_transazione', $body);
-    if (!$hasDesc && !$hasGroup && !$hasLabels) api_error(422,'Nessuna modifica indicata');
+    if (!$hasDesc && !$hasNote && !$hasGroup && !$hasLabels) api_error(422,'Nessuna modifica indicata');
     $desc = null;
     if ($hasDesc) {
         if ($body['descrizione_extra'] !== null && !is_string($body['descrizione_extra'])) api_error(422,'Descrizione non valida');
         $desc = api_str($body['descrizione_extra'], 250);
+    }
+    $note = null;
+    if ($hasNote) {
+        if ($body['note'] !== null && !is_string($body['note'])) api_error(422,'Note non valide');
+        $note = api_str($body['note'], 5000);
     }
     $group = null;
     if ($hasGroup && $body['id_gruppo_transazione'] !== null) {
@@ -71,7 +78,7 @@ try {
     $conn->begin_transaction();
     $pk = $sources[$source];
     // The SQL identifiers are selected exclusively from the fixed whitelist above.
-    $sql = "SELECT $pk AS id, descrizione_extra, id_gruppo_transazione FROM $source WHERE $pk=?";
+    $sql = "SELECT $pk AS id, descrizione_extra, note, id_gruppo_transazione FROM $source WHERE $pk=?";
     if ($source !== 'movimenti_revolut') $sql .= ' AND id_utente=' . (int)$userId;
     $sql .= ' FOR UPDATE';
     $q = $conn->prepare($sql);
@@ -121,9 +128,10 @@ try {
             if (!$ok) { $conn->rollback(); api_error(422,'Etichetta inesistente'); }
         }
     }
-    $before = ['descrizione_extra'=>$row['descrizione_extra'],'id_gruppo_transazione'=>$row['id_gruppo_transazione']===null?null:(int)$row['id_gruppo_transazione'],'etichette'=>$existing];
+    $before = ['descrizione_extra'=>$row['descrizione_extra'],'note'=>$row['note'],'id_gruppo_transazione'=>$row['id_gruppo_transazione']===null?null:(int)$row['id_gruppo_transazione'],'etichette'=>$existing];
     $after = [
         'descrizione_extra'=>$hasDesc?$desc:$before['descrizione_extra'],
+        'note'=>$hasNote?$note:$before['note'],
         'id_gruppo_transazione'=>$hasGroup?$group:$before['id_gruppo_transazione'],
         'etichette'=>$hasLabels?$newLabels:$existing
     ];
@@ -132,18 +140,31 @@ try {
     if ($dry) { $conn->rollback(); api_reply(200,['success'=>true,'dry_run'=>true,'anteprima'=>$report]); }
 
     api_claim_request($conn,$familyId,'movimenti_modifica',$requestId);
-    if ($hasDesc || $hasGroup) {
-        if ($hasDesc && $hasGroup) {
-            $q = $conn->prepare("UPDATE $source SET descrizione_extra=?,id_gruppo_transazione=? WHERE $pk=?");
-            $q->bind_param('sii',$desc,$group,$id);
-        } elseif ($hasDesc) {
-            $q = $conn->prepare("UPDATE $source SET descrizione_extra=? WHERE $pk=?");
-            $q->bind_param('si',$desc,$id);
-        } else {
-            $q = $conn->prepare("UPDATE $source SET id_gruppo_transazione=? WHERE $pk=?");
-            $q->bind_param('ii',$group,$id);
+    if ($hasDesc || $hasNote || $hasGroup) {
+        // Only explicitly provided fields are updated. Bank metadata, amounts and labels stay intact.
+        $sets = [];
+        $types = '';
+        $params = [];
+        if ($hasDesc) {
+            $sets[] = 'descrizione_extra=?';
+            $types .= 's';
+            $params[] = $desc;
         }
-        $q->execute(); $q->close();
+        if ($hasNote) {
+            $sets[] = 'note=?';
+            $types .= 's';
+            $params[] = $note;
+        }
+        if ($hasGroup) {
+            $sets[] = 'id_gruppo_transazione=?';
+            $types .= 'i';
+            $params[] = $group;
+        }
+        $params[] = $id;
+        $q = $conn->prepare("UPDATE $source SET " . implode(',', $sets) . " WHERE $pk=?");
+        $q->bind_param($types.'i', ...$params);
+        $q->execute();
+        $q->close();
     }
     if ($hasLabels) {
         $removed = array_diff($existing,$newLabels);
