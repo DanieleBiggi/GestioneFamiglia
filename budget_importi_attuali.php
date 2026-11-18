@@ -6,7 +6,7 @@ include 'includes/header.php';
 $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 $updateSuccess = false;
 
-$salvStmt = $conn->prepare('SELECT DISTINCT s.id_salvadanaio, s.nome_salvadanaio, s.importo_attuale
+$salvStmt = $conn->prepare('SELECT DISTINCT s.id_salvadanaio, s.nome_salvadanaio, s.importo_attuale, s.data_aggiornamento_manuale
     FROM salvadanai s
     JOIN budget b ON b.id_salvadanaio = s.id_salvadanaio
     WHERE b.id_famiglia = ?
@@ -20,7 +20,8 @@ $salvStmt->close();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ids = $_POST['id_salvadanaio'] ?? [];
     $importi = $_POST['importo_attuale'] ?? [];
-    $allowedIds = array_column($salvadanai, 'id_salvadanaio');
+    $allowedIds = array_map('intval', array_column($salvadanai, 'id_salvadanaio'));
+    $updatedCount = 0;
 
     if (is_array($ids) && is_array($importi) && !empty($ids) && !empty($allowedIds)) {
         $stmt = $conn->prepare('UPDATE salvadanai SET importo_attuale = ?, data_aggiornamento_manuale = ? WHERE id_salvadanaio = ?');
@@ -41,11 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!is_numeric($importo) || (float)$importo < 0) { continue; }
             $amount = round((float)$importo,2);
             $stmt->bind_param('dsi', $amount, $now, $id);
-            $stmt->execute();
+            if ($stmt->execute()) { $updatedCount++; }
         }
 
         $stmt->close();
-        $updateSuccess = true;
+        $updateSuccess = $updatedCount > 0;
 
         $salvStmt = $conn->prepare('SELECT DISTINCT s.id_salvadanaio, s.nome_salvadanaio, s.importo_attuale
             FROM salvadanai s
@@ -77,7 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="col-12 col-md-6 col-xl-4">
       <div class="card bg-dark border-secondary text-white p-3 h-100">
         <label class="form-label fw-semibold" for="saldo-<?= (int)$salvadanaio['id_salvadanaio'] ?>"><?= htmlspecialchars($salvadanaio['nome_salvadanaio'] ?? '') ?></label>
-        <div class="small text-white-50 mb-2">Saldo attuale in app: <?= number_format((float)$salvadanaio['importo_attuale'],2,',','.') ?> €</div>
+        <div class="small text-white-50 mb-1">Saldo attuale in app: <?= number_format((float)$salvadanaio['importo_attuale'],2,',','.') ?> €</div>
+        <div class="small text-white-50 mb-2">Verificato il: <?= !empty($salvadanaio['data_aggiornamento_manuale']) ? date('d/m/Y',strtotime($salvadanaio['data_aggiornamento_manuale'])) : 'mai' ?></div>
         <input type="hidden" name="id_salvadanaio[]" value="<?= (int)$salvadanaio['id_salvadanaio'] ?>">
         <div class="input-group">
           <input id="saldo-<?= (int)$salvadanaio['id_salvadanaio'] ?>" type="number" step="0.01" min="0" inputmode="decimal" name="importo_attuale[]" value="" placeholder="Nuovo saldo Revolut" class="form-control bg-dark text-white border-secondary" aria-label="Nuovo saldo Pocket <?= htmlspecialchars($salvadanaio['nome_salvadanaio'] ?? '',ENT_QUOTES) ?>">
