@@ -9,7 +9,19 @@ if ($familyId !== 1) { http_response_code(403); exit('Operazione non disponibile
 $labelId = filter_var($_GET['id_etichetta'] ?? $_POST['id_etichetta'] ?? 0, FILTER_VALIDATE_INT) ?: 0;
 $tipoDefault = ($_GET['tipo'] ?? '') === 'quota' ? 'quota' : 'compensazione';
 $labels = $conn->query("SELECT id_etichetta,descrizione,anno FROM bilancio_etichette WHERE attivo=1 ORDER BY descrizione,anno DESC")->fetch_all(MYSQLI_ASSOC);
-$people = $conn->query("SELECT u.id,u.nome,u.cognome FROM utenti u JOIN utenti2famiglie f ON f.id_utente=u.id WHERE f.id_famiglia=1 AND u.attivo=1 ORDER BY u.nome,u.cognome")->fetch_all(MYSQLI_ASSOC);
+// Gli utenti condivisi sono definiti dall'etichetta, non dalla famiglia.
+$people = [];
+if ($labelId > 0) {
+    $stmtPeople = $conn->prepare("SELECT u.id,u.nome,u.cognome
+        FROM bilancio_etichette e
+        JOIN utenti u ON FIND_IN_SET(CAST(u.id AS CHAR), REPLACE(COALESCE(e.utenti_tra_cui_dividere,''),' ','')) > 0
+        WHERE e.id_etichetta=? AND e.attivo=1 AND u.attivo=1
+        ORDER BY u.nome,u.cognome");
+    $stmtPeople->bind_param('i',$labelId);
+    $stmtPeople->execute();
+    $people = $stmtPeople->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmtPeople->close();
+}
 if (empty($_SESSION['csrf_conto_etichette'])) $_SESSION['csrf_conto_etichette'] = bin2hex(random_bytes(24));
 $csrf = $_SESSION['csrf_conto_etichette'];
 $error = '';
@@ -32,9 +44,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $check = $conn->prepare("SELECT 1 FROM bilancio_etichette WHERE id_etichetta=? AND attivo=1");
         $check->bind_param('i',$labelId);$check->execute();$ok=$check->get_result()->num_rows===1;$check->close();
         if (!$ok) throw new RuntimeException('Etichetta non valida.');
-        $check = $conn->prepare("SELECT u.nome,u.cognome FROM utenti u JOIN utenti2famiglie uf ON uf.id_utente=u.id AND uf.id_famiglia=? WHERE u.id=? AND u.attivo=1 LIMIT 1");
-        $check->bind_param('ii',$familyId,$personId);$check->execute();$person=$check->get_result()->fetch_assoc();$check->close();
-        if (!$person) throw new RuntimeException('Persona non appartenente alla famiglia.');
+        $check = $conn->prepare("SELECT u.nome,u.cognome
+            FROM bilancio_etichette e
+            JOIN utenti u ON FIND_IN_SET(CAST(u.id AS CHAR), REPLACE(COALESCE(e.utenti_tra_cui_dividere,''),' ','')) > 0
+            WHERE e.id_etichetta=? AND u.id=? AND e.attivo=1 AND u.attivo=1 LIMIT 1");
+        $check->bind_param('ii',$labelId,$personId);$check->execute();$person=$check->get_result()->fetch_assoc();$check->close();
+        if (!$person) throw new RuntimeException('La persona non e presente in Condividi con per questa etichetta.');
         if ($personId === (int)($_SESSION['utente_id'] ?? 0)) throw new RuntimeException('Seleziona un altra persona.');
         $personName = trim($person['nome'].' '.$person['cognome']);
         $idE2o = null;
@@ -126,9 +141,12 @@ include 'includes/header.php';
       <select class="form-select" name="id_utente" id="idPersona" required>
         <option value="">Scegli persona</option>
         <?php foreach ($people as $p): ?>
-          <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars(trim($p['nome'].' '.$p['cognome'])) ?></option>
+          <option value="<?= (int)$p['id'] ?>" <?= (int)($_POST['id_utente'] ?? 0)===(int)$p['id']?'selected':'' ?>><?= htmlspecialchars(trim($p['nome'].' '.$p['cognome'])) ?></option>
         <?php endforeach; ?>
       </select>
+      <?php if ($labelId>0 && !$people): ?>
+        <div class="form-text text-warning">Nessuna persona attiva in «Condividi con» per questa etichetta. Aggiorna l'etichetta prima di registrare un'operazione.</div>
+      <?php endif; ?>
     </div>
     <div class="col-12 col-md-6">
       <label for="tipo" class="form-label">Operazione</label>
