@@ -8,7 +8,7 @@ const GF_VOCI=[
  'trasporti'=>['viaggi_tratte','viaggi_tratte_alternative','id_tratta','descrizione',
     ['tipo_tratta'=>'enum:auto,aereo,traghetto,treno','descrizione'=>'text:5000','origine_testo'=>'text:255','destinazione_testo'=>'text:255','costo_volo_eur'=>'money','costo_traghetto_eur'=>'money','costo_noleggio_eur'=>'money','pedaggi_eur'=>'money','altri_costi_eur'=>'money','distanza_km'=>'distance','durata_ore'=>'duration','consumo_litri_100km'=>'consumption','prezzo_carburante_eur_litro'=>'fuel_price','note'=>'text:5000']],
  'alloggi'=>['viaggi_alloggi','viaggi_alloggi_alternative','id_alloggio','nome_alloggio',
-    ['nome_alloggio'=>'text:255','indirizzo'=>'text:255','data_checkin'=>'date','data_checkout'=>'date','costo_notte_eur'=>'money','costo_totale_eur'=>'money','note'=>'text:5000']],
+    ['nome_alloggio'=>'text:255','indirizzo'=>'text:255','data_checkin'=>'date','data_checkout'=>'date','costo_notte_eur'=>'money','costo_totale_eur'=>'money','note'=>'text:5000','pagato'=>'flag']],
  'pasti'=>['viaggi_pasti','viaggi_pasti_alternative','id_pasto','nome_locale',
     ['nome_locale'=>'text:255','tipo_pasto'=>'enum:colazione,pranzo,cena','tipologia'=>'enum:ristorante,pizzeria,cucinato','giorno_indice'=>'day','costo_medio_eur'=>'money','note'=>'text:5000']],
  'altri_costi'=>['viaggi_altri_costi','viaggi_altri_costi_alternative','id_costo','descrizione',
@@ -25,6 +25,7 @@ function gf_validate($v,string $type) {
   if((!is_int($v)&&!is_float($v))||!is_finite((float)$v)||$v<0||$v>$max)gf_fail('Parametro trasporto non valido');
   return round((float)$v,$decimals);
  }
+ if($type==='flag'){if(!is_int($v)||($v!==0&&$v!==1))gf_fail('Stato pagamento non valido');return $v;}
  if($type==='day'){if(!is_int($v)||$v<0||$v>30)gf_fail('Giorno non valido');return $v;}
  if($type==='date'){if(!is_string($v)||!preg_match('/^\d{4}-\d{2}-\d{2}$/D',$v))gf_fail('Data non valida');$d=DateTimeImmutable::createFromFormat('!Y-m-d',$v);if(!$d||$d->format('Y-m-d')!==$v)gf_fail('Data non valida');return $v;}
  if(!is_string($v))gf_fail('Testo non valido');$v=trim($v);
@@ -69,8 +70,9 @@ function gf_changes(array $scenario,array $snapshot):array{
   $identity=$category.':'.($old?(string)$old[$pk]:mb_strtolower($clean[$label]));
   if(isset($seen[$identity]))gf_fail('Voce ripetuta');$seen[$identity]=true;
   if($old&&(int)($old['pagato']??0)!==0&&(count($clean)!==1||!array_key_exists('note',$clean)))gf_fail('Voce gia pagata: consentita solo la modifica delle note');
+  if($old&&array_key_exists('pagato',$clean)&&($clean['pagato']!==1||count($clean)!==1))gf_fail('Pagamento: consentito solo contrassegnare una voce non pagata come pagata');
   $before=[];foreach($clean as $k=>$v)$before[$k]=$old[$k]??null;
-  $diff=[];foreach($clean as $k=>$v){if(in_array($rules[$k],['money','day'],true))$diff[$k]=$v===null?null:round((float)$v-(float)($before[$k]??0),2);}
+  $diff=[];foreach($clean as $k=>$v){if(in_array($rules[$k],['money','day','flag'],true))$diff[$k]=$v===null?null:round((float)$v-(float)($before[$k]??0),2);}
   $ops[]=['categoria'=>$category,'azione'=>$old?'aggiorna':'inserisci','id'=>$old?(int)$old[$pk]:null,'prima'=>$before,'dopo'=>$clean,'differenze_numeriche'=>$diff];
  }
  return $ops;
