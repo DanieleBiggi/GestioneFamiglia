@@ -45,7 +45,7 @@ function gf_fin_saving(mysqli $conn, int $savingId, int $familyId, bool $lock = 
 function gf_fin_trip(mysqli $conn, int $tripId, int $familyId): array {
     $rows = gf_fin_fetch($conn, 'SELECT v.id_viaggio,v.titolo,p.id_salvadanaio,p.id_alternativa_confermata ' .
         'FROM viaggi v JOIN viaggi_api_famiglie vf ON vf.id_viaggio=v.id_viaggio AND vf.id_famiglia=? ' .
-        'LEFT JOIN viaggi_pianificazione p ON p.id_viaggio=v.id_viaggio WHERE v.id_viaggio=? LIMIT 1',
+        'LEFT JOIN viaggi_pianificazione p ON p.id_viaggio=v.id_viaggio WHERE v.id_viaggio=? LIMIT 1 FOR UPDATE',
         'ii', [$familyId,$tripId]);
     if (!$rows) api_error(404,'Vacanza non autorizzata');
     return $rows[0];
@@ -61,7 +61,7 @@ function gf_fin_label(mysqli $conn, int $labelId): array {
     return $rows[0];
 }
 function gf_fin_budget(mysqli $conn, int $budgetId, int $familyId): array {
-    $rows = gf_fin_fetch($conn,'SELECT id_budget,id_salvadanaio,descrizione,importo,tipologia FROM budget WHERE id_budget=? AND id_famiglia=? LIMIT 1','ii',[$budgetId,$familyId]);
+    $rows = gf_fin_fetch($conn,'SELECT id_budget,id_salvadanaio,descrizione,importo,tipologia FROM budget WHERE id_budget=? AND id_famiglia=? LIMIT 1 FOR UPDATE','ii',[$budgetId,$familyId]);
     if (!$rows) api_error(404,'Budget non autorizzato');
     return $rows[0];
 }
@@ -112,6 +112,16 @@ function gf_fin_snapshot(mysqli $conn, int $familyId, string $type, int $id): ar
 try {
     if (($_SERVER['REQUEST_METHOD'] ?? '') === 'GET') {
         $type = $_GET['tipo'] ?? 'vacanza';
+        if ($type === 'catalogo') {
+            $catalog = [
+                'vacanze'=>gf_fin_fetch($conn,'SELECT v.id_viaggio AS id,v.titolo AS descrizione FROM viaggi v JOIN viaggi_api_famiglie vf ON vf.id_viaggio=v.id_viaggio AND vf.id_famiglia=? ORDER BY v.data_inizio DESC LIMIT 200','i',[$familyId]),
+                'salvadanai'=>gf_fin_fetch($conn,'SELECT DISTINCT s.id_salvadanaio AS id,s.nome_salvadanaio AS descrizione FROM salvadanai s WHERE EXISTS (SELECT 1 FROM budget b WHERE b.id_salvadanaio=s.id_salvadanaio AND b.id_famiglia=?) OR EXISTS (SELECT 1 FROM viaggi_pianificazione p JOIN viaggi_api_famiglie vf ON vf.id_viaggio=p.id_viaggio AND vf.id_famiglia=? WHERE p.id_salvadanaio=s.id_salvadanaio) ORDER BY descrizione LIMIT 200','ii',[$familyId,$familyId]),
+                'budget'=>gf_fin_fetch($conn,'SELECT id_budget AS id,descrizione,id_salvadanaio,importo,tipologia FROM budget WHERE id_famiglia=? ORDER BY id_budget DESC LIMIT 200','i',[$familyId]),
+                'etichette'=>gf_fin_fetch($conn,'SELECT id_etichetta AS id,descrizione,attivo FROM bilancio_etichette ORDER BY descrizione LIMIT 200'),
+                'eventi'=>gf_fin_fetch($conn,'SELECT e.id,e.titolo AS descrizione FROM eventi e JOIN eventi_eventi2famiglie f ON f.id_evento=e.id WHERE f.id_famiglia=? ORDER BY e.data_evento DESC LIMIT 200','i',[$familyId])
+            ];
+            api_reply(200,['success'=>true,'catalogo'=>$catalog]);
+        }
         if (!in_array($type,['vacanza','salvadanaio','etichetta','evento'],true)) api_error(422,'Tipo non valido');
         $id = gf_fin_id($_GET['id'] ?? null,'id');
         api_reply(200,['success'=>true,'tipo'=>$type,'dati'=>gf_fin_snapshot($conn,$familyId,$type,$id)]);
