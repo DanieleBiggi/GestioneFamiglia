@@ -155,11 +155,21 @@ if (has_permission($conn,'table:viaggi','view')) {
 // 5. Margine mensile
 $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMensile);
 ?>
-<div class="d-flex mb-3 justify-content-between align-items-center">
+<style>
+@media(min-width:992px) {
+  .pocket-dashboard-table-wrap {max-height:calc(100vh - 270px);overflow:auto;border:1px solid var(--bs-secondary);border-radius:.5rem}
+  .pocket-dashboard-table {font-size:.84rem}
+  .pocket-dashboard-table th,.pocket-dashboard-table td {padding:.26rem .45rem;white-space:nowrap}
+  .pocket-dashboard-table thead th {position:sticky;top:0;z-index:1;background:#212529}
+}
+.budget-extra-details {border-top:1px solid #555}
+.budget-extra-details summary {cursor:pointer}
+</style>
+<div class="d-flex mb-2 flex-wrap gap-2 justify-content-between align-items-center">
   <h4 class="mb-0">Budget Dashboard</h4>
   <a href="budget_importi_attuali.php" class="btn btn-outline-light btn-sm">Modifica importo attuale</a>
 </div>
-<form method="get" class="row g-2 mb-3">
+<form method="get" class="row g-2 mb-2">
   <div class="col-6 col-md-2">
     <select name="anno" class="form-select bg-dark text-white border-secondary">
       <?php foreach ($years as $y): ?>
@@ -173,15 +183,12 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
   </div>
 </form>
 <div class="row">
-  <div class="col-12 col-lg-8">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-      <div>
-        <h5 class="mb-1">Accantonamenti e Pocket Revolut</h5>
-        <p class="small text-white-50 mb-0">Il valore fisso non cambia quando variano le previsioni. I saldi vanno aggiornati manualmente.</p>
-      </div>
-      <a href="budget_importi_attuali.php" class="btn btn-outline-light">Aggiorna saldi Pocket</a>
+  <div class="col-12">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+      <h5 class="mb-0">Accantonamenti e Pocket Revolut</h5>
+      <a href="budget_importi_attuali.php" class="btn btn-outline-light btn-sm">Aggiorna saldi</a>
     </div>
-    <div class="row g-3" aria-label="Riepilogo accantonamenti per salvadanaio">
+    <div class="row g-2 d-lg-none" aria-label="Riepilogo accantonamenti per salvadanaio">
       <?php
       $per_totali['stimato'] = 0;
       $per_totali['attuale'] = 0;
@@ -235,14 +242,54 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
       </div>
       <?php endforeach; ?>
     </div>
-    <section class="card bg-dark text-white border-secondary p-3 mt-3 mb-4" aria-label="Totali Pocket">
+    <div class="d-none d-lg-block pocket-dashboard-table-wrap mb-2">
+      <table class="table table-dark table-striped table-sm align-middle mb-0 pocket-dashboard-table">
+        <thead>
+          <tr>
+            <th>Salvadanaio</th><th>Modalità</th>
+            <th class="text-end">Pocket/mese</th><th class="text-end">Consigliato</th>
+            <th class="text-end">Saldo attuale</th><th class="text-end">Stimato oggi</th>
+            <th class="text-end">Proiezione</th><th>Verificato</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($salvadanai as $dati):
+          $mesiResidui = $dati['scadenza'] ? max(1, diff_mesi($todaySql, $dati['scadenza'])) : 12;
+          $consigliato = $dati['scadenza'] ? round(max(0, $dati['obiettivo'] - $dati['attuale']) / $mesiResidui, 2) : $dati['importo_mensile'];
+          $pocket = $dati['modalita'] === 'fisso' ? (float)($dati['fisso'] ?? 0) : $consigliato;
+          $proiezione = $dati['attuale'] + $pocket * $mesiResidui;
+          $gap = $dati['obiettivo'] - $proiezione;
+        ?>
+          <tr>
+            <th scope="row"><a href="salvadanaio_dettaglio.php?id=<?= (int)$dati['id'] ?>" class="text-white"><?= htmlspecialchars($dati['nome'] ?? '') ?></a></th>
+            <td><span class="badge <?= $dati['modalita'] === 'fisso' ? 'bg-info text-dark' : 'bg-secondary' ?>"><?= $dati['modalita'] === 'fisso' ? 'Fisso' : 'Auto' ?></span></td>
+            <td class="text-end fw-semibold"><?= number_format($pocket,2,',','.') ?> €</td>
+            <td class="text-end"><?= number_format($consigliato,2,',','.') ?> €</td>
+            <td class="text-end"><?= number_format($dati['attuale'],2,',','.') ?> €</td>
+            <td class="text-end"><?= number_format($dati['stimato'],2,',','.') ?> €</td>
+            <td class="text-end">
+              <?php if ($dati['scadenza'] && $dati['obiettivo'] > 0): ?>
+                <span class="<?= $gap > 0.01 ? 'text-warning' : 'text-success' ?>" title="Obiettivo <?= number_format($dati['obiettivo'],2,',','.') ?> €, scadenza <?= htmlspecialchars($dati['scadenza']) ?>"><?= number_format($proiezione,2,',','.') ?> €</span>
+              <?php else: ?>–<?php endif; ?>
+            </td>
+            <td><?= $dati['data_verifica'] ? date('d/m/Y',strtotime($dati['data_verifica'])) : 'Mai' ?></td>
+            <td><a href="salvadanaio_dettaglio.php?id=<?= (int)$dati['id'] ?>" class="btn btn-outline-light btn-sm">Apri</a></td>
+          </tr>
+        <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+    <section class="card bg-dark text-white border-secondary p-2 mt-2 mb-2" aria-label="Totali Pocket">
       <div class="row g-2">
         <div class="col-6"><div class="small text-white-50">Accantonamento Pocket complessivo</div><strong><?= number_format($totalePocket,2,',','.') ?> €/mese</strong></div>
         <div class="col-6"><div class="small text-white-50">Saldo attuale complessivo</div><strong><?= number_format($per_totali['attuale'],2,',','.') ?> €</strong></div>
       </div>
     </section>
   </div>
-  <div class="col-12 col-lg-4">
+  <div class="col-12">
+    <details class="budget-extra-details">
+      <summary class="py-2">Entrate mensili, uscite e riepilogo</summary>
+      <div class="row g-2"><div class="col-lg-4">
     <h5>Entrate mensili fisse</h5>
     <table class="table table-dark table-striped table-sm">
       <thead>
@@ -264,6 +311,7 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
         <?php endforeach; ?>
       </tbody>
     </table>
+    </div><div class="col-lg-4">
     <h5>Uscite mensili fisse</h5>
     <table class="table table-dark table-striped table-sm">
       <thead>
@@ -289,6 +337,7 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
         </tr>
       </tbody>
     </table>
+    </div><div class="col-lg-4">
     <h5>Riepilogo</h5>
     <table class="table table-dark table-striped table-sm">
       <tbody>
@@ -306,11 +355,13 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
         </tr>
       </tbody>
     </table>
+      </div></div>
+    </details>
   </div>
 </div>
 <?php if($tripSavings): ?>
-<section class="mb-4" aria-label="Salvadanai delle vacanze">
- <h5>Salvadanai collegati alle vacanze</h5>
+<details class="mb-3" aria-label="Salvadanai delle vacanze"><summary class="py-2">Salvadanai collegati alle vacanze</summary><section>
+
  <div class="row g-2">
  <?php foreach($tripSavings as $saving): ?>
  <div class="col-12 col-md-6 col-xl-4"><div class="card p-3 h-100">
@@ -327,7 +378,7 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
  </div></div>
  <?php endforeach; ?>
  </div>
-</section>
+</section></details>
 <?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>
