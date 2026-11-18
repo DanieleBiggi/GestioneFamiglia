@@ -84,7 +84,7 @@ function gf_fin_snapshot(mysqli $conn, int $familyId, string $type, int $id): ar
     if ($type === 'etichetta') {
         $label = gf_fin_label($conn,$id);
         $label['salvadanai'] = gf_fin_fetch($conn,
-            'SELECT x.id_e2se,x.id_salvadanaio,s.nome_salvadanaio FROM eventi_eventi2salvadanai_etichette x JOIN salvadanai s ON s.id_salvadanaio=x.id_salvadanaio WHERE x.id_etichetta=? ORDER BY x.id_e2se','i',[$id]);
+            'SELECT x.id_e2se,x.id_salvadanaio,s.nome_salvadanaio FROM eventi_eventi2salvadanai_etichette x JOIN salvadanai s ON s.id_salvadanaio=x.id_salvadanaio WHERE x.id_etichetta=? AND (EXISTS (SELECT 1 FROM budget b WHERE b.id_salvadanaio=x.id_salvadanaio AND b.id_famiglia=?) OR EXISTS (SELECT 1 FROM viaggi_pianificazione p JOIN viaggi_api_famiglie vf ON vf.id_viaggio=p.id_viaggio WHERE p.id_salvadanaio=x.id_salvadanaio AND vf.id_famiglia=?)) ORDER BY x.id_e2se','iii',[$id,$familyId,$familyId]);
         $label['eventi'] = gf_fin_fetch($conn,
             'SELECT x.id_e2se,x.id_evento,e.titolo FROM eventi_eventi2salvadanai_etichette x JOIN eventi e ON e.id=x.id_evento JOIN eventi_eventi2famiglie ef ON ef.id_evento=e.id AND ef.id_famiglia=? WHERE x.id_etichetta=? ORDER BY x.id_e2se','ii',[$familyId,$id]);
         // The monetary value is stored on individual links; never multiply by the number of labels.
@@ -103,7 +103,7 @@ function gf_fin_snapshot(mysqli $conn, int $familyId, string $type, int $id): ar
     }
     if ($type === 'evento') {
         $event = gf_fin_event($conn,$id,$familyId);
-        $event['etichette'] = gf_fin_fetch($conn,'SELECT x.id_e2se,x.id_etichetta,b.descrizione FROM eventi_eventi2salvadanai_etichette x JOIN bilancio_etichette b ON b.id_etichetta=x.id_etichetta WHERE x.id_evento=? ORDER BY x.id_e2se','i',[$id]);
+        $event['etichette'] = gf_fin_fetch($conn,'SELECT x.id_e2se,x.id_etichetta,b.descrizione FROM eventi_eventi2salvadanai_etichette x JOIN bilancio_etichette b ON b.id_etichetta=x.id_etichetta WHERE x.id_evento=? AND (EXISTS (SELECT 1 FROM budget b WHERE b.id_salvadanaio=x.id_salvadanaio AND b.id_famiglia=?) OR EXISTS (SELECT 1 FROM viaggi_pianificazione p JOIN viaggi_api_famiglie vf ON vf.id_viaggio=p.id_viaggio WHERE p.id_salvadanaio=x.id_salvadanaio AND vf.id_famiglia=?)) ORDER BY x.id_e2se','iii',[$id,$familyId,$familyId]);
         $event['salvadanai'] = gf_fin_fetch($conn,'SELECT x.id_e2se,x.id_salvadanaio,s.nome_salvadanaio FROM eventi_eventi2salvadanai_etichette x JOIN salvadanai s ON s.id_salvadanaio=x.id_salvadanaio WHERE x.id_evento=? ORDER BY x.id_e2se','i',[$id]);
         return $event;
     }
