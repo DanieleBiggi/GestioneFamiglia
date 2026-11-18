@@ -35,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $check = $conn->prepare("SELECT u.nome,u.cognome FROM utenti u JOIN utenti2famiglie uf ON uf.id_utente=u.id AND uf.id_famiglia=? WHERE u.id=? AND u.attivo=1 LIMIT 1");
         $check->bind_param('ii',$familyId,$personId);$check->execute();$person=$check->get_result()->fetch_assoc();$check->close();
         if (!$person) throw new RuntimeException('Persona non appartenente alla famiglia.');
+        if ($personId === (int)($_SESSION['utente_id'] ?? 0)) throw new RuntimeException('Seleziona un altra persona.');
         $personName = trim($person['nome'].' '.$person['cognome']);
         $idE2o = null;
         if (($_POST['id_e2o'] ?? '')!=='') {
@@ -55,6 +56,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($sharedUsed) throw new RuntimeException('Movimento gia collegato alla persona nel conto condiviso.');
         }
         if ($type==='pagamento' && !$idE2o) throw new RuntimeException('Per un pagamento realmente ricevuto collega un movimento bancario esistente.');
+        if ($type==='pagamento' && $idE2o) {
+            $check = $conn->prepare("SELECT eo.tabella_operazione,COALESCE(be.importo,mr.amount,0) AS importo
+                FROM bilancio_etichette2operazioni eo
+                LEFT JOIN bilancio_entrate be ON eo.tabella_operazione='bilancio_entrate' AND eo.id_tabella=be.id_entrata
+                LEFT JOIN movimenti_revolut mr ON eo.tabella_operazione='movimenti_revolut' AND eo.id_tabella=mr.id_movimento_revolut
+                WHERE eo.id_e2o=? AND eo.id_etichetta=? LIMIT 1");
+            $check->bind_param('ii',$idE2o,$labelId);$check->execute();$incoming=$check->get_result()->fetch_assoc();$check->close();
+            if (!$incoming || !in_array($incoming['tabella_operazione'],['bilancio_entrate','movimenti_revolut'],true) || (float)$incoming['importo']<=0) throw new RuntimeException('Il pagamento richiede una entrata reale positiva.');
+        }
         if (in_array($type,['compensazione','debito','pagamento'],true)) $amount=-$amount;
         if ($type==='rettifica') throw new RuntimeException('Le rettifiche richiedono un controllo dedicato.');
         $stmt = $conn->prepare('INSERT INTO etichette_conti_condivisi (id_etichetta,id_famiglia,controparte,data_movimento,tipo,importo,descrizione,id_e2o,id_utente) VALUES (?,?,?,?,?,?,?,?,?)');
@@ -63,6 +73,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
         header('Location: etichetta_conto.php?id_etichetta='.$labelId.'&salvato=1');exit;
     } catch (Throwable $e) { $error=$e->getMessage(); }
+}
+$availableMovements = [];
+if ($labelId>0) {
+    $stmtMov = $conn->prepare("SELECT eo.id_e2o,eo.tabella_operazione,
+       COALESCE(NULLIF(eo.descrizione_extra,''),be.descrizione_extra,be.descrizione_operazione,
+         bu.descrizione_extra,bu.descrizione_operazione,mr.description,'Movimento') AS descrizione,
+       COALESCE(be.data_operazione,bu.data_operazione,mr.started_date) AS data_operazione
+       FROM bilancio_etichette2operazioni eo
+       LEFT JOIN bilancio_entrate be ON eo.tabella_operazione='bilancio_entrate' AND eo.id_tabella=be.id_entrata
+       LEFT JOIN bilancio_uscite bu ON eo.tabella_operazione='bilancio_uscite' AND eo.id_tabella=bu.id_uscita
+       LEFT JOIN movimenti_revolut mr ON eo.tabella_operazione='movimenti_revolut' AND eo.id_tabella=mr.id_movimento_revolut
+       WHERE eo.id_etichetta=? AND (be.id_entrata IS NOT NULL OR bu.id_uscita IS NOT NULL OR mr.id_movimento_revolut IS NOT NULL)
+       ORDER BY data_operazione DESC,eo.id_e2o DESC LIMIT 200");
+    $stmtMov->bind_param('i',$labelId);
+    $stmtMov->execute();
+    $availableMovements=$stmtMov->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmtMov->close();
 }
 include 'includes/header.php';
 ?>
@@ -75,7 +102,7 @@ include 'includes/header.php';
     <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf) ?>">
     <div class="col-12 col-md-6">
       <label for="idEtichetta" class="form-label">Etichetta</label>
-      <select class="form-select" id="idEtichetta" name="id_etichetta" required>
+      <select class="form-select" id="idEtichetta" name="id_etichetta" required onchange="if(this.value) location.href='aggiungi_compensazione.php?id_etichetta='+encodeURIComponent(this.value);">
         <option value="">Scegli etichetta</option>
         <?php foreach ($labels as $l): ?>
           <option value="<?= (int)$l['id_etichetta'] ?>" <?= $labelId===(int)$l['id_etichetta']?'selected':'' ?>><?= htmlspecialchars($l['descrizione'].(!empty($l['anno'])?' '.$l['anno']:'')) ?></option>
@@ -104,7 +131,15 @@ include 'includes/header.php';
     <div class="col-6 col-md-3"><label for="importo" class="form-label">Importo (€)</label><input id="importo" type="number" min="0.01" max="1000000" step="0.01" name="importo" class="form-control" required></div>
     <div class="col-6 col-md-3"><label for="data" class="form-label">Data</label><input id="data" type="date" name="data_movimento" class="form-control" value="<?= date('Y-m-d') ?>" required></div>
     <div class="col-12"><label for="descrizione" class="form-label">Descrizione</label><input id="descrizione" name="descrizione" class="form-control" maxlength="255" required></div>
-    <div class="col-12"><label for="idE2o" class="form-label">ID movimento bancario etichettato (solo se esiste)</label><input id="idE2o" name="id_e2o" class="form-control" type="number" min="1" placeholder="Lascia vuoto per compensazioni senza movimento bancario"></div>
+    <div class="col-12"><label for="idE2o" class="form-label">Movimento reale collegato (facoltativo)</label>
+      <select id="idE2o" name="id_e2o" class="form-select">
+        <option value="">Nessuno, operazione senza movimento bancario</option>
+        <?php foreach ($availableMovements as $m): ?>
+          <option value="<?= (int)$m['id_e2o'] ?>"><?= htmlspecialchars(date('d/m/Y',strtotime($m['data_operazione'])).' · '.mb_strimwidth((string)$m['descrizione'],0,90,'…').' (#'.(int)$m['id_e2o'].')') ?></option>
+        <?php endforeach; ?>
+      </select>
+      <div class="form-text">Per un pagamento reale collega un movimento in entrata. Non duplicare quote già assegnate.</div>
+    </div>
     <div class="col-12"><button type="submit" class="btn btn-primary w-100">Salva operazione condivisa</button></div>
   </form>
 </main>
