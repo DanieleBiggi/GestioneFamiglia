@@ -2,6 +2,7 @@
 <?php
 require_once 'includes/db.php';
 require_once 'includes/utility.php';
+require_once 'includes/budget_pocket_previsione.php';
 require_once 'includes/permissions.php';
 include 'includes/header.php';
 
@@ -90,6 +91,7 @@ while ($row = $resSalv->fetch_assoc()) {
             'quota_13' => 0,
             'quota_14' => 0,
             'scadenza' => null,
+            'impegni' => [],
         ];
     }
     $salvadanai[$salv]['importo_mensile'] += $importoMensile;
@@ -100,6 +102,7 @@ while ($row = $resSalv->fetch_assoc()) {
         $salvadanai[$salv]['obiettivo'] += max(0, $importo);
         $salvadanai[$salv]['quota_13'] += max(0, $da13);
         $salvadanai[$salv]['quota_14'] += max(0, $da14);
+        $salvadanai[$salv]['impegni'][] = $row;
         if ($dataScadenza && (!$salvadanai[$salv]['scadenza'] || $dataScadenza < $salvadanai[$salv]['scadenza'])) {
             $salvadanai[$salv]['scadenza'] = $dataScadenza;
         }
@@ -204,19 +207,13 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
         $per_totali['stimato'] += $dati['stimato'];
         $per_totali['attuale'] += $dati['attuale'];
         $mesiResidui = $dati['scadenza'] ? max(1, diff_mesi($todaySql, $dati['scadenza'])) : 12;
-        // Monthly target is still the existing 13th/14th-net budget calculation.
-        // Bonus allocations are displayed separately rather than silently discarded.
-        $consigliato = $dati['importo_mensile'];
+        $piano = gf_pocket_previsione($dati['impegni'], (float)$dati['attuale'], (float)$dati['importo_mensile'], $todaySql);
+        $consigliato = $piano['consigliato'];
         $pocket = $dati['modalita'] === 'fisso' ? (float)($dati['fisso'] ?? 0) : $consigliato;
         $totalePocket += $pocket;
-        // Conservative running forecast: include the next December 13th allocation only
-        // if it is still in the future and precedes the budget's deadline.
-        $nextDecember = $today->format('Y') . '-12-01';
-        if ($nextDecember <= $todaySql) $nextDecember = ((int)$today->format('Y') + 1) . '-12-01';
-        $bonus13 = $dati['scadenza'] && $nextDecember <= $dati['scadenza'] ? $dati['quota_13'] : 0;
-        // 14th timing varies by contract: show the allocation, never assume it has arrived.
-        $proiezione = $dati['attuale'] + $pocket * $mesiResidui + $bonus13;
-        $gap = $dati['obiettivo'] - $proiezione;
+        $previsione = gf_pocket_previsione($dati['impegni'], (float)$dati['attuale'], $pocket, $todaySql);
+        $proiezione = $previsione['ultima']['saldo'] ?? null;
+        $gap = $previsione['peggiore'] === null ? 0 : max(0, -$previsione['peggiore']['saldo']);
       ?>
       <div class="col-12 col-md-6">
         <section class="card bg-dark text-white border-secondary h-100 p-3" aria-label="Salvadanaio <?= htmlspecialchars($dati['nome'] ?? '', ENT_QUOTES) ?>">
@@ -244,13 +241,13 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
           </div>
           <div class="small text-white-50">Quote extra: 13ª <?= number_format($dati['quota_13'],2,',','.') ?> €, 14ª <?= number_format($dati['quota_14'],2,',','.') ?> € (non prevista nella proiezione)</div>
           <div class="small text-white-50">Ultima verifica: <?= $dati['data_verifica'] ? htmlspecialchars(date('d/m/Y', strtotime($dati['data_verifica']))) : 'non disponibile' ?></div>
-          <?php if ($dati['scadenza'] && $dati['obiettivo'] > 0): ?>
-            <div class="mt-2 small">Proiezione al <?= date('d/m/Y', strtotime($dati['scadenza'])) ?>: <strong><?= number_format($proiezione,2,',','.') ?> €</strong> su <?= number_format($dati['obiettivo'],2,',','.') ?> €</div>
-            <div class="progress mt-1" role="progressbar" aria-label="Copertura obiettivo" aria-valuenow="<?= min(100,max(0,round($proiezione/$dati['obiettivo']*100))) ?>" aria-valuemin="0" aria-valuemax="100">
-              <div class="progress-bar <?= $gap > 0.01 ? 'bg-warning' : 'bg-success' ?>" style="width:<?= min(100,max(0,round($proiezione/$dati['obiettivo']*100))) ?>%"></div>
+          <?php if ($previsione['ultima']): ?>
+            <div class="mt-2 small">Saldo previsto dopo le spese al <?= date('d/m/Y', strtotime($previsione['ultima']['data'])) ?>: <strong><?= number_format($proiezione,2,',','.') ?> €</strong></div>
+            <div class="progress mt-1" role="progressbar" aria-label="Copertura obiettivo" aria-valuenow="<?= min(100,max(0,round(max(0,($previsione['ultima']['obiettivo'] + $proiezione)/max(1,$previsione['ultima']['obiettivo'])*100)))) ?>" aria-valuemin="0" aria-valuemax="100">
+              <div class="progress-bar <?= $gap > 0.01 ? 'bg-warning' : 'bg-success' ?>" style="width:<?= min(100,max(0,round(max(0,($previsione['ultima']['obiettivo'] + $proiezione)/max(1,$previsione['ultima']['obiettivo'])*100)))) ?>%"></div>
             </div>
-            <div class="small mt-1 <?= $gap > 0.01 ? 'text-warning' : 'text-success' ?>"><?= $gap > 0.01 ? 'Possibile scoperto: ' . number_format($gap,2,',','.') . ' €' : 'Copertura prevista sufficiente' ?></div>
-            <div class="small text-white-50">Proiezione: include la 13ª futura di dicembre, ma non la 14ª (data da verificare) né i pagamenti intermedi.</div>
+            <div class="small mt-1 <?= $gap > 0.01 ? 'text-warning' : 'text-success' ?>"><?= $gap > 0.01 ? 'Possibile scoperto prima del ' . date('d/m/Y',strtotime($previsione['peggiore']['data'])) . ': ' . number_format($gap,2,',','.') . ' €' : 'Copertura prevista sufficiente alle scadenze' ?></div>
+            <div class="small text-white-50">Considera tutte le scadenze, il saldo manuale e la 13ª futura di dicembre. La 14ª resta separata finché non ne viene indicata la data.</div>
           <?php endif; ?>
           <a class="btn btn-outline-light mt-3 w-100" href="salvadanaio_dettaglio.php?id=<?= (int)$dati['id'] ?>">Gestisci Pocket</a>
         </section>
@@ -264,7 +261,7 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
             <th>Salvadanaio</th><th>Modalità</th>
             <th class="text-end">Pocket/mese</th><th class="text-end">Consigliato</th>
             <th class="text-end">Saldo attuale</th><th class="text-end">Stimato oggi</th>
-            <th class="text-end">13ª</th><th class="text-end">14ª</th><th class="text-end">Proiezione*</th><th>Verificato</th><th></th>
+            <th class="text-end">13ª</th><th class="text-end">14ª</th><th class="text-end">Saldo dopo spese*</th><th>Verificato</th><th></th>
           </tr>
         </thead>
         <tbody>
@@ -287,8 +284,8 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
             <td class="text-end"><?= number_format($dati['quota_13'],2,',','.') ?> €</td>
             <td class="text-end"><?= number_format($dati['quota_14'],2,',','.') ?> €</td>
             <td class="text-end">
-              <?php if ($dati['scadenza'] && $dati['obiettivo'] > 0): ?>
-                <span class="<?= $gap > 0.01 ? 'text-warning' : 'text-success' ?>" title="Obiettivo <?= number_format($dati['obiettivo'],2,',','.') ?> €, scadenza <?= htmlspecialchars($dati['scadenza']) ?>"><?= number_format($proiezione,2,',','.') ?> €</span>
+              <?php if ($previsione['ultima']): ?>
+                <span class="<?= $gap > 0.01 ? 'text-warning' : 'text-success' ?>" title="Saldo dopo spese previste fino al <?= htmlspecialchars($previsione['ultima']['data']) ?>, con tredicesima futura e senza quattordicesima"><?= number_format($proiezione,2,',','.') ?> €</span>
               <?php else: ?>–<?php endif; ?>
             </td>
             <td><?= $dati['data_verifica'] ? date('d/m/Y',strtotime($dati['data_verifica'])) : 'Mai' ?></td>
@@ -297,7 +294,7 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
         <?php endforeach; ?>
         </tbody>
       </table>
-      <div class="small text-white-50">*Stima con 13ª di dicembre futura, senza 14ª e senza pagamenti intermedi. I valori 13ª/14ª sono quote pianificate, non versamenti confermati.</div>
+      <div class="small text-white-50">*Stima con scadenze dei budget, versamenti mensili futuri e 13ª del prossimo dicembre se precedente alle scadenze. Senza 14ª (mese non configurato). Le quote 13ª/14ª sono pianificate, non versamenti confermati.</div>
     </div>
     <section class="card bg-dark text-white border-secondary p-2 mt-2 mb-2" aria-label="Totali Pocket">
       <div class="row g-2">
