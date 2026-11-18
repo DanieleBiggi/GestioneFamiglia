@@ -59,12 +59,7 @@ while ($row = $resSalv->fetch_assoc()) {
     $primo_del_mese_di_data_inizio = (new DateTime($dataInizio))->modify('first day of this month');
     $k = $dataInizio ? max(0, diff_mesi($primo_del_mese_di_data_inizio->format('Y-m-d'), $today->format('Y-m-d'))) : 0; // mesi da inizio
     $mesi_data_inizio_fine = $dataInizio ? max(0, diff_mesi($primo_del_mese_di_data_inizio->format('Y-m-d'), $dataScadenza)) : 0; // mesi da inizio
-    if(strtotime($dataInizio)<time() && strtotime($dataScadenza)>time())
-    {
-        $importoMensile = round($residuo / $mesi_data_inizio_fine, 2);
-    }else{
-        $importoMensile = 0;
-    }
+    $importoMensile = gf_budget_importo_mensile($row, $todaySql);
     if ($dataScadenza) {
         if ($j < 0) {
             $importoStimato = 0.00;
@@ -143,14 +138,14 @@ while ($row = $resAnnuali->fetch_assoc()) {
     $da13 = (float)($row['da_13esima'] ?? 0);
     $da14 = (float)($row['da_14esima'] ?? 0);
     $residuo = $importo - ($da13 + $da14) ;
-    $importoMensile = round($residuo / 12, 2);
+    $importoMensile = gf_budget_importo_mensile($row, $todaySql);
     //$totalAnnualiMensile += $importoMensile;
     
     $dataInizio = $row['data_inizio'] ?: null;
     $dataScadenza = $row['data_scadenza'] ?: null;
-    if(strtotime($dataInizio)<time() && strtotime($dataScadenza)>time())
+    if ($dataInizio && $dataScadenza && $dataInizio < $todaySql && $dataScadenza > $todaySql)
     {
-        $quotaAnnualizzata = round($residuo / 12, 2);
+        $quotaAnnualizzata = gf_budget_importo_mensile($row, $todaySql);
         $totalAnnualiMensile += $quotaAnnualizzata;
         if (!empty($row['id_salvadanaio'])) $annualiConPocket += $quotaAnnualizzata;
     }
@@ -178,7 +173,7 @@ $totaleConsigliato = 0.0;
 $rowsPocket = [];
 foreach ($salvadanai as $dati) {
     $piano = gf_pocket_previsione($dati['impegni'], (float)$dati['attuale'], 0.0, $todaySql);
-    $consigliato = $piano['consigliato'];
+    $consigliato = round((float)$dati['importo_mensile'], 2); // Totale mensile identico a budget_anno.php
     $pocket = $dati['modalita'] === 'fisso' ? (float)($dati['fisso'] ?? 0) : $consigliato;
     $previsione = gf_pocket_previsione($dati['impegni'], (float)$dati['attuale'], $pocket, $todaySql);
     $gap = $previsione['peggiore'] === null ? 0.0 : max(0.0, -(float)$previsione['peggiore']['saldo']);
@@ -203,7 +198,7 @@ foreach ($salvadanai as $dati) {
     $dati['atteso_oggi'] = round($attesoOggi, 2);
     // Remaining capital to build, excluding the future bonus but before monthly transfers.
     // This is actionable today, unlike a historical benchmark based on another saving rate.
-    $dati['da_accantonare'] = max(0, round($previsione['obiettivo'] - (float)$dati['attuale'] - $previsione['tredicesima_futura'], 2));
+    $dati['da_accantonare'] = max(0, round($previsione['obiettivo'] - (float)$dati['attuale'] - $previsione['tredicesima_futura'] - $previsione['quattordicesima_futura'], 2));
     $dati['scostamento_oggi'] = round((float)$dati['attuale'] - $attesoOggi, 2);
     $dati['oggi_in_linea'] = $dati['scostamento_oggi'] >= -0.01;
     $dati['pocket'] = $pocket;
@@ -212,6 +207,7 @@ foreach ($salvadanai as $dati) {
     $dati['rischio_data'] = $previsione['peggiore']['data'] ?? null;
     $dati['futuro_in_linea'] = $gap <= 0.01;
     $dati['bonus13_futuro'] = $previsione['tredicesima_futura'];
+    $dati['bonus14_futuro'] = $previsione['quattordicesima_futura'];
     $dati['viaggi'] = $viaggiSalvadanai[(int)$dati['id']] ?? [];
     $rowsPocket[] = $dati;
     $totalePocket += $pocket;
@@ -280,83 +276,6 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
       <a href="budget_importi_attuali.php" class="btn btn-outline-light btn-sm">Aggiorna saldi</a>
     </div>
   </div>
-  <section aria-label="Stato salvadanai">
-    <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
-      <h5 class="mb-0">Salvadanai e Pocket Revolut</h5>
-      <span class="small">Oggi: capitale ancora da accantonare · Scadenza: verifica con i prossimi versamenti</span>
-    </div>
-    <div class="d-none d-lg-block">
-      <table class="table table-striped table-sm gf-budget-table mb-1">
-        <thead>
-          <tr>
-            <th>Salvadanaio</th>
-            <th class="gf-number">Pocket/mese</th>
-            <th class="gf-number">Consigliato/mese</th>
-            <th class="gf-number">Saldo reale</th>
-            <th class="gf-number">Da accantonare*</th>
-            <th>Situazione oggi</th>
-            <th>Previsione a scadenza</th>
-            <th class="gf-number">13ª prevista</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-        <?php foreach ($rowsPocket as $d): ?>
-          <tr>
-            <th scope="row" class="gf-name">
-              <a class="text-white" href="budget_anno.php?<?= http_build_query(['id_salvadanaio'=>(int)$d['id'],'scadenza_da'=>'']) ?>"><?= htmlspecialchars($d['nome'] ?? '') ?></a>
-              <?php foreach ($d['viaggi'] as $v): ?>
-                <a class="gf-trip ms-1" href="vacanze_workspace.php?id=<?= (int)$v['id_viaggio'] ?>" title="Apri vacanza: <?= htmlspecialchars($v['titolo'], ENT_QUOTES) ?>" aria-label="Apri vacanza <?= htmlspecialchars($v['titolo'],ENT_QUOTES) ?>"><i class="bi bi-suitcase-lg" aria-hidden="true"></i></a>
-              <?php endforeach; ?>
-            </th>
-            <td class="gf-number"><?= number_format($d['pocket'],2,',','.') ?> €<?= $d['modalita']==='fisso' ? ' <span title="Accantonamento fisso">●</span>' : '' ?></td>
-            <td class="gf-number"><?= number_format($d['consigliato'],2,',','.') ?> €</td>
-            <td class="gf-number"><?= number_format((float)$d['attuale'],2,',','.') ?> €</td>
-            <td class="gf-number"><?= number_format($d['da_accantonare'],2,',','.') ?> €</td>
-            <td class="gf-status">
-              <?= $d['da_accantonare'] <= 0.01 ? 'Già sufficiente**' : 'Da accumulare' ?>
-            </td>
-            <td class="gf-status <?= $d['futuro_in_linea'] ? 'text-success' : 'text-warning' ?>" title="<?= $d['rischio_data'] ? 'Scadenza più critica: ' . htmlspecialchars(date('d/m/Y',strtotime($d['rischio_data'])),ENT_QUOTES) : 'Nessuna spesa con scadenza futura' ?>">
-              <?= $d['rischio_data'] === null ? 'Nessuna scadenza' : ($d['futuro_in_linea'] ? 'Coperto' : 'Mancano ' . number_format($d['scoperto_futuro'],2,',','.') . ' €') ?>
-              <?php if ($d['rischio_data']): ?><span class="gf-muted">(<?= date('d/m/Y',strtotime($d['rischio_data'])) ?>)</span><?php endif; ?>
-            </td>
-            <td class="gf-number"><?= number_format($d['bonus13_futuro'],2,',','.') ?> €</td>
-            <td><a class="text-white" href="salvadanaio_dettaglio.php?id=<?= (int)$d['id'] ?>" title="Modifica Pocket" aria-label="Modifica Pocket <?= htmlspecialchars($d['nome'] ?? '',ENT_QUOTES) ?>"><i class="bi bi-pencil-square"></i></a></td>
-          </tr>
-        <?php endforeach; ?>
-        </tbody>
-        <tfoot>
-          <tr class="fw-bold">
-            <td>Totale</td>
-            <td class="gf-number"><?= number_format($totalePocket,2,',','.') ?> €</td>
-            <td class="gf-number"><?= number_format($totaleConsigliato,2,',','.') ?> €</td>
-            <td class="gf-number"><?= number_format($totaleAttuale,2,',','.') ?> €</td>
-            <td class="gf-number"><?= number_format(array_sum(array_column($rowsPocket, 'da_accantonare')),2,',','.') ?> €</td>
-            <td colspan="4">I saldi per salvadanaio non sono compensabili tra loro.</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-    <div class="d-lg-none">
-      <?php foreach ($rowsPocket as $d): ?>
-      <article class="gf-budget-mobile-row">
-        <div class="d-flex justify-content-between align-items-center">
-          <a class="fw-semibold text-white" href="budget_anno.php?<?= http_build_query(['id_salvadanaio'=>(int)$d['id'],'scadenza_da'=>'']) ?>"><?= htmlspecialchars($d['nome'] ?? '') ?></a>
-          <?php foreach ($d['viaggi'] as $v): ?>
-            <a class="ms-2" href="vacanze_workspace.php?id=<?= (int)$v['id_viaggio'] ?>" title="<?= htmlspecialchars($v['titolo'],ENT_QUOTES) ?>"><i class="bi bi-suitcase-lg"></i></a>
-          <?php endforeach; ?>
-        </div>
-        <div class="d-flex justify-content-between small mt-1"><span>Pocket/mese</span><strong><?= number_format($d['pocket'],2,',','.') ?> €<?= $d['modalita']==='fisso' ? ' (fisso)' : '' ?></strong></div>
-        <div class="d-flex justify-content-between small"><span>Consigliato/mese</span><strong><?= number_format($d['consigliato'],2,',','.') ?> €</strong></div>
-        <div class="d-flex justify-content-between small"><span>Saldo accantonato</span><strong><?= number_format($d['attuale'],2,',','.') ?> €</strong></div>
-        <div class="d-flex justify-content-between mt-1"><span>Da accantonare*</span><strong><?= number_format($d['da_accantonare'],2,',','.') ?> €</strong></div>
-        <div class="d-flex justify-content-between"><span>Alla scadenza</span><strong class="<?= $d['futuro_in_linea'] ? 'text-success':'text-warning' ?>"><?= $d['rischio_data']===null?'Nessuna scadenza':($d['futuro_in_linea']?'Coperto':'Mancano '.number_format($d['scoperto_futuro'],2,',','.').' €') ?></strong></div>
-        <?php if ($d['bonus13_futuro'] > 0): ?><div class="small text-white-50">13ª attesa: <?= number_format($d['bonus13_futuro'],2,',','.') ?> €</div><?php endif; ?>
-      </article>
-      <?php endforeach; ?>
-    </div>
-    <div class="small mb-3">*Da accantonare = spese programmate meno saldo attuale e tredicesima futura. Non considera ancora i prossimi versamenti mensili, che sono invece inclusi nella previsione a scadenza. **Già sufficiente riguarda l'importo complessivo, non necessariamente tutte le scadenze intermedie. La quattordicesima non viene anticipata senza una data certa.</div>
-  </section>
   <div class="gf-desktop-panels">
     <section class="gf-panel" aria-label="Entrate mensili fisse">
       <h5 class="mb-1">Entrate mensili</h5>
@@ -391,11 +310,87 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
           <tr><td>Accantonamenti Pocket</td><td class="text-end">−<?= number_format($totalePocket,2,',','.') ?> €</td></tr>
           <tr><td>Altre quote annuali</td><td class="text-end">−<?= number_format($altreQuoteAnnuali,2,',','.') ?> €</td></tr>
           <tr class="gf-summary-strong <?= $margineConPocket>=0 ? 'text-success':'text-warning' ?>"><td>Margine dopo Pocket</td><td class="text-end"><?= number_format($margineConPocket,2,',','.') ?> €</td></tr>
-          <tr><td>Margine del budget originale</td><td class="text-end"><?= number_format($totalEntrateMensili-$totalUsciteMensili-$totalAnnualiMensile,2,',','.') ?> €</td></tr>
+          <tr><td>Margine piano teorico</td><td class="text-end"><?= number_format($totalEntrateMensili-$totalUsciteMensili-$totalAnnualiMensile,2,',','.') ?> €</td></tr>
         </tbody>
       </table>
       <p class="small mb-0">Margine dopo Pocket: entrate meno spese mensili, versamenti Pocket impostati e quote annuali non associate a Pocket. Non include le assegnazioni straordinarie da 13ª/14ª come reddito ordinario.</p>
     </section>
   </div>
+  <section aria-label="Stato salvadanai">
+    <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+      <h5 class="mb-0">Salvadanai e Pocket Revolut</h5>
+      <span class="small">Oggi: capitale ancora da accantonare · Scadenza: verifica con i prossimi versamenti</span>
+    </div>
+    <div class="d-none d-lg-block">
+      <table class="table table-striped table-sm gf-budget-table mb-1">
+        <thead>
+          <tr>
+            <th>Salvadanaio</th>
+            <th class="gf-number">Pocket/mese</th>
+            <th class="gf-number">Budget/mese</th>
+            <th class="gf-number">Saldo reale</th>
+            <th class="gf-number">Da finanziare*</th>
+            
+            <th>Previsione a scadenza</th>
+            <th class="gf-number">13ª / 14ª</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($rowsPocket as $d): ?>
+          <tr>
+            <th scope="row" class="gf-name">
+              <a href="budget_anno.php?<?= http_build_query(['id_salvadanaio'=>(int)$d['id'],'scadenza_da'=>'']) ?>"><?= htmlspecialchars($d['nome'] ?? '') ?></a>
+              <?php foreach ($d['viaggi'] as $v): ?>
+                <a class="gf-trip ms-1" href="vacanze_workspace.php?id=<?= (int)$v['id_viaggio'] ?>" title="Apri vacanza: <?= htmlspecialchars($v['titolo'], ENT_QUOTES) ?>" aria-label="Apri vacanza <?= htmlspecialchars($v['titolo'],ENT_QUOTES) ?>"><i class="bi bi-suitcase-lg" aria-hidden="true"></i></a>
+              <?php endforeach; ?>
+            </th>
+            <td class="gf-number"><?= number_format($d['pocket'],2,',','.') ?> €<?= $d['modalita']==='fisso' ? ' <span title="Accantonamento fisso">●</span>' : '' ?></td>
+            <td class="gf-number"><?= number_format($d['consigliato'],2,',','.') ?> €</td>
+            <td class="gf-number"><?= number_format((float)$d['attuale'],2,',','.') ?> €</td>
+            <td class="gf-number"><?= number_format($d['da_accantonare'],2,',','.') ?> €</td>
+
+            <td class="gf-status <?= $d['futuro_in_linea'] ? 'text-success' : 'text-warning' ?>" title="<?= $d['rischio_data'] ? 'Scadenza più critica: ' . htmlspecialchars(date('d/m/Y',strtotime($d['rischio_data'])),ENT_QUOTES) : 'Nessuna spesa con scadenza futura' ?>">
+              <?= $d['rischio_data'] === null ? 'Nessuna scadenza' : ($d['futuro_in_linea'] ? 'Coperto' : 'Mancano ' . number_format($d['scoperto_futuro'],2,',','.') . ' €') ?>
+              <?php if ($d['rischio_data']): ?><span class="gf-muted">(<?= date('d/m/Y',strtotime($d['rischio_data'])) ?>)</span><?php endif; ?>
+            </td>
+            <td class="gf-number"><?= number_format($d['bonus13_futuro'],2,',','.') ?> € / <?= number_format($d['bonus14_futuro'],2,',','.') ?> €</td>
+            <td><a href="salvadanaio_dettaglio.php?id=<?= (int)$d['id'] ?>" title="Modifica Pocket" aria-label="Modifica Pocket <?= htmlspecialchars($d['nome'] ?? '',ENT_QUOTES) ?>"><i class="bi bi-pencil-square"></i></a></td>
+          </tr>
+        <?php endforeach; ?>
+        </tbody>
+        <tfoot>
+          <tr class="fw-bold">
+            <td>Totale</td>
+            <td class="gf-number"><?= number_format($totalePocket,2,',','.') ?> €</td>
+            <td class="gf-number"><?= number_format($totaleConsigliato,2,',','.') ?> €</td>
+            <td class="gf-number"><?= number_format($totaleAttuale,2,',','.') ?> €</td>
+            <td class="gf-number"><?= number_format(array_sum(array_column($rowsPocket, 'da_accantonare')),2,',','.') ?> €</td>
+            <td colspan="4">I saldi dei diversi Pocket non sono compensabili tra loro.</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="d-lg-none">
+      <?php foreach ($rowsPocket as $d): ?>
+      <article class="gf-budget-mobile-row">
+        <div class="d-flex justify-content-between align-items-center">
+          <a class="fw-semibold" href="budget_anno.php?<?= http_build_query(['id_salvadanaio'=>(int)$d['id'],'scadenza_da'=>'']) ?>"><?= htmlspecialchars($d['nome'] ?? '') ?></a>
+          <?php foreach ($d['viaggi'] as $v): ?>
+            <a class="ms-2" href="vacanze_workspace.php?id=<?= (int)$v['id_viaggio'] ?>" title="<?= htmlspecialchars($v['titolo'],ENT_QUOTES) ?>"><i class="bi bi-suitcase-lg"></i></a>
+          <?php endforeach; ?>
+        </div>
+        <div class="d-flex justify-content-between small mt-1"><span>Pocket/mese</span><strong><?= number_format($d['pocket'],2,',','.') ?> €<?= $d['modalita']==='fisso' ? ' (fisso)' : '' ?></strong></div>
+        <div class="d-flex justify-content-between small"><span>Budget/mese</span><strong><?= number_format($d['consigliato'],2,',','.') ?> €</strong></div>
+        <div class="d-flex justify-content-between small"><span>Saldo accantonato</span><strong><?= number_format($d['attuale'],2,',','.') ?> €</strong></div>
+        <div class="d-flex justify-content-between mt-1"><span>Da accantonare*</span><strong><?= number_format($d['da_accantonare'],2,',','.') ?> €</strong></div>
+        <div class="d-flex justify-content-between"><span>Alla scadenza</span><strong class="<?= $d['futuro_in_linea'] ? 'text-success':'text-warning' ?>"><?= $d['rischio_data']===null?'Nessuna scadenza':($d['futuro_in_linea']?'Coperto':'Mancano '.number_format($d['scoperto_futuro'],2,',','.').' €') ?></strong></div>
+        <?php if ($d['bonus13_futuro'] > 0): ?><div class="small text-white-50">13ª attesa: <?= number_format($d['bonus13_futuro'],2,',','.') ?> € · 14ª attesa: <?= number_format($d['bonus14_futuro'],2,',','.') ?> €</div><?php endif; ?>
+      </article>
+      <?php endforeach; ?>
+    </div>
+    <div class="small mb-3">*Da finanziare = spese programmate meno saldo attuale e contributi futuri da tredicesima e quattordicesima. Non considera ancora i prossimi versamenti mensili, che sono invece inclusi nella previsione a scadenza. **Già sufficiente riguarda l'importo complessivo, non necessariamente tutte le scadenze intermedie. Le rate future sono conteggiate dal prossimo giorno 1, la 13ª dal 21 dicembre e la 14ª dal 30 giugno.</div>
+  </section>
+
 </main>
 <?php include 'includes/footer.php'; ?>
