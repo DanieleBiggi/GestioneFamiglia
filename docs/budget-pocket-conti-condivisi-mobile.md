@@ -1,7 +1,7 @@
 # Budget Pocket e conti condivisi, versione mobile
 
 ## Obiettivo
-Separare l'accantonamento effettivo su Pocket Revolut dalla previsione dei budget e registrare quote e compensazioni tra amici senza creare movimenti bancari fittizi.
+Separare l'accantonamento effettivo su Pocket Revolut dalla previsione dei budget e attribuire quote ai movimenti bancari già etichettati e registrare compensazioni tra amici senza creare movimenti bancari fittizi.
 
 ## Deploy (ordine necessario)
 1. Effettuare il backup delle tabelle `salvadanai` e `bilancio_etichette`.
@@ -10,13 +10,14 @@ Separare l'accantonamento effettivo su Pocket Revolut dalla previsione dei budge
 4. Verificare in `budget_dashboard.php` la presenza delle schede Pocket su schermo stretto e largo.
 5. Aprire `salvadanaio_dettaglio.php?id=75` (Inverno), impostare manualmente la modalità **Fisso** e 100 €/mese, solo dopo aver confermato con l'utente che il Pocket corrisponda ancora a tale importo.
 6. In `budget_importi_attuali.php`, cambiare un solo saldo lasciando gli altri campi vuoti: devono restare invariati.
-7. In `etichetta.php?id_etichetta=164` (Disney+), aprire "Conto condiviso". Impostare la modalità "Conto tra persone" se desiderata. Provare quota, compensazione, saldo e cancellazione su dati di test. Non importare automaticamente movimenti esistenti: va chiarito prima come ripartire le quote.
+7. In `etichetta.php?id_etichetta=164` (Disney+), aprire "Conto condiviso". Impostare la modalità "Conto tra persone" se desiderata. Provare quota, compensazione, saldo e cancellazione su dati di test. I movimenti esistenti sono proposti nell'elenco, ma per ciascuno occorre attribuire manualmente la quota della persona: non trasferire automaticamente l'intero importo. La tabella del conto salva il collegamento `id_e2o` e impedisce che la stessa operazione venga attribuita due volte alla medesima persona.
 
 ## Regole
+- La quota da 13esima (`budget.da_13esima`) viene sottratta dalla rata mensile come in precedenza, ma resta presente nel fabbisogno totale e compare esplicitamente nella dashboard. La previsione considera l'accredito della 13esima **solo nel prossimo dicembre e solo se precedente alla scadenza**, mai come denaro già versato. La quota da 14esima viene mostrata ma esclusa dalla proiezione fino a quando non è noto il mese di erogazione.
 - `salvadanai.accantonamento_modalita = automatico` di default: mantiene i vecchi budget. `fisso` usa `accantonamento_fisso` per il Pocket mensile senza modificare le righe `budget`.
 - Saldo verificato manualmente e ultimo aggiornamento rimangono in `salvadanai`.
 - Nella dashboard la proiezione è **indicativa** e basata sulle scadenze dei budget, non sottrae pagamenti intermedi. Non presentarla come saldo garantito.
-- `etichette_conti_condivisi.importo > 0`: la controparte deve all'utente; `importo < 0`: riduzione del credito o debito dell'utente. Non includere queste registrazioni nei totali bancari o nei movimenti Revolut.
+- `etichette_conti_condivisi.importo > 0`: la controparte deve all'utente; `importo < 0`: riduzione del credito o debito dell'utente. Non includere queste registrazioni nei totali bancari o nei movimenti Revolut. Le quote possono essere collegate al movimento originale tramite `id_e2o` senza alterarne importo, descrizione o etichette.
 - `bilancio_etichette.tipo_utilizzo` cambia la visualizzazione/classificazione, NON migra le vecchie quote e non altera le etichette dei movimenti.
 - Conti condivisi limitati alla famiglia legacy 1, coerentemente con il perimetro dei movimenti Revolut; CSRF obbligatorio in scrittura.
 
