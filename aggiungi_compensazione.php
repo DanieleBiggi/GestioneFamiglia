@@ -55,7 +55,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $check->bind_param('ii',$idE2o,$personId);$check->execute();$sharedUsed=$check->get_result()->num_rows>0;$check->close();
             if ($sharedUsed) throw new RuntimeException('Movimento gia collegato alla persona nel conto condiviso.');
         }
+        if ($type==='compensazione' && $idE2o) throw new RuntimeException('Una compensazione non deve essere collegata a un movimento bancario.');
         if ($type==='pagamento' && !$idE2o) throw new RuntimeException('Per un pagamento realmente ricevuto collega un movimento bancario esistente.');
+        if ($type==='saldo_debito' && !$idE2o) throw new RuntimeException('Per il saldo di un debito con denaro collega una uscita reale già registrata.');
         if ($type==='pagamento' && $idE2o) {
             $check = $conn->prepare("SELECT eo.tabella_operazione,COALESCE(be.importo,mr.amount,0) AS importo
                 FROM bilancio_etichette2operazioni eo
@@ -64,6 +66,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE eo.id_e2o=? AND eo.id_etichetta=? LIMIT 1");
             $check->bind_param('ii',$idE2o,$labelId);$check->execute();$incoming=$check->get_result()->fetch_assoc();$check->close();
             if (!$incoming || !in_array($incoming['tabella_operazione'],['bilancio_entrate','movimenti_revolut'],true) || (float)$incoming['importo']<=0) throw new RuntimeException('Il pagamento richiede una entrata reale positiva.');
+        }
+        if ($type==='saldo_debito') {
+            $check = $conn->prepare("SELECT eo.tabella_operazione,COALESCE(bu.importo,mr.amount,0) AS importo
+                FROM bilancio_etichette2operazioni eo
+                LEFT JOIN bilancio_uscite bu ON eo.tabella_operazione='bilancio_uscite' AND eo.id_tabella=bu.id_uscita
+                LEFT JOIN movimenti_revolut mr ON eo.tabella_operazione='movimenti_revolut' AND eo.id_tabella=mr.id_movimento_revolut
+                WHERE eo.id_e2o=? AND eo.id_etichetta=? LIMIT 1");
+            $check->bind_param('ii',$idE2o,$labelId);$check->execute();$outgoing=$check->get_result()->fetch_assoc();$check->close();
+            if (!$outgoing || !in_array($outgoing['tabella_operazione'],['bilancio_uscite','movimenti_revolut'],true)
+                || ($outgoing['tabella_operazione']==='movimenti_revolut' && (float)$outgoing['importo']>=0)) throw new RuntimeException('Il saldo del debito richiede una uscita reale.');
         }
         if (in_array($type,['compensazione','debito','pagamento'],true)) $amount=-$amount;
         if ($type==='rettifica') throw new RuntimeException('Le rettifiche richiedono un controllo dedicato.');
