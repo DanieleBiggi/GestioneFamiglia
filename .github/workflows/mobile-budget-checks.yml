@@ -1,0 +1,30 @@
+name: Mobile budget and shared accounts checks
+on:
+  pull_request:
+    paths:
+      - 'budget_dashboard.php'
+      - 'budget_anno.php'
+      - 'budget_importi_attuali.php'
+      - 'salvadanaio_dettaglio.php'
+      - 'etichetta.php'
+      - 'etichetta_conto.php'
+      - 'ajax/update_salvadanaio.php'
+      - 'js/salvadanaio_dettaglio.js'
+      - 'sql/migrations/20261118_mobile_pocket_conti_condivisi.sql'
+      - '.github/workflows/mobile-budget-checks.yml'
+permissions:
+  contents: read
+jobs:
+  php-js-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in budget_dashboard.php budget_anno.php budget_importi_attuali.php salvadanaio_dettaglio.php etichetta.php etichetta_conto.php ajax/update_salvadanaio.php; do
+            php -l "$file"
+          done
+      - name: JavaScript syntax
+        run: node --check js/salvadanaio_dettaglio.js
