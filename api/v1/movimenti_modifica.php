@@ -85,7 +85,8 @@ try {
     $q = $conn->prepare('SELECT id_etichetta FROM bilancio_etichette2operazioni WHERE tabella_operazione=? AND id_tabella=? ORDER BY id_etichetta FOR UPDATE');
     $q->bind_param('si',$source,$id);
     $q->execute();
-    while ($r = $q->get_result()->fetch_assoc()) $existing[] = (int)$r['id_etichetta'];
+    $res = $q->get_result();
+    while ($r = $res->fetch_assoc()) $existing[] = (int)$r['id_etichetta'];
     $q->close();
     sort($existing,SORT_NUMERIC);
     $currentHash = gf_mov_hash($row,$existing);
