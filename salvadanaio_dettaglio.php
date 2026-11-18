@@ -99,6 +99,22 @@ if ($id > 0): ?>
     <span id="salvadanaioNome"><?= htmlspecialchars($data['nome_salvadanaio']) ?></span>
     <i class="bi bi-pencil ms-2" role="button" id="editSalvadanaioBtn"></i>
   </h4>
+  <section class="card bg-dark border-secondary text-white p-3 mb-3" aria-label="Accantonamento Revolut">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+      <div>
+        <div class="small text-white-50">Pocket Revolut · accantonamento mensile</div>
+        <div class="fs-4 fw-semibold">
+          <?php if (($data['accantonamento_modalita'] ?? 'automatico') === 'fisso'): ?>
+            <?= number_format((float)($data['accantonamento_fisso'] ?? 0),2,',','.') ?> € <span class="badge bg-info text-dark fs-6">Fisso</span>
+          <?php else: ?>
+            Automatico <span class="badge bg-secondary fs-6">Pianificato</span>
+          <?php endif; ?>
+        </div>
+      </div>
+      <button type="button" class="btn btn-outline-light" id="editPocketBtn">Modifica Pocket</button>
+    </div>
+    <div class="small text-white-50 mt-2">Saldo aggiornato manualmente: <?= !empty($data['data_aggiornamento_manuale']) ? htmlspecialchars($data['data_aggiornamento_manuale']) : 'mai' ?></div>
+  </section>
   <div class="d-flex justify-content-between align-items-center mb-2">
     <h5 class="mb-0">Finanze</h5>
     <button type="button" class="btn btn-outline-light btn-sm" id="addSeBtn">Aggiungi</button>
@@ -183,6 +199,19 @@ if ($id > 0): ?>
         <div class="mb-3">
           <label class="form-label">Data scadenza</label>
           <input type="date" name="data_scadenza" class="form-control bg-secondary text-white">
+        </div>
+        <div class="border border-secondary rounded p-3 mb-3">
+          <h6>Accantonamento Pocket Revolut</h6>
+          <p class="small text-white-50">Questa impostazione non modifica il budget delle spese né effettua operazioni su Revolut.</p>
+          <label class="form-label" for="accantonamentoModalita">Modalità</label>
+          <select name="accantonamento_modalita" id="accantonamentoModalita" class="form-select bg-secondary text-white mb-3">
+            <option value="automatico">Automatico: usa la pianificazione</option>
+            <option value="fisso">Fisso: mantieni sempre lo stesso importo</option>
+          </select>
+          <div id="accantonamentoFissoWrap">
+            <label class="form-label" for="accantonamentoFisso">Versamento mensile impostato (€)</label>
+            <input id="accantonamentoFisso" type="number" name="accantonamento_fisso" min="0" max="1000000" step="0.01" inputmode="decimal" class="form-control bg-secondary text-white" placeholder="Es. 100,00">
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -337,6 +366,8 @@ if ($id > 0): ?>
 $salvadanaioData = [
   'id' => (int)$data['id_salvadanaio'],
   'nome_salvadanaio' => $data['nome_salvadanaio'],
+  'accantonamento_modalita' => $data['accantonamento_modalita'] ?? 'automatico',
+  'accantonamento_fisso' => $data['accantonamento_fisso'] ?? null,
   'importo_attuale' => number_format((float)$data['importo_attuale'], 2, '.', ''),
   'data_scadenza' => $data['data_scadenza'] ?? null,
 ];
