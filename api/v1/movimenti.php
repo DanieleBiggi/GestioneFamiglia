@@ -23,7 +23,9 @@ if (!is_string($source) || ($source !== '' && !in_array($source, $tables, true))
 if ($source === 'movimenti_revolut' && (int)$familyId !== 1) api_error(403, 'Fonte non disponibile');
 try {
     $parts = [];
-    // Imported bank files may encode debit amounts as negative already.\n    // ABS ensures a consistent sign without modifying the stored original.\n    if ($source === '' || $source === 'bilancio_uscite') {
+    // Imported bank files may encode debit amounts as negative already.
+    // ABS ensures a consistent sign without modifying the stored original.
+    if ($source === '' || $source === 'bilancio_uscite') {
         $parts[] = "SELECT id_uscita AS id, 'bilancio_uscite' AS source, data_operazione AS data, -ABS(importo) AS importo, descrizione_operazione AS descrizione_originale, descrizione_extra AS descrizione_extra, mezzo FROM bilancio_uscite WHERE id_utente=" . (int)$userId;
     }
     if ($source === '' || $source === 'bilancio_entrate') {
