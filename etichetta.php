@@ -85,6 +85,27 @@ while ($row = $resM->fetch_assoc()) {
 }
 $stmtM->close();
 
+// Anche i mesi con sole compensazioni devono essere selezionabili.
+if ((int)($_SESSION['id_famiglia_gestione'] ?? 0) === 1) {
+    $stmtMComp = $conn->prepare("SELECT DATE_FORMAT(data_movimento,'%Y-%m') AS ym,
+              DATE_FORMAT(data_movimento,'%M %Y') AS label
+        FROM etichette_conti_condivisi
+        WHERE id_etichetta=? AND id_famiglia=?
+        GROUP BY ym,label");
+    $meseEt = (int)$etichettaInfo['id_etichetta'];
+    $famMese = (int)$_SESSION['id_famiglia_gestione'];
+    $stmtMComp->bind_param('ii', $meseEt, $famMese);
+    $stmtMComp->execute();
+    $mesiComp = $stmtMComp->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmtMComp->close();
+    $mesiPerAnnoMese = [];
+    foreach (array_merge($mesi, $mesiComp) as $opzioneMese) {
+        $mesiPerAnnoMese[$opzioneMese['ym']] = $opzioneMese;
+    }
+    krsort($mesiPerAnnoMese);
+    $mesi = array_values($mesiPerAnnoMese);
+}
+
 // Calcolo dei totali entrate/uscite
 if ($mese !== '') {
     $sqlTot = "SELECT SUM(CASE WHEN amount>=0 THEN amount ELSE 0 END) AS entrate,
