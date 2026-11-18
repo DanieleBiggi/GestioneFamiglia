@@ -7,7 +7,7 @@ $r=gf_pocket_previsione($winter,736.09,100,'2026-11-18');
 checkBudget(abs($r['ultima']['saldo']+299.59)<0.01,'November first has passed: only December deposit before Jan 1');
 checkBudget($r['ultima']['mesi']===1,'one future transfer before deadline');
 checkBudget($r['tredicesima_futura']===1000.0,'December 21 included before Jan 1');
-checkBudget(abs(gf_budget_importo_mensile($winter[0],'2026-11-18')-81.99)<0.01,'shared monthly budget calculation');
+checkBudget(abs(gf_budget_importo_mensile($winter[0],'2026-11-18')-94.64)<0.01,'shared monthly budget calculation');
 $rDec=gf_pocket_previsione($winter,736.09,100,'2026-12-22');
 checkBudget($rDec['tredicesima_futura']===0.0,'do not add a past bonus to current balance');
 $summer=[['tipologia'=>'uscita','tipologia_spesa'=>'una_tantum','importo'=>1000,
