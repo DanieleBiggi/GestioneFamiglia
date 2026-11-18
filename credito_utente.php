@@ -326,16 +326,13 @@ uasort($totaliEtichette, function ($a, $b) {
     fetch('ajax/update_conti_saldata_bulk.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ids: contiIds, csrf: <?= json_encode($_SESSION['csrf_conto_etichette']) ?>})
+      body: JSON.stringify({
+        ids: contiIds,
+        quote_ids: ids,
+        csrf: <?= json_encode($_SESSION['csrf_conto_etichette']) ?>
+      })
     }).then(r => r.json()).then(res => {
-      if (!res.success) throw new Error(res.error || 'Errore conti');
-      if (ids.length===0) return {success:true};
-      return fetch('ajax/update_u2o_saldata_bulk.php', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({ids:ids})
-      }).then(r => r.json());
-    }).then(res => {
-      if (!res.success) throw new Error(res.error || 'Errore quote');
+      if (!res.success) throw new Error(res.error || 'Errore di salvataggio');
       location.reload();
     }).catch(error => alert(error.message));
   });
