@@ -44,6 +44,12 @@ function mcp_tools(): array {
     $requestId = ['type'=>'string', 'pattern'=>'^[A-Za-z0-9_-]{16,64}$',
         'description'=>'Identificativo univoco stabile per questa operazione. Riutilizzare lo stesso ID se la richiesta viene ripetuta.'];
     return [
+        mcp_tool('cerca_movimenti', 'Cerca movimenti bancari',
+            'Sola lettura: cerca i movimenti importati dei conti autorizzati per un intervallo massimo di 366 giorni. Restituisce importi firmati, data, descrizione e identificativo fonte; usa la paginazione e non dedurre che un movimento sia una spesa vacanza senza verifica.',
+            mcp_schema(['from'=>['type'=>'string','format'=>'date'],'to'=>['type'=>'string','format'=>'date'],'q'=>['type'=>'string','maxLength'=>150],'source'=>['type'=>'string','enum'=>['bilancio_uscite','bilancio_entrate','movimenti_revolut']],'limit'=>['type'=>'integer','minimum'=>1,'maximum'=>100],'offset'=>['type'=>'integer','minimum'=>0,'maximum'=>5000]], ['from','to']), true),
+        mcp_tool('leggi_movimento', 'Leggi movimento bancario',
+            'Sola lettura: recupera un movimento per identificativo e fonte, con controllo di autorizzazione dell utente configurato.',
+            mcp_schema(['source'=>['type'=>'string','enum'=>['bilancio_uscite','bilancio_entrate','movimenti_revolut']],'id'=>['type'=>'integer','minimum'=>1]], ['source','id']), true),
         mcp_tool('leggi_menu_settimanale', 'Leggi menù cene settimanale',
             'Legge i cinque pasti da lunedì a venerdì e le note delle ricette; distingue giorni salvati e previsioni master. Nessuna modifica. Senza week_start usa il prossimo lunedì. Confrontare con leggi_lista_spesa e chiedere conferma prima di aggiungere prodotti.',
             mcp_schema(['week_start'=>['type'=>'string','pattern'=>'^[0-9]{4}-[0-9]{2}-[0-9]{2}$','description'=>'Lunedì nel formato YYYY-MM-DD; omettere per il prossimo lunedì']]), true),
@@ -221,6 +227,27 @@ try {
     }
     if (in_array($name,['anteprima_modifica_menu_cene','modifica_menu_cene'],true)) {
         $file='menu_cene_modifica.php';
+    }
+    if (in_array($name, ['cerca_movimenti','leggi_movimento'], true)) {
+        // OAuth tokens identify a single person. Family-level grants must not
+        // expose that person's bank history to another authorized member.
+        $ownerId = filter_var($apiConfig['movimenti_user_id'] ?? null, FILTER_VALIDATE_INT, ['options'=>['min_range'=>1]]);
+        if (!$ownerId) mcp_failure($id, -32602, 'Lettura movimenti non configurata');
+        if ($oauthAccess && (int)$oauthAccess['id_utente'] !== (int)$ownerId) mcp_failure($id, -32602, 'Utente non autorizzato ai movimenti');
+        $file = 'movimenti.php';
+        if ($name === 'leggi_movimento') {
+            $src = $args['source'] ?? null;
+            $movId = filter_var($args['id'] ?? null, FILTER_VALIDATE_INT, ['options'=>['min_range'=>1]]);
+            if (!in_array($src,['bilancio_uscite','bilancio_entrate','movimenti_revolut'],true) || !$movId) mcp_failure($id,-32602,'Fonte o ID movimento non valido');
+            $file .= '?mode=detail&source=' . rawurlencode($src) . '&id=' . $movId;
+        } else {
+            $from = $args['from'] ?? null;
+            $to = $args['to'] ?? null;
+            if (!is_string($from) || !is_string($to) || !preg_match('/^\\d{4}-\\d{2}-\\d{2}$/D',$from) || !preg_match('/^\\d{4}-\\d{2}-\\d{2}$/D',$to)) mcp_failure($id,-32602,'Date obbligatorie YYYY-MM-DD');
+            $query = ['from'=>$from,'to'=>$to];
+            foreach (['q','source','limit','offset'] as $key) if (array_key_exists($key,$args)) $query[$key]=$args[$key];
+            $file .= '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986);
+        }
     }
     if ($name === 'leggi_menu_master_cene') {
         $file='menu_cene_master.php';
