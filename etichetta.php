@@ -263,6 +263,7 @@ $salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
     <?php endif; ?>
       <i class="bi bi-pencil ms-2" role="button" onclick="openEtichettaModal()"></i>
   </h4>
+  <?php if ((int)$famigliaId === 1): ?>
   <section class="card bg-dark border-secondary text-white p-3 mb-3" aria-label="Conto condiviso">
     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
       <div>
@@ -274,6 +275,7 @@ $salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
       </a>
     </div>
   </section>
+  <?php endif; ?>
   <form method="get" class="mb-3">
     <input type="hidden" name="id_etichetta" value="<?= htmlspecialchars($etichettaParam) ?>">
     <div class="d-flex flex-column flex-sm-row gap-2 align-items-sm-center">
