@@ -293,7 +293,6 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
             
             <th>Previsione a scadenza</th>
             <th class="gf-number">13ª / 14ª</th>
-            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -315,7 +314,7 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
               <?php if ($d['rischio_data']): ?><span class="gf-muted">(<?= date('d/m/Y',strtotime($d['rischio_data'])) ?>)</span><?php endif; ?>
             </td>
             <td class="gf-number"><?= number_format($d['bonus13_futuro'],2,',','.') ?> € / <?= number_format($d['bonus14_futuro'],2,',','.') ?> €</td>
-            <td><a href="salvadanaio_dettaglio.php?id=<?= (int)$d['id'] ?>" title="Modifica Pocket" aria-label="Modifica Pocket <?= htmlspecialchars($d['nome'] ?? '',ENT_QUOTES) ?>"><i class="bi bi-pencil-square"></i></a></td>
+
           </tr>
         <?php endforeach; ?>
         </tbody>
@@ -326,7 +325,7 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
             <td class="gf-number"><?= number_format($totaleConsigliato,2,',','.') ?> €</td>
             <td class="gf-number"><?= number_format($totaleAttuale,2,',','.') ?> €</td>
             <td class="gf-number"><?= number_format(array_sum(array_column($rowsPocket, 'da_accantonare')),2,',','.') ?> €</td>
-            <td colspan="4">I saldi dei diversi Pocket non sono compensabili tra loro.</td>
+            <td colspan="3">I saldi dei diversi Pocket non sono compensabili tra loro.</td>
           </tr>
         </tfoot>
       </table>
