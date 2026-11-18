@@ -23,11 +23,11 @@ if (!is_string($source) || ($source !== '' && !in_array($source, $tables, true))
 if ($source === 'movimenti_revolut' && (int)$familyId !== 1) api_error(403, 'Fonte non disponibile');
 try {
     $parts = [];
-    if ($source === '' || $source === 'bilancio_uscite') {
-        $parts[] = "SELECT id_uscita AS id, 'bilancio_uscite' AS source, data_operazione AS data, -importo AS importo, descrizione_operazione AS descrizione_originale, descrizione_extra AS descrizione_extra, mezzo FROM bilancio_uscite WHERE id_utente=" . (int)$userId;
+    // Imported bank files may encode debit amounts as negative already.\n    // ABS ensures a consistent sign without modifying the stored original.\n    if ($source === '' || $source === 'bilancio_uscite') {
+        $parts[] = "SELECT id_uscita AS id, 'bilancio_uscite' AS source, data_operazione AS data, -ABS(importo) AS importo, descrizione_operazione AS descrizione_originale, descrizione_extra AS descrizione_extra, mezzo FROM bilancio_uscite WHERE id_utente=" . (int)$userId;
     }
     if ($source === '' || $source === 'bilancio_entrate') {
-        $parts[] = "SELECT id_entrata AS id, 'bilancio_entrate' AS source, data_operazione AS data, importo AS importo, descrizione_operazione AS descrizione_originale, descrizione_extra AS descrizione_extra, mezzo FROM bilancio_entrate WHERE id_utente=" . (int)$userId;
+        $parts[] = "SELECT id_entrata AS id, 'bilancio_entrate' AS source, data_operazione AS data, ABS(importo) AS importo, descrizione_operazione AS descrizione_originale, descrizione_extra AS descrizione_extra, mezzo FROM bilancio_entrate WHERE id_utente=" . (int)$userId;
     }
     // Revolut records in the legacy schema are shared by the specific family #1.
     // This source is available only to the explicitly configured bank-data owner.
