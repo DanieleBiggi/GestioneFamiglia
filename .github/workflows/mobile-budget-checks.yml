@@ -7,6 +7,7 @@ on:
       - 'budget_importi_attuali.php'
       - 'salvadanaio_dettaglio.php'
       - 'etichetta.php'
+      - 'etichette_lista.php'
       - 'etichetta_conto.php'
       - 'ajax/update_salvadanaio.php'
       - 'js/salvadanaio_dettaglio.js'
@@ -23,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in budget_dashboard.php budget_anno.php budget_importi_attuali.php salvadanaio_dettaglio.php etichetta.php etichetta_conto.php ajax/update_salvadanaio.php; do
+          for file in budget_dashboard.php budget_anno.php budget_importi_attuali.php salvadanaio_dettaglio.php etichetta.php etichette_lista.php etichetta_conto.php ajax/update_salvadanaio.php; do
             php -l "$file"
           done
       - name: JavaScript syntax
