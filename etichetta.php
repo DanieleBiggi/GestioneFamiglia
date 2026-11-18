@@ -328,6 +328,38 @@ $salvadanaiDisponibili = $resSalv ? $resSalv->fetch_all(MYSQLI_ASSOC) : [];
       <p class="text-center text-muted">Nessun movimento per questa etichetta.</p>
     <?php endif; ?>
   
+    <?php
+    // Le compensazioni sono extracontabili: non passano da bilancio_entrate.
+    if ((int)$famigliaId === 1 && !empty($etichettaInfo['id_etichetta'])):
+      $stmtComp = $conn->prepare("SELECT c.id,c.data_movimento,c.descrizione,c.tipo,c.importo,c.saldata,
+                                        COALESCE(NULLIF(TRIM(CONCAT(u.nome,' ',u.cognome)),''),c.controparte) AS persona
+                                   FROM etichette_conti_condivisi c
+                              LEFT JOIN utenti u ON u.id=c.id_utente
+                                  WHERE c.id_etichetta=? AND c.id_famiglia=?
+                                  ORDER BY c.data_movimento DESC,c.id DESC");
+      $idEtComp = (int)$etichettaInfo['id_etichetta'];
+      $idFamComp = (int)$famigliaId;
+      $stmtComp->bind_param('ii',$idEtComp,$idFamComp);
+      $stmtComp->execute();
+      $righeComp = $stmtComp->get_result()->fetch_all(MYSQLI_ASSOC);
+      $stmtComp->close();
+    ?>
+    <?php if ($righeComp): ?>
+    <section class="mb-4" aria-label="Compensazioni e quote non bancarie">
+      <h5>Quote e compensazioni non bancarie</h5>
+      <?php foreach ($righeComp as $c): ?>
+        <div class="movement d-flex justify-content-between gap-3 mb-2">
+          <div>
+            <div class="fw-semibold"><?= htmlspecialchars($c['descrizione']) ?></div>
+            <div class="small text-muted"><?= htmlspecialchars($c['persona']) ?> · <?= htmlspecialchars($c['tipo']) ?> · <?= date('d/m/Y',strtotime($c['data_movimento'])) ?></div>
+            <div class="small"><?= (int)$c['saldata']===1?'Saldata':'Non saldata' ?></div>
+          </div>
+          <div class="text-end"><?= (float)$c['importo']>=0?'+':'' ?><?= number_format((float)$c['importo'],2,',','.') ?> €</div>
+        </div>
+      <?php endforeach; ?>
+    </section>
+    <?php endif; ?>
+    <?php endif; ?>
     <!-- Modal gestione quote utenti -->
     <div class="modal fade" id="u2oModal" tabindex="-1">
       <div class="modal-dialog">
