@@ -62,6 +62,18 @@ function mcp_tools(): array {
         mcp_tool('modifica_movimento', 'Modifica movimento dopo conferma',
             'Salva descrizione extra, gruppo ed etichette SOLO dopo anteprima e consenso esplicito. payload contiene source, id, campi desiderati e expected_hash dell anteprima. etichette sostituisce l elenco completo; i collegamenti conservati mantengono i dati aggiuntivi.',
             mcp_schema(['payload'=>$payload,'confirm'=>$confirm,'request_id'=>$requestId],['payload','confirm','request_id']), false),
+        mcp_tool('elenca_finanze_collegabili', 'Elenca vacanze, salvadanai, budget, etichette ed eventi',
+            'Sola lettura: mostra gli ID disponibili per identificare i record corretti. Il catalogo mostra solo risorse finanziarie accessibili dalla famiglia configurata.',
+            mcp_schema(), true),
+        mcp_tool('leggi_finanze_collegate', 'Leggi collegamenti finanziari',
+            'Sola lettura: legge un tipo vacanza|salvadanaio|etichetta|evento e i collegamenti con budget, etichette, salvadanai o eventi. Per le etichette include operazioni effettive. Non sommare movimenti duplicati sotto più etichette.',
+            mcp_schema(['tipo'=>['type'=>'string','enum'=>['vacanza','salvadanaio','etichetta','evento']],'id'=>['type'=>'integer','minimum'=>1]],['tipo','id']), true),
+        mcp_tool('anteprima_collegamento_finanze', 'Anteprima collegamento finanze',
+            'NON salva. payload con tipo=etichetta_salvadanaio|etichetta_evento|budget_salvadanaio|vacanza_salvadanaio, azione=collega|scollega e ID pertinenti (id_etichetta, id_salvadanaio, id_evento, id_budget, id_viaggio). Mostra relazione precedente e expected_hash. Verificare tutti gli ID nel catalogo.',
+            mcp_schema(['payload'=>$payload],['payload']), true),
+        mcp_tool('modifica_collegamento_finanze', 'Collega o scollega finanze dopo conferma',
+            'Scrive SOLO dopo anteprima e consenso esplicito; payload come anteprima con expected_hash, confirm=true e request_id. Non cambia importi, saldo salvadanaio o spese preventivate.',
+            mcp_schema(['payload'=>$payload,'confirm'=>$confirm,'request_id'=>$requestId],['payload','confirm','request_id']), false),
         mcp_tool('leggi_menu_settimanale', 'Leggi menù cene settimanale',
             'Legge i cinque pasti da lunedì a venerdì e le note delle ricette; distingue giorni salvati e previsioni master. Nessuna modifica. Senza week_start usa il prossimo lunedì. Confrontare con leggi_lista_spesa e chiedere conferma prima di aggiungere prodotti.',
             mcp_schema(['week_start'=>['type'=>'string','pattern'=>'^[0-9]{4}-[0-9]{2}-[0-9]{2}$','description'=>'Lunedì nel formato YYYY-MM-DD; omettere per il prossimo lunedì']]), true),
@@ -209,11 +221,11 @@ $args = $params['arguments'] ?? [];
 if (!is_array($args)) mcp_failure($id,-32602,'Argomenti non validi');
 $allowed = array_column(mcp_tools(),'name');
 if (!in_array($name, $allowed, true)) mcp_failure($id,-32602,'Strumento non disponibile');
-$write = in_array($name,['crea_spesa','crea_vacanza','aggiungi_scenario','aggiorna_associazioni_spesa','aggiorna_scenario','aggiorna_scenari','modifica_date_vacanza','elimina_voce_scenario','modifica_menu_cene','modifica_movimento'],true);
+$write = in_array($name,['crea_spesa','crea_vacanza','aggiungi_scenario','aggiorna_associazioni_spesa','aggiorna_scenario','aggiorna_scenari','modifica_date_vacanza','elimina_voce_scenario','modifica_menu_cene','modifica_movimento','modifica_collegamento_finanze'],true);
 if ($write && ($args['confirm'] ?? null) !== true) mcp_failure($id,-32602,'Conferma esplicita obbligatoria');
 if ($write && (!is_string($args['request_id'] ?? null) ||
     !preg_match('/^[A-Za-z0-9_-]{16,64}$/D', $args['request_id']))) mcp_failure($id,-32602,'request_id mancante o non valido');
-if (in_array($name,['crea_spesa','crea_vacanza','anteprima_spesa','anteprima_vacanza','anteprima_aggiunta_scenario','aggiungi_scenario','anteprima_associazioni_spesa','aggiorna_associazioni_spesa','anteprima_aggiornamento_scenario','anteprima_aggiornamento_scenari','aggiorna_scenario','aggiorna_scenari','anteprima_modifica_date_vacanza','modifica_date_vacanza','anteprima_eliminazione_voce_scenario','elimina_voce_scenario','anteprima_modifica_menu_cene','modifica_menu_cene','anteprima_modifica_movimento','modifica_movimento'],true) &&
+if (in_array($name,['crea_spesa','crea_vacanza','anteprima_spesa','anteprima_vacanza','anteprima_aggiunta_scenario','aggiungi_scenario','anteprima_associazioni_spesa','aggiorna_associazioni_spesa','anteprima_aggiornamento_scenario','anteprima_aggiornamento_scenari','aggiorna_scenario','aggiorna_scenari','anteprima_modifica_date_vacanza','modifica_date_vacanza','anteprima_eliminazione_voce_scenario','elimina_voce_scenario','anteprima_modifica_menu_cene','modifica_menu_cene','anteprima_modifica_movimento','modifica_movimento','anteprima_collegamento_finanze','modifica_collegamento_finanze'],true) &&
     (!is_array($args['payload'] ?? null) || array_is_list($args['payload']))) mcp_failure($id,-32602,'payload JSON non valido');
 
 try {
@@ -273,6 +285,20 @@ try {
         if ($oauthAccess && (int)$oauthAccess['id_utente'] !== (int)$ownerId) mcp_failure($id,-32602,'Utente non autorizzato ai movimenti');
         $file='movimenti_modifica.php';
     }
+    if (in_array($name,['elenca_finanze_collegabili','leggi_finanze_collegate','anteprima_collegamento_finanze','modifica_collegamento_finanze'],true)) {
+        $ownerId = filter_var($apiConfig['movimenti_user_id'] ?? null, FILTER_VALIDATE_INT, ['options'=>['min_range'=>1]]);
+        if (!$ownerId) mcp_failure($id,-32602,'Finanze personali non configurate');
+        if ($oauthAccess && (int)$oauthAccess['id_utente'] !== (int)$ownerId) mcp_failure($id,-32602,'Utente non autorizzato alle finanze');
+        $file='finanze_collegamenti.php';
+        if ($name==='elenca_finanze_collegabili') {
+            $file.='?tipo=catalogo';
+        } elseif ($name==='leggi_finanze_collegate') {
+            $tipo=$args['tipo'] ?? null;
+            $finId=filter_var($args['id'] ?? null,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
+            if (!in_array($tipo,['vacanza','salvadanaio','etichetta','evento'],true) || !$finId) mcp_failure($id,-32602,'Tipo o ID finanza non valido');
+            $file.='?tipo='.rawurlencode($tipo).'&id='.$finId;
+        }
+    }
     if ($name === 'leggi_menu_master_cene') {
         $file='menu_cene_master.php';
     }
@@ -286,7 +312,7 @@ try {
             $file .= '?week_start=' . rawurlencode($week);
         }
     }
-    $verb = in_array($name, ['anteprima_spesa','crea_spesa','anteprima_vacanza','crea_vacanza','anteprima_aggiunta_scenario','aggiungi_scenario','anteprima_associazioni_spesa','aggiorna_associazioni_spesa','anteprima_aggiornamento_scenario','anteprima_aggiornamento_scenari','aggiorna_scenario','aggiorna_scenari','anteprima_modifica_date_vacanza','modifica_date_vacanza','anteprima_eliminazione_voce_scenario','elimina_voce_scenario','anteprima_modifica_menu_cene','modifica_menu_cene','anteprima_modifica_movimento','modifica_movimento'],true) ? 'POST' : 'GET';
+    $verb = in_array($name, ['anteprima_spesa','crea_spesa','anteprima_vacanza','crea_vacanza','anteprima_aggiunta_scenario','aggiungi_scenario','anteprima_associazioni_spesa','aggiorna_associazioni_spesa','anteprima_aggiornamento_scenario','anteprima_aggiornamento_scenari','aggiorna_scenario','aggiorna_scenari','anteprima_modifica_date_vacanza','modifica_date_vacanza','anteprima_eliminazione_voce_scenario','elimina_voce_scenario','anteprima_modifica_menu_cene','modifica_menu_cene','anteprima_modifica_movimento','modifica_movimento','anteprima_collegamento_finanze','modifica_collegamento_finanze'],true) ? 'POST' : 'GET';
     if ($name === 'leggi_vacanza') {
         $vacId = filter_var($args['id_viaggio'] ?? null, FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
         if (!$vacId) mcp_failure($id,-32602,'ID vacanza non valido');
