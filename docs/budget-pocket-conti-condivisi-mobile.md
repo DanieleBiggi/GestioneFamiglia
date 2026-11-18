@@ -41,3 +41,9 @@ Separare l'accantonamento effettivo su Pocket Revolut dalla previsione dei budge
 - Link alle vacanze mediante icona a forma di valigia vicino al salvadanaio, senza card separate.
 - Entrate mensili, uscite mensili e distribuzione del reddito **sempre aperte**, in tre colonne desktop. Il margine dopo Pocket tiene separati versamenti effettivi e altri stanziamenti annuali; viene mostrato anche il margine del budget tradizionale per confronto.
 - Le tabelle possono comunque superare l'altezza della finestra se contengono molte righe; la pagina rimane unica e priva di barre interne.
+
+## Correzioni tema e interpretazione Inverno (18 novembre)
+- Le tabelle Budget usano le variabili del tema (sfondo, righe alternate, testo e link), senza imporre `table-dark` e senza trasformare i link in testo scuro su sfondo scuro.
+- Il nome del salvadanaio, nella dashboard desktop e mobile, apre `budget_anno.php` filtrata per salvadanaio, con `scadenza_da` vuota per non nascondere automaticamente le voci più vecchie. L'icona di modifica continua ad aprire il dettaglio Pocket.
+- Rimosso lo stato generico «Sotto di X oggi» costruito sulla quota teorica iniziale: può essere fuorviante quando l'accantonamento Revolut fisso è diverso. Ora si distinguono «Da accantonare» (prima dei futuri versamenti mensili, escludendo la tredicesima ancora attesa) e «Previsione a scadenza» (includendo i versamenti futuri e la 13ª).
+- Esempio Inverno fornito dall'utente: budget 2.135,68 €, saldo reale 736,09 €, 13ª prevista 1.000 €, due versamenti da 100 €; capitale atteso 1.936,09 €, scoperto previsto 199,59 € al 01/01/2027. Oggi rimangono da accantonare 399,59 € al netto della tredicesima attesa. Confermare se l'intera spesa scade realmente il 01/01/2027, non soltanto se il periodo invernale inizia quel giorno.
