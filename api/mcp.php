@@ -50,6 +50,12 @@ function mcp_tools(): array {
         mcp_tool('leggi_movimento', 'Leggi movimento bancario',
             'Sola lettura: recupera un movimento per identificativo e fonte, con controllo di autorizzazione dell utente configurato.',
             mcp_schema(['source'=>['type'=>'string','enum'=>['bilancio_uscite','bilancio_entrate','movimenti_revolut']],'id'=>['type'=>'integer','minimum'=>1]], ['source','id']), true),
+        mcp_tool('elenca_gruppi_movimenti', 'Elenca gruppi dei movimenti',
+            'Sola lettura: elenca i gruppi disponibili dell utente per assegnare correttamente id_gruppo_transazione.',
+            mcp_schema(), true),
+        mcp_tool('elenca_etichette_movimenti', 'Elenca etichette dei movimenti',
+            'Sola lettura: elenca ID e descrizioni delle etichette presenti, per scegliere quelle da associare ai movimenti.',
+            mcp_schema(), true),
         mcp_tool('anteprima_modifica_movimento', 'Anteprima modifica movimento',
             'NON salva. Consente di preparare modifica descrizione_extra, id_gruppo_transazione ed etichette (lista completa di ID). Prima leggere il movimento e mostrare sempre differenze e associazioni che verrebbero rimosse. La risposta include expected_hash.',
             mcp_schema(['payload'=>$payload],['payload']), true),
@@ -254,6 +260,12 @@ try {
             foreach (['q','source','limit','offset'] as $key) if (array_key_exists($key,$args)) $query[$key]=$args[$key];
             $file .= '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986);
         }
+    }
+    if (in_array($name,['elenca_gruppi_movimenti','elenca_etichette_movimenti'],true)) {
+        $ownerId = filter_var($apiConfig['movimenti_user_id'] ?? null, FILTER_VALIDATE_INT, ['options'=>['min_range'=>1]]);
+        if (!$ownerId) mcp_failure($id,-32602,'Movimenti non configurati');
+        if ($oauthAccess && (int)$oauthAccess['id_utente'] !== (int)$ownerId) mcp_failure($id,-32602,'Utente non autorizzato');
+        $file='movimenti_cataloghi.php?mode=' . ($name==='elenca_gruppi_movimenti' ? 'gruppi' : 'etichette');
     }
     if (in_array($name,['anteprima_modifica_movimento','modifica_movimento'],true)) {
         $ownerId = filter_var($apiConfig['movimenti_user_id'] ?? null, FILTER_VALIDATE_INT, ['options'=>['min_range'=>1]]);
