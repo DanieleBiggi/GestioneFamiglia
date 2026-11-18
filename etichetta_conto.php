@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once 'includes/session_check.php';
 require_once 'includes/db.php';
 require_once 'includes/permissions.php';
+require_once 'includes/etichette_utils.php';
 
 // Legacy labels and Revolut movements are scoped to family 1.
 $familyId = (int)($_SESSION['id_famiglia_gestione'] ?? 0);
@@ -30,44 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$stmt->execute()) throw new RuntimeException('Salvataggio non riuscito.');
             $stmt->close();
         } elseif ($azione === 'aggiungi') {
-            $persona = trim((string)($_POST['controparte'] ?? ''));
-            $descrizione = trim((string)($_POST['descrizione'] ?? ''));
-            $tipo = $_POST['tipo'] ?? '';
-            $data = (string)($_POST['data_movimento'] ?? '');
-            $raw = $_POST['importo'] ?? '';
-            $dt = DateTimeImmutable::createFromFormat('!Y-m-d', $data);
-            if (!$dt || $dt->format('Y-m-d') !== $data) throw new RuntimeException('Data non valida.');
-            if ($persona === '' || mb_strlen($persona) > 120 || $descrizione === '' || mb_strlen($descrizione) > 255) throw new RuntimeException('Inserisci persona e descrizione.');
-            if (!in_array($tipo, ['quota','compensazione','pagamento','debito','saldo_debito','rettifica'], true)) throw new RuntimeException('Tipo non valido.');
-            if (!is_scalar($raw) || !is_numeric($raw)) throw new RuntimeException('Importo non valido.');
-            $importo = round((float)$raw, 2);
-            if (abs($importo) < 0.01 || abs($importo) > 1000000) throw new RuntimeException('Importo fuori intervallo.');
-            if ($tipo !== 'rettifica' && $importo <= 0) throw new RuntimeException('Inserisci un importo positivo.');
-            if ($tipo === 'compensazione' || $tipo === 'pagamento' || $tipo === 'debito') $importo = -abs($importo);
-            if ($tipo === 'quota' || $tipo === 'saldo_debito') $importo = abs($importo);
-            // Optionally link the allocation to the actual movement already assigned to this label.
-            // The bank movement itself is never duplicated or modified.
-            $idE2o = null;
-            if (($_POST['id_e2o'] ?? '') !== '') {
-                $idE2o = filter_var($_POST['id_e2o'], FILTER_VALIDATE_INT);
-                if (!$idE2o || $idE2o < 1) throw new RuntimeException('Movimento collegato non valido.');
-                $check = $conn->prepare('SELECT 1 FROM bilancio_etichette2operazioni WHERE id_e2o=? AND id_etichetta=? LIMIT 1');
-                $check->bind_param('ii', $idE2o, $id);
-                $check->execute();
-                $exists = (bool)$check->get_result()->fetch_row();
-                $check->close();
-                if (!$exists) throw new RuntimeException('Il movimento non appartiene a questa etichetta.');
-                $dup = $conn->prepare('SELECT 1 FROM etichette_conti_condivisi WHERE id_e2o=? AND controparte=? LIMIT 1');
-                $dup->bind_param('is', $idE2o, $persona);
-                $dup->execute();
-                $already = (bool)$dup->get_result()->fetch_row();
-                $dup->close();
-                if ($already) throw new RuntimeException('Questo movimento è già attribuito alla persona indicata.');
-            }
-            $stmt = $conn->prepare('INSERT INTO etichette_conti_condivisi (id_etichetta,id_famiglia,controparte,data_movimento,tipo,importo,descrizione,id_e2o) VALUES (?,?,?,?,?,?,?,?)');
-            $stmt->bind_param('iisssdsi', $id, $familyId, $persona, $data, $tipo, $importo, $descrizione, $idE2o);
-            if (!$stmt->execute()) throw new RuntimeException('Registrazione non riuscita.');
-            $stmt->close();
+            throw new RuntimeException('Utilizza la pagina dedicata per registrare quote e compensazioni.');
         } elseif ($azione === 'elimina') {
             $riga = filter_var($_POST['id_riga'] ?? null, FILTER_VALIDATE_INT);
             if (!$riga) throw new RuntimeException('Registrazione non valida.');
@@ -84,11 +48,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errore = $e->getMessage();
     }
 }
-$stmt = $conn->prepare('SELECT controparte, ROUND(SUM(importo),2) AS saldo, COUNT(*) AS numero FROM etichette_conti_condivisi WHERE id_etichetta=? AND id_famiglia=? GROUP BY controparte ORDER BY controparte');
-$stmt->bind_param('ii', $id, $familyId);
-$stmt->execute();
-$saldi = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-$stmt->close();
+// Saldo unico: quote della contabilità storica + registrazioni extracontabili,
+ // lette dalla stessa funzione utilizzata da credito_utente.php.
+$saldi = [];
+$stmtPersone = $conn->prepare("SELECT DISTINCT u.id,u.nome,u.cognome
+  FROM utenti u
+  JOIN utenti2famiglie uf ON uf.id_utente=u.id AND uf.id_famiglia=?
+  WHERE u.id IN (
+    SELECT uo.id_utente FROM bilancio_utenti2operazioni_etichettate uo
+      JOIN bilancio_etichette2operazioni eo ON eo.id_e2o=uo.id_e2o WHERE eo.id_etichetta=?
+    UNION
+    SELECT cc.id_utente FROM etichette_conti_condivisi cc WHERE cc.id_etichetta=? AND cc.id_famiglia=? AND cc.id_utente IS NOT NULL
+  ) ORDER BY u.nome,u.cognome");
+$stmtPersone->bind_param('iiii',$familyId,$id,$id,$familyId);
+$stmtPersone->execute();
+$utentiConto = $stmtPersone->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmtPersone->close();
+foreach ($utentiConto as $personaConto) {
+    $dati = get_saldo_e_movimenti_utente((int)$personaConto['id']);
+    $saldo = 0.0;
+    $numero = 0;
+    foreach ($dati['movimenti'] as $mov) {
+        if ((int)$mov['id_etichetta'] !== $id) continue;
+        // Segno del conto condiviso: positivo = credito verso la controparte.
+        $saldo -= (float)$mov['saldo_utente'];
+        $numero++;
+    }
+    $saldi[] = [
+      'controparte' => trim($personaConto['nome'].' '.$personaConto['cognome']),
+      'saldo' => $saldo,
+      'numero' => $numero,
+    ];
+}
 $stmt = $conn->prepare('SELECT id, controparte, data_movimento, tipo, importo, descrizione, id_e2o FROM etichette_conti_condivisi WHERE id_etichetta=? AND id_famiglia=? ORDER BY data_movimento DESC,id DESC LIMIT 200');
 $stmt->bind_param('ii', $id, $familyId);
 $stmt->execute();
