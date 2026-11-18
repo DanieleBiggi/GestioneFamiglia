@@ -83,6 +83,12 @@ function mcp_tools(): array {
         mcp_tool('aggiorna_scenario', 'Modifica scenario esistente',
             'Alias scrittura per un solo scenario: stesso payload di aggiorna_scenari ma scenari contiene esattamente un elemento; richiede conferma ed expected_hash della precedente anteprima.',
             mcp_schema(['payload'=>$payload,'confirm'=>$confirm,'request_id'=>$requestId],['payload','confirm','request_id']), false),
+        mcp_tool('anteprima_aggiunta_scenario', 'Anteprima aggiunta scenario a vacanza esistente',
+            'NON salva. Prima leggere la vacanza. payload: {id_viaggio,nome}. Verifica appartenenza alla famiglia, nome non duplicato e numero massimo di scenari. Restituisce expected_hash. Il nuovo scenario nasce vuoto: aggiungere successivamente costi con anteprima_aggiornamento_scenario.',
+            mcp_schema(['payload'=>$payload],['payload']), true),
+        mcp_tool('aggiungi_scenario', 'Aggiungi scenario a vacanza esistente',
+            'Crea uno scenario vuoto SOLO dopo anteprima e consenso esplicito. payload: {id_viaggio,nome,expected_hash}. Richiede confirm=true e request_id. Non altera gli altri scenari. Poi usare aggiorna_scenario per aggiungere i costi.',
+            mcp_schema(['payload'=>$payload,'confirm'=>$confirm,'request_id'=>$requestId],['payload','confirm','request_id']), false),
         mcp_tool('anteprima_modifica_date_vacanza', 'Anteprima modifica date generali di una vacanza',
             'NON salva. Leggere prima la vacanza. payload: id_viaggio, data_inizio e/o data_fine nel formato YYYY-MM-DD. Restituisce date e notti precedenti e nuove più expected_hash. Non modifica le date di alloggi, trasporti o prenotazioni.',
             mcp_schema(['payload'=>$payload],['payload']), true),
@@ -185,11 +191,11 @@ $args = $params['arguments'] ?? [];
 if (!is_array($args)) mcp_failure($id,-32602,'Argomenti non validi');
 $allowed = array_column(mcp_tools(),'name');
 if (!in_array($name, $allowed, true)) mcp_failure($id,-32602,'Strumento non disponibile');
-$write = in_array($name,['crea_spesa','crea_vacanza','aggiorna_associazioni_spesa','aggiorna_scenario','aggiorna_scenari','modifica_date_vacanza','elimina_voce_scenario','modifica_menu_cene'],true);
+$write = in_array($name,['crea_spesa','crea_vacanza','aggiungi_scenario','aggiorna_associazioni_spesa','aggiorna_scenario','aggiorna_scenari','modifica_date_vacanza','elimina_voce_scenario','modifica_menu_cene'],true);
 if ($write && ($args['confirm'] ?? null) !== true) mcp_failure($id,-32602,'Conferma esplicita obbligatoria');
 if ($write && (!is_string($args['request_id'] ?? null) ||
     !preg_match('/^[A-Za-z0-9_-]{16,64}$/D', $args['request_id']))) mcp_failure($id,-32602,'request_id mancante o non valido');
-if (in_array($name,['crea_spesa','crea_vacanza','anteprima_spesa','anteprima_vacanza','anteprima_associazioni_spesa','aggiorna_associazioni_spesa','anteprima_aggiornamento_scenario','anteprima_aggiornamento_scenari','aggiorna_scenario','aggiorna_scenari','anteprima_modifica_date_vacanza','modifica_date_vacanza','anteprima_eliminazione_voce_scenario','elimina_voce_scenario','anteprima_modifica_menu_cene','modifica_menu_cene'],true) &&
+if (in_array($name,['crea_spesa','crea_vacanza','anteprima_spesa','anteprima_vacanza','anteprima_aggiunta_scenario','aggiungi_scenario','anteprima_associazioni_spesa','aggiorna_associazioni_spesa','anteprima_aggiornamento_scenario','anteprima_aggiornamento_scenari','aggiorna_scenario','aggiorna_scenari','anteprima_modifica_date_vacanza','modifica_date_vacanza','anteprima_eliminazione_voce_scenario','elimina_voce_scenario','anteprima_modifica_menu_cene','modifica_menu_cene'],true) &&
     (!is_array($args['payload'] ?? null) || array_is_list($args['payload']))) mcp_failure($id,-32602,'payload JSON non valido');
 
 try {
@@ -203,6 +209,9 @@ try {
         if (in_array($name,['anteprima_aggiornamento_scenario','aggiorna_scenario'],true) && $count !== 1) {
             mcp_failure($id,-32602,'Lo strumento singolo richiede esattamente uno scenario');
         }
+    }
+    if (in_array($name, ['anteprima_aggiunta_scenario','aggiungi_scenario'],true)) {
+        $file='vacanze_scenario_crea.php';
     }
     if (in_array($name, ['anteprima_modifica_date_vacanza','modifica_date_vacanza'],true)) {
         $file='vacanze_date.php';
@@ -226,7 +235,7 @@ try {
             $file .= '?week_start=' . rawurlencode($week);
         }
     }
-    $verb = in_array($name, ['anteprima_spesa','crea_spesa','anteprima_vacanza','crea_vacanza','anteprima_associazioni_spesa','aggiorna_associazioni_spesa','anteprima_aggiornamento_scenario','anteprima_aggiornamento_scenari','aggiorna_scenario','aggiorna_scenari','anteprima_modifica_date_vacanza','modifica_date_vacanza','anteprima_eliminazione_voce_scenario','elimina_voce_scenario','anteprima_modifica_menu_cene','modifica_menu_cene'],true) ? 'POST' : 'GET';
+    $verb = in_array($name, ['anteprima_spesa','crea_spesa','anteprima_vacanza','crea_vacanza','anteprima_aggiunta_scenario','aggiungi_scenario','anteprima_associazioni_spesa','aggiorna_associazioni_spesa','anteprima_aggiornamento_scenario','anteprima_aggiornamento_scenari','aggiorna_scenario','aggiorna_scenari','anteprima_modifica_date_vacanza','modifica_date_vacanza','anteprima_eliminazione_voce_scenario','elimina_voce_scenario','anteprima_modifica_menu_cene','modifica_menu_cene'],true) ? 'POST' : 'GET';
     if ($name === 'leggi_vacanza') {
         $vacId = filter_var($args['id_viaggio'] ?? null, FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
         if (!$vacId) mcp_failure($id,-32602,'ID vacanza non valido');
