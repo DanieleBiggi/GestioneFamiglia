@@ -236,7 +236,32 @@ $salStmt->close();
     <a class="btn btn-outline-light w-100" href="budget_dashboard.php">Dashboard</a>
   </div>
 </form>
-<div class="table-responsive" style="width:90vw;margin-left:calc(-45vw + 50%);">
+<style>
+/* Desktop keeps full detail and batch actions; mobile presents the same rows as readable cards. */
+@media (max-width:767.98px) {
+  #budgetTable thead, #budgetTable tfoot {display:none}
+  #budgetTable, #budgetTable tbody, #budgetTable tbody tr {display:block;width:100%}
+  #budgetTable tbody tr {border:1px solid #666;border-radius:12px;padding:.75rem;margin-bottom:.75rem;background:rgba(255,255,255,.04)}
+  #budgetTable tbody td {display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.3rem .2rem;border:0;text-align:right!important;overflow-wrap:anywhere}
+  #budgetTable tbody td::before {font-size:.8rem;color:#adb5bd;font-weight:500;text-align:left;flex-shrink:0}
+  #budgetTable tbody td:nth-child(1)::before {content:"Seleziona"}
+  #budgetTable tbody td:nth-child(2)::before {content:"Tipo"}
+  #budgetTable tbody td:nth-child(3)::before {content:"Frequenza"}
+  #budgetTable tbody td:nth-child(4)::before {content:"Salvadanaio"}
+  #budgetTable tbody td:nth-child(5)::before {content:"Descrizione"}
+  #budgetTable tbody td:nth-child(6)::before {content:"Inizio"}
+  #budgetTable tbody td:nth-child(7)::before {content:"Scadenza"}
+  #budgetTable tbody td:nth-child(8)::before {content:"Da tredicesima"}
+  #budgetTable tbody td:nth-child(9)::before {content:"Da quattordicesima"}
+  #budgetTable tbody td:nth-child(10)::before {content:"Importo"}
+  #budgetTable tbody td:nth-child(11)::before {content:"Stimato"}
+  #budgetTable tbody td:nth-child(12)::before {content:"Mensile"}
+  #budgetTable tbody td:nth-child(13)::before {content:"Azioni"}
+  #budgetTable tbody td:nth-child(13) i {padding:12px;font-size:1.2rem;touch-action:manipulation}
+  #budgetTable tbody td:nth-child(5) {font-weight:600}
+}
+</style>
+<div class="table-responsive" style="max-width:100%;overflow-x:auto;">
 <table class="table table-dark table-striped table-sm w-100" id="budgetTable">
   <thead>
     <tr>
