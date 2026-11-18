@@ -50,6 +50,12 @@ function mcp_tools(): array {
         mcp_tool('leggi_movimento', 'Leggi movimento bancario',
             'Sola lettura: recupera un movimento per identificativo e fonte, con controllo di autorizzazione dell utente configurato.',
             mcp_schema(['source'=>['type'=>'string','enum'=>['bilancio_uscite','bilancio_entrate','movimenti_revolut']],'id'=>['type'=>'integer','minimum'=>1]], ['source','id']), true),
+        mcp_tool('anteprima_modifica_movimento', 'Anteprima modifica movimento',
+            'NON salva. Consente di preparare modifica descrizione_extra, id_gruppo_transazione ed etichette (lista completa di ID). Prima leggere il movimento e mostrare sempre differenze e associazioni che verrebbero rimosse. La risposta include expected_hash.',
+            mcp_schema(['payload'=>$payload],['payload']), true),
+        mcp_tool('modifica_movimento', 'Modifica movimento dopo conferma',
+            'Salva descrizione extra, gruppo ed etichette SOLO dopo anteprima e consenso esplicito. payload contiene source, id, campi desiderati e expected_hash dell anteprima. etichette sostituisce l elenco completo; i collegamenti conservati mantengono i dati aggiuntivi.',
+            mcp_schema(['payload'=>$payload,'confirm'=>$confirm,'request_id'=>$requestId],['payload','confirm','request_id']), false),
         mcp_tool('leggi_menu_settimanale', 'Leggi menù cene settimanale',
             'Legge i cinque pasti da lunedì a venerdì e le note delle ricette; distingue giorni salvati e previsioni master. Nessuna modifica. Senza week_start usa il prossimo lunedì. Confrontare con leggi_lista_spesa e chiedere conferma prima di aggiungere prodotti.',
             mcp_schema(['week_start'=>['type'=>'string','pattern'=>'^[0-9]{4}-[0-9]{2}-[0-9]{2}$','description'=>'Lunedì nel formato YYYY-MM-DD; omettere per il prossimo lunedì']]), true),
@@ -197,11 +203,11 @@ $args = $params['arguments'] ?? [];
 if (!is_array($args)) mcp_failure($id,-32602,'Argomenti non validi');
 $allowed = array_column(mcp_tools(),'name');
 if (!in_array($name, $allowed, true)) mcp_failure($id,-32602,'Strumento non disponibile');
-$write = in_array($name,['crea_spesa','crea_vacanza','aggiungi_scenario','aggiorna_associazioni_spesa','aggiorna_scenario','aggiorna_scenari','modifica_date_vacanza','elimina_voce_scenario','modifica_menu_cene'],true);
+$write = in_array($name,['crea_spesa','crea_vacanza','aggiungi_scenario','aggiorna_associazioni_spesa','aggiorna_scenario','aggiorna_scenari','modifica_date_vacanza','elimina_voce_scenario','modifica_menu_cene','modifica_movimento'],true);
 if ($write && ($args['confirm'] ?? null) !== true) mcp_failure($id,-32602,'Conferma esplicita obbligatoria');
 if ($write && (!is_string($args['request_id'] ?? null) ||
     !preg_match('/^[A-Za-z0-9_-]{16,64}$/D', $args['request_id']))) mcp_failure($id,-32602,'request_id mancante o non valido');
-if (in_array($name,['crea_spesa','crea_vacanza','anteprima_spesa','anteprima_vacanza','anteprima_aggiunta_scenario','aggiungi_scenario','anteprima_associazioni_spesa','aggiorna_associazioni_spesa','anteprima_aggiornamento_scenario','anteprima_aggiornamento_scenari','aggiorna_scenario','aggiorna_scenari','anteprima_modifica_date_vacanza','modifica_date_vacanza','anteprima_eliminazione_voce_scenario','elimina_voce_scenario','anteprima_modifica_menu_cene','modifica_menu_cene'],true) &&
+if (in_array($name,['crea_spesa','crea_vacanza','anteprima_spesa','anteprima_vacanza','anteprima_aggiunta_scenario','aggiungi_scenario','anteprima_associazioni_spesa','aggiorna_associazioni_spesa','anteprima_aggiornamento_scenario','anteprima_aggiornamento_scenari','aggiorna_scenario','aggiorna_scenari','anteprima_modifica_date_vacanza','modifica_date_vacanza','anteprima_eliminazione_voce_scenario','elimina_voce_scenario','anteprima_modifica_menu_cene','modifica_menu_cene','anteprima_modifica_movimento','modifica_movimento'],true) &&
     (!is_array($args['payload'] ?? null) || array_is_list($args['payload']))) mcp_failure($id,-32602,'payload JSON non valido');
 
 try {
@@ -249,6 +255,12 @@ try {
             $file .= '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986);
         }
     }
+    if (in_array($name,['anteprima_modifica_movimento','modifica_movimento'],true)) {
+        $ownerId = filter_var($apiConfig['movimenti_user_id'] ?? null, FILTER_VALIDATE_INT, ['options'=>['min_range'=>1]]);
+        if (!$ownerId) mcp_failure($id,-32602,'Modifica movimenti non configurata');
+        if ($oauthAccess && (int)$oauthAccess['id_utente'] !== (int)$ownerId) mcp_failure($id,-32602,'Utente non autorizzato ai movimenti');
+        $file='movimenti_modifica.php';
+    }
     if ($name === 'leggi_menu_master_cene') {
         $file='menu_cene_master.php';
     }
@@ -262,7 +274,7 @@ try {
             $file .= '?week_start=' . rawurlencode($week);
         }
     }
-    $verb = in_array($name, ['anteprima_spesa','crea_spesa','anteprima_vacanza','crea_vacanza','anteprima_aggiunta_scenario','aggiungi_scenario','anteprima_associazioni_spesa','aggiorna_associazioni_spesa','anteprima_aggiornamento_scenario','anteprima_aggiornamento_scenari','aggiorna_scenario','aggiorna_scenari','anteprima_modifica_date_vacanza','modifica_date_vacanza','anteprima_eliminazione_voce_scenario','elimina_voce_scenario','anteprima_modifica_menu_cene','modifica_menu_cene'],true) ? 'POST' : 'GET';
+    $verb = in_array($name, ['anteprima_spesa','crea_spesa','anteprima_vacanza','crea_vacanza','anteprima_aggiunta_scenario','aggiungi_scenario','anteprima_associazioni_spesa','aggiorna_associazioni_spesa','anteprima_aggiornamento_scenario','anteprima_aggiornamento_scenari','aggiorna_scenario','aggiorna_scenari','anteprima_modifica_date_vacanza','modifica_date_vacanza','anteprima_eliminazione_voce_scenario','elimina_voce_scenario','anteprima_modifica_menu_cene','modifica_menu_cene','anteprima_modifica_movimento','modifica_movimento'],true) ? 'POST' : 'GET';
     if ($name === 'leggi_vacanza') {
         $vacId = filter_var($args['id_viaggio'] ?? null, FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
         if (!$vacId) mcp_failure($id,-32602,'ID vacanza non valido');
