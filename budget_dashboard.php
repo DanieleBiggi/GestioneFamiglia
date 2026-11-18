@@ -201,6 +201,9 @@ foreach ($salvadanai as $dati) {
         }
     }
     $dati['atteso_oggi'] = round($attesoOggi, 2);
+    // Remaining capital to build, excluding the future bonus but before monthly transfers.
+    // This is actionable today, unlike a historical benchmark based on another saving rate.
+    $dati['da_accantonare'] = max(0, round($previsione['obiettivo'] - (float)$dati['attuale'] - $previsione['tredicesima_futura'], 2));
     $dati['scostamento_oggi'] = round((float)$dati['attuale'] - $attesoOggi, 2);
     $dati['oggi_in_linea'] = $dati['scostamento_oggi'] >= -0.01;
     $dati['pocket'] = $pocket;
@@ -224,6 +227,22 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
 /* One scroll only: never constrain dashboard data to an inner scrolling container. */
 .gf-dashboard {width:100%;max-width:none;}
 .gf-budget-table {width:100%;font-size:.83rem;}
+/* Bootstrap table-dark forces dark colors even with a light user theme.
+   Keep the table palette aligned with the selected theme, including all links. */
+.gf-dashboard .gf-budget-table, .gf-dashboard .gf-mini-table {
+  --bs-table-bg:var(--primary-color);
+  --bs-table-color:var(--text-color);
+  --bs-table-striped-bg:var(--secondary-color);
+  --bs-table-striped-color:var(--text-color);
+  --bs-table-border-color:rgba(var(--text-color-rgb),.19);
+  --bs-table-hover-color:var(--text-color);
+  --bs-table-hover-bg:var(--secondary-color);
+  color:var(--text-color);
+}
+.gf-dashboard .gf-budget-table a,
+.gf-dashboard .gf-mini-table a {color:var(--text-color)!important;text-decoration:underline;}
+.gf-dashboard .gf-budget-table .gf-trip {color:var(--text-color)!important}
+.gf-dashboard .gf-budget-table a:focus-visible {outline:2px solid var(--text-color);outline-offset:2px}
 .gf-budget-table td,.gf-budget-table th {padding:.24rem .35rem;vertical-align:middle;}
 .gf-budget-table .gf-name {max-width:185px;white-space:normal;line-height:1.2}
 .gf-budget-table .gf-number {white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
@@ -234,7 +253,7 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
 .gf-mini-table td,.gf-mini-table th {padding:.2rem .4rem;}
 .gf-panel {border:1px solid var(--bs-secondary);border-radius:.5rem;padding:.55rem .7rem;height:100%;}
 .gf-summary-strong {font-weight:700}
-.gf-dashboard .text-white-50 {color:rgba(255,255,255,.7)!important}
+.gf-dashboard .text-white-50 {color:rgba(var(--text-color-rgb),.72)!important}
 @media (max-width:991.98px) {
   .gf-budget-mobile-row {border:1px solid var(--bs-secondary);border-radius:.65rem;padding:.7rem;margin-bottom:.5rem;}
   .gf-mini-table {font-size:.9rem}
@@ -264,17 +283,17 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
   <section aria-label="Stato salvadanai">
     <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
       <h5 class="mb-0">Salvadanai e Pocket Revolut</h5>
-      <span class="small">Oggi: saldo reale rispetto all'atteso · Scadenza: copertura delle spese previste</span>
+      <span class="small">Oggi: capitale ancora da accantonare · Scadenza: verifica con i prossimi versamenti</span>
     </div>
     <div class="d-none d-lg-block">
-      <table class="table table-dark table-striped table-sm gf-budget-table mb-1">
+      <table class="table table-striped table-sm gf-budget-table mb-1">
         <thead>
           <tr>
             <th>Salvadanaio</th>
             <th class="gf-number">Pocket/mese</th>
             <th class="gf-number">Consigliato/mese</th>
             <th class="gf-number">Saldo reale</th>
-            <th class="gf-number">Atteso oggi</th>
+            <th class="gf-number">Da accantonare*</th>
             <th>Situazione oggi</th>
             <th>Previsione a scadenza</th>
             <th class="gf-number">13ª prevista</th>
@@ -285,7 +304,7 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
         <?php foreach ($rowsPocket as $d): ?>
           <tr>
             <th scope="row" class="gf-name">
-              <a class="text-white" href="salvadanaio_dettaglio.php?id=<?= (int)$d['id'] ?>"><?= htmlspecialchars($d['nome'] ?? '') ?></a>
+              <a class="text-white" href="budget_anno.php?<?= http_build_query(['id_salvadanaio'=>(int)$d['id'],'scadenza_da'=>'']) ?>"><?= htmlspecialchars($d['nome'] ?? '') ?></a>
               <?php foreach ($d['viaggi'] as $v): ?>
                 <a class="gf-trip ms-1" href="vacanze_workspace.php?id=<?= (int)$v['id_viaggio'] ?>" title="Apri vacanza: <?= htmlspecialchars($v['titolo'], ENT_QUOTES) ?>" aria-label="Apri vacanza <?= htmlspecialchars($v['titolo'],ENT_QUOTES) ?>"><i class="bi bi-suitcase-lg" aria-hidden="true"></i></a>
               <?php endforeach; ?>
@@ -293,10 +312,9 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
             <td class="gf-number"><?= number_format($d['pocket'],2,',','.') ?> €<?= $d['modalita']==='fisso' ? ' <span title="Accantonamento fisso">●</span>' : '' ?></td>
             <td class="gf-number"><?= number_format($d['consigliato'],2,',','.') ?> €</td>
             <td class="gf-number"><?= number_format((float)$d['attuale'],2,',','.') ?> €</td>
-            <td class="gf-number"><?= number_format($d['atteso_oggi'],2,',','.') ?> €</td>
-            <td class="gf-status <?= $d['oggi_in_linea'] ? 'text-success' : 'text-warning' ?>">
-              <?= $d['oggi_in_linea'] ? 'In linea' : 'Sotto di ' . number_format(abs($d['scostamento_oggi']),2,',','.') . ' €' ?>
-              <?php if ($d['oggi_in_linea'] && $d['scostamento_oggi'] > .01): ?><span class="gf-muted">(+<?= number_format($d['scostamento_oggi'],2,',','.') ?> €)</span><?php endif; ?>
+            <td class="gf-number"><?= number_format($d['da_accantonare'],2,',','.') ?> €</td>
+            <td class="gf-status">
+              <?= $d['da_accantonare'] <= 0.01 ? 'Già sufficiente**' : 'Da accumulare' ?>
             </td>
             <td class="gf-status <?= $d['futuro_in_linea'] ? 'text-success' : 'text-warning' ?>" title="<?= $d['rischio_data'] ? 'Scadenza più critica: ' . htmlspecialchars(date('d/m/Y',strtotime($d['rischio_data'])),ENT_QUOTES) : 'Nessuna spesa con scadenza futura' ?>">
               <?= $d['rischio_data'] === null ? 'Nessuna scadenza' : ($d['futuro_in_linea'] ? 'Coperto' : 'Mancano ' . number_format($d['scoperto_futuro'],2,',','.') . ' €') ?>
@@ -313,7 +331,7 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
             <td class="gf-number"><?= number_format($totalePocket,2,',','.') ?> €</td>
             <td class="gf-number"><?= number_format($totaleConsigliato,2,',','.') ?> €</td>
             <td class="gf-number"><?= number_format($totaleAttuale,2,',','.') ?> €</td>
-            <td class="gf-number"><?= number_format($totaleAtteso,2,',','.') ?> €</td>
+            <td class="gf-number"><?= number_format(array_sum(array_column($rowsPocket, 'da_accantonare')),2,',','.') ?> €</td>
             <td colspan="4">I saldi per salvadanaio non sono compensabili tra loro.</td>
           </tr>
         </tfoot>
@@ -323,26 +341,26 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
       <?php foreach ($rowsPocket as $d): ?>
       <article class="gf-budget-mobile-row">
         <div class="d-flex justify-content-between align-items-center">
-          <a class="fw-semibold text-white" href="salvadanaio_dettaglio.php?id=<?= (int)$d['id'] ?>"><?= htmlspecialchars($d['nome'] ?? '') ?></a>
+          <a class="fw-semibold text-white" href="budget_anno.php?<?= http_build_query(['id_salvadanaio'=>(int)$d['id'],'scadenza_da'=>'']) ?>"><?= htmlspecialchars($d['nome'] ?? '') ?></a>
           <?php foreach ($d['viaggi'] as $v): ?>
             <a class="ms-2" href="vacanze_workspace.php?id=<?= (int)$v['id_viaggio'] ?>" title="<?= htmlspecialchars($v['titolo'],ENT_QUOTES) ?>"><i class="bi bi-suitcase-lg"></i></a>
           <?php endforeach; ?>
         </div>
         <div class="d-flex justify-content-between small mt-1"><span>Pocket/mese</span><strong><?= number_format($d['pocket'],2,',','.') ?> €<?= $d['modalita']==='fisso' ? ' (fisso)' : '' ?></strong></div>
         <div class="d-flex justify-content-between small"><span>Consigliato/mese</span><strong><?= number_format($d['consigliato'],2,',','.') ?> €</strong></div>
-        <div class="d-flex justify-content-between small"><span>Saldo reale / atteso</span><strong><?= number_format($d['attuale'],2,',','.') ?> / <?= number_format($d['atteso_oggi'],2,',','.') ?> €</strong></div>
-        <div class="d-flex justify-content-between mt-1"><span>Oggi</span><strong class="<?= $d['oggi_in_linea'] ? 'text-success':'text-warning' ?>"><?= $d['oggi_in_linea'] ? 'In linea':'Sotto di '.number_format(abs($d['scostamento_oggi']),2,',','.').' €' ?></strong></div>
+        <div class="d-flex justify-content-between small"><span>Saldo accantonato</span><strong><?= number_format($d['attuale'],2,',','.') ?> €</strong></div>
+        <div class="d-flex justify-content-between mt-1"><span>Da accantonare*</span><strong><?= number_format($d['da_accantonare'],2,',','.') ?> €</strong></div>
         <div class="d-flex justify-content-between"><span>Alla scadenza</span><strong class="<?= $d['futuro_in_linea'] ? 'text-success':'text-warning' ?>"><?= $d['rischio_data']===null?'Nessuna scadenza':($d['futuro_in_linea']?'Coperto':'Mancano '.number_format($d['scoperto_futuro'],2,',','.').' €') ?></strong></div>
         <?php if ($d['bonus13_futuro'] > 0): ?><div class="small text-white-50">13ª attesa: <?= number_format($d['bonus13_futuro'],2,',','.') ?> €</div><?php endif; ?>
       </article>
       <?php endforeach; ?>
     </div>
-    <div class="small mb-3">La situazione di oggi confronta il saldo con il piano di accumulo teorico; la previsione considera i Pocket futuri, le scadenze e la 13ª prevista a dicembre. La 14ª non è inclusa senza una data certa. La data di verifica del saldo resta consultabile nel dettaglio.</div>
+    <div class="small mb-3">*Da accantonare = spese programmate meno saldo attuale e tredicesima futura. Non considera ancora i prossimi versamenti mensili, che sono invece inclusi nella previsione a scadenza. **Già sufficiente riguarda l'importo complessivo, non necessariamente tutte le scadenze intermedie. La quattordicesima non viene anticipata senza una data certa.</div>
   </section>
   <div class="gf-desktop-panels">
     <section class="gf-panel" aria-label="Entrate mensili fisse">
       <h5 class="mb-1">Entrate mensili</h5>
-      <table class="table table-dark table-striped table-sm gf-mini-table">
+      <table class="table table-striped table-sm gf-mini-table">
         <thead><tr><th>Voce</th><th class="text-end">€/mese</th></tr></thead>
         <tbody>
         <?php foreach ($entrateMensili as $r): ?>
@@ -354,7 +372,7 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
     </section>
     <section class="gf-panel" aria-label="Uscite mensili">
       <h5 class="mb-1">Uscite mensili</h5>
-      <table class="table table-dark table-striped table-sm gf-mini-table">
+      <table class="table table-striped table-sm gf-mini-table">
         <thead><tr><th>Voce</th><th class="text-end">€/mese</th></tr></thead>
         <tbody>
         <?php foreach ($usciteMensili as $r): ?>
@@ -366,7 +384,7 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
     </section>
     <section class="gf-panel" aria-label="Riepilogo reddito mensile">
       <h5 class="mb-1">Distribuzione del reddito</h5>
-      <table class="table table-dark table-striped table-sm gf-mini-table">
+      <table class="table table-striped table-sm gf-mini-table">
         <tbody>
           <tr><td>Entrate mensili</td><td class="text-end"><?= number_format($totalEntrateMensili,2,',','.') ?> €</td></tr>
           <tr><td>Uscite mensili</td><td class="text-end">−<?= number_format($totalUsciteMensili,2,',','.') ?> €</td></tr>
