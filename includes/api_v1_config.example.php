@@ -13,5 +13,8 @@ return [
     // Segreto differente dal token API, 32 byte casuali in esadecimale, mai su GitHub.
     'mcp_internal_key' => '',
     // Facoltativo: limitare il consenso a un singolo id_utente.
-    'oauth_allowed_user_id' => 0
+    'oauth_allowed_user_id' => 0,
+    // Obbligatorio per leggere movimenti: ID utente proprietario dei conti importati.
+    // Verificato a ogni richiesta con utenti2famiglie; non accetta ID dal client.
+    'movimenti_user_id' => 0
 ];
