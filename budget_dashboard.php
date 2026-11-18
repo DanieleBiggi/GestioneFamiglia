@@ -18,7 +18,7 @@ $yearStmt->close();
 $today = new DateTime('now', new DateTimeZone('Europe/Rome'));
 
 // 1. Importo stimato attuale per salvadanaio
-$salvStmt = $conn->prepare('SELECT b.*, s.nome_salvadanaio, s.importo_attuale
+$salvStmt = $conn->prepare('SELECT b.*, s.nome_salvadanaio, s.importo_attuale, s.data_aggiornamento_manuale, s.accantonamento_modalita, s.accantonamento_fisso
     FROM budget b
     LEFT JOIN salvadanai s ON b.id_salvadanaio = s.id_salvadanaio
     WHERE b.id_famiglia = ?
@@ -83,10 +83,21 @@ while ($row = $resSalv->fetch_assoc()) {
             'importo_mensile' => 0,
             'stimato' => 0,
             'attuale' => (float)($row['importo_attuale'] ?? 0),
+            'modalita' => $row['accantonamento_modalita'] ?? 'automatico',
+            'fisso' => $row['accantonamento_fisso'] === null ? null : (float)$row['accantonamento_fisso'],
+            'data_verifica' => $row['data_aggiornamento_manuale'] ?? null,
+            'obiettivo' => 0,
+            'scadenza' => null,
         ];
     }
     $salvadanai[$salv]['importo_mensile'] += $importoMensile;
     $salvadanai[$salv]['stimato'] += $importoStimato;
+    if (($row['tipologia'] ?? '') === 'uscita' && ($row['tipologia_spesa'] ?? '') !== 'mensile') {
+        $salvadanai[$salv]['obiettivo'] += max(0, $residuo);
+        if ($dataScadenza && (!$salvadanai[$salv]['scadenza'] || $dataScadenza < $salvadanai[$salv]['scadenza'])) {
+            $salvadanai[$salv]['scadenza'] = $dataScadenza;
+        }
+    }
 }
 $salvadanai = array_values($salvadanai);
 usort($salvadanai, function($a, $b) {
@@ -163,44 +174,73 @@ $margineMensile = $totalEntrateMensili - ($totalUsciteMensili + $totalAnnualiMen
 </form>
 <div class="row">
   <div class="col-12 col-lg-8">
-    <h5>Importi stimati attuali per salvadanaio</h5>
-    <table class="table table-dark table-striped table-sm">
-      <thead>
-        <tr>
-          <th>Salvadanaio</th>
-          <th class="text-end">Importo mensile</th>
-          <th class="text-end">Importo stimato</th>
-          <th class="text-end">Importo attuale</th>
-          <th class="text-end">Differenza</th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php
-        $per_totali['stimato'] = 0;
-        $per_totali['attuale'] = 0;
-        foreach ($salvadanai as $dati):
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <div>
+        <h5 class="mb-1">Accantonamenti e Pocket Revolut</h5>
+        <p class="small text-white-50 mb-0">Il valore fisso non cambia quando variano le previsioni. I saldi vanno aggiornati manualmente.</p>
+      </div>
+      <a href="budget_importi_attuali.php" class="btn btn-outline-light">Aggiorna saldi Pocket</a>
+    </div>
+    <div class="row g-3" aria-label="Riepilogo accantonamenti per salvadanaio">
+      <?php
+      $per_totali['stimato'] = 0;
+      $per_totali['attuale'] = 0;
+      $totalePocket = 0;
+      foreach ($salvadanai as $dati):
         $per_totali['mensile'] += $dati['importo_mensile'];
         $per_totali['stimato'] += $dati['stimato'];
         $per_totali['attuale'] += $dati['attuale'];
-        ?>
-        <tr>
-          <td><a href="budget_anno.php?<?= http_build_query(['id_salvadanaio' => $dati['id']]) ?>"><?= htmlspecialchars($dati['nome']) ?></a></td>
-          <td class="text-end"><?= number_format($dati['importo_mensile'], 2, ',', '.') ?></td>
-          <td class="text-end"><?= number_format($dati['stimato'], 2, ',', '.') ?></td>
-          <td class="text-end"><?= number_format((float)$dati['attuale'], 2, ',', '.') ?></td>
-          <td class="text-end"><?= number_format($dati['stimato'] - $dati['attuale'], 2, ',', '.') ?></td>
-        </tr>
-        <?php endforeach; ?>
-
-        <tr>
-          <td></td>
-          <td class="text-end"><?= number_format($per_totali['mensile'], 2, ',', '.') ?></td>
-          <td class="text-end"><?= number_format($per_totali['stimato'], 2, ',', '.') ?></td>
-          <td class="text-end"><?= number_format($per_totali['attuale'], 2, ',', '.') ?></td>
-          <td class="text-end"></td>
-        </tr>
-      </tbody>
-    </table>
+        $mesiResidui = $dati['scadenza'] ? max(1, diff_mesi($todaySql, $dati['scadenza'])) : 12;
+        $consigliato = $dati['scadenza'] ? round(max(0, $dati['obiettivo'] - $dati['attuale']) / $mesiResidui, 2) : $dati['importo_mensile'];
+        $pocket = $dati['modalita'] === 'fisso' ? (float)($dati['fisso'] ?? 0) : $consigliato;
+        $totalePocket += $pocket;
+        $proiezione = $dati['attuale'] + $pocket * $mesiResidui;
+        $gap = $dati['obiettivo'] - $proiezione;
+      ?>
+      <div class="col-12 col-md-6">
+        <section class="card bg-dark text-white border-secondary h-100 p-3" aria-label="Salvadanaio <?= htmlspecialchars($dati['nome'] ?? '', ENT_QUOTES) ?>">
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+            <a class="fw-bold text-white text-decoration-underline" href="salvadanaio_dettaglio.php?id=<?= (int)$dati['id'] ?>"><?= htmlspecialchars($dati['nome'] ?? 'Senza nome') ?></a>
+            <span class="badge <?= $dati['modalita'] === 'fisso' ? 'bg-info text-dark' : 'bg-secondary' ?>"><?= $dati['modalita'] === 'fisso' ? 'Fisso' : 'Automatico' ?></span>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <div class="small text-white-50">Versamento Pocket</div>
+              <div class="fs-4 fw-semibold"><?= number_format($pocket, 2, ',', '.') ?> €/mese</div>
+            </div>
+            <div class="col-6">
+              <div class="small text-white-50">Consigliato</div>
+              <div class="fs-4 fw-semibold"><?= number_format($consigliato, 2, ',', '.') ?> €/mese</div>
+            </div>
+            <div class="col-6">
+              <div class="small text-white-50">Saldo verificato</div>
+              <div class="fw-semibold"><?= number_format($dati['attuale'], 2, ',', '.') ?> €</div>
+            </div>
+            <div class="col-6">
+              <div class="small text-white-50">Saldo stimato oggi</div>
+              <div class="fw-semibold"><?= number_format($dati['stimato'], 2, ',', '.') ?> €</div>
+            </div>
+          </div>
+          <div class="small text-white-50">Ultima verifica: <?= $dati['data_verifica'] ? htmlspecialchars(date('d/m/Y', strtotime($dati['data_verifica']))) : 'non disponibile' ?></div>
+          <?php if ($dati['scadenza'] && $dati['obiettivo'] > 0): ?>
+            <div class="mt-2 small">Proiezione al <?= date('d/m/Y', strtotime($dati['scadenza'])) ?>: <strong><?= number_format($proiezione,2,',','.') ?> €</strong> su <?= number_format($dati['obiettivo'],2,',','.') ?> €</div>
+            <div class="progress mt-1" role="progressbar" aria-label="Copertura obiettivo" aria-valuenow="<?= min(100,max(0,round($proiezione/$dati['obiettivo']*100))) ?>" aria-valuemin="0" aria-valuemax="100">
+              <div class="progress-bar <?= $gap > 0.01 ? 'bg-warning' : 'bg-success' ?>" style="width:<?= min(100,max(0,round($proiezione/$dati['obiettivo']*100))) ?>%"></div>
+            </div>
+            <div class="small mt-1 <?= $gap > 0.01 ? 'text-warning' : 'text-success' ?>"><?= $gap > 0.01 ? 'Possibile scoperto: ' . number_format($gap,2,',','.') . ' €' : 'Copertura prevista sufficiente' ?></div>
+            <div class="small text-white-50">Proiezione indicativa: non sottrae pagamenti intermedi. Controlla le singole scadenze nel budget.</div>
+          <?php endif; ?>
+          <a class="btn btn-outline-light mt-3 w-100" href="salvadanaio_dettaglio.php?id=<?= (int)$dati['id'] ?>">Gestisci Pocket</a>
+        </section>
+      </div>
+      <?php endforeach; ?>
+    </div>
+    <section class="card bg-dark text-white border-secondary p-3 mt-3 mb-4" aria-label="Totali Pocket">
+      <div class="row g-2">
+        <div class="col-6"><div class="small text-white-50">Accantonamento Pocket complessivo</div><strong><?= number_format($totalePocket,2,',','.') ?> €/mese</strong></div>
+        <div class="col-6"><div class="small text-white-50">Saldo attuale complessivo</div><strong><?= number_format($per_totali['attuale'],2,',','.') ?> €</strong></div>
+      </div>
+    </section>
   </div>
   <div class="col-12 col-lg-4">
     <h5>Entrate mensili fisse</h5>
