@@ -29,8 +29,8 @@ if(!$id_salvadanaio || $nome === ''){
     exit;
 }
 
-$stmt = $conn->prepare('UPDATE salvadanai SET nome_salvadanaio=?, importo_attuale=?, data_aggiornamento_manuale=?, data_scadenza=?, accantonamento_modalita=?, accantonamento_fisso=? WHERE id_salvadanaio=?');
-$stmt->bind_param('sdsssdi', $nome, $importo, $now, $data_scadenza, $modalita, $fisso, $id_salvadanaio);
+$stmt = $conn->prepare('UPDATE salvadanai SET nome_salvadanaio=?, data_aggiornamento_manuale=IF(importo_attuale <> ?, ?, data_aggiornamento_manuale), importo_attuale=?, data_scadenza=?, accantonamento_modalita=?, accantonamento_fisso=? WHERE id_salvadanaio=?');
+$stmt->bind_param('sdsdssdi', $nome, $importo, $now, $importo, $data_scadenza, $modalita, $fisso, $id_salvadanaio);
 $success = $stmt->execute();
 $stmt->close();
 
