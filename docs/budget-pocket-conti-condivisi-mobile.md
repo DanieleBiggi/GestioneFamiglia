@@ -47,3 +47,12 @@ Separare l'accantonamento effettivo su Pocket Revolut dalla previsione dei budge
 - Il nome del salvadanaio, nella dashboard desktop e mobile, apre `budget_anno.php` filtrata per salvadanaio, con `scadenza_da` vuota per non nascondere automaticamente le voci più vecchie. L'icona di modifica continua ad aprire il dettaglio Pocket.
 - Rimosso lo stato generico «Sotto di X oggi» costruito sulla quota teorica iniziale: può essere fuorviante quando l'accantonamento Revolut fisso è diverso. Ora si distinguono «Da accantonare» (prima dei futuri versamenti mensili, escludendo la tredicesima ancora attesa) e «Previsione a scadenza» (includendo i versamenti futuri e la 13ª).
 - Esempio Inverno fornito dall'utente: budget 2.135,68 €, saldo reale 736,09 €, 13ª prevista 1.000 €, due versamenti da 100 €; capitale atteso 1.936,09 €, scoperto previsto 199,59 € al 01/01/2027. Oggi rimangono da accantonare 399,59 € al netto della tredicesima attesa. Confermare se l'intera spesa scade realmente il 01/01/2027, non soltanto se il periodo invernale inizia quel giorno.
+
+
+## Revisione previsioni 18/11/2026
+- Budget/mese su dashboard è la somma delle rate di `budget_anno.php`, con funzione condivisa `gf_budget_importo_mensile`.
+- Pocket/mese fisso resta distinto dal budget teorico; previsione usa il versamento configurato.
+- Versamenti programmati: il **1°** di ogni mese; tredicesima **21 dicembre**; quattordicesima **30 giugno**. Solo date strettamente successive a oggi e precedenti alla scadenza vengono contate. Per prudenza le spese nello stesso giorno del versamento si considerano da saldare prima del versamento.
+- Inverno: se il saldo 736,09 € è aggiornato al 18 novembre, il versamento del 1° novembre non va aggiunto una seconda volta. Al 1° gennaio 2027 arrivano solo i 100 € del 1° dicembre e i 1.000 € del 21 dicembre: scoperto 299,59 €. Se il versamento di novembre fosse ancora da effettuare, servirà una rettifica esplicita del saldo o dei movimenti, non una duplicazione automatica.
+- La previsione usa il saldo manuale, non conosce pagamenti o versamenti già eseguiti ma non riflessi nel saldo. Le quote annuali non collegate a Pocket usano ora il metodo mensile condiviso.
+- Le tabelle del reddito sono presentate prima dei Pocket. Non è stato modificato lo schema MySQL.
