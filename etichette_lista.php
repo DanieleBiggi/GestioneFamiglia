@@ -15,6 +15,15 @@ $sql = "SELECT e.id_etichetta, e.descrizione, e.attivo, e.da_dividere, e.anno, e
 $etichette = $conn->query($sql);
 ?>
 
+<style>
+/* Date dell'etichetta: contrasto garantito sia nei temi chiari sia in quelli scuri. */
+#labelList .label-period {
+  color: var(--text-color) !important;
+  opacity: .85;
+  font-size: .875rem;
+  font-weight: 500;
+}
+</style>
 <div class="text-white">
   <div class="d-flex mb-3 justify-content-between"><h4>Etichette</h4><button type="button" class="btn btn-outline-light btn-sm" onclick="openEtichettaModal()">Aggiungi nuova</button></div>
   <div class="d-flex mb-3 align-items-center">
@@ -33,7 +42,7 @@ $etichette = $conn->query($sql);
         <div class="d-flex flex-column">
           <span><?= htmlspecialchars($row['descrizione']) ?></span>
           <?php if (!empty($row['anno']) || !empty($row['mese'])): ?>
-            <small class="text-secondary">
+            <small class="label-period">
               <?= htmlspecialchars($row['anno'] ?? '') ?><?= !empty($row['mese']) ? '/' . str_pad((int)$row['mese'], 2, '0', STR_PAD_LEFT) : '' ?>
             </small>
           <?php endif; ?>

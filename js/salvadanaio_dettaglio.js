@@ -15,10 +15,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('salvadanaioForm');
     form.nome_salvadanaio.value = salvadanaioData.nome_salvadanaio || '';
     form.importo_attuale.value = salvadanaioData.importo_attuale || '';
+    if (form.accantonamento_modalita) form.accantonamento_modalita.value = salvadanaioData.accantonamento_modalita || 'automatico';
+    if (form.accantonamento_fisso) form.accantonamento_fisso.value = salvadanaioData.accantonamento_fisso ?? '';
+    document.getElementById('accantonamentoModalita')?.dispatchEvent(new Event('change'));
     if (form.data_scadenza) {
       form.data_scadenza.value = salvadanaioData.data_scadenza || '';
     }
     new bootstrap.Modal(document.getElementById('salvadanaioModal')).show();
+  });
+
+  document.getElementById('accantonamentoModalita')?.addEventListener('change', function () {
+    const fixed = this.value === 'fisso';
+    const wrap = document.getElementById('accantonamentoFissoWrap');
+    const input = document.getElementById('accantonamentoFisso');
+    if (wrap) wrap.classList.toggle('d-none', !fixed);
+    if (input) input.required = fixed;
+  });
+  document.getElementById('editPocketBtn')?.addEventListener('click', () => {
+    document.getElementById('editSalvadanaioBtn')?.click();
+    document.getElementById('accantonamentoModalita')?.focus();
   });
 
   document.getElementById('salvadanaioForm')?.addEventListener('submit', function(e){
