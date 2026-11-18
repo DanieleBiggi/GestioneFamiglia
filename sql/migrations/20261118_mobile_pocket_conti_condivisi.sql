@@ -14,7 +14,7 @@ CREATE TABLE etichette_conti_condivisi (
   id_famiglia INT NOT NULL,
   controparte VARCHAR(120) NOT NULL,
   data_movimento DATE NOT NULL,
-  tipo ENUM('quota','compensazione','pagamento','rettifica') NOT NULL,
+  tipo ENUM('quota','compensazione','pagamento','debito','saldo_debito','rettifica') NOT NULL,
   importo DECIMAL(10,2) NOT NULL,
   descrizione VARCHAR(255) NOT NULL,
   creato_il TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
