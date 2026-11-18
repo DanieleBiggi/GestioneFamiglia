@@ -12,9 +12,9 @@ $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 
 $utilityServices = [
     [
-        'href' => 'aggiungi_entrata.php',
+        'href' => 'aggiungi_compensazione.php',
         'icon' => 'bi-arrow-down-circle',
-        'label' => 'Aggiungi entrata',
+        'label' => 'Aggiungi compensazione',
         'permission' => 'page:index.php-movimenti',
         'show_in_modal' => false,
     ],
@@ -144,7 +144,7 @@ $availableUtilities = array_values(array_filter($utilityServices, function ($uti
 // Funzioni più usate: manteniamo un ordine esplicito, indipendente dall'ordine
 // dell'elenco completo, così la home può evolvere senza alterare il menu "Altro".
 $homeUtilityHrefs = [
-    'aggiungi_entrata.php',
+    'aggiungi_compensazione.php',
     'menu_cene.php',
     'lista_spesa.php',
     'budget_dashboard.php',
