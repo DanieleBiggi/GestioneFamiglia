@@ -12,9 +12,9 @@ $idFamiglia = $_SESSION['id_famiglia_gestione'] ?? 0;
 
 $utilityServices = [
     [
-        'href' => 'aggiungi_entrata.php',
+        'href' => 'aggiungi_compensazione.php',
         'icon' => 'bi-arrow-down-circle',
-        'label' => 'Aggiungi entrata',
+        'label' => 'Aggiungi compensazione',
         'permission' => 'page:index.php-movimenti',
         'show_in_modal' => false,
     ],
