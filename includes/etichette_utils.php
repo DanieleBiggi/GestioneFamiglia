@@ -297,6 +297,47 @@ function get_saldo_e_movimenti_utente($idUtente, $dataSaldo = null)
         $movimenti[] = $row;
     }
     $stmtMov->close();
+    // Le registrazioni non bancarie del conto condiviso partecipano allo
+    // stesso saldo delle quote storiche. Segno opposto: il registro usa
+    // +credito verso la controparte, la vista legacy +debito della controparte.
+    // Non modificare mai una quota legacy con l'ID di una compensazione.
+    if ((int)$famigliaId === 1) {
+        $sqlComp = "SELECT c.id, c.id_etichetta, c.data_movimento, c.tipo,
+                           c.importo, c.descrizione, c.saldata, c.data_saldo,
+                           e.descrizione AS etichetta_descrizione
+                      FROM etichette_conti_condivisi c
+                      JOIN bilancio_etichette e ON e.id_etichetta=c.id_etichetta
+                     WHERE c.id_famiglia=? AND c.id_utente=? AND " .
+                   ($dataSaldo === null ? "c.saldata=0" : "c.saldata=1 AND DATE(c.data_saldo)=?");
+        $stmtComp = $conn->prepare($sqlComp);
+        if ($dataSaldo === null) { $stmtComp->bind_param('ii', $famigliaId, $idUtente); }
+        else { $stmtComp->bind_param('iis', $famigliaId, $idUtente, $dataSaldo); }
+        $stmtComp->execute();
+        $resComp = $stmtComp->get_result();
+        while ($c = $resComp->fetch_assoc()) {
+            $saldo = -(float)$c['importo'];
+            $saldoTot += $saldo;
+            $movimenti[] = [
+                'tipo_conto' => 'compensazione',
+                'id_conto' => (int)$c['id'],
+                'id_u2o' => null,
+                'id_e2o' => null,
+                'id_tabella' => 0,
+                'tabella' => 'compensazione',
+                'id_etichetta' => (int)$c['id_etichetta'],
+                'descrizione' => $c['descrizione'].' ('. $c['tipo'] .')',
+                'data_operazione' => $c['data_movimento'].' 00:00:00',
+                'etichetta_descrizione' => $c['etichetta_descrizione'],
+                'saldo_utente' => $saldo,
+                'saldata' => (int)$c['saldata'],
+                'data_saldo' => $c['data_saldo'],
+                'file_allegato' => null,
+                'rows' => [],
+            ];
+        }
+        $stmtComp->close();
+    }
+    usort($movimenti, function($a,$b) { return strcmp($b['data_operazione'], $a['data_operazione']); });
     $ar['movimenti'] = $movimenti;
     $ar['saldoTot'] = $saldoTot;
     return $ar;
