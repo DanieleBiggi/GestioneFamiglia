@@ -29,4 +29,15 @@ $with14 = [[
 ]];
 $r4 = gf_pocket_previsione($with14,0,0,'2026-11-18');
 checkBudget($r4['quota_14']===500.0 && $r4['ultima']['saldo']===-1000.0,'14th remains visible, not treated as confirmed deposit');
+// Reported Inverno case: 736.09 already saved, November and December
+// transfers of 100 each, and 1000 from the December thirteenth.
+$invernoReale = [[
+  'tipologia'=>'uscita', 'tipologia_spesa'=>'una_tantum',
+  'importo'=>2135.68, 'da_13esima'=>1000, 'da_14esima'=>0,
+  'data_inizio'=>'2026-01-01', 'data_scadenza'=>'2027-01-01'
+]];
+$r5 = gf_pocket_previsione($invernoReale,736.09,100,'2026-11-18');
+checkBudget(abs($r5['consigliato']-199.795)<0.02,'Inverno requires about 199.80 per month');
+checkBudget(abs($r5['ultima']['saldo']+199.59)<0.01,'Inverno has a projected 199.59 shortfall');
+checkBudget(abs($r5['tredicesima_futura']-1000)<0.01,'Inverno adds the future December bonus');
 echo "Pocket budget forecasts OK\n";
