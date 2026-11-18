@@ -8,6 +8,7 @@ require_once 'includes/permissions.php';
 if (!has_permission($conn, 'page:credito_utente.php', 'view')) { http_response_code(403); exit('Accesso negato'); }
 include 'includes/header.php';
 include 'includes/etichette_utils.php';
+if (empty($_SESSION['csrf_conto_etichette'])) $_SESSION['csrf_conto_etichette'] = bin2hex(random_bytes(24));
 setlocale(LC_TIME, 'it_IT.UTF-8');
 
 // Utente loggato e famiglia corrente
@@ -54,22 +55,24 @@ if (!$utente) {
 // Recupera eventuale lista utenti per la select
 $utentiFam = [];
 if ($canChangeUser) {
-    $stmtList = $conn->prepare('SELECT DISTINCT u.id, u.nome, u.cognome
+    $stmtList = $conn->prepare("SELECT DISTINCT u.id, u.nome, u.cognome
                                  FROM utenti u
-                                 JOIN bilancio_utenti2operazioni_etichettate u2o ON u.id = u2o.id_utente
-                                 WHERE u.attivo = 1
-                                 ORDER BY u.nome');
+                                 LEFT JOIN bilancio_utenti2operazioni_etichettate u2o ON u.id = u2o.id_utente
+                                 LEFT JOIN etichette_conti_condivisi cc ON cc.id_utente=u.id AND cc.id_famiglia={$famigliaId}
+                                 WHERE u.attivo = 1 AND (u2o.id_u2o IS NOT NULL OR cc.id IS NOT NULL)
+                                 ORDER BY u.nome");
     $stmtList->execute();
     $utentiFam = $stmtList->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmtList->close();
 }
 
 // Elenco date saldo disponibili
-$stmtDate = $conn->prepare('SELECT DISTINCT DATE(data_saldo) AS data_saldo
-                            FROM bilancio_utenti2operazioni_etichettate
-                            WHERE id_utente = ? AND saldata = 1
-                            ORDER BY data_saldo DESC');
-$stmtDate->bind_param('i', $idUtente);
+$stmtDate = $conn->prepare("SELECT DISTINCT data_saldo FROM (
+                               SELECT DATE(data_saldo) AS data_saldo FROM bilancio_utenti2operazioni_etichettate WHERE id_utente=? AND saldata=1
+                               UNION ALL
+                               SELECT DATE(data_saldo) AS data_saldo FROM etichette_conti_condivisi WHERE id_utente=? AND id_famiglia={$famigliaId} AND saldata=1
+                             ) dates ORDER BY data_saldo DESC");
+$stmtDate->bind_param('ii', $idUtente, $idUtente);
 $stmtDate->execute();
 $dateSaldo = $stmtDate->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmtDate->close();
@@ -138,9 +141,9 @@ uasort($totaliEtichette, function ($a, $b) {
   <?php if (!empty($movimenti)): ?>
    <?php foreach ($movimenti as $mov): ?> 
       <?php $rowsAttr = $isAdmin ? htmlspecialchars(json_encode($mov['rows'] ?? []), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : ''; ?>
-      <div class="movement d-flex justify-content-between align-items-start text-white mb-2 position-relative" data-ide20="<?= (int)$mov['id_e2o'] ?>" data-tabella="<?= htmlspecialchars($mov['tabella']) ?>" data-id-tabella="<?= (int)$mov['id_tabella'] ?>" <?php if ($isAdmin): ?>data-rows='<?= $rowsAttr ?>'<?php endif; ?> onclick="openMovimento(this)" style="cursor:pointer">
+      <div class="movement d-flex justify-content-between align-items-start text-white mb-2 position-relative" data-ide20="<?= (int)($mov['id_e2o'] ?? 0) ?>" data-tabella="<?= htmlspecialchars($mov['tabella']) ?>" data-id-tabella="<?= (int)$mov['id_tabella'] ?>" data-id-conto="<?= (int)($mov['id_conto'] ?? 0) ?>" <?php if ($isAdmin): ?>data-rows='<?= $rowsAttr ?>'<?php endif; ?> onclick="openMovimento(this)" style="cursor:pointer">
         <?php if ($showCheckboxes): ?>
-          <input type="checkbox" class="form-check-input me-2 flex-shrink-0" style="width:1.25rem;height:1.25rem;" data-id-u2o="<?= $mov['id_u2o'] ?>" data-amount="<?= $mov['saldo_utente'] ?>" onclick="event.stopPropagation();">
+          <input type="checkbox" class="form-check-input me-2 flex-shrink-0" style="width:1.25rem;height:1.25rem;" data-id-u2o="<?= (int)($mov['id_u2o'] ?? 0) ?>" data-id-conto="<?= (int)($mov['id_conto'] ?? 0) ?>" data-amount="<?= $mov['saldo_utente'] ?>" onclick="event.stopPropagation();">
         <?php endif; ?>
         <div class="flex-grow-1 me-3" style="max-width:calc(100% - 8rem);">
           <div class="descr fw-semibold text-break"><?= htmlspecialchars($mov['descrizione']) ?></div>
@@ -235,6 +238,19 @@ uasort($totaliEtichette, function ($a, $b) {
     const tabella = div.dataset.tabella;
     const id = div.dataset.idTabella;
     const ide20 = div.dataset.ide20;
+    if (tabella === 'compensazione') {
+      const info = document.getElementById('movInfo');
+      const text = div.querySelector('.descr')?.textContent || '';
+      const dateText = div.querySelector('.small')?.textContent || '';
+      info.textContent = text + ' · ' + dateText;
+      <?php if ($isAdmin): ?>
+      document.getElementById('movRows').textContent = 'Registrazione non bancaria del conto condiviso.';
+      document.getElementById('linkDettaglio').href = 'etichetta_conto.php?id_etichetta=' + div.querySelector('a[href*="etichetta.php"]')?.href.split('id_etichetta=')[1];
+      document.getElementById('linkQuote').href = document.getElementById('linkDettaglio').href;
+      <?php endif; ?>
+      new bootstrap.Modal(document.getElementById('movModal')).show();
+      return;
+    }
     fetch(`ajax/get_movimento.php?tabella=${encodeURIComponent(tabella)}&id=${id}`)
       .then(r => r.json())
       .then(res => {
@@ -305,20 +321,20 @@ uasort($totaliEtichette, function ($a, $b) {
 
   document.getElementById('confirmSalda').addEventListener('click', () => {
     const checked = document.querySelectorAll('.movement input[type="checkbox"]:checked');
-    const ids = Array.from(checked).map(cb => cb.dataset.idU2o);
-    fetch('ajax/update_u2o_saldata_bulk.php', {
+    const ids = Array.from(checked).map(cb => Number(cb.dataset.idU2o)).filter(x => x>0);
+    const contiIds = Array.from(checked).map(cb => Number(cb.dataset.idConto)).filter(x => x>0);
+    fetch('ajax/update_conti_saldata_bulk.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ids: ids})
+      body: JSON.stringify({
+        ids: contiIds,
+        quote_ids: ids,
+        csrf: <?= json_encode($_SESSION['csrf_conto_etichette']) ?>
+      })
     }).then(r => r.json()).then(res => {
-      if (!res.success) {
-        alert(res.error || 'Errore');
-        return;
-      }
-      checked.forEach(cb => cb.closest('.movement').remove());
-      updateSelectedTotal();
-      bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
-    });
+      if (!res.success) throw new Error(res.error || 'Errore di salvataggio');
+      location.reload();
+    }).catch(error => alert(error.message));
   });
   <?php endif; ?>
   </script>
