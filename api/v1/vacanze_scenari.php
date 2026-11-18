@@ -68,7 +68,7 @@ function gf_changes(array $scenario,array $snapshot):array{
   if(!$old&&$category==='pasti'&&empty($clean['tipo_pasto']))gf_fail('Tipo pasto obbligatorio');
   $identity=$category.':'.($old?(string)$old[$pk]:mb_strtolower($clean[$label]));
   if(isset($seen[$identity]))gf_fail('Voce ripetuta');$seen[$identity]=true;
-  if($old&&(int)($old['pagato']??0)!==0)gf_fail('Voce gia pagata: nessuna modifica consentita');
+  if($old&&(int)($old['pagato']??0)!==0&&(count($clean)!==1||!array_key_exists('note',$clean)))gf_fail('Voce gia pagata: consentita solo la modifica delle note');
   $before=[];foreach($clean as $k=>$v)$before[$k]=$old[$k]??null;
   $diff=[];foreach($clean as $k=>$v){if(in_array($rules[$k],['money','day'],true))$diff[$k]=$v===null?null:round((float)$v-(float)($before[$k]??0),2);}
   $ops[]=['categoria'=>$category,'azione'=>$old?'aggiorna':'inserisci','id'=>$old?(int)$old[$pk]:null,'prima'=>$before,'dopo'=>$clean,'differenze_numeriche'=>$diff];
@@ -80,7 +80,8 @@ function gf_apply(mysqli $db,int $trip,int $sid,array $ops):void{
   [$table,$link,$pk]=GF_VOCI[$op['categoria']];$fields=$op['dopo'];
   if($op['azione']==='aggiorna'){
    $parts=[];foreach(array_keys($fields) as $key)$parts[]=$key.'=?';
-   $sql='UPDATE '.$table.' SET '.implode(',',$parts).' WHERE '.$pk.'=? AND id_viaggio=? AND COALESCE(pagato,0)=0';
+   $onlyNotes=count($fields)===1&&array_key_exists('note',$fields);
+   $sql='UPDATE '.$table.' SET '.implode(',',$parts).' WHERE '.$pk.'=? AND id_viaggio=?'.($onlyNotes?'':' AND COALESCE(pagato,0)=0');
    $values=array_values($fields);$values[]=$op['id'];$values[]=$trip;
    $q=$db->prepare($sql);$q->bind_param(str_repeat('s',count($fields)).'ii',...$values);$q->execute();$q->close();
   }else{
