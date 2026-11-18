@@ -17,8 +17,10 @@ CREATE TABLE etichette_conti_condivisi (
   tipo ENUM('quota','compensazione','pagamento','debito','saldo_debito','rettifica') NOT NULL,
   importo DECIMAL(10,2) NOT NULL,
   descrizione VARCHAR(255) NOT NULL,
+  id_e2o INT DEFAULT NULL COMMENT 'Movimento bancario etichettato di origine, se presente',
   creato_il TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_conto_etichetta (id_etichetta,id_famiglia,data_movimento),
-  KEY idx_conto_controparte (id_etichetta,controparte)
+  KEY idx_conto_controparte (id_etichetta,controparte),
+  UNIQUE KEY uq_movimento_persona (id_e2o,controparte)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
