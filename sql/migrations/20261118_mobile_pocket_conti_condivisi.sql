@@ -3,6 +3,9 @@ ALTER TABLE salvadanai
   ADD COLUMN accantonamento_modalita ENUM('automatico','fisso') NOT NULL DEFAULT 'automatico',
   ADD COLUMN accantonamento_fisso DECIMAL(10,2) DEFAULT NULL;
 
+ALTER TABLE bilancio_etichette
+  ADD COLUMN tipo_utilizzo ENUM('spese','conto') NOT NULL DEFAULT 'spese';
+
 -- Manual shared-account ledger. No fictitious bank movements are created.
 -- Positive amount = a receivable owed to the owner; negative = credit used/owner owes.
 CREATE TABLE etichette_conti_condivisi (
