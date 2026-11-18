@@ -276,46 +276,6 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
       <a href="budget_importi_attuali.php" class="btn btn-outline-light btn-sm">Aggiorna saldi</a>
     </div>
   </div>
-  <div class="gf-desktop-panels">
-    <section class="gf-panel" aria-label="Entrate mensili fisse">
-      <h5 class="mb-1">Entrate mensili</h5>
-      <table class="table table-striped table-sm gf-mini-table">
-        <thead><tr><th>Voce</th><th class="text-end">€/mese</th></tr></thead>
-        <tbody>
-        <?php foreach ($entrateMensili as $r): ?>
-          <tr><td><?= htmlspecialchars($r['descrizione'] ?? '') ?></td><td class="text-end"><?= number_format((float)$r['importo'],2,',','.') ?></td></tr>
-        <?php endforeach; ?>
-        </tbody>
-        <tfoot><tr class="fw-bold"><td>Totale entrate</td><td class="text-end"><?= number_format($totalEntrateMensili,2,',','.') ?> €</td></tr></tfoot>
-      </table>
-    </section>
-    <section class="gf-panel" aria-label="Uscite mensili">
-      <h5 class="mb-1">Uscite mensili</h5>
-      <table class="table table-striped table-sm gf-mini-table">
-        <thead><tr><th>Voce</th><th class="text-end">€/mese</th></tr></thead>
-        <tbody>
-        <?php foreach ($usciteMensili as $r): ?>
-          <tr><td><?= htmlspecialchars($r['descrizione'] ?? '') ?></td><td class="text-end"><?= number_format((float)$r['importo'],2,',','.') ?></td></tr>
-        <?php endforeach; ?>
-        </tbody>
-        <tfoot><tr class="fw-bold"><td>Totale uscite fisse</td><td class="text-end"><?= number_format($totalUsciteMensili,2,',','.') ?> €</td></tr></tfoot>
-      </table>
-    </section>
-    <section class="gf-panel" aria-label="Riepilogo reddito mensile">
-      <h5 class="mb-1">Distribuzione del reddito</h5>
-      <table class="table table-striped table-sm gf-mini-table">
-        <tbody>
-          <tr><td>Entrate mensili</td><td class="text-end"><?= number_format($totalEntrateMensili,2,',','.') ?> €</td></tr>
-          <tr><td>Uscite mensili</td><td class="text-end">−<?= number_format($totalUsciteMensili,2,',','.') ?> €</td></tr>
-          <tr><td>Accantonamenti Pocket</td><td class="text-end">−<?= number_format($totalePocket,2,',','.') ?> €</td></tr>
-          <tr><td>Altre quote annuali</td><td class="text-end">−<?= number_format($altreQuoteAnnuali,2,',','.') ?> €</td></tr>
-          <tr class="gf-summary-strong <?= $margineConPocket>=0 ? 'text-success':'text-warning' ?>"><td>Margine dopo Pocket</td><td class="text-end"><?= number_format($margineConPocket,2,',','.') ?> €</td></tr>
-          <tr><td>Margine piano teorico</td><td class="text-end"><?= number_format($totalEntrateMensili-$totalUsciteMensili-$totalAnnualiMensile,2,',','.') ?> €</td></tr>
-        </tbody>
-      </table>
-      <p class="small mb-0">Margine dopo Pocket: entrate meno spese mensili, versamenti Pocket impostati e quote annuali non associate a Pocket. Non include le assegnazioni straordinarie da 13ª/14ª come reddito ordinario.</p>
-    </section>
-  </div>
   <section aria-label="Stato salvadanai">
     <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
       <h5 class="mb-0">Salvadanai e Pocket Revolut</h5>
@@ -391,6 +351,46 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
     </div>
     <div class="small mb-3">*Da finanziare = spese programmate meno saldo attuale e contributi futuri da tredicesima e quattordicesima. Non considera ancora i prossimi versamenti mensili, che sono invece inclusi nella previsione a scadenza. **Già sufficiente riguarda l'importo complessivo, non necessariamente tutte le scadenze intermedie. Le rate future sono conteggiate dal prossimo giorno 1, la 13ª dal 21 dicembre e la 14ª dal 30 giugno.</div>
   </section>
+  <div class="gf-desktop-panels">
+    <section class="gf-panel" aria-label="Entrate mensili fisse">
+      <h5 class="mb-1">Entrate mensili</h5>
+      <table class="table table-striped table-sm gf-mini-table">
+        <thead><tr><th>Voce</th><th class="text-end">€/mese</th></tr></thead>
+        <tbody>
+        <?php foreach ($entrateMensili as $r): ?>
+          <tr><td><?= htmlspecialchars($r['descrizione'] ?? '') ?></td><td class="text-end"><?= number_format((float)$r['importo'],2,',','.') ?></td></tr>
+        <?php endforeach; ?>
+        </tbody>
+        <tfoot><tr class="fw-bold"><td>Totale entrate</td><td class="text-end"><?= number_format($totalEntrateMensili,2,',','.') ?> €</td></tr></tfoot>
+      </table>
+    </section>
+    <section class="gf-panel" aria-label="Uscite mensili">
+      <h5 class="mb-1">Uscite mensili</h5>
+      <table class="table table-striped table-sm gf-mini-table">
+        <thead><tr><th>Voce</th><th class="text-end">€/mese</th></tr></thead>
+        <tbody>
+        <?php foreach ($usciteMensili as $r): ?>
+          <tr><td><?= htmlspecialchars($r['descrizione'] ?? '') ?></td><td class="text-end"><?= number_format((float)$r['importo'],2,',','.') ?></td></tr>
+        <?php endforeach; ?>
+        </tbody>
+        <tfoot><tr class="fw-bold"><td>Totale uscite fisse</td><td class="text-end"><?= number_format($totalUsciteMensili,2,',','.') ?> €</td></tr></tfoot>
+      </table>
+    </section>
+    <section class="gf-panel" aria-label="Riepilogo reddito mensile">
+      <h5 class="mb-1">Distribuzione del reddito</h5>
+      <table class="table table-striped table-sm gf-mini-table">
+        <tbody>
+          <tr><td>Entrate mensili</td><td class="text-end"><?= number_format($totalEntrateMensili,2,',','.') ?> €</td></tr>
+          <tr><td>Uscite mensili</td><td class="text-end">−<?= number_format($totalUsciteMensili,2,',','.') ?> €</td></tr>
+          <tr><td>Accantonamenti Pocket</td><td class="text-end">−<?= number_format($totalePocket,2,',','.') ?> €</td></tr>
+          <tr><td>Altre quote annuali</td><td class="text-end">−<?= number_format($altreQuoteAnnuali,2,',','.') ?> €</td></tr>
+          <tr class="gf-summary-strong <?= $margineConPocket>=0 ? 'text-success':'text-warning' ?>"><td>Margine dopo Pocket</td><td class="text-end"><?= number_format($margineConPocket,2,',','.') ?> €</td></tr>
+          <tr><td>Margine piano teorico</td><td class="text-end"><?= number_format($totalEntrateMensili-$totalUsciteMensili-$totalAnnualiMensile,2,',','.') ?> €</td></tr>
+        </tbody>
+      </table>
+      <p class="small mb-0">Margine dopo Pocket: entrate meno spese mensili, versamenti Pocket impostati e quote annuali non associate a Pocket. Non include le assegnazioni straordinarie da 13ª/14ª come reddito ordinario.</p>
+    </section>
+  </div>
 
 </main>
 <?php include 'includes/footer.php'; ?>
