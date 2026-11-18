@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'budget_dashboard.php'
+      - 'includes/budget_pocket_previsione.php'
+      - 'tests/budget_pocket_previsione_test.php'
       - 'budget_anno.php'
       - 'budget_importi_attuali.php'
       - 'salvadanaio_dettaglio.php'
@@ -27,5 +29,7 @@ jobs:
           for file in budget_dashboard.php budget_anno.php budget_importi_attuali.php salvadanaio_dettaglio.php etichetta.php etichette_lista.php etichetta_conto.php ajax/update_salvadanaio.php; do
             php -l "$file"
           done
+      - name: Budget forecast regression checks
+        run: php tests/budget_pocket_previsione_test.php
       - name: JavaScript syntax
         run: node --check js/salvadanaio_dettaglio.js
