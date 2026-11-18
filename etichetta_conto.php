@@ -38,13 +38,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $dt = DateTimeImmutable::createFromFormat('!Y-m-d', $data);
             if (!$dt || $dt->format('Y-m-d') !== $data) throw new RuntimeException('Data non valida.');
             if ($persona === '' || mb_strlen($persona) > 120 || $descrizione === '' || mb_strlen($descrizione) > 255) throw new RuntimeException('Inserisci persona e descrizione.');
-            if (!in_array($tipo, ['quota','compensazione','pagamento','rettifica'], true)) throw new RuntimeException('Tipo non valido.');
+            if (!in_array($tipo, ['quota','compensazione','pagamento','debito','saldo_debito','rettifica'], true)) throw new RuntimeException('Tipo non valido.');
             if (!is_scalar($raw) || !is_numeric($raw)) throw new RuntimeException('Importo non valido.');
             $importo = round((float)$raw, 2);
             if (abs($importo) < 0.01 || abs($importo) > 1000000) throw new RuntimeException('Importo fuori intervallo.');
             if ($tipo !== 'rettifica' && $importo <= 0) throw new RuntimeException('Inserisci un importo positivo.');
-            if ($tipo === 'compensazione' || $tipo === 'pagamento') $importo = -abs($importo);
-            if ($tipo === 'quota') $importo = abs($importo);
+            if ($tipo === 'compensazione' || $tipo === 'pagamento' || $tipo === 'debito') $importo = -abs($importo);
+            if ($tipo === 'quota' || $tipo === 'saldo_debito') $importo = abs($importo);
             $stmt = $conn->prepare('INSERT INTO etichette_conti_condivisi (id_etichetta,id_famiglia,controparte,data_movimento,tipo,importo,descrizione) VALUES (?,?,?,?,?,?,?)');
             $stmt->bind_param('iisssds', $id, $familyId, $persona, $data, $tipo, $importo, $descrizione);
             if (!$stmt->execute()) throw new RuntimeException('Registrazione non riuscita.');
@@ -127,7 +127,7 @@ include 'includes/header.php';
   </div>
   <section class="conto-panel mb-4">
     <h2 class="h5">Registra quota o compensazione</h2>
-    <p class="small text-white-50">Quota dovuta aumenta il credito. Cena o cinema offerti e pagamenti ricevuti lo riducono. Le rettifiche possono essere positive o negative.</p>
+    <p class="small text-white-50">Quota dovuta aumenta il credito. Cena o cinema offerti e pagamenti ricevuti lo riducono. Puoi registrare anche un debito tuo e il suo saldo.</p>
     <form method="post" class="row g-3">
       <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf) ?>">
       <input type="hidden" name="id_etichetta" value="<?= $id ?>">
@@ -135,7 +135,7 @@ include 'includes/header.php';
       <div class="col-12 col-md-6">
         <label class="form-label" for="contoPersona">Persona</label>
         <input class="form-control conto-input" id="contoPersona" name="controparte" list="contoPersone" maxlength="120" required placeholder="Es. Bocci">
-        <datalist id="contoPersone"><?php foreach ($persone as $persona): ?><option value="<?= htmlspecialchars($persona, ENT_QUOTES) ?>"><?php endforeach; ?></datalist>
+        <datalist id="contoPersone"><?php foreach ($persone as $persona): ?><option value="<?= htmlspecialchars($persona, ENT_QUOTES) ?>"></option><?php endforeach; ?></datalist>
       </div>
       <div class="col-12 col-md-6">
         <label class="form-label" for="contoTipo">Operazione</label>
@@ -143,12 +143,14 @@ include 'includes/header.php';
           <option value="quota">Quota dovuta a me (+)</option>
           <option value="compensazione">Compensazione, es. cena offerta (−)</option>
           <option value="pagamento">Pagamento ricevuto (−)</option>
+          <option value="debito">Debito verso questa persona (−)</option>
+          <option value="saldo_debito">Pagamento del mio debito (+)</option>
           <option value="rettifica">Rettifica (+/−)</option>
         </select>
       </div>
       <div class="col-6 col-md-3">
         <label class="form-label" for="contoImporto">Importo (€)</label>
-        <input type="number" step="0.01" inputmode="decimal" class="form-control conto-input" id="contoImporto" name="importo" required placeholder="Es. 15,00">
+        <input type="number" step="0.01" inputmode="decimal" class="form-control conto-input" id="contoImporto" name="importo" required placeholder="Es. 15.00">
       </div>
       <div class="col-6 col-md-3">
         <label class="form-label" for="contoData">Data</label>
