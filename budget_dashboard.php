@@ -204,6 +204,8 @@ foreach ($salvadanai as $dati) {
     $dati['pocket'] = $pocket;
     $dati['consigliato'] = $consigliato;
     $dati['scoperto_futuro'] = $gap;
+    $dati['eccedenza_attuale'] = $previsione['eccedenza_attuale'];
+    $dati['eccedenza_prevista'] = $previsione['eccedenza_prevista'];
     $dati['rischio_data'] = $previsione['peggiore']['data'] ?? null;
     $dati['futuro_in_linea'] = $gap <= 0.01;
     $dati['bonus13_futuro'] = $previsione['tredicesima_futura'];
@@ -279,7 +281,7 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
   <section aria-label="Stato salvadanai">
     <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
       <h5 class="mb-0">Salvadanai e Pocket Revolut</h5>
-      <span class="small">Oggi: capitale ancora da accantonare · Scadenza: verifica con i prossimi versamenti</span>
+      <span class="small">Saldo reale, eccedenze già disponibili e avanzi previsti alle scadenze</span>
     </div>
     <div class="d-none d-lg-block">
       <table class="table table-striped table-sm gf-budget-table mb-1">
@@ -310,8 +312,19 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
             <td class="gf-number"><?= number_format($d['da_accantonare'],2,',','.') ?> €</td>
 
             <td class="gf-status <?= $d['futuro_in_linea'] ? 'text-success' : 'text-warning' ?>" title="<?= $d['rischio_data'] ? 'Scadenza più critica: ' . htmlspecialchars(date('d/m/Y',strtotime($d['rischio_data'])),ENT_QUOTES) : 'Nessuna spesa con scadenza futura' ?>">
-              <?= $d['rischio_data'] === null ? 'Nessuna scadenza' : ($d['futuro_in_linea'] ? 'Coperto' : 'Mancano ' . number_format($d['scoperto_futuro'],2,',','.') . ' €') ?>
+              <?php if ($d['rischio_data'] === null): ?>
+                Nessuna scadenza
+              <?php elseif (!$d['futuro_in_linea']): ?>
+                Mancano <?= number_format($d['scoperto_futuro'],2,',','.') ?> €
+              <?php elseif ($d['eccedenza_prevista'] >= 0.01): ?>
+                Avanzo previsto +<?= number_format($d['eccedenza_prevista'],2,',','.') ?> €
+              <?php else: ?>
+                Coperto
+              <?php endif; ?>
               <?php if ($d['rischio_data']): ?><span class="gf-muted">(<?= date('d/m/Y',strtotime($d['rischio_data'])) ?>)</span><?php endif; ?>
+              <?php if ($d['eccedenza_attuale'] >= 0.01): ?>
+                <div class="gf-muted" title="Saldo reale meno tutte le spese future del Pocket, senza contare nuovi versamenti o tredicesima/quattordicesima">Eccedenza oggi +<?= number_format($d['eccedenza_attuale'],2,',','.') ?> €</div>
+              <?php endif; ?>
             </td>
             <td class="gf-number"><?= number_format($d['bonus13_futuro'],2,',','.') ?> € / <?= number_format($d['bonus14_futuro'],2,',','.') ?> €</td>
 
@@ -343,12 +356,13 @@ $margineConPocket = $totalEntrateMensili - $totalUsciteMensili - $altreQuoteAnnu
         <div class="d-flex justify-content-between small"><span>Budget/mese</span><strong><?= number_format($d['consigliato'],2,',','.') ?> €</strong></div>
         <div class="d-flex justify-content-between small"><span>Saldo accantonato</span><strong><?= number_format($d['attuale'],2,',','.') ?> €</strong></div>
         <div class="d-flex justify-content-between mt-1"><span>Da accantonare*</span><strong><?= number_format($d['da_accantonare'],2,',','.') ?> €</strong></div>
-        <div class="d-flex justify-content-between"><span>Alla scadenza</span><strong class="<?= $d['futuro_in_linea'] ? 'text-success':'text-warning' ?>"><?= $d['rischio_data']===null?'Nessuna scadenza':($d['futuro_in_linea']?'Coperto':'Mancano '.number_format($d['scoperto_futuro'],2,',','.').' €') ?></strong></div>
+        <div class="d-flex justify-content-between"><span>Alla scadenza</span><strong class="<?= $d['futuro_in_linea'] ? 'text-success':'text-warning' ?>"><?= $d['rischio_data']===null ? 'Nessuna scadenza' : (!$d['futuro_in_linea'] ? 'Mancano '.number_format($d['scoperto_futuro'],2,',','.').' €' : ($d['eccedenza_prevista'] >= 0.01 ? 'Avanzo previsto +'.number_format($d['eccedenza_prevista'],2,',','.').' €' : 'Coperto')) ?></strong></div>
+        <?php if ($d['eccedenza_attuale'] >= 0.01): ?><div class="small text-success">Eccedenza oggi +<?= number_format($d['eccedenza_attuale'],2,',','.') ?> €</div><?php endif; ?>
         <?php if ($d['bonus13_futuro'] > 0): ?><div class="small text-white-50">13ª attesa: <?= number_format($d['bonus13_futuro'],2,',','.') ?> € · 14ª attesa: <?= number_format($d['bonus14_futuro'],2,',','.') ?> €</div><?php endif; ?>
       </article>
       <?php endforeach; ?>
     </div>
-    <div class="small mb-3">*Da finanziare = spese programmate meno saldo attuale e contributi futuri da tredicesima e quattordicesima. Non considera ancora i prossimi versamenti mensili, che sono invece inclusi nella previsione a scadenza. **Già sufficiente riguarda l'importo complessivo, non necessariamente tutte le scadenze intermedie. Le rate future sono conteggiate dal prossimo giorno 1, la 13ª dal 21 dicembre e la 14ª dal 30 giugno.</div>
+    <div class="small mb-3">*Da finanziare = spese programmate meno saldo attuale e contributi futuri da tredicesima e quattordicesima. Non considera ancora i prossimi versamenti mensili, che sono invece inclusi nella previsione a scadenza. Eccedenza oggi: saldo reale oltre tutte le spese future censite. Avanzo previsto: saldo residuo dopo spese e versamenti futuri, mostrato solo se tutte le scadenze intermedie sono coperte. Le rate future sono conteggiate dal prossimo giorno 1, la 13ª dal 21 dicembre e la 14ª dal 30 giugno.</div>
   </section>
   <div class="gf-desktop-panels">
     <section class="gf-panel" aria-label="Entrate mensili fisse">
