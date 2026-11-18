@@ -26,15 +26,15 @@ try {
     // Imported bank files may encode debit amounts as negative already.
     // ABS ensures a consistent sign without modifying the stored original.
     if ($source === '' || $source === 'bilancio_uscite') {
-        $parts[] = "SELECT id_uscita AS id, 'bilancio_uscite' AS source, data_operazione AS data, -ABS(importo) AS importo, descrizione_operazione AS descrizione_originale, descrizione_extra AS descrizione_extra, mezzo FROM bilancio_uscite WHERE id_utente=" . (int)$userId;
+        $parts[] = "SELECT id_uscita AS id, 'bilancio_uscite' AS source, data_operazione AS data, -ABS(importo) AS importo, descrizione_operazione AS descrizione_originale, descrizione_extra AS descrizione_extra, note AS note, mezzo FROM bilancio_uscite WHERE id_utente=" . (int)$userId;
     }
     if ($source === '' || $source === 'bilancio_entrate') {
-        $parts[] = "SELECT id_entrata AS id, 'bilancio_entrate' AS source, data_operazione AS data, ABS(importo) AS importo, descrizione_operazione AS descrizione_originale, descrizione_extra AS descrizione_extra, mezzo FROM bilancio_entrate WHERE id_utente=" . (int)$userId;
+        $parts[] = "SELECT id_entrata AS id, 'bilancio_entrate' AS source, data_operazione AS data, ABS(importo) AS importo, descrizione_operazione AS descrizione_originale, descrizione_extra AS descrizione_extra, note AS note, mezzo FROM bilancio_entrate WHERE id_utente=" . (int)$userId;
     }
     // Revolut records in the legacy schema are shared by the specific family #1.
     // This source is available only to the explicitly configured bank-data owner.
     if (($source === '' || $source === 'movimenti_revolut') && (int)$familyId === 1) {
-        $parts[] = "SELECT id_movimento_revolut AS id, 'movimenti_revolut' AS source, started_date AS data, amount AS importo, description AS descrizione_originale, descrizione_extra AS descrizione_extra, 'revolut' AS mezzo FROM v_movimenti_revolut_filtrati";
+        $parts[] = "SELECT id_movimento_revolut AS id, 'movimenti_revolut' AS source, started_date AS data, amount AS importo, description AS descrizione_originale, descrizione_extra AS descrizione_extra, note AS note, 'revolut' AS mezzo FROM v_movimenti_revolut_filtrati";
     }
     $base = 'SELECT * FROM (' . implode(' UNION ALL ', $parts) . ') AS t';
     if ($mode === 'detail') {
@@ -61,12 +61,12 @@ try {
     $offset = filter_var($_GET['offset'] ?? 0, FILTER_VALIDATE_INT);
     if ($limit === false || $limit < 1 || $limit > 100 || $offset === false || $offset < 0 || $offset > 5000) api_error(422,'Paginazione non valida');
     $where = ' WHERE data >= ? AND data < DATE_ADD(?, INTERVAL 1 DAY)';
-    if ($q !== null) $where .= ' AND (descrizione_originale LIKE ? OR descrizione_extra LIKE ?)';
+    if ($q !== null) $where .= ' AND (descrizione_originale LIKE ? OR descrizione_extra LIKE ? OR note LIKE ?)';
     $sql = $base . $where . ' ORDER BY data DESC, source, id DESC LIMIT ? OFFSET ?';
     $stmt = $conn->prepare($sql);
     if ($q !== null) {
         $like = '%' . $q . '%';
-        $stmt->bind_param('ssssii',$from,$to,$like,$like,$limit,$offset);
+        $stmt->bind_param('sssssii',$from,$to,$like,$like,$like,$limit,$offset);
     } else {
         $stmt->bind_param('ssii',$from,$to,$limit,$offset);
     }
