@@ -173,54 +173,7 @@ include 'includes/header.php';
     <?php endforeach; ?>
     <?php if (!$saldi): ?><div class="conto-panel text-white-50">Nessun saldo ancora registrato. Aggiungi una quota o compensazione per iniziare.</div><?php endif; ?>
   </div>
-  <section class="conto-panel mb-4">
-    <h2 class="h5">Registra quota o compensazione</h2>
-    <p class="small text-white-50">Per Disney+ o Netflix scegli il movimento già etichettato e inserisci solo la quota attribuita all'amico. Una cena offerta senza movimento bancario può essere una compensazione indipendente. Non importiamo automaticamente i vecchi valori.</p>
-    <form method="post" class="row g-3">
-      <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf) ?>">
-      <input type="hidden" name="id_etichetta" value="<?= $id ?>">
-      <input type="hidden" name="azione" value="aggiungi">
-      <div class="col-12 col-md-6">
-        <label class="form-label" for="contoPersona">Persona</label>
-        <input class="form-control conto-input" id="contoPersona" name="controparte" list="contoPersone" maxlength="120" required placeholder="Es. Bocci">
-        <datalist id="contoPersone"><?php foreach ($persone as $persona): ?><option value="<?= htmlspecialchars($persona, ENT_QUOTES) ?>"></option><?php endforeach; ?></datalist>
-      </div>
-      <div class="col-12 col-md-6">
-        <label class="form-label" for="contoTipo">Operazione</label>
-        <select class="form-select conto-input" id="contoTipo" name="tipo" required>
-          <option value="quota">Quota dovuta a me (+)</option>
-          <option value="compensazione">Compensazione, es. cena offerta (−)</option>
-          <option value="pagamento">Pagamento ricevuto (−)</option>
-          <option value="debito">Debito verso questa persona (−)</option>
-          <option value="saldo_debito">Pagamento del mio debito (+)</option>
-          <option value="rettifica">Rettifica (+/−)</option>
-        </select>
-      </div>
-      <div class="col-12">
-        <label class="form-label" for="contoMovimento">Movimento già presente nell'etichetta (facoltativo)</label>
-        <select class="form-select conto-input" id="contoMovimento" name="id_e2o">
-          <option value="">Nessuno: quota o compensazione manuale</option>
-          <?php foreach ($movimentiEtichetta as $mov): ?>
-            <option value="<?= (int)$mov['id_e2o'] ?>"><?= htmlspecialchars(date('d/m/Y',strtotime($mov['data_operazione'])) . ' · ' . mb_strimwidth($mov['descrizione'],0,65,'…') . ' · ' . number_format((float)$mov['importo'],2,',','.') . ' €') ?></option>
-          <?php endforeach; ?>
-        </select>
-        <div class="form-text text-white-50">Il collegamento identifica l'operazione originale. L'importo attribuito è soltanto la quota del partecipante.</div>
-      </div>
-      <div class="col-6 col-md-3">
-        <label class="form-label" for="contoImporto">Importo (€)</label>
-        <input type="number" step="0.01" inputmode="decimal" class="form-control conto-input" id="contoImporto" name="importo" required placeholder="Es. 15.00">
-      </div>
-      <div class="col-6 col-md-3">
-        <label class="form-label" for="contoData">Data</label>
-        <input type="date" class="form-control conto-input" id="contoData" name="data_movimento" value="<?= date('Y-m-d') ?>" required>
-      </div>
-      <div class="col-12 col-md-6">
-        <label class="form-label" for="contoDescrizione">Motivo</label>
-        <input class="form-control conto-input" id="contoDescrizione" maxlength="255" name="descrizione" required placeholder="Es. Quota Disney+ 2026">
-      </div>
-      <div class="col-12"><button class="btn btn-primary w-100 py-3">Registra nel conto condiviso</button></div>
-    </form>
-  </section>
+  <div class="d-flex justify-content-end mb-4"><a class="btn btn-primary" href="aggiungi_compensazione.php?id_etichetta=<?= (int)$id ?>">Registra quota o compensazione</a></div>
   <h2 class="h5">Storico delle compensazioni</h2>
   <section class="conto-panel">
     <?php foreach ($righe as $r): ?>
