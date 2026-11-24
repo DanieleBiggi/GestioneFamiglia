@@ -125,7 +125,7 @@ if (count($menu) === 0) {
         $insertStmt->close();
         $conn->commit();
         $generated = true;
-        cleanup_old_menu_weeks($conn, $idFamiglia);
+        // Conservare le settimane storiche: potranno avere associazioni alla spesa.
     } catch (Throwable $e) {
         $conn->rollback();
         http_response_code(500);
