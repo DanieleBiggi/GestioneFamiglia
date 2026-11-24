@@ -1,5 +1,10 @@
 <?php
 require_once __DIR__ . '/menu_cene_config.php';
+require_once __DIR__ . '/menu_cene_relazionale.php';
+
+function menu_cene_effective_config(mysqli $db, int $familyId): ?array {
+    return menu_rel_read($db, $familyId) ?? food_config_read($familyId, 'master');
+}
 
 /**
  * Menu cene famiglia 2026-2027.
@@ -12,11 +17,12 @@ require_once __DIR__ . '/menu_cene_config.php';
  * secondo venerdì di aprile; dalla settimana successiva torna estivo.
  */
 
-function menu_cene_master(): array
+function menu_cene_master(?int $explicitFamily = null): array
 {
-    $familyId = (int)($_SESSION['id_famiglia_gestione'] ?? 0);
+    $familyId = $explicitFamily ?? (int)($_SESSION['id_famiglia_gestione'] ?? 0);
+    global $conn;
     if ($familyId > 0) {
-        $custom = food_config_read($familyId, 'master');
+        $custom = $conn instanceof mysqli ? menu_cene_effective_config($conn, $familyId) : food_config_read($familyId, 'master');
         if ($custom !== null) return $custom['stagioni'];
     }
     return [
@@ -88,10 +94,11 @@ function menu_cene_week_start(DateTimeImmutable $date): DateTimeImmutable
     return $date->modify('monday this week')->setTime(0, 0);
 }
 
-function menu_cene_cycle_week(DateTimeImmutable $weekStart): int
+function menu_cene_cycle_week(DateTimeImmutable $weekStart, ?int $explicitFamily = null): int
 {
-    $familyId = (int)($_SESSION['id_famiglia_gestione'] ?? 0);
-    $config = $familyId > 0 ? food_config_read($familyId, 'master') : null;
+    $familyId = $explicitFamily ?? (int)($_SESSION['id_famiglia_gestione'] ?? 0);
+    global $conn;
+    $config = $familyId > 0 ? ($conn instanceof mysqli ? menu_cene_effective_config($conn, $familyId) : food_config_read($familyId, 'master')) : null;
     $anchor = new DateTimeImmutable($config['ciclo']['data_riferimento'] ?? '2026-09-14');
     $anchor = menu_cene_week_start($anchor);
     $weekStart = menu_cene_week_start($weekStart);
