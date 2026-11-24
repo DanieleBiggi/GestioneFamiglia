@@ -3,6 +3,8 @@ header('Content-Type: application/json');
 include '../includes/session_check.php';
 include '../includes/db.php';
 require_once '../includes/permissions.php';
+require_once '../includes/menu_cene_relazionale.php';
+$conn->set_charset('utf8mb4');
 
 if (!has_permission($conn, 'ajax:import_menu_cene', 'insert')) {
     http_response_code(403);
@@ -30,6 +32,7 @@ $weekStartSql = $weekStart->format('Y-m-d');
 
 $conn->begin_transaction();
 try {
+    menu_rel_lock_family($conn, $idFamiglia);
     $stmt = $conn->prepare('INSERT INTO menu_cene_settimanale (id_famiglia, week_start, giorno, piatto)
         VALUES (?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE piatto = VALUES(piatto)');

@@ -8,7 +8,7 @@
 
 ## Due ambiti obbligatori
 - ambito=settimana e week_start=YYYY-MM-DD (lunedì): modifica unicamente menu_cene_settimanale per la famiglia e la settimana indicate. I cinque giorni sono salvati (inclusi quelli invariati e vuoti) così una visita successiva all'interfaccia non rigenera i giorni mancanti dal master.
-- ambito=master, stagione=Estivo o Invernale e settimana_ciclo=1..4: modifica la configurazione JSON privata in config/menu_cene/{famiglia}/master.json tramite food_config_save, senza modificare le settimane già salvate. Resta il ciclo di quattro settimane. Il master richiede una cena non vuota in ciascun giorno.
+- ambito=master, stagione=Estivo o Invernale e settimana_ciclo=1..4: salva una nuova versione del master relazionale per la famiglia API dopo l’attivazione. Le settimane già salvate conservano i piatti esistenti. Resta il ciclo di quattro settimane. Il master richiede una cena non vuota in ciascun giorno.
 
 Non occorrono nuove tabelle, colonne o migrazioni; si usa la chiave univoca già esistente su menu_cene_settimanale.
 

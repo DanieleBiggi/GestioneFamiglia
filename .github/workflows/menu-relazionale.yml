@@ -1,0 +1,32 @@
+name: Menù relazionale PHP 8.3 e MySQL 5.6
+on:
+  pull_request:
+  push:
+    branches: [feature/menu-relazionale]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  collaudo:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli, mbstring, curl
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installa Playwright per l'editor web
+        run: npm install --prefix "$RUNNER_TEMP/menu-browser" --no-audit --no-fund playwright@1.60.0
+      - name: Collaudo applicativo
+        run: |
+          export NODE_PATH="$RUNNER_TEMP/menu-browser/node_modules"
+          export GF_MENU_BROWSER="$(command -v google-chrome)"
+          test -x "$GF_MENU_BROWSER"
+          tests/menu_relazionale/run.sh

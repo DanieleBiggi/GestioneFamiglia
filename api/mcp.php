@@ -147,7 +147,13 @@ function mcp_tools(): array {
 }
 function mcp_request(string $path, string $verb, string $token, ?array $payload = null, ?string $requestId = null): array {
     if (!function_exists('curl_init')) throw new RuntimeException('Estensione PHP cURL non disponibile');
-    $url = 'https://www.gestionefamiglia.it/Gestionale25/api/v1/' . $path;
+    $baseUrl = $GLOBALS['apiConfig']['mcp_rest_base_url'] ?? 'https://www.gestionefamiglia.it/Gestionale25/api/v1/';
+    $parts = is_string($baseUrl) ? parse_url($baseUrl) : false;
+    if (!$parts || ($parts['scheme'] ?? '') !== 'https' || empty($parts['host'])
+        || array_intersect(['user', 'pass', 'query', 'fragment'], array_keys($parts))) {
+        throw new RuntimeException('URL REST MCP non valido');
+    }
+    $url = rtrim($baseUrl, '/') . '/' . $path;
     $headers = ['Accept: application/json'];
     $jsonBody = $payload !== null ? json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '';
     if ($payload !== null) $headers[] = 'Content-Type: application/json; charset=utf-8';
@@ -158,7 +164,7 @@ function mcp_request(string $path, string $verb, string $token, ?array $payload 
         $key = $GLOBALS['apiConfig']['mcp_internal_key'] ?? '';
         if (!is_string($key) || !preg_match('/^[a-f0-9]{64}$/Di',$key)) throw new RuntimeException('Chiave interna MCP assente');
         $timestamp=(string)time();
-        $canonicalPath='/Gestionale25/api/v1/' . parse_url($path, PHP_URL_PATH);
+        $canonicalPath = parse_url($url, PHP_URL_PATH);
         $signed=$timestamp . "\n" . $verb . "\n" . $canonicalPath . "\n" . hash('sha256',$jsonBody);
         $headers[]='X-GF-Internal-Time: ' . $timestamp;
         $headers[]='X-GF-Internal-Signature: ' . hash_hmac('sha256',$signed,hex2bin($key));

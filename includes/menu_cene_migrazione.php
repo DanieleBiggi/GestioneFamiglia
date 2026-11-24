@@ -10,12 +10,10 @@ function menu_migration_plan(int $familyId): array {
         }
         $master = ['version'=>1,'anno_scolastico'=>'2026-2027',
             'ciclo'=>['settimane'=>4,'data_riferimento'=>'2026-09-14','settimana_riferimento'=>2],
-            'stagioni'=>menu_cene_master()];
+            'stagioni'=>menu_cene_default_master()];
     }
     food_config_validate('master', $master);
     $recipes = food_config_recipes($familyId)['ricette'];
-    $year = $master['anno_scolastico'] ?? '';
-    if (mb_strlen($year) > 9) throw new InvalidArgumentException('Anno scolastico troppo lungo');
     $dishes = [];
     $slots = [];
     $recipeMap = [];
@@ -30,13 +28,12 @@ function menu_migration_plan(int $familyId): array {
                 foreach (['cena'=>'principale','contorno'=>'contorno'] as $field=>$type) {
                     $order = 0;
                     $value = $master['stagioni'][$season][$week][$day][$field];
-                    foreach (preg_split('/\\R|\\s*\\+\\s*|\\s*;\\s*/u', $value) as $part) {
-                        $name = trim($part);
-                        if ($name === '') continue;
+                    foreach (menu_rel_parts($value) as $name) {
                         $key = food_config_norm($name);
                         if (!isset($dishes[$key])) $dishes[$key] = $name;
                         $slots[] = ['season'=>$season,'week'=>$week,'day'=>$day,
-                            'type'=>$type,'order'=>$order++,'key'=>$key];
+                            'type'=>$type,'order'=>$order,'key'=>$key,'original'=>$order === 0 ? $value : null];
+                        $order++;
                     }
                     if ($field === 'cena' && $order === 0) throw new InvalidArgumentException('Cena vuota');
                 }
@@ -100,8 +97,8 @@ function menu_migration_apply(mysqli $conn, int $familyId, string $expectedHash)
         $stmt->close();
         foreach ($plan['slots'] as $slot) {
             $stmt = menu_migration_query($conn,
-                'INSERT INTO menu_cene_master_piatti(id_master,id_piatto,stagione,settimana,giorno,tipo,ordine) VALUES(?,?,?,?,?,?,?)',
-                'iisissi', [$masterId,$dishIds[$slot['key']],$slot['season'],$slot['week'],$slot['day'],$slot['type'],$slot['order']]);
+                'INSERT INTO menu_cene_master_piatti(id_master,id_piatto,stagione,settimana,giorno,tipo,ordine,testo_originale) VALUES(?,?,?,?,?,?,?,?)',
+                'iisissis', [$masterId,$dishIds[$slot['key']],$slot['season'],$slot['week'],$slot['day'],$slot['type'],$slot['order'],$slot['original']]);
             $stmt->close();
         }
         $conn->commit();
@@ -136,16 +133,16 @@ function menu_migration_activate(mysqli $conn,int $familyId,string $expectedHash
             || $m['data_riferimento']!==$source['ciclo']['data_riferimento']
             || (int)$m['settimana_riferimento']!==$source['ciclo']['settimana_riferimento']
             || (int)$m['numero_settimane']!==4) throw new RuntimeException('Ciclo non corrispondente');
-        $q=menu_migration_query($conn,'SELECT mp.stagione,mp.settimana,mp.giorno,mp.tipo,mp.ordine,p.nome,p.nome_hash FROM menu_cene_master_piatti mp JOIN piatti p ON p.id_piatto=mp.id_piatto AND p.id_famiglia=? WHERE mp.id_master=?','ii',[$familyId,$id]);
+        $q=menu_migration_query($conn,'SELECT mp.stagione,mp.settimana,mp.giorno,mp.tipo,mp.ordine,mp.testo_originale,p.nome,p.nome_hash FROM menu_cene_master_piatti mp JOIN piatti p ON p.id_piatto=mp.id_piatto AND p.id_famiglia=? WHERE mp.id_master=?','ii',[$familyId,$id]);
         $actual=[];
         foreach ($q->get_result()->fetch_all(MYSQLI_ASSOC) as $row) {
             $key=implode('|',[$row['stagione'],$row['settimana'],$row['giorno'],$row['tipo'],$row['ordine']]);
-            $actual[$key]=[$row['nome_hash'],$row['nome']];
+            $actual[$key]=[$row['nome_hash'],$row['nome'],$row['testo_originale']];
         }
         $q->close(); $expected=[];
         foreach ($plan['slots'] as $slot) {
             $key=implode('|',[$slot['season'],$slot['week'],$slot['day'],$slot['type'],$slot['order']]);
-            $expected[$key]=[hash('sha256',(string)$slot['key']),$plan['dishes'][$slot['key']]];
+            $expected[$key]=[hash('sha256',(string)$slot['key']),$plan['dishes'][$slot['key']],$slot['original']];
         }
         ksort($actual); ksort($expected);
         if ($actual!==$expected) throw new RuntimeException('Piatti migrati non corrispondenti');

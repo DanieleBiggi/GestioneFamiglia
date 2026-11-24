@@ -3,6 +3,8 @@ header('Content-Type: application/json');
 include '../includes/session_check.php';
 include '../includes/db.php';
 require_once '../includes/permissions.php';
+require_once '../includes/menu_cene_relazionale.php';
+$conn->set_charset('utf8mb4');
 
 if (!has_permission($conn, 'ajax:update_menu_cena', 'update')) {
     http_response_code(403);
@@ -19,9 +21,18 @@ if (!$id || !$idFamiglia) {
     exit;
 }
 
-$stmt = $conn->prepare('UPDATE menu_cene_settimanale SET piatto = ? WHERE id = ? AND id_famiglia = ?');
-$stmt->bind_param('sii', $piatto, $id, $idFamiglia);
-$ok = $stmt->execute();
-$stmt->close();
-
-echo json_encode(['success' => $ok]);
+$conn->begin_transaction();
+try {
+    menu_rel_lock_family($conn, $idFamiglia);
+    $stmt = $conn->prepare('UPDATE menu_cene_settimanale SET piatto = ? WHERE id = ? AND id_famiglia = ?');
+    $stmt->bind_param('sii', $piatto, $id, $idFamiglia);
+    $stmt->execute();
+    $stmt->close();
+    $conn->commit();
+    echo json_encode(['success' => true]);
+} catch (Throwable $e) {
+    $conn->rollback();
+    error_log('Modifica cena: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Errore durante il salvataggio']);
+}

@@ -61,17 +61,6 @@ function build_turni(array $rows, array $windows): array
     return $turni;
 }
 
-function cleanup_old_menu_weeks(mysqli $conn, int $idFamiglia): void
-{
-    // La soglia dipende sempre dalla settimana reale corrente, mai da quella selezionata.
-    $realCurrentMonday = menu_cene_week_start(new DateTimeImmutable('today'));
-    $threshold = $realCurrentMonday->modify('-2 weeks')->format('Y-m-d');
-    $stmt = $conn->prepare('DELETE FROM menu_cene_settimanale WHERE id_famiglia = ? AND week_start < ?');
-    $stmt->bind_param('is', $idFamiglia, $threshold);
-    $stmt->execute();
-    $stmt->close();
-}
-
 $days = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì'];
 
 // Settimana selezionata: accettiamo solo una data valida e la normalizziamo al lunedì.
@@ -93,57 +82,44 @@ $nextWeekEnd = $nextWeekStart->modify('+6 days');
 $startNext = $nextWeekStart->format('Y-m-d');
 $endNext = $nextWeekEnd->format('Y-m-d');
 
-// Carica esclusivamente il menu della settimana selezionata.
-$menu = [];
-$stmt = $conn->prepare('SELECT id, giorno, piatto FROM menu_cene_settimanale WHERE id_famiglia = ? AND week_start = ? ORDER BY id ASC');
-$stmt->bind_param('is', $idFamiglia, $startCurrent);
-$stmt->execute();
-$res = $stmt->get_result();
-while ($row = $res->fetch_assoc()) {
-    $day = gf_menu_normalize_day((string)$row['giorno']);
-    if ($day !== null) {
-        // In caso di record storici duplicati, prevale il più recente.
-        $menu[$day] = ['id' => (int)$row['id'], 'giorno' => $day, 'piatto' => $row['piatto'] ?? ''];
-    }
-}
-$stmt->close();
-
-// Una settimana viene generata dal master solo se non contiene ancora nessuno dei 5 giorni.
-// In questo modo modifiche manuali e import non vengono mai sovrascritti da una semplice lettura.
-$generated = false;
-if (count($menu) === 0) {
-    $plan = menu_cene_plan($startOfWeek);
-    $insertStmt = $conn->prepare('INSERT INTO menu_cene_settimanale (id_famiglia, week_start, giorno, piatto) VALUES (?, ?, ?, ?)');
-    $conn->begin_transaction();
-    try {
-        foreach ($days as $day) {
-            $piatto = menu_cene_format_dish($plan['giorni'][$day] ?? []);
-            $insertStmt->bind_param('isss', $idFamiglia, $startCurrent, $day, $piatto);
-            if (!$insertStmt->execute()) throw new RuntimeException($insertStmt->error);
-            $menu[$day] = ['id' => $conn->insert_id, 'giorno' => $day, 'piatto' => $piatto];
+$conn->begin_transaction();
+try {
+    // Serialize generation and master changes for this family.
+    menu_rel_lock_family($conn, $idFamiglia);
+    $planInfo = menu_cene_plan($startOfWeek, menu_cene_effective_config($conn, $idFamiglia));
+    // Carica esclusivamente il menu della settimana selezionata.
+    $menu = [];
+    $stmt = $conn->prepare('SELECT id, giorno, piatto FROM menu_cene_settimanale WHERE id_famiglia = ? AND week_start = ? ORDER BY id ASC');
+    $stmt->bind_param('is', $idFamiglia, $startCurrent);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    while ($row = $res->fetch_assoc()) {
+        $day = gf_menu_normalize_day((string)$row['giorno']);
+        if ($day !== null) {
+            // In caso di record storici duplicati, prevale il più recente.
+            $menu[$day] = ['id' => (int)$row['id'], 'giorno' => $day, 'piatto' => $row['piatto'] ?? ''];
         }
-        $insertStmt->close();
-        $conn->commit();
-        $generated = true;
-        // Conservare le settimane storiche: potranno avere associazioni alla spesa.
-    } catch (Throwable $e) {
-        $conn->rollback();
-        http_response_code(500);
-        echo json_encode(['success' => false, 'error' => 'Errore durante la generazione del menù']);
-        exit;
     }
-} else {
-    // Se una settimana esistente fosse incompleta, aggiunge solo i giorni mancanti senza toccare gli altri.
-    $plan = menu_cene_plan($startOfWeek);
-    $insertStmt = $conn->prepare('INSERT INTO menu_cene_settimanale (id_famiglia, week_start, giorno, piatto) VALUES (?, ?, ?, ?)');
+    $stmt->close();
+
+
+    $generated = count($menu) === 0;
+    $insert = $conn->prepare('INSERT INTO menu_cene_settimanale (id_famiglia, week_start, giorno, piatto) VALUES (?, ?, ?, ?)');
     foreach ($days as $day) {
         if (isset($menu[$day])) continue;
-        $piatto = menu_cene_format_dish($plan['giorni'][$day] ?? []);
-        $insertStmt->bind_param('isss', $idFamiglia, $startCurrent, $day, $piatto);
-        $insertStmt->execute();
-        $menu[$day] = ['id' => $conn->insert_id, 'giorno' => $day, 'piatto' => $piatto];
+        $dish = menu_cene_format_dish($planInfo['giorni'][$day] ?? []);
+        $insert->bind_param('isss', $idFamiglia, $startCurrent, $day, $dish);
+        $insert->execute();
+        $menu[$day] = ['id' => $conn->insert_id, 'giorno' => $day, 'piatto' => $dish];
     }
-    $insertStmt->close();
+    $insert->close();
+    $conn->commit();
+} catch (Throwable $e) {
+    $conn->rollback();
+    error_log('Generazione menù: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Errore durante la generazione del menù']);
+    exit;
 }
 
 // Turni della settimana corrente e successiva.
@@ -220,7 +196,6 @@ foreach ($days as $index => $day) {
     ]);
 }
 
-$planInfo = menu_cene_plan($startOfWeek);
 echo json_encode([
     'success' => true,
     'items' => $ordered,

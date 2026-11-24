@@ -3,7 +3,8 @@ header('Content-Type: application/json; charset=utf-8');
 include '../includes/session_check.php';
 include '../includes/db.php';
 require_once '../includes/permissions.php';
-require_once '../includes/menu_cene_config.php';
+require_once '../includes/menu_cene_master.php';
+$conn->set_charset('utf8mb4');
 $idFamiglia = (int)($_SESSION['id_famiglia_gestione'] ?? 0);
 if ($idFamiglia <= 0 || !has_permission($conn, 'page:menu_cene.php', 'view')) {
     http_response_code(403);
@@ -23,7 +24,7 @@ $stmt->execute();
 $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 try {
-    $matches = food_config_match_recipes($rows, food_config_recipes($idFamiglia));
+    $matches = food_config_match_recipes($rows, menu_cene_effective_recipes($conn, $idFamiglia));
     echo json_encode(['success' => true, 'week_start' => $week, 'menu' => $rows] + $matches, JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     error_log('Esportazione menù: ' . $e->getMessage());

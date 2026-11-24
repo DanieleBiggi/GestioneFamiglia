@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const days = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì'];
   const $ = id => document.getElementById(id);
   const canSave = !!window.MENU_CONFIG_CAN_SAVE;
+  const revisions = {};
   const state = { master: null, ricette: null };
   const kind = new URLSearchParams(window.location.search).get('section') === 'ricette' ? 'ricette' : 'master';
   const alertBox = $('menuConfigAlert');
@@ -40,24 +41,12 @@ document.addEventListener('DOMContentLoaded', () => {
     data.ciclo.settimana_riferimento = Number($('cfgAnchorWeek').value);
     const current = data.stagioni[selectedSeason()][selectedWeek()];
     $('cfgDays').querySelectorAll('[data-day]').forEach(block => {
-      current[block.dataset.day] = {
-        cena: block.querySelector('[data-field="cena"]').value,
-        contorno: block.querySelector('[data-field="contorno"]').value
-      };
-    });
-  }
-  function validateImport(data, type) {
-    if (!data || typeof data !== 'object' || data.version !== 1) throw new Error('Versione JSON non valida');
-    if (type === 'master') {
-      if (!data.ciclo || data.ciclo.settimane !== 4 || !Number.isInteger(data.ciclo.settimana_riferimento) ||
-          !/^\\d{4}-\\d{2}-\\d{2}$/.test(data.ciclo.data_riferimento || '')) throw new Error('Ciclo non valido');
-      for (const season of ['Estivo', 'Invernale']) for (const week of ['1','2','3','4']) for (const day of days) {
-        const item = data.stagioni?.[season]?.[week]?.[day];
-        if (!item || typeof item.cena !== 'string' || !item.cena.trim() || typeof item.contorno !== 'string') throw new Error('Menù incompleto: ' + season + ', settimana ' + week + ', ' + day);
+      const item = current[block.dataset.day];
+      for (const key of ['cena', 'contorno']) {
+        const input = block.querySelector('[data-field="' + key + '"]');
+        item[key] = input.value === input.defaultValue.replace(/[\r\n]/g, '') ? input.defaultValue : input.value;
       }
-    } else if (!Array.isArray(data.ricette) || data.ricette.some(r => !r || typeof r.id !== 'string' || typeof r.nome !== 'string' || typeof r.istruzioni !== 'string' || !r.nome.trim())) {
-      throw new Error('Ricettario non valido');
-    }
+    });
   }
   function renderMaster() {
     const data = state.master;
@@ -78,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ['cena', 'contorno'].forEach(key => {
         const input = wrap(key === 'cena' ? 'Cena' : 'Contorno', item[key] || '');
         input.input.dataset.field = key;
+        input.input.defaultValue = item[key] || '';
         box.append(input.box);
       });
       root.append(box);
@@ -182,11 +172,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const res = await fetch('ajax/menu_cene_config.php?kind=' + encodeURIComponent(k), { credentials: 'same-origin' });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.error || 'Errore di caricamento');
+    revisions[k] = data.revision;
     return data.data;
   }
   async function initialize() {
     try {
       [state.master, state.ricette] = await Promise.all([request('master'), request('ricette')]);
+      if ($('cfgSave')) $('cfgSave').disabled = !revisions[kind];
       $('masterEditor').hidden = kind !== 'master';
       $('recipesEditor').hidden = kind !== 'ricette';
       $('menuConfigTitle').textContent = 'Configurazione · Menù cene · ' + (kind === 'master' ? 'Master' : 'Ricette');
@@ -227,37 +219,19 @@ document.addEventListener('DOMContentLoaded', () => {
     a.click();
     URL.revokeObjectURL(url);
   });
-  $('cfgImport')?.addEventListener('change', async e => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      if (file.size > 250000) throw new Error('File troppo grande');
-      const data = JSON.parse(await file.text());
-      validateImport(data, kind);
-      if (!confirm('Caricare il JSON nell’editor? Le modifiche non saranno salvate finché non premi Salva.')) return;
-      state[kind] = data;
-      if (kind === 'master') {
-        $('cfgSeason').value = 'Estivo';
-        $('cfgWeek').value = '1';
-        $('cfgSeason').dataset.previous = 'Estivo';
-        $('cfgWeek').dataset.previous = '1';
-        renderMaster();
-      } else renderRecipes();
-      message('JSON caricato nell’editor. Controlla i dati e premi Salva per applicarli.');
-    } catch (err) { message('Importazione: ' + err.message, true); }
-    finally { e.target.value = ''; }
-  });
   $('cfgSave')?.addEventListener('click', async () => {
     capture();
     if (!confirm('Salvare il ' + (kind === 'master' ? 'master' : 'ricettario') + ' della famiglia selezionata?')) return;
     const fd = new FormData();
     fd.set('kind', kind);
     fd.set('csrf_token', window.MENU_CONFIG_CSRF);
+    fd.set('revision', revisions[kind]);
     fd.set('json', JSON.stringify(state[kind]));
     try {
       const res = await fetch('ajax/menu_cene_config.php', { method: 'POST', body: fd, credentials: 'same-origin' });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'Errore di salvataggio');
+      revisions[kind] = data.revision;
       message('Configurazione salvata. Le settimane già generate rimangono invariate.');
     } catch (err) { message(err.message, true); }
   });

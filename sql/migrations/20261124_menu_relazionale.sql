@@ -31,7 +31,7 @@ CREATE TABLE piatti (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 CREATE TABLE menu_cene_master (
  id_master INT NOT NULL AUTO_INCREMENT, id_famiglia INT NOT NULL,
- anno_scolastico VARCHAR(9) NOT NULL, data_riferimento DATE NOT NULL,
+ anno_scolastico MEDIUMTEXT NOT NULL, data_riferimento DATE NOT NULL,
  settimana_riferimento TINYINT UNSIGNED NOT NULL, numero_settimane TINYINT UNSIGNED NOT NULL DEFAULT 4,
  attivo TINYINT(1) NOT NULL DEFAULT 0,
  PRIMARY KEY(id_master), KEY(id_famiglia,attivo),
@@ -42,6 +42,7 @@ CREATE TABLE menu_cene_master_piatti (
  stagione ENUM('Estivo','Invernale') NOT NULL, settimana TINYINT UNSIGNED NOT NULL,
  giorno VARCHAR(20) NOT NULL, tipo ENUM('principale','contorno','altro') NOT NULL,
  ordine SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+ testo_originale VARCHAR(500) DEFAULT NULL,
  PRIMARY KEY(id), UNIQUE KEY(id_master,stagione,settimana,giorno,tipo,ordine),
  FOREIGN KEY(id_master) REFERENCES menu_cene_master(id_master) ON DELETE CASCADE,
  FOREIGN KEY(id_piatto) REFERENCES piatti(id_piatto)

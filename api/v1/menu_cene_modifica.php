@@ -15,30 +15,27 @@ function gf_menu_master_config(mysqli $db, int $family): array {
     return menu_cene_effective_config($db,$family)??[
         'version'=>1,'anno_scolastico'=>'2026-2027',
         'ciclo'=>['settimane'=>4,'data_riferimento'=>'2026-09-14','settimana_riferimento'=>2],
-        'stagioni'=>menu_cene_master($family)
+        'stagioni'=>menu_cene_default_master()
     ];
 }
 function gf_menu_week_plan(array $config,DateTimeImmutable $start):array {
     $season=menu_cene_season($start);
-    $anchor=gf_menu_week((string)$config['ciclo']['data_riferimento']);
-    $weeks=intdiv((int)$anchor->diff($start)->format('%r%a'),7);
-    $reference=(int)$config['ciclo']['settimana_riferimento'];
-    $cycle=(($reference-1+$weeks)%4+4)%4+1;
+    $cycle = menu_cene_cycle_week($start, $config);
     return ['stagione'=>$season,'settimana_ciclo'=>$cycle];
 }
 function gf_menu_week_state(mysqli $db,int $family,DateTimeImmutable $start,array $config):array {
     $week=$start->format('Y-m-d');$plan=gf_menu_week_plan($config,$start);
     $master=$config['stagioni'][$plan['stagione']][$plan['settimana_ciclo']]??[];
-    $q=$db->prepare('SELECT giorno,piatto FROM menu_cene_settimanale WHERE id_famiglia=? AND week_start=? ORDER BY id FOR UPDATE');
+    $q=$db->prepare('SELECT id,giorno,piatto FROM menu_cene_settimanale WHERE id_famiglia=? AND week_start=? ORDER BY id FOR UPDATE');
     $q->bind_param('is',$family,$week);$q->execute();$rows=$q->get_result()->fetch_all(MYSQLI_ASSOC);$q->close();
-    $saved=[];foreach($rows as $row) { $day=gf_menu_normalize_day((string)$row['giorno']); if($day!==null)$saved[$day]=(string)$row['piatto']; }
+    $saved=[];foreach($rows as $row) { $day=gf_menu_normalize_day((string)$row['giorno']); if($day!==null)$saved[$day]=$row; }
     $days=[];$origin=[];
     foreach(GF_MENU_DAYS as $day) {
         $has=array_key_exists($day,$saved);
-        $days[$day]=$has?gf_menu_parts($saved[$day]):($master[$day]??['cena'=>'','contorno'=>'']);
+        $days[$day]=$has?gf_menu_parts((string)$saved[$day]['piatto']):($master[$day]??['cena'=>'','contorno'=>'']);
         $origin[$day]=$has?'salvato':'previsto_master';
     }
-    return ['giorni'=>$days,'origine'=>$origin,'piano'=>$plan];
+    return ['giorni'=>$days,'origine'=>$origin,'piano'=>$plan,'righe'=>$saved];
 }
 try {
     $body=api_body();
@@ -106,18 +103,28 @@ try {
         if ($diff) {
             if ($scope==='settimana') {
                 $week=$start->format('Y-m-d');
-                $q=$conn->prepare('INSERT INTO menu_cene_settimanale (id_famiglia,week_start,giorno,piatto) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE piatto=VALUES(piatto)');
+                $insert = $conn->prepare('INSERT INTO menu_cene_settimanale (id_famiglia,week_start,giorno,piatto) VALUES (?,?,?,?)');
+                $update = $conn->prepare('UPDATE menu_cene_settimanale SET piatto=? WHERE id_famiglia=? AND id=?');
                 // Materializzare tutti i 5 giorni: i giorni non toccati non devono
                 // essere rigenerati inaspettatamente da una successiva visita alla pagina.
                 foreach(GF_MENU_DAYS as $day) {
-                    $dish=gf_menu_format($after[$day]);
-                    $q->bind_param('isss',$familyId,$week,$day,$dish);$q->execute();
+                    $dish = gf_menu_format($after[$day]);
+                    if (!isset($state['righe'][$day])) {
+                        $insert->bind_param('isss', $familyId, $week, $day, $dish);
+                        $insert->execute();
+                    } elseif ($after[$day] !== $before[$day]) {
+                        $rowId = (int)$state['righe'][$day]['id'];
+                        $update->bind_param('sii', $dish, $familyId, $rowId);
+                        $update->execute();
+                    }
                 }
-                $q->close();
+                $insert->close();
+                $update->close();
             } else {
                 $config['stagioni'][$season][$cycle]=$after;
                 if (menu_rel_read($conn,(int)$familyId,true) === null) {
-                    throw new RuntimeException('Master relazionale non ancora attivato');
+                    $conn->rollback();
+                    api_error(409, 'Master relazionale non ancora attivato');
                 }
                 menu_rel_save($conn,(int)$familyId,$config);
             }

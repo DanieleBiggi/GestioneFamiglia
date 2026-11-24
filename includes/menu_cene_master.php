@@ -6,6 +6,15 @@ function menu_cene_effective_config(mysqli $db, int $familyId): ?array {
     return menu_rel_read($db, $familyId) ?? food_config_read($familyId, 'master');
 }
 
+function menu_cene_effective_recipes(mysqli $db, int $familyId): array {
+    $stmt = $db->prepare('SELECT id_master FROM menu_cene_master WHERE id_famiglia=? AND attivo=1 LIMIT 1');
+    $stmt->bind_param('i', $familyId);
+    $stmt->execute();
+    $active = (bool)$stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    return $active ? menu_rel_recipes($db, $familyId) : food_config_recipes($familyId);
+}
+
 /**
  * Menu cene famiglia 2026-2027.
  *
@@ -17,14 +26,8 @@ function menu_cene_effective_config(mysqli $db, int $familyId): ?array {
  * secondo venerdì di aprile; dalla settimana successiva torna estivo.
  */
 
-function menu_cene_master(?int $explicitFamily = null): array
+function menu_cene_default_master(): array
 {
-    $familyId = $explicitFamily ?? (int)($_SESSION['id_famiglia_gestione'] ?? 0);
-    global $conn;
-    if ($familyId > 0) {
-        $custom = $conn instanceof mysqli ? menu_cene_effective_config($conn, $familyId) : food_config_read($familyId, 'master');
-        if ($custom !== null) return $custom['stagioni'];
-    }
     return [
         'Estivo' => [
             1 => [
@@ -94,12 +97,9 @@ function menu_cene_week_start(DateTimeImmutable $date): DateTimeImmutable
     return $date->modify('monday this week')->setTime(0, 0);
 }
 
-function menu_cene_cycle_week(DateTimeImmutable $weekStart, ?int $explicitFamily = null): int
+function menu_cene_cycle_week(DateTimeImmutable $weekStart, ?array $config): int
 {
-    $familyId = $explicitFamily ?? (int)($_SESSION['id_famiglia_gestione'] ?? 0);
-    global $conn;
-    $config = $familyId > 0 ? ($conn instanceof mysqli ? menu_cene_effective_config($conn, $familyId) : food_config_read($familyId, 'master')) : null;
-    $anchor = new DateTimeImmutable($config['ciclo']['data_riferimento'] ?? '2026-09-14');
+    $anchor = new DateTimeImmutable($config['ciclo']['data_riferimento'] ?? '2026-09-14', $weekStart->getTimezone());
     $anchor = menu_cene_week_start($anchor);
     $weekStart = menu_cene_week_start($weekStart);
     $days = (int)$anchor->diff($weekStart)->format('%r%a');
@@ -141,11 +141,11 @@ function menu_cene_season(DateTimeImmutable $weekStart): string
     return $weekStart < $summerRestart ? 'Invernale' : 'Estivo';
 }
 
-function menu_cene_plan(DateTimeImmutable $weekStart): array
+function menu_cene_plan(DateTimeImmutable $weekStart, ?array $config): array
 {
     $season = menu_cene_season($weekStart);
-    $cycleWeek = menu_cene_cycle_week($weekStart);
-    $master = menu_cene_master();
+    $cycleWeek = menu_cene_cycle_week($weekStart, $config);
+    $master = $config['stagioni'] ?? menu_cene_default_master();
 
     return [
         'stagione' => $season,

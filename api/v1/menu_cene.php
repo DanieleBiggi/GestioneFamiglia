@@ -28,14 +28,7 @@ try {
 
     // Caricare la configurazione della famiglia esplicita, mai dalla sessione web.
     $customMaster = menu_cene_effective_config($conn, (int)$familyId);
-    $season = menu_cene_season($start);
-    $anchorDate = $customMaster['ciclo']['data_riferimento'] ?? '2026-09-14';
-    $anchorWeek = $customMaster['ciclo']['settimana_riferimento'] ?? 2;
-    $anchor = new DateTimeImmutable($anchorDate, new DateTimeZone('Europe/Rome'));
-    $weeksDiff = intdiv((int)$anchor->diff($start)->format('%r%a'), 7);
-    $cycleWeek = (($anchorWeek - 1 + $weeksDiff) % 4 + 4) % 4 + 1;
-    $master = $customMaster['stagioni'] ?? menu_cene_master((int)$familyId);
-    $plan = $master[$season][$cycleWeek] ?? [];
+    $plan = menu_cene_plan($start, $customMaster);
 
     $stmt = $conn->prepare(
         'SELECT giorno, piatto FROM menu_cene_settimanale WHERE id_famiglia=? AND week_start=? ORDER BY id ASC'
@@ -57,16 +50,16 @@ try {
         $items[] = [
             'giorno' => $day,
             'data' => $start->modify('+' . $i . ' days')->format('Y-m-d'),
-            'piatto' => $isSaved ? (string)$saved[$day] : menu_cene_format_dish($plan[$day] ?? []),
+            'piatto' => $isSaved ? (string)$saved[$day] : menu_cene_format_dish($plan['giorni'][$day] ?? []),
             'origine' => $isSaved ? 'salvato' : 'previsto_master'
         ];
     }
 
-    $recipes = food_config_match_recipes($items, food_config_recipes((int)$familyId));
+    $recipes = food_config_match_recipes($items, menu_cene_effective_recipes($conn, (int)$familyId));
     api_reply(200, [
         'success' => true,
         'week' => ['start'=>$weekStart, 'end'=>$weekEnd],
-        'plan' => ['stagione'=>$season, 'settimana_ciclo'=>$cycleWeek],
+        'plan' => ['stagione'=>$plan['stagione'], 'settimana_ciclo'=>$plan['settimana_menu']],
         'items' => $items,
         'ricette' => $recipes['ricette'],
         'non_associati' => $recipes['non_associati'],

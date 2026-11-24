@@ -4,7 +4,6 @@ include '../includes/session_check.php';
 include '../includes/db.php';
 require_once '../includes/permissions.php';
 require_once '../includes/menu_cene_master.php';
-require_once '../includes/menu_cene_relazionale.php';
 $conn->set_charset('utf8mb4');
 $idFamiglia = (int)($_SESSION['id_famiglia_gestione'] ?? 0);
 $kind = $_GET['kind'] ?? $_POST['kind'] ?? '';
@@ -15,22 +14,25 @@ if ($idFamiglia <= 0 || !in_array($kind, ['master', 'ricette'], true)
     echo json_encode(['success' => false, 'error' => 'Accesso negato']);
     exit;
 }
+function menu_editor_revision(int $idFamiglia, string $kind, array $data): string {
+    return hash('sha256', json_encode([$idFamiglia, $kind, $data], JSON_THROW_ON_ERROR));
+}
+
 try {
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-        if ($kind === 'master') {
-            $data = menu_rel_read($conn, $idFamiglia) ?? food_config_read($idFamiglia, 'master');
-            if ($data === null) {
-                $data = [
-                    'version' => 1,
-                    'anno_scolastico' => '2026-2027',
-                    'ciclo' => ['settimane' => 4, 'data_riferimento' => '2026-09-14', 'settimana_riferimento' => 2],
-                    'stagioni' => menu_cene_master()
-                ];
-            }
-        } else {
-            $data = food_config_recipes($idFamiglia);
-        }
-        echo json_encode(['success' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
+        $active = menu_rel_read($conn, $idFamiglia);
+        $data = $kind === 'master'
+            ? ($active ?? food_config_read($idFamiglia, 'master') ?? [
+                'version' => 1,
+                'anno_scolastico' => '2026-2027',
+                'ciclo' => ['settimane' => 4, 'data_riferimento' => '2026-09-14', 'settimana_riferimento' => 2],
+                'stagioni' => menu_cene_default_master()
+            ])
+            : ($active === null ? food_config_recipes($idFamiglia) : menu_rel_recipes($conn, $idFamiglia));
+        echo json_encode([
+            'success' => true, 'data' => $data,
+            'revision' => $active === null ? null : menu_editor_revision($idFamiglia, $kind, $data)
+        ], JSON_UNESCAPED_UNICODE);
     } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $token = $_POST['csrf_token'] ?? '';
         if (!is_string($token) || empty($_SESSION['menu_config_csrf']) || !hash_equals($_SESSION['menu_config_csrf'], $token)) {
@@ -42,24 +44,33 @@ try {
         if (!is_string($raw) || strlen($raw) > 250000) throw new InvalidArgumentException('JSON troppo grande');
         $data = json_decode($raw, true, 64, JSON_THROW_ON_ERROR);
         if (!is_array($data)) throw new InvalidArgumentException('Il JSON deve essere un oggetto');
-        if ($kind === 'master') {
-            $conn->begin_transaction();
-            try {
-                menu_rel_lock_family($conn, $idFamiglia);
-                // Until activation, the legacy configuration remains authoritative.
-                if (menu_rel_read($conn, $idFamiglia, true) === null) {
-                    throw new RuntimeException('Master relazionale non ancora attivato');
-                }
-                menu_rel_save($conn, $idFamiglia, $data);
-                $conn->commit();
-            } catch (Throwable $e) {
+        $conn->begin_transaction();
+        try {
+            menu_rel_lock_family($conn, $idFamiglia);
+            $active = menu_rel_read($conn, $idFamiglia, true);
+            $revision = $_POST['revision'] ?? '';
+            $current = $kind === 'master' ? $active : menu_rel_recipes($conn, $idFamiglia);
+            if ($active === null || !is_string($revision) || !hash_equals(menu_editor_revision($idFamiglia, $kind, $current), $revision)) {
                 $conn->rollback();
-                throw $e;
+                http_response_code(409);
+                echo json_encode(['success' => false, 'error' => $active === null
+                    ? 'Configurazione relazionale non attivata'
+                    : 'Configurazione cambiata: ricarica la pagina prima di salvare']);
+                exit;
             }
-        } else {
-            food_config_save($idFamiglia, $kind, $data);
+            if ($kind === 'master') {
+                menu_rel_save($conn, $idFamiglia, $data);
+                $saved = menu_rel_read($conn, $idFamiglia);
+            } else {
+                menu_rel_save_recipes($conn, $idFamiglia, $data);
+                $saved = menu_rel_recipes($conn, $idFamiglia);
+            }
+            $conn->commit();
+            echo json_encode(['success' => true, 'revision' => menu_editor_revision($idFamiglia, $kind, $saved)]);
+        } catch (Throwable $e) {
+            $conn->rollback();
+            throw $e;
         }
-        echo json_encode(['success' => true]);
     } else {
         http_response_code(405);
         echo json_encode(['success' => false, 'error' => 'Metodo non supportato']);
