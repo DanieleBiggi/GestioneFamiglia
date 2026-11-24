@@ -24,8 +24,8 @@ CREATE TABLE ricette_ingredienti (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 CREATE TABLE piatti (
  id_piatto INT NOT NULL AUTO_INCREMENT, id_famiglia INT NOT NULL,
- nome VARCHAR(150) NOT NULL, id_ricetta INT DEFAULT NULL, attivo TINYINT(1) NOT NULL DEFAULT 1,
- PRIMARY KEY(id_piatto), UNIQUE KEY(id_famiglia,nome),
+ nome VARCHAR(500) NOT NULL, nome_hash CHAR(64) CHARACTER SET ascii NOT NULL, id_ricetta INT DEFAULT NULL, attivo TINYINT(1) NOT NULL DEFAULT 1,
+ PRIMARY KEY(id_piatto), UNIQUE KEY(id_famiglia,nome_hash),
  FOREIGN KEY(id_famiglia) REFERENCES famiglie(id_famiglia),
  FOREIGN KEY(id_ricetta) REFERENCES ricette(id_ricetta) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
