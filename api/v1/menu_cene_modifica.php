@@ -11,11 +11,11 @@ function gf_menu_week(string $date): DateTimeImmutable {
         throw new InvalidArgumentException('week_start deve essere un lunedi YYYY-MM-DD');
     return $week;
 }
-function gf_menu_master_config(int $family): array {
-    return food_config_read($family,'master')??[
+function gf_menu_master_config(mysqli $db, int $family): array {
+    return menu_cene_effective_config($db,$family)??[
         'version'=>1,'anno_scolastico'=>'2026-2027',
         'ciclo'=>['settimane'=>4,'data_riferimento'=>'2026-09-14','settimana_riferimento'=>2],
-        'stagioni'=>menu_cene_master()
+        'stagioni'=>menu_cene_master($family)
     ];
 }
 function gf_menu_week_plan(array $config,DateTimeImmutable $start):array {
@@ -73,7 +73,8 @@ try {
     if ($acquired!==1) api_error(409,'Menu occupato: riprovare');
     try {
         $conn->begin_transaction();
-        $config=gf_menu_master_config((int)$familyId);
+        menu_rel_lock_family($conn,(int)$familyId);
+        $config=gf_menu_master_config($conn,(int)$familyId);
         if ($scope==='settimana') {
             $state=gf_menu_week_state($conn,(int)$familyId,$start,$config);
             $before=$state['giorni'];
@@ -115,8 +116,10 @@ try {
                 $q->close();
             } else {
                 $config['stagioni'][$season][$cycle]=$after;
-                // food_config_save gia gestisce validazione, backup e scrittura atomica JSON.
-                food_config_save((int)$familyId,'master',$config);
+                if (menu_rel_read($conn,(int)$familyId,true) === null) {
+                    throw new RuntimeException('Master relazionale non ancora attivato');
+                }
+                menu_rel_save($conn,(int)$familyId,$config);
             }
         }
         $conn->commit();
