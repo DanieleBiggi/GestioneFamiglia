@@ -27,14 +27,14 @@ try {
     $weekEnd = $start->modify('+6 days')->format('Y-m-d');
 
     // Caricare la configurazione della famiglia esplicita, mai dalla sessione web.
-    $customMaster = food_config_read((int)$familyId, 'master');
+    $customMaster = menu_cene_effective_config($conn, (int)$familyId);
     $season = menu_cene_season($start);
     $anchorDate = $customMaster['ciclo']['data_riferimento'] ?? '2026-09-14';
     $anchorWeek = $customMaster['ciclo']['settimana_riferimento'] ?? 2;
     $anchor = new DateTimeImmutable($anchorDate, new DateTimeZone('Europe/Rome'));
     $weeksDiff = intdiv((int)$anchor->diff($start)->format('%r%a'), 7);
     $cycleWeek = (($anchorWeek - 1 + $weeksDiff) % 4 + 4) % 4 + 1;
-    $master = $customMaster['stagioni'] ?? menu_cene_master();
+    $master = $customMaster['stagioni'] ?? menu_cene_master((int)$familyId);
     $plan = $master[$season][$cycleWeek] ?? [];
 
     $stmt = $conn->prepare(
