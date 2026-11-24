@@ -19,6 +19,8 @@ $plan = null;
 $result = null;
 $error = null;
 $alreadyMigrated = false;
+$activationPlan = null;
+$activated = false;
 try {
     $method = $_SERVER['REQUEST_METHOD'];
     if (!in_array($method, ['GET','POST'], true)) {
@@ -41,17 +43,30 @@ try {
             http_response_code(403);
             exit('Conferma non valida. Ricaricare la pagina.');
         }
-        if ($alreadyMigrated) throw new RuntimeException('Dati relazionali già presenti.');
-        $result = menu_migration_apply($conn, $familyId, $hash);
+        if (($_POST['operation'] ?? 'migrate') === 'activate') {
+            menu_migration_activate($conn, $familyId, $hash);
+            $activated = true;
+        } else {
+            if ($alreadyMigrated) throw new RuntimeException('Dati relazionali già presenti.');
+            $result = menu_migration_apply($conn, $familyId, $hash);
+        }
         unset($_SESSION['menu_migration_csrf']);
         $alreadyMigrated = true;
     } elseif (!$alreadyMigrated) {
         $plan = menu_migration_plan($familyId);
+    } else {
+        $stmt = menu_migration_query($conn, 'SELECT attivo FROM menu_cene_master WHERE id_famiglia=?','i',[$familyId]);
+        $masters = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        if (count($masters) === 1 && (int)$masters[0]['attivo'] === 0) {
+            $activationPlan = menu_migration_plan($familyId);
+        }
     }
 } catch (Throwable $e) {
     error_log('Migrazione menu: ' . $e->getMessage());
     $error = 'Migrazione non eseguita. Verificare i log, la configurazione e la presenza delle nuove tabelle; ricaricare la pagina per una nuova anteprima.';
     $plan = null;
+    $activationPlan = null;
 }
 include __DIR__ . '/includes/header.php';
 ?>
@@ -60,6 +75,8 @@ include __DIR__ . '/includes/header.php';
 <p>I file JSON originali e i menù settimanali non saranno modificati. Il master importato resterà inattivo.</p>
 <?php if ($error): ?>
 <div class="alert alert-danger" role="alert"><?= $escape($error) ?></div>
+<?php elseif ($activated): ?>
+<div class="alert alert-success">Master attivato. Ora puoi modificare il master dalla configurazione ordinaria.</div>
 <?php elseif ($result): ?>
 <div class="alert alert-success" role="status">
     Migrazione completata: <?= $escape($result['piatti']) ?> piatti,
@@ -67,6 +84,19 @@ include __DIR__ . '/includes/header.php';
     <?= $escape($result['occorrenze']) ?> occorrenze.
     Master ID <?= $escape($result['id_master']) ?>, inattivo.
 </div>
+<a class="btn btn-outline-light" href="menu_cene_migrazione.php">Verifica e attiva il master</a>
+<?php elseif ($activationPlan): ?>
+<div class="alert alert-info">Master trasferito ma non ancora attivo. Il server confronterà tutti i riferimenti del master con la sorgente prima di attivarlo.</div>
+<p>Piatti distinti: <?= count($activationPlan['dishes']) ?>; ricette: <?= count($activationPlan['recipes']) ?>; occorrenze: <?= count($activationPlan['slots']) ?>.</p>
+<form method="post">
+<input type="hidden" name="operation" value="activate">
+<input type="hidden" name="csrf_token" value="<?= $escape($_SESSION['menu_migration_csrf']) ?>">
+<input type="hidden" name="expected_hash" value="<?= $escape(menu_migration_hash($activationPlan)) ?>">
+<input type="hidden" name="family_id" value="<?= $escape($familyId) ?>">
+<div class="form-check mb-3"><input type="checkbox" class="form-check-input" name="confirm" value="1" id="confirmActivation" required>
+<label class="form-check-label" for="confirmActivation">Confermo il passaggio al master nel database.</label></div>
+<button type="submit" class="btn btn-primary">Attiva master</button>
+</form>
 <?php elseif ($alreadyMigrated): ?>
 <div class="alert alert-warning">Dati relazionali già presenti: nuova migrazione bloccata.</div>
 <?php elseif ($plan): ?>
