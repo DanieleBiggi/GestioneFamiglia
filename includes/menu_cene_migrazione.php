@@ -149,6 +149,24 @@ function menu_migration_activate(mysqli $conn,int $familyId,string $expectedHash
         }
         ksort($actual); ksort($expected);
         if ($actual!==$expected) throw new RuntimeException('Piatti migrati non corrispondenti');
+        $q=menu_migration_query($conn,'SELECT codice,nome,istruzioni FROM ricette WHERE id_famiglia=?','i',[$familyId]);
+        $actualRecipes=[];
+        foreach ($q->get_result()->fetch_all(MYSQLI_ASSOC) as $row)
+            $actualRecipes[$row['codice']]=[$row['nome'],$row['istruzioni']];
+        $q->close(); $expectedRecipes=[];
+        foreach ($plan['recipes'] as $recipe)
+            $expectedRecipes[$recipe['id']]=[$recipe['nome'],$recipe['istruzioni']];
+        ksort($actualRecipes); ksort($expectedRecipes);
+        if ($actualRecipes!==$expectedRecipes) throw new RuntimeException('Ricette migrate non corrispondenti');
+        $q=menu_migration_query($conn,'SELECT p.nome_hash,p.nome,r.codice AS recipe_code FROM piatti p LEFT JOIN ricette r ON p.id_ricetta=r.id_ricetta AND p.id_famiglia=r.id_famiglia WHERE p.id_famiglia=?','i',[$familyId]);
+        $actualDishes=[];
+        foreach ($q->get_result()->fetch_all(MYSQLI_ASSOC) as $row)
+            $actualDishes[$row['nome_hash']]=[$row['nome'],$row['recipe_code']];
+        $q->close(); $expectedDishes=[];
+        foreach ($plan['dishes'] as $key=>$name)
+            $expectedDishes[hash('sha256',(string)$key)]=[$name,$plan['recipeMap'][$key]??null];
+        ksort($actualDishes); ksort($expectedDishes);
+        if ($actualDishes!==$expectedDishes) throw new RuntimeException('Catalogo o collegamenti ricette non corrispondenti');
         $q=menu_migration_query($conn,'UPDATE menu_cene_master SET attivo=1 WHERE id_master=? AND id_famiglia=? AND attivo=0','ii',[$id,$familyId]);
         if ($q->affected_rows!==1) throw new RuntimeException('Attivazione non riuscita');
         $q->close(); $conn->commit();
