@@ -29,10 +29,10 @@ include 'includes/header.php';
 </section>
 <div class="d-flex flex-wrap gap-2 my-3">
   <?php if ($canSave): ?><button id="cfgSave" class="btn btn-primary" type="button">Salva modifiche</button>
-  <label class="btn btn-outline-light mb-0" for="cfgImport">Importa JSON</label><input type="file" id="cfgImport" accept=".json,application/json" hidden><?php endif; ?>
+  <?php if (($_GET['section'] ?? '') === 'ricette'): ?><label class="btn btn-outline-light mb-0" for="cfgImport">Importa JSON</label><input type="file" id="cfgImport" accept=".json,application/json" hidden><?php endif; ?><?php endif; ?>
   <button id="cfgExport" class="btn btn-outline-light" type="button">Scarica JSON</button>
 </div>
-<p class="small text-secondary">L'importazione viene controllata prima del salvataggio. Prima di sostituire un file viene creato un backup sul server. Non importare JSON di provenienza sconosciuta.</p>
+<?php if (($_GET['section'] ?? '') === 'ricette'): ?><p class="small text-secondary">Il ricettario conserva temporaneamente la gestione precedente.</p><?php else: ?><p class="small text-secondary">Il master viene salvato nel database dopo l’attivazione della migrazione. Le settimane già generate rimangono invariate.</p><?php endif; ?>
 <script>window.MENU_CONFIG_CAN_SAVE = <?= $canSave ? 'true' : 'false' ?>; window.MENU_CONFIG_CSRF = <?= json_encode($_SESSION['menu_config_csrf']) ?>;</script>
 <script src="js/menu_cene_config.js"></script>
 <?php include 'includes/footer.php'; ?>
