@@ -4,6 +4,8 @@ include '../includes/session_check.php';
 include '../includes/db.php';
 require_once '../includes/permissions.php';
 require_once '../includes/menu_cene_master.php';
+require_once '../includes/menu_cene_relazionale.php';
+$conn->set_charset('utf8mb4');
 $idFamiglia = (int)($_SESSION['id_famiglia_gestione'] ?? 0);
 $kind = $_GET['kind'] ?? $_POST['kind'] ?? '';
 $action = $_SERVER['REQUEST_METHOD'] === 'POST' ? 'update' : 'view';
@@ -16,7 +18,7 @@ if ($idFamiglia <= 0 || !in_array($kind, ['master', 'ricette'], true)
 try {
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if ($kind === 'master') {
-            $data = food_config_read($idFamiglia, 'master');
+            $data = menu_rel_read($conn, $idFamiglia) ?? food_config_read($idFamiglia, 'master');
             if ($data === null) {
                 $data = [
                     'version' => 1,
@@ -31,7 +33,7 @@ try {
         echo json_encode(['success' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
     } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $token = $_POST['csrf_token'] ?? '';
-        if (!is_string($token) || !hash_equals($_SESSION['menu_config_csrf'] ?? '', $token)) {
+        if (!is_string($token) || empty($_SESSION['menu_config_csrf']) || !hash_equals($_SESSION['menu_config_csrf'], $token)) {
             http_response_code(403);
             echo json_encode(['success' => false, 'error' => 'Sessione scaduta: ricarica la pagina']);
             exit;
@@ -40,7 +42,23 @@ try {
         if (!is_string($raw) || strlen($raw) > 250000) throw new InvalidArgumentException('JSON troppo grande');
         $data = json_decode($raw, true, 64, JSON_THROW_ON_ERROR);
         if (!is_array($data)) throw new InvalidArgumentException('Il JSON deve essere un oggetto');
-        food_config_save($idFamiglia, $kind, $data);
+        if ($kind === 'master') {
+            $conn->begin_transaction();
+            try {
+                menu_rel_lock_family($conn, $idFamiglia);
+                // Until activation, the legacy configuration remains authoritative.
+                if (menu_rel_read($conn, $idFamiglia, true) === null) {
+                    throw new RuntimeException('Master relazionale non ancora attivato');
+                }
+                menu_rel_save($conn, $idFamiglia, $data);
+                $conn->commit();
+            } catch (Throwable $e) {
+                $conn->rollback();
+                throw $e;
+            }
+        } else {
+            food_config_save($idFamiglia, $kind, $data);
+        }
         echo json_encode(['success' => true]);
     } else {
         http_response_code(405);
